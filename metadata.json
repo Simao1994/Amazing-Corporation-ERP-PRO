@@ -1,0 +1,7 @@
+{
+  "name": "Amazing Corporation ERP Pro",
+  "description": "Plataforma de Gestão Empresarial consolidada com IA Contabilística, Processamento de Folha de Pagamento em nuvem, Gestão Multissectorial (Logística, Agro, Imobiliário) e Conformidade Fiscal Angolana (v2026).",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
