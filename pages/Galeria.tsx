@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 // Added MapPin to the imports from lucide-react
-import { Camera, Save, User, Building2, Upload, Sparkles, X, Edit, ShieldCheck, Globe, CheckCircle2, MapPin } from 'lucide-react';
+import { Camera, Save, User, Building2, Upload, Sparkles, X, Edit, ShieldCheck, Globe, CheckCircle2, MapPin, RefreshCw } from 'lucide-react';
 import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
@@ -150,6 +150,15 @@ const GaleriaPage: React.FC = () => {
       setIsSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-yellow-500 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">

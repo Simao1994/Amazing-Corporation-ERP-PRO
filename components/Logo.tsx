@@ -12,31 +12,21 @@ interface LogoProps {
  * Identidade Visual da Amazing Corporation.
  * Substituído o logotipo gráfico por identidade textual simplificada.
  */
-const Logo: React.FC<LogoProps> = ({ className = "", showTagline = true, light = false, onClick }) => {
-  const textColor = light ? "text-white" : "text-zinc-900";
-  const subColor = light ? "text-zinc-400" : "text-zinc-500";
-
+const Logo: React.FC<LogoProps> = ({ className = "", onClick }) => {
   return (
-    <div 
-      className={`flex flex-col leading-none select-none ${className}`}
+    <img
+      src="/assets/logo.png"
+      alt="Amazing Corporation Logo"
+      className={`object-contain select-none ${className}`}
       onClick={onClick}
       style={{ cursor: onClick ? 'pointer' : 'default' }}
-    >
-      <div className="flex flex-col">
-        <span className={`text-2xl font-black uppercase tracking-tighter ${textColor}`}>
-          Grupo <span className="text-yellow-500">Amazing</span>
-        </span>
-        <span className={`text-xs font-black uppercase tracking-[0.3em] -mt-1 ${subColor}`}>
-          Corporation
-        </span>
-      </div>
-      
-      {showTagline && (
-        <span className={`text-[9px] font-bold uppercase tracking-widest mt-2 ${subColor} opacity-70`}>
-          Aqui o cliente é que faz a escolha
-        </span>
-      )}
-    </div>
+      onError={(e) => {
+        // Fallback simple text if image fails to load
+        const target = e.target as HTMLImageElement;
+        target.onerror = null;
+        target.style.display = 'none';
+      }}
+    />
   );
 };
 

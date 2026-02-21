@@ -52,27 +52,38 @@ const App: React.FC = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Fetch profile
-        const { data: profile } = await getUserProfile(session.user.id);
+        // Fetch profile in parallel, don't block the main UI boot
+        getUserProfile(session.user.id).then(({ data: profile }) => {
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
+            role: profile?.role || 'user',
+          };
+          setUser(userData);
+          AmazingStorage.save(STORAGE_KEYS.USER, userData);
+        });
 
-        const userData: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
-          role: profile?.role || 'user', // Default fallback
-        };
+        // Finalize initialization immediately
+        setIsInitializing(false);
 
-        setUser(userData);
-        AmazingStorage.save(STORAGE_KEYS.USER, userData);
+        // Targeted sync for essential info (background)
+        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
 
+        // Full background sync
         setIsSyncing(true);
-        await AmazingStorage.loadAllFromCloud();
-        setIsSyncing(false);
+        AmazingStorage.loadAllFromCloud().then(() => {
+          setIsSyncing(false);
+          console.log('Nuvem sincronizada em segundo plano.');
+        });
       } else {
         setUser(null);
         localStorage.removeItem(STORAGE_KEYS.USER);
+        setIsInitializing(false);
+
+        // Even for public users, sync public info in background
+        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
       }
-      setIsInitializing(false);
     });
 
     return () => subscription.unsubscribe();
@@ -156,7 +167,7 @@ const App: React.FC = () => {
                     <Route path="/galeria" element={<ProtectedRoute user={user} path="/galeria"><GaleriaPage /></ProtectedRoute>} />
                     <Route path="/feed" element={<ProtectedRoute user={user} path="/feed"><FeedPage /></ProtectedRoute>} />
                     <Route path="/transportes" element={<ProtectedRoute user={user} path="/transportes"><TransportPage /></ProtectedRoute>} />
-                    <Route path="/rh" element={<ProtectedRoute user={user} path="/rh"><HRPage /></ProtectedRoute>} />
+                    <Route path="/rh" element={<ProtectedRoute user={user} path="/rh"><HRPage user={user} /></ProtectedRoute>} />
                     <Route path="/departamentos" element={<ProtectedRoute user={user} path="/departamentos"><DepartmentsPage user={user} /></ProtectedRoute>} />
                     <Route path="/financeiro" element={<ProtectedRoute user={user} path="/financeiro"><FinancePage /></ProtectedRoute>} />
                     <Route path="/contabilidade" element={<ProtectedRoute user={user} path="/contabilidade"><AccountingPage /></ProtectedRoute>} />

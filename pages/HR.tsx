@@ -21,7 +21,7 @@ import Select from '../components/ui/Select';
 import { formatAOA } from '../constants';
 import {
    Funcionario, RegistroPresenca, ReciboSalarial,
-   MetaDesempenho, Departamento, ContratoTipo, FuncionarioStatus, PasseServico
+   MetaDesempenho, Departamento, ContratoTipo, FuncionarioStatus, PasseServico, User
 } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
@@ -56,7 +56,11 @@ const calculateIRT = (baseTributavel: number): number => {
    if (baseTributavel <= 300000) return 11500 + (baseTributavel - 200000) * 0.16;
    if (baseTributavel <= 500000) return 27500 + (baseTributavel - 300000) * 0.18;
    if (baseTributavel <= 1000000) return 63500 + (baseTributavel - 500000) * 0.19;
-   return 158500 + (baseTributavel - 1000000) * 0.25;
+   if (baseTributavel <= 1500000) return 158500 + (baseTributavel - 1000000) * 0.20;
+   if (baseTributavel <= 2000000) return 258500 + (baseTributavel - 1500000) * 0.21;
+   if (baseTributavel <= 5000000) return 363500 + (baseTributavel - 2000000) * 0.22;
+   if (baseTributavel <= 10000000) return 1023500 + (baseTributavel - 5000000) * 0.23;
+   return 2173500 + (baseTributavel - 10000000) * 0.25;
 };
 
 // --- HELPERS DE TEMPO ---
@@ -143,7 +147,12 @@ interface PayrollInput {
    adiantamento: number; // valor monetário
 }
 
-const HRPage: React.FC = () => {
+interface HRPageProps {
+   user: User;
+}
+
+const HRPage: React.FC<HRPageProps> = ({ user }) => {
+   const isHRAdmin = ['admin', 'hr', 'director_hr'].includes(user.role);
    const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes'>('dashboard');
    const [showModal, setShowModal] = useState(false);
    const [showMetaModal, setShowMetaModal] = useState(false);
@@ -184,8 +193,21 @@ const HRPage: React.FC = () => {
       try {
          const { data: funcData, error: funcError } = await supabase.from('funcionarios').select('*').order('nome');
          if (funcError) throw funcError;
+         let filteredFuncs = funcData || [];
+
+         // Se for diretor (não HR/Admin), filtrar por departamento
+         if (!isHRAdmin && user.role.includes('director')) {
+            // Tentar encontrar o departamento do diretor baseado no papel
+            const deptId = user.role.split('_').pop() === 'finance' ? 'Financeiro' : '';
+            // Nota: No mundo real, buscaríamos o depto associado ao ID do usuário.
+            // Aqui usaremos uma lógica de filtro simplificada se houver correspondência.
+            if (deptId) {
+               filteredFuncs = filteredFuncs.filter((f: any) => f.departamento === deptId);
+            }
+         }
+
          if (funcData) {
-            setFuncionarios(funcData.map((f: any) => ({
+            setFuncionarios(filteredFuncs.map((f: any) => ({
                id: f.id,
                nome: f.nome,
                data_nascimento: f.notas?.match(/Nascimento: (.*?)(?:$|\n)/)?.[1] || '',
@@ -200,9 +222,10 @@ const HRPage: React.FC = () => {
                nivel_escolaridade: f.notas?.match(/Escolaridade: (.*?)(?:$|\n)/)?.[1] || '',
                area_formacao: f.notas?.match(/Curso: (.*?)(?:$|\n)/)?.[1] || '',
                salario_base: Number(f.salario),
-               subsidio_alimentacao: f.notas?.match(/SubAlim: (.*?)(?:$|\n)/)?.[1] ? Number(f.notas.match(/SubAlim: (.*?)(?:$|\n)/)[1]) : 0,
-               subsidio_transporte: f.notas?.match(/SubTrans: (.*?)(?:$|\n)/)?.[1] ? Number(f.notas.match(/SubTrans: (.*?)(?:$|\n)/)[1]) : 0,
+               subsidio_alimentacao: f.subsidio_alimentacao || 0,
+               subsidio_transporte: f.subsidio_transporte || 0,
                bonus_assiduidade: 0,
+               outros_bonus: f.outros_bonus || 0,
                foto_url: f.foto_url,
                documentos: [],
                historico_alteracoes: [],
@@ -229,10 +252,15 @@ const HRPage: React.FC = () => {
             ano: r.ano,
             base: r.base,
             subsidios: r.subsidios,
+            subsidio_alimentacao: r.subsidio_alimentacao || 0,
+            subsidio_transporte: r.subsidio_transporte || 0,
             horas_extras_valor: r.horas_extras_valor,
+            bonus_premios: r.bonus_premios || 0,
             faltas_desconto: r.faltas_desconto,
             inss_trabalhador: r.inss_trabalhador,
             irt: r.irt,
+            adiantamentos: r.adiantamentos || 0,
+            bruto: r.bruto || 0,
             liquido: r.liquido,
             data_emissao: r.data_emissao
          })));
@@ -416,24 +444,35 @@ const HRPage: React.FC = () => {
 
       const DIAS_UTEIS = 30;
       const HORAS_MENSAIS = 173.33;
-      const INSS_RATE = 0.03;
+      const INSS_WORKER_RATE = 0.03;
+      const EXEMPT_ALLOWANCE_LIMIT = 30000;
 
       const base = Number(f.salario_base) || 0;
       const valorHora = base / HORAS_MENSAIS;
       const valorDia = base / DIAS_UTEIS;
 
+      // Rendimentos
       const valorHorasExtras = inputs.horasExtras * (valorHora * WORK_RULES.overtimeRateNormal);
-      const subsidiosTotal = (Number(f.subsidio_alimentacao) || 0) + (Number(f.subsidio_transporte) || 0);
-      const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0);
+      const subAlim = Number(f.subsidio_alimentacao) || 0;
+      const subTrans = Number(f.subsidio_transporte) || 0;
+      const subsidiosTotal = subAlim + subTrans;
+      const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0) + (Number(f.outros_bonus) || 0);
 
       const bruto = base + valorHorasExtras + premiosBonus + subsidiosTotal;
 
+      // INSS (Base: Salário Base + Horas Extras + Bónus)
       const baseINSS = base + valorHorasExtras + premiosBonus;
-      const inss = baseINSS * INSS_RATE;
+      const inss = baseINSS * INSS_WORKER_RATE;
 
-      const baseIRT = baseINSS - inss;
+      // IRT (Base: Bruto - INSS - Subsídios Isentos)
+      // Nota: Subsídios são isentos até EXEMPT_ALLOWANCE_LIMIT cada
+      const exemptSubAlim = Math.min(subAlim, EXEMPT_ALLOWANCE_LIMIT);
+      const exemptSubTrans = Math.min(subTrans, EXEMPT_ALLOWANCE_LIMIT);
+      const baseIRT = bruto - inss - exemptSubAlim - exemptSubTrans;
+
       const irt = calculateIRT(baseIRT);
 
+      // Descontos Adicionais
       const descontoFaltas = (inputs.faltas || 0) * valorDia;
       const totalDescontos = inss + irt + descontoFaltas + (inputs.adiantamento || 0);
 
@@ -441,20 +480,27 @@ const HRPage: React.FC = () => {
 
       return {
          bruto, inss, irt, descontoFaltas, totalDescontos, liquido,
-         valorHorasExtras, premiosBonus, subsidiosTotal, inputs
+         valorHorasExtras, premiosBonus, subsidiosTotal, subAlim, subTrans, inputs
       };
    };
 
    const handleProcessPayroll = async () => {
-      const ativos = funcionarios.filter(f => f.status === 'Ativo');
+      const ativos = funcionarios.filter(f => f.status === 'ativo');
       if (ativos.length === 0) return alert("Não existem colaboradores activos.");
 
-      const { data: existing } = await supabase.from('hr_recibos').select('id').eq('mes', currentMonthName).eq('ano', currentFiscalYear).limit(1);
-      const msg = existing && existing.length > 0
-         ? `A folha de ${currentMonthName} já existe. Deseja reprocessar?`
-         : `Confirma o processamento da folha de ${currentMonthName}/${currentFiscalYear}?`;
+      // Verificar se já existe processamento para este mês
+      const { data: existing } = await supabase.from('hr_recibos').select('id').eq('mes', currentMonthName).eq('ano', currentFiscalYear);
 
-      if (!confirm(msg)) return;
+      if (existing && existing.length > 0) {
+         const confirmUpdate = confirm(`A folha de ${currentMonthName}/${currentFiscalYear} já foi processada (${existing.length} recibos). Deseja ANULAR os anteriores e processar novamente?`);
+         if (!confirmUpdate) return;
+
+         // Eliminar anteriores para garantir integridade
+         const { error: delError } = await supabase.from('hr_recibos').delete().eq('mes', currentMonthName).eq('ano', currentFiscalYear);
+         if (delError) return alert("Erro ao limpar processamento anterior.");
+      } else {
+         if (!confirm(`Confirma o processamento definitivo da folha de ${currentMonthName}/${currentFiscalYear}?`)) return;
+      }
 
       setIsProcessing(true);
       try {
@@ -463,14 +509,21 @@ const HRPage: React.FC = () => {
             return {
                id: `REC-${Date.now()}-${f.id.substring(0, 5)}`,
                funcionario_id: f.id,
+               nome: f.nome,
                mes: currentMonthName,
                ano: currentFiscalYear,
                base: f.salario_base,
-               subsidios: calc.subsidiosTotal,
-               horas_extras_valor: Number((calc.valorHorasExtras + calc.premiosBonus).toFixed(2)),
-               faltas_desconto: Number((calc.descontoFaltas + (calc.inputs.adiantamento || 0)).toFixed(2)),
+               subsidios: Number((calc.subAlim + calc.subTrans).toFixed(2)),
+               // Mapeamento enriquecido conforme discussão de layout
+               subsidio_alimentacao: Number(calc.subAlim.toFixed(2)),
+               subsidio_transporte: Number(calc.subTrans.toFixed(2)),
+               horas_extras_valor: Number(calc.valorHorasExtras.toFixed(2)),
+               bonus_premios: Number(calc.premiosBonus.toFixed(2)),
                inss_trabalhador: Number(calc.inss.toFixed(2)),
                irt: Number(calc.irt.toFixed(2)),
+               faltas_desconto: Number(calc.descontoFaltas.toFixed(2)),
+               adiantamentos: Number((calc.inputs.adiantamento || 0).toFixed(2)),
+               bruto: Number(calc.bruto.toFixed(2)),
                liquido: Number(calc.liquido.toFixed(2)),
                data_emissao: new Date().toISOString()
             };
@@ -480,10 +533,10 @@ const HRPage: React.FC = () => {
          if (error) throw error;
 
          fetchHRData();
-         AmazingStorage.logAction('Payroll', 'RH', `Processamento concluído: ${novosRecibos.length} recibos.`);
-         alert("Folha processada com sucesso.");
+         AmazingStorage.logAction('Payroll', 'RH', `Folha de ${currentMonthName} processada com sucesso. (Bônus e Subsídios detalhados)`);
+         alert("Folha de salários processada e fechada com sucesso!");
       } catch (error) {
-         alert("Erro no processamento.");
+         alert("Falha no processamento.");
       } finally {
          setIsProcessing(false);
       }
@@ -491,26 +544,33 @@ const HRPage: React.FC = () => {
 
    // --- ANALYTICS DATA PREPARATION ---
    const analyticsData = useMemo(() => {
-      // 1. Distribuição por Departamento (Pie Chart)
-      const deptStats: Record<string, number> = {};
+      // 1. Custos por Departamento (Pie Chart)
+      const deptCosts: Record<string, number> = {};
       funcionarios.forEach(f => {
-         const dept = f.departamento_id || 'Não Atribuído';
-         deptStats[dept] = (deptStats[dept] || 0) + 1;
+         const dept = f.departamento_id || 'Administração';
+         deptCosts[dept] = (deptCosts[dept] || 0) + (f.salario_base || 0);
       });
-      const pieData = Object.entries(deptStats).map(([name, value]) => ({ name, value }));
+      const pieData = Object.entries(deptCosts).map(([name, value]) => ({ name, value }));
 
-      // 2. Evolução de Custos (Area Chart) - Mock para meses anteriores se vazio
-      const payrollHistory = [
-         { name: 'Jan', custo: 0 }, { name: 'Fev', custo: 0 }, { name: 'Mar', custo: 0 },
-         { name: 'Abr', custo: 0 }, { name: 'Mai', custo: 0 }, { name: 'Jun', custo: 0 }
-      ];
-      // Popula com dados reais se existirem (agrupamento simplificado por string de data)
-      // No MVP, vamos usar dados simulados baseados no custo atual para "projetar"
-      const currentCost = funcionarios.reduce((acc, f) => acc + (f.salario_base || 0), 0);
-      const chartArea = payrollHistory.map((m, i) => ({
-         name: m.name,
-         custo: currentCost * (0.9 + (i * 0.02)) // Simula um crescimento leve
-      }));
+      // 2. Evolução de Custos (Area Chart) - Baseado nos recibos existentes
+      const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const monthMap: Record<string, string> = {
+         'janeiro': 'Jan', 'fevereiro': 'Fev', 'março': 'Mar', 'abril': 'Abr', 'maio': 'Mai', 'junho': 'Jun',
+         'julho': 'Jul', 'agosto': 'Ago', 'setembro': 'Set', 'outubro': 'Out', 'novembro': 'Nov', 'dezembro': 'Dez'
+      };
+
+      const history: Record<string, number> = {};
+
+      recibos.forEach(r => {
+         const mShort = monthMap[r.mes?.toLowerCase()] || r.mes;
+         history[mShort] = (history[mShort] || 0) + (r.liquido || 0);
+      });
+
+      const currentMonthShort = monthMap[currentMonthName.toLowerCase()] || currentMonthName;
+      const chartArea = monthsShort.map(m => ({
+         name: m,
+         custo: history[m] || 0
+      })).filter(d => d.custo > 0 || monthsShort.indexOf(d.name) <= monthsShort.indexOf(currentMonthShort));
 
       // 3. Performance de Metas (Bar Chart)
       const metaStats = { completed: 0, pending: 0 };
@@ -523,14 +583,38 @@ const HRPage: React.FC = () => {
          { name: 'Em Curso', valor: metaStats.pending, fill: '#eab308' }
       ];
 
+      // 4. Notificações de Contratos a Expirar (Próximos 30 dias)
+      const proximosVencimentos = funcionarios.filter(f => {
+         if (f.tipo_contrato !== 'Determinado' && f.tipo_contrato !== 'Estágio') return false;
+         if (!f.data_admissao || !f.tempo_contrato) return false;
+
+         const meses = parseInt(f.tempo_contrato);
+         if (isNaN(meses)) return false;
+
+         const admissao = new Date(f.data_admissao);
+         const vencimento = new Date(admissao.setMonth(admissao.getMonth() + meses));
+         const hoje = new Date();
+         const diffDays = Math.ceil((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+
+         return diffDays > 0 && diffDays <= 30;
+      }).map(f => ({
+         id: f.id,
+         nome: f.nome,
+         cargo: f.cargo,
+         vencimento: new Date(new Date(f.data_admissao).setMonth(new Date(f.data_admissao).getMonth() + parseInt(f.tempo_contrato))).toLocaleDateString()
+      }));
+
+      const currentCost = funcionarios.reduce((acc, f) => acc + (f.salario_base || 0), 0);
+
       return {
          total: funcionarios.length,
-         ativos: funcionarios.filter(f => f.status === 'Ativo').length,
+         ativos: funcionarios.filter(f => f.status === 'ativo').length,
          metasTotal: metas.length,
          pieData,
          chartArea,
          barData,
-         payrollCost: currentCost
+         payrollCost: currentCost,
+         proximosVencimentos
       };
    }, [funcionarios, metas, recibos]);
 
@@ -560,8 +644,11 @@ const HRPage: React.FC = () => {
          telefone: fd.get('telefone') as string,
          departamento: fd.get('departamento') as string,
          data_admissao: fd.get('admissao') as string,
-         status: (fd.get('status') as string) || 'Ativo',
+         status: (fd.get('status') as string) || 'ativo',
          salario: Number(fd.get('salario_base')),
+         subsidio_alimentacao: Number(fd.get('sub_alim')),
+         subsidio_transporte: Number(fd.get('sub_trans')),
+         outros_bonus: Number(fd.get('outros_bonus')),
          foto_url: photoPreview || `https://ui-avatars.com/api/?name=${fd.get('nome')}&background=random`,
          notas: notes,
          updated_at: new Date().toISOString()
@@ -606,7 +693,7 @@ const HRPage: React.FC = () => {
                   { id: 'presenca', icon: <Fingerprint size={18} />, label: 'Ponto' },
                   { id: 'performance', icon: <Award size={18} />, label: 'Metas' },
                   { id: 'passes', icon: <IdCard size={18} />, label: 'Passes' },
-               ].map(tab => (
+               ].filter(tab => isHRAdmin || !['gente', 'payroll'].includes(tab.id)).map(tab => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'}`}>{tab.icon} {tab.label}</button>
                ))}
             </div>
@@ -615,6 +702,33 @@ const HRPage: React.FC = () => {
          {/* DASHBOARD ANALÍTICO */}
          {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4">
+               {/* Notificações e Alertas */}
+               {analyticsData.proximosVencimentos.length > 0 && (
+                  <div className="bg-red-50 border border-red-100 p-8 rounded-[2.5rem] flex items-center justify-between shadow-sm animate-pulse">
+                     <div className="flex items-center gap-6">
+                        <div className="p-4 bg-red-600 text-white rounded-2xl shadow-lg">
+                           <AlertTriangle size={32} />
+                        </div>
+                        <div>
+                           <h4 className="text-lg font-black text-red-900 uppercase tracking-tight">Alertas de Contrato</h4>
+                           <p className="text-sm font-bold text-red-700">Há {analyticsData.proximosVencimentos.length} colaboradores com contrato a terminar nos próximos 30 dias.</p>
+                        </div>
+                     </div>
+                     <div className="flex -space-x-4">
+                        {analyticsData.proximosVencimentos.slice(0, 5).map(v => (
+                           <div key={v.id} title={`${v.nome} - ${v.vencimento}`} className="w-12 h-12 rounded-full border-4 border-white bg-zinc-200 flex items-center justify-center font-black text-[10px] text-zinc-600 shadow-md">
+                              {v.nome.substring(0, 2).toUpperCase()}
+                           </div>
+                        ))}
+                        {analyticsData.proximosVencimentos.length > 5 && (
+                           <div className="w-12 h-12 rounded-full border-4 border-white bg-zinc-900 text-white flex items-center justify-center font-black text-[10px] shadow-md">
+                              +{analyticsData.proximosVencimentos.length - 5}
+                           </div>
+                        )}
+                     </div>
+                  </div>
+               )}
+
                {/* KPI Cards */}
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
@@ -701,7 +815,7 @@ const HRPage: React.FC = () => {
                   <div className="flex-1 bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100 w-full flex items-center">
                      <Search className="ml-6 text-zinc-300" /><input placeholder="Pesquisar..." className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   </div>
-                  <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>
+                  {isHRAdmin && <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>}
                </div>
                <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
                   <table className="w-full text-left">
@@ -716,11 +830,11 @@ const HRPage: React.FC = () => {
                               <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
                               <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
                               <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
-                              <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
+                              <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
                               <td className="px-8 py-5 text-right flex justify-end gap-2">
                                  <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histórico Completo"><ClipboardList size={18} /></button>
-                                 <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>
-                                 <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>
+                                 {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
+                                 {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
                               </td>
                            </tr>
                         ))}
@@ -777,13 +891,14 @@ const HRPage: React.FC = () => {
                            <th className="px-6 py-4">Salário Base</th>
                            <th className="px-6 py-4">H. Extras (Horas)</th>
                            <th className="px-6 py-4">Faltas (Dias)</th>
+                           <th className="px-6 py-4">Subsídios (Kz)</th>
                            <th className="px-6 py-4">Bónus/Prémios (Kz)</th>
                            <th className="px-6 py-4">Adiantamento (Kz)</th>
                            <th className="px-6 py-4 text-right">Líquido Est.</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-zinc-50 text-xs">
-                        {funcionarios.filter(f => f.status === 'Ativo').map(f => {
+                        {funcionarios.filter(f => f.status === 'ativo').map(f => {
                            const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
                            const preview = calculatePayrollForEmployee(f);
 
@@ -804,10 +919,20 @@ const HRPage: React.FC = () => {
                                     />
                                  </td>
                                  <td className="px-6 py-4">
-                                    <input type="number" min="0" className="w-24 bg-zinc-100 border-none rounded p-1 text-right font-bold text-green-600"
-                                       value={inputs.bonus}
-                                       onChange={e => updatePayrollInput(f.id, 'bonus', Number(e.target.value))}
-                                    />
+                                    <div className="text-[10px] font-bold text-zinc-500">
+                                       Alim: {formatAOA(f.subsidio_alimentacao)}<br />
+                                       Trans: {formatAOA(f.subsidio_transporte)}
+                                    </div>
+                                 </td>
+                                 <td className="px-6 py-4">
+                                    <div className="flex flex-col gap-1">
+                                       <div className="text-[9px] text-zinc-400 uppercase font-black">Variável / Fixo</div>
+                                       <input type="number" min="0" className="w-24 bg-zinc-100 border-none rounded p-1 text-right font-bold text-green-600"
+                                          value={inputs.bonus}
+                                          onChange={e => updatePayrollInput(f.id, 'bonus', Number(e.target.value))}
+                                       />
+                                       <div className="text-[10px] font-bold text-sky-600">Base: {formatAOA(f.outros_bonus)}</div>
+                                    </div>
                                  </td>
                                  <td className="px-6 py-4">
                                     <input type="number" min="0" className="w-24 bg-zinc-100 border-none rounded p-1 text-right font-bold text-orange-600"
@@ -855,7 +980,7 @@ const HRPage: React.FC = () => {
                   <div className="bg-white/5 px-6 py-4 rounded-3xl border border-white/10 text-center"><p className="text-[10px] font-black text-zinc-500 uppercase">Hoje</p><p className="text-xl font-black">{new Date().toLocaleDateString('pt-PT')}</p></div>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {funcionarios.filter(f => f.status === 'Ativo').map(f => {
+                  {funcionarios.filter(f => f.status === 'ativo').map(f => {
                      const ponto = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
                      const isLate = ponto?.status === 'Atraso';
 
@@ -1066,12 +1191,13 @@ const HRPage: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                            <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Estágio', label: 'Estágio Remunerado' }]} />
                            <Input name="admissao" label="Data de Início" type="date" defaultValue={editingItem?.data_admissao} required className="bg-zinc-800 border-zinc-700 text-white" />
-                           <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Ativo', label: 'Activo' }, { value: 'Férias', label: 'Férias' }]} />
+                           <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status || 'ativo'} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'ativo', label: 'Activo' }, { value: 'ferias', label: 'Férias' }, { value: 'inativo', label: 'Inactivo' }, { value: 'rescindido', label: 'Rescindido' }]} />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 border-t border-white/10">
-                           <Input name="salario_base" label="Vencimento Base (AOA)" type="number" defaultValue={editingItem?.salario_base} className="bg-zinc-800 border-zinc-700 text-white font-black text-lg" required />
-                           <Input name="sub_alim" label="Sub. Alimentação" type="number" defaultValue={editingItem?.subsidio_alimentacao} className="bg-zinc-800 border-zinc-700 text-white" />
-                           <Input name="sub_trans" label="Sub. Transporte" type="number" defaultValue={editingItem?.subsidio_transporte} className="bg-zinc-800 border-zinc-700 text-white" />
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4 border-t border-white/10">
+                           <Input name="salario_base" label="Base (AOA)" type="number" defaultValue={editingItem?.salario_base} className="bg-zinc-800 border-zinc-700 text-white font-black" required />
+                           <Input name="sub_alim" label="Sub. Alim." type="number" defaultValue={editingItem?.subsidio_alimentacao} className="bg-zinc-800 border-zinc-700 text-white" />
+                           <Input name="sub_trans" label="Sub. Trans." type="number" defaultValue={editingItem?.subsidio_transporte} className="bg-zinc-800 border-zinc-700 text-white" />
+                           <Input name="outros_bonus" label="Outros Bónus" type="number" defaultValue={editingItem?.outros_bonus} className="bg-zinc-800 border-zinc-700 text-white border-dashed border-2" />
                         </div>
                      </div>
 
@@ -1101,6 +1227,240 @@ const HRPage: React.FC = () => {
             </div>
          )}
 
+         {/* MODAL RECIBO PROFISSIONAL (ESTILO CANVA) */}
+         {viewingRecibo && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10">
+               <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-full min-h-[1120px] flex flex-col overflow-hidden">
+
+                  {/* DESIGN GEOMÉTRICO SUPERIOR (TEMPLATE) */}
+                  <div className="relative h-48 w-full print:h-48 overflow-hidden bg-white">
+                     {/* Blue Polygon */}
+                     <div
+                        className="absolute top-0 right-0 w-[65%] h-full bg-sky-600 origin-top-right print:bg-sky-600"
+                        style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}
+                     ></div>
+                     {/* Black Polygon */}
+                     <div
+                        className="absolute top-0 right-0 w-[55%] h-[85%] bg-zinc-900 origin-top-right print:bg-zinc-900"
+                        style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)' }}
+                     ></div>
+
+                     <div className="absolute top-0 left-16 p-8 z-10">
+                        <div className="flex items-center gap-4">
+                           <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center p-2">
+                              <Logo />
+                           </div>
+                           <div>
+                              <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Amazing</h1>
+                              <p className="text-sky-600 font-bold text-xs uppercase tracking-widest mt-1">Aqui o cliente é que faz a escolha</p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="absolute top-6 right-6 flex gap-3 print:hidden z-20">
+                     <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"><Printer size={20} /></button>
+                     <button onClick={() => setViewingRecibo(null)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all"><X size={24} /></button>
+                  </div>
+
+                  <div className="flex-1 px-16 py-8 print:px-12">
+                     {/* LINHA DE TÍTULO */}
+                     <div className="border-b-[4px] border-zinc-900 pb-8 mb-8 flex justify-between items-end">
+                        <div>
+                           <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Folha de Salário</h2>
+                           <p className="text-sm font-bold text-zinc-400 mt-1 uppercase">Período: {viewingRecibo.mes} {viewingRecibo.ano}</p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nº Documento</p>
+                           <p className="text-xl font-black text-zinc-900 tabular-nums">#{viewingRecibo.id.split('-').pop()}</p>
+                        </div>
+                     </div>
+
+                     {/* DADOS DO FUNCIONÁRIO */}
+                     <div className="grid grid-cols-3 gap-8 mb-12 bg-zinc-50 p-8 rounded-3xl border border-zinc-100">
+                        <div>
+                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Colaborador</p>
+                           <p className="text-base font-black text-zinc-900">{viewingRecibo.nome || '---'}</p>
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Cargo / Função</p>
+                           <p className="text-base font-black text-zinc-900">{viewingRecibo.cargo}</p>
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nº Bilhete</p>
+                           <p className="text-base font-black text-zinc-900">{viewingRecibo.bilhete || '---'}</p>
+                        </div>
+                     </div>
+
+                     {/* TABELA DE RENDIMENTOS E DESCONTOS */}
+                     <div className="grid grid-cols-2 gap-12 mb-12">
+                        {/* COLUNA RENDIMENTOS */}
+                        <div>
+                           <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                              <div className="w-2 h-2 bg-sky-500 rounded-full"></div> Rendimentos (+)
+                           </h3>
+                           <div className="space-y-4">
+                              <div className="flex justify-between border-b border-zinc-50 pb-2">
+                                 <span className="text-sm font-medium text-zinc-500">Vencimento Base</span>
+                                 <span className="text-sm font-black text-zinc-900">{formatAOA(viewingRecibo.base)}</span>
+                              </div>
+                              {viewingRecibo.subsidio_alimentacao > 0 && (
+                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
+                                    <span className="text-sm font-medium text-zinc-500">Subsídio de Alimentação</span>
+                                    <span className="text-sm font-black text-zinc-900">{formatAOA(viewingRecibo.subsidio_alimentacao)}</span>
+                                 </div>
+                              )}
+                              {viewingRecibo.subsidio_transporte > 0 && (
+                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
+                                    <span className="text-sm font-medium text-zinc-500">Subsídio de Transporte</span>
+                                    <span className="text-sm font-black text-zinc-900">{formatAOA(viewingRecibo.subsidio_transporte)}</span>
+                                 </div>
+                              )}
+                              {(viewingRecibo.horas_extras_valor > 0 || (viewingRecibo.bonus_premios && viewingRecibo.bonus_premios > 0)) && (
+                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
+                                    <span className="text-sm font-medium text-zinc-500">Horas Extras / Bónus</span>
+                                    <span className="text-sm font-black text-zinc-900">{formatAOA((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0))}</span>
+                                 </div>
+                              )}
+                           </div>
+                        </div>
+
+                        {/* COLUNA DESCONTOS */}
+                        <div>
+                           <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                              <div className="w-2 h-2 bg-red-500 rounded-full"></div> Descontos (-)
+                           </h3>
+                           <div className="space-y-4">
+                              <div className="flex justify-between border-b border-zinc-50 pb-2">
+                                 <span className="text-sm font-medium text-zinc-500">Segurança Social (3%)</span>
+                                 <span className="text-sm font-black text-red-500">-{formatAOA(viewingRecibo.inss_trabalhador)}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-zinc-50 pb-2">
+                                 <span className="text-sm font-medium text-zinc-500">I.R.T.</span>
+                                 <span className="text-sm font-black text-red-500">-{formatAOA(viewingRecibo.irt)}</span>
+                              </div>
+                              {viewingRecibo.adiantamentos > 0 && (
+                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
+                                    <span className="text-sm font-medium text-zinc-500">Adiantamentos</span>
+                                    <span className="text-sm font-black text-red-500">-{formatAOA(viewingRecibo.adiantamentos)}</span>
+                                 </div>
+                              )}
+                              {viewingRecibo.faltas_desconto > 0 && (
+                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
+                                    <span className="text-sm font-medium text-zinc-500">Faltas / Atrasos</span>
+                                    <span className="text-sm font-black text-red-500">-{formatAOA(viewingRecibo.faltas_desconto)}</span>
+                                 </div>
+                              )}
+                           </div>
+                        </div>
+                     </div>
+
+                     {/* RESUMO TOTAL */}
+                     <div className="mt-12 bg-zinc-900 text-white rounded-[2.5rem] p-12 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"></div>
+                        <div className="flex justify-between items-center relative z-10">
+                           <div className="space-y-1">
+                              <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.4em]">Total Bruto</p>
+                              <p className="text-2xl font-bold opacity-30">{formatAOA(viewingRecibo.bruto || 0)}</p>
+                           </div>
+                           <div className="text-right">
+                              <p className="text-[12px] font-black text-white/50 uppercase tracking-[0.5em] mb-2">Líquido a Receber</p>
+                              <p className="text-6xl font-black">{formatAOA(viewingRecibo.liquido)}</p>
+                           </div>
+                        </div>
+                     </div>
+
+                     {/* ASSINATURAS E VALIDAÇÃO */}
+                     <div className="mt-20 grid grid-cols-3 gap-12 items-end">
+                        <div className="text-center">
+                           <div className="h-16 flex items-center justify-center opacity-40 italic font-serif">Amazing Corporation</div>
+                           <div className="border-t border-zinc-200 mt-4 pt-2">
+                              <p className="text-[9px] font-black uppercase text-zinc-400">Entidade Empregadora</p>
+                           </div>
+                        </div>
+                        <div className="flex flex-col items-center">
+                           <div className="p-3 border-2 border-zinc-50 rounded-2xl mb-4 bg-white shadow-sm">
+                              <QrCode size={48} className="text-zinc-900" />
+                           </div>
+                           <p className="text-[8px] font-bold text-zinc-300 uppercase">Verificado Digitalmente</p>
+                        </div>
+                        <div className="text-center">
+                           <div className="h-16"></div>
+                           <div className="border-t border-zinc-200 mt-4 pt-2">
+                              <p className="text-[9px] font-black uppercase text-zinc-400">Assinatura do Colaborador</p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* DESIGN GEOMÉTRICO INFERIOR (TEMPLATE) */}
+                  <div className="relative h-32 w-full mt-auto mb-[-1px] overflow-hidden bg-white">
+                     {/* Light Blue Polygon */}
+                     <div
+                        className="absolute bottom-0 left-0 w-[60%] h-full bg-sky-600 origin-bottom-left print:bg-sky-600"
+                        style={{ clipPath: 'polygon(0 0, 85% 100%, 0 100%)' }}
+                     ></div>
+                     {/* Black Polygon */}
+                     <div
+                        className="absolute bottom-0 left-0 w-[50%] h-[75%] bg-zinc-900 origin-bottom-left print:bg-zinc-900"
+                        style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)' }}
+                     ></div>
+
+                     <div className="absolute bottom-8 left-12 z-10 flex items-center gap-6">
+                        <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em]">Amazing ERP • Sistema Inteligente</p>
+                        <div className="h-4 w-[1px] bg-white/10"></div>
+                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Pág. 01 / 01</p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
+
+         {/* MODAL PASSE PVC (NOVO) */}
+         {printingPass && (
+            <div className="fixed inset-0 z-[250] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                     <h2 className="text-xl font-black text-zinc-900 uppercase">Pré-visualização do Passe</h2>
+                     <button onClick={() => setPrintingPass(null)} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                  </div>
+
+                  <div className="p-10 flex flex-col items-center">
+                     {/* Cartão PVC - Frente */}
+                     <div id="pvc-card" className="w-[320px] h-[480px] bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden relative flex flex-col items-center text-white p-8">
+                        {/* Design superior */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500 rounded-full -translate-y-32 translate-x-32 opacity-20"></div>
+                        <div className="absolute top-0 left-0 w-48 h-48 bg-sky-600 rounded-full -translate-y-24 -translate-x-24 opacity-20"></div>
+
+                        <div className="z-10 mt-4"><Logo /></div>
+                        <h1 className="z-10 text-xl font-black uppercase tracking-tighter mt-2">Amazing Corporation</h1>
+                        <div className="w-12 h-1 bg-yellow-500 rounded-full mt-2 mb-10"></div>
+
+                        <img src={printingPass.foto_url} className="w-32 h-32 rounded-[2rem] object-cover border-4 border-white/10 shadow-xl z-10" />
+
+                        <div className="mt-8 text-center z-10">
+                           <h2 className="text-xl font-black">{printingPass.nome}</h2>
+                           <p className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.3em] mt-2">{printingPass.funcao}</p>
+                           <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-1">ID: {printingPass.id.substring(0, 8).toUpperCase()}</p>
+                        </div>
+
+                        <div className="mt-auto mb-4 bg-white p-3 rounded-2xl shadow-xl z-10">
+                           <QrCode size={48} className="text-zinc-900" />
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 w-full h-2 bg-sky-600"></div>
+                     </div>
+
+                     <div className="flex gap-4 w-full mt-10">
+                        <button onClick={() => window.print()} className="flex-1 py-4 bg-zinc-900 text-white rounded-2xl font-black text-[11px] uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-2">
+                           <Printer size={18} /> Imprimir Pass
+                        </button>
+                        <button onClick={() => setPrintingPass(null)} className="flex-1 py-4 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-[11px] uppercase">Fechar</button>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
       </div>
    );
 };

@@ -55,6 +55,7 @@ const MaintenancePage: React.FC = () => {
 
     } catch (error) {
       console.error('Error fetching maintenance data:', error);
+      alert('Erro ao carregar dados de manutenção. Verifique a sua ligação.');
     } finally {
       setIsLoading(false);
     }
@@ -269,6 +270,15 @@ const MaintenancePage: React.FC = () => {
       default: return 'bg-yellow-100 text-yellow-700 border-yellow-200';
     }
   };
+
+  if (isLoading && records.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Wrench className="w-12 h-12 text-yellow-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando Oficina...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -502,9 +512,15 @@ const MaintenancePage: React.FC = () => {
                 <td className="px-10 py-6 text-right flex justify-end gap-2">
                   <button onClick={() => handlePrint(rec)} className="p-3 text-zinc-300 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all" title="Imprimir Ordem de Serviço"><Printer size={18} /></button>
                   <button onClick={() => handleOpenModal(rec)} className="p-3 text-zinc-300 hover:text-yellow-600 hover:bg-yellow-50 rounded-xl transition-all" title="Editar Registo"><Edit size={18} /></button>
-                  <button onClick={() => {
+                  <button onClick={async () => {
                     if (confirm(`Excluir manutenção de ${rec.matricula}?`)) {
-                      supabase.from('manutencao').delete().eq('id', rec.id).then(() => fetchMaintenanceData());
+                      const { error } = await supabase.from('manutencao').delete().eq('id', rec.id);
+                      if (error) {
+                        alert('Erro ao excluir manutenção');
+                      } else {
+                        fetchMaintenanceData();
+                        AmazingStorage.logAction('Eliminação', 'Manutenção', `Ordem ${rec.id} removida.`);
+                      }
                     }
                   }} className="p-3 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                 </td>

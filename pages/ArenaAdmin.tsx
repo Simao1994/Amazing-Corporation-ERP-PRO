@@ -203,7 +203,29 @@ const ArenaAdmin: React.FC = () => {
       }
    };
 
+   const handleDeleteTournament = async (id: string, titulo: string) => {
+      if (confirm(`Eliminar o torneio "${titulo}" e todos os registos associados?`)) {
+         try {
+            const { error } = await supabase.from('arena_tournaments').delete().eq('id', id);
+            if (error) throw error;
+            fetchData();
+         } catch (error) {
+            console.error('Error deleting tournament:', error);
+            alert('Erro ao eliminar torneio.');
+         }
+      }
+   };
+
    const COLORS = ['#6366f1', '#eab308', '#22c55e', '#ef4444', '#a855f7'];
+
+   if (loading) {
+      return (
+         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+            <RefreshCw className="w-12 h-12 text-indigo-600 animate-spin" />
+            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+         </div>
+      );
+   }
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-24">
@@ -433,9 +455,9 @@ const ArenaAdmin: React.FC = () => {
                            <tr key={r.id} className={`hover:bg-zinc-50/50 transition-all group ${r.rank === 1 ? 'bg-yellow-50/30' : ''}`}>
                               <td className="px-10 py-5">
                                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black shadow-lg transform transition-transform group-hover:scale-110 ${r.rank === 1 ? 'bg-yellow-500 text-zinc-900 ring-4 ring-yellow-200' :
-                                       r.rank === 2 ? 'bg-slate-300 text-zinc-700' :
-                                          r.rank === 3 ? 'bg-orange-400 text-white' :
-                                             'bg-zinc-100 text-zinc-400'
+                                    r.rank === 2 ? 'bg-slate-300 text-zinc-700' :
+                                       r.rank === 3 ? 'bg-orange-400 text-white' :
+                                          'bg-zinc-100 text-zinc-400'
                                     }`}>
                                     {r.rank <= 3 ? <Medal size={20} /> : `#${r.rank}`}
                                  </div>
@@ -489,7 +511,7 @@ const ArenaAdmin: React.FC = () => {
                               <td className="px-10 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${t.status === 'Inscrições' ? 'bg-indigo-100 text-indigo-700' : 'bg-zinc-100 text-zinc-500'}`}>{t.status}</span></td>
                               <td className="px-10 py-5 text-right flex justify-end gap-2">
                                  <button onClick={() => { setEditingTournament(t); setShowTournamentModal(true); }} className="p-3 text-zinc-300 hover:text-indigo-600 transition-colors"><Edit size={18} /></button>
-                                 <button onClick={() => { if (confirm('Eliminar torneio?')) setTournaments(tournaments.filter(x => x.id !== t.id)); }} className="p-3 text-zinc-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                 <button onClick={() => handleDeleteTournament(t.id, t.titulo)} className="p-3 text-zinc-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                               </td>
                            </tr>
                         ))}

@@ -125,6 +125,15 @@ const FeedPage: React.FC = () => {
   };
 
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-purple-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
       {/* Sidebar Esquerda - Perfil Rápido */}
@@ -226,12 +235,7 @@ const FeedPage: React.FC = () => {
 
         {/* Lista de Posts */}
         <div className="space-y-6">
-          {loading ? (
-            <div className="py-20 flex flex-col items-center bg-white/50 rounded-[2.5rem] border border-sky-100">
-              <RefreshCw size={40} className="text-purple-600 animate-spin mb-4" />
-              <p className="text-zinc-400 font-black uppercase tracking-widest text-[10px]">Actualizando Feed...</p>
-            </div>
-          ) : posts.map((post) => (
+          {posts.map((post) => (
             <div key={post.id} className="bg-white rounded-[2.5rem] p-8 border border-sky-100 shadow-sm hover:shadow-xl hover:shadow-sky-500/5 transition-all duration-500">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">

@@ -15,3 +15,21 @@ export async function getUserProfile(userId: string) {
 
     return { data, error };
 }
+
+export async function uploadBlogMedia(file: File) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `uploads/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('blog-media')
+        .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+        .from('blog-media')
+        .getPublicUrl(filePath);
+
+    return data.publicUrl;
+}

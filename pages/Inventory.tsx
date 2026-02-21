@@ -35,8 +35,9 @@ const InventoryPage: React.FC = () => {
     try {
       const { data: invData, error: invError } = await supabase.from('inventario').select('*').order('nome');
       if (invError) throw invError;
+      let finalItems: InventarioItem[] = [];
       if (invData) {
-        setItems(invData.map((i: any) => ({
+        finalItems = invData.map((i: any) => ({
           id: i.id,
           nome: i.nome,
           descricao: i.descricao,
@@ -45,26 +46,31 @@ const InventoryPage: React.FC = () => {
           qtd_minima: Number(i.quantidade_minima),
           preco: Number(i.preco_unitario),
           total: Number(i.quantidade_atual) * Number(i.preco_unitario)
-        })));
+        }));
+        setItems(finalItems);
       }
 
       const { data: movData, error: movError } = await supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false });
       if (movError) throw movError;
       if (movData) {
-        setMovimentacoes(movData.map((m: any) => ({
-          id: m.id,
-          item_id: m.produto_id,
-          item_nome: items.find(i => i.id === m.produto_id)?.nome || 'Item Desconhecido',
-          tipo: m.tipo as any,
-          quantidade: Number(m.quantidade),
-          data: m.created_at,
-          entidade: m.referencia,
-          observacao: m.motivo,
-          usuario: 'Admin'
-        })));
+        setMovimentacoes(movData.map((m: any) => {
+          const item = finalItems.find(i => i.id === m.produto_id);
+          return {
+            id: m.id,
+            item_id: m.produto_id,
+            item_nome: item?.nome || 'Item Desconhecido',
+            tipo: m.tipo as any,
+            quantidade: Number(m.quantidade),
+            data: m.created_at,
+            entidade: m.referencia,
+            observacao: m.motivo,
+            usuario: 'Admin'
+          };
+        }));
       }
     } catch (error) {
       console.error('Error fetching inventory:', error);
+      alert('Erro ao carregar inventário. Verifique sua conexão.');
     } finally {
       setLoading(false);
     }
@@ -200,6 +206,15 @@ const InventoryPage: React.FC = () => {
 
   const totalValue = useMemo(() => items.reduce((acc, curr) => acc + curr.total, 0), [items]);
   const lowStockCount = useMemo(() => items.filter(i => i.qtd <= i.qtd_minima).length, [items]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">

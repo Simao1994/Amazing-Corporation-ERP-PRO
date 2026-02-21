@@ -112,27 +112,43 @@ const AgroPage: React.FC = () => {
 
    // Dados para Evolução Produtiva (Gráfico de Linha)
    const evolutionData = useMemo(() => {
-      // Mock de dados mensais se não houver dados reais suficientes
-      const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
-      return months.map(m => ({
-         name: m,
-         real: Math.floor(Math.random() * 5000) + 2000, // Simulação
-         meta: 4000
-      }));
-   }, []);
+      const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const currentMonth = new Date().getMonth();
+
+      return monthsShort.map((m, idx) => {
+         const productionInMonth = colheitas
+            .filter(c => new Date(c.data).getMonth() === idx)
+            .reduce((acc, c) => acc + (c.qtd_kg || 0), 0);
+
+         return {
+            name: m,
+            real: productionInMonth || (idx <= currentMonth ? Math.floor(Math.random() * 2000) + 1000 : 0),
+            meta: 4000
+         };
+      }).filter((_, idx) => idx <= currentMonth || idx < 6);
+   }, [colheitas]);
 
    // Dados para Investimento vs Retorno (Gráfico de Barras)
    const financialComparisonData = useMemo(() => {
       const cultures = ['Milho', 'Feijão', 'Batata', 'Hortícolas'];
-      return cultures.map(c => ({
-         name: c,
-         investido: financiamentos.filter(f => {
+      return cultures.map(c => {
+         const investido = financiamentos.filter(f => {
             const agri = agricultores.find(a => a.id === f.agricultor_id);
+            return (f.status === 'Aprovado' || f.status === 'Liquidado') && agri?.cultura_principal === c;
+         }).reduce((acc, curr) => acc + (curr.valor_solicitado || 0), 0);
+
+         const colhido = colheitas.filter(col => {
+            const agri = agricultores.find(a => a.id === col.agricultor_id);
             return agri?.cultura_principal === c;
-         }).reduce((acc, curr) => acc + curr.valor_solicitado, 0) || Math.random() * 1000000,
-         retorno: Math.random() * 2000000 // Simulação de retorno
-      }));
-   }, [financiamentos, agricultores]);
+         }).reduce((acc, col) => acc + (col.qtd_kg || 0), 0);
+
+         return {
+            name: c,
+            investido: investido || Math.random() * 100000,
+            retorno: (colhido * 500) || Math.random() * 200000
+         };
+      });
+   }, [financiamentos, agricultores, colheitas]);
 
    // Handlers
    const handleAddCultivo = () => {
@@ -160,7 +176,7 @@ const AgroPage: React.FC = () => {
          cultura_principal: fd.get('cultura') as string,
          cooperativa: fd.get('cooperativa') as string,
          foto_url: photoPreview || `https://ui-avatars.com/api/?name=${fd.get('nome')}&background=166534&color=fff`,
-         status: (fd.get('status') as any) || 'Ativo',
+         status: (fd.get('status') as any) || 'ativo',
       };
 
       try {
@@ -550,7 +566,7 @@ const AgroPage: React.FC = () => {
                               <img src={ag.foto_url} className="w-full h-full object-cover" />
                            </div>
                            <div className="absolute top-4 right-4">
-                              <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-white/50 backdrop-blur-md ${ag.status === 'Ativo' ? 'text-green-700' : 'text-yellow-700'}`}>
+                              <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-white/50 backdrop-blur-md ${ag.status.toLowerCase() === 'ativo' ? 'text-green-700' : 'text-yellow-700'}`}>
                                  {ag.status}
                               </span>
                            </div>

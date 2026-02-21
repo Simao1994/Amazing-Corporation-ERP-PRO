@@ -329,6 +329,15 @@ const RealEstatePage: React.FC = () => {
 
    const COLORS_PIE = ['#ca8a04', '#22c55e', '#3b82f6', '#ef4444'];
 
+   if (loading) {
+      return (
+         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+            <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+         </div>
+      );
+   }
+
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-24">
          {/* Header */}
@@ -357,7 +366,7 @@ const RealEstatePage: React.FC = () => {
                   <button
                      key={tab.id}
                      onClick={() => setActiveTab(tab.id as any)}
-                     className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'}`}
+                     className={`px - 5 py - 2.5 rounded - xl text - [10px] font - black uppercase tracking - widest flex items - center gap - 2 transition - all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'} `}
                   >
                      {tab.icon} {tab.label}
                   </button>
@@ -380,7 +389,7 @@ const RealEstatePage: React.FC = () => {
                      <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Taxa de Ocupação</p>
                      <p className="text-4xl font-black text-zinc-900">{stats.taxaOcupacao.toFixed(1)}%</p>
                      <div className="w-full bg-zinc-100 h-1.5 rounded-full mt-4 overflow-hidden">
-                        <div className="h-full bg-yellow-500" style={{ width: `${stats.taxaOcupacao}%` }}></div>
+                        <div className="h-full bg-yellow-500" style={{ width: `${stats.taxaOcupacao}% ` }}></div>
                      </div>
                   </div>
                   <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
@@ -424,7 +433,7 @@ const RealEstatePage: React.FC = () => {
                         <PieChart>
                            <Pie data={chartDataTipos} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
                               {chartDataTipos.map((entry, index) => (
-                                 <Cell key={`cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} stroke="none" />
+                                 <Cell key={`cell - ${index} `} fill={COLORS_PIE[index % COLORS_PIE.length]} stroke="none" />
                               ))}
                            </Pie>
                            <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
@@ -509,7 +518,7 @@ const RealEstatePage: React.FC = () => {
                            />
                            <Bar dataKey="ROI" fill="#a855f7" radius={[8, 8, 0, 0]} barSize={40}>
                               {comparativeData.roiData.map((entry, index) => (
-                                 <Cell key={`cell-${index}`} fill={entry.ROI > 8 ? '#22c55e' : entry.ROI > 5 ? '#eab308' : '#ef4444'} />
+                                 <Cell key={`cell - ${index} `} fill={entry.ROI > 8 ? '#22c55e' : entry.ROI > 5 ? '#eab308' : '#ef4444'} />
                               ))}
                            </Bar>
                         </BarChart>
@@ -534,7 +543,7 @@ const RealEstatePage: React.FC = () => {
                               paddingAngle={2}
                            >
                               {comparativeData.regionalData.map((entry, index) => (
-                                 <Cell key={`cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} stroke="none" />
+                                 <Cell key={`cell - ${index} `} fill={COLORS_PIE[index % COLORS_PIE.length]} stroke="none" />
                               ))}
                            </Pie>
                            <Tooltip
@@ -615,9 +624,9 @@ const RealEstatePage: React.FC = () => {
                         <div className="h-64 relative">
                            <img src={imovel.foto_principal} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={imovel.titulo} />
                            <div className="absolute top-4 left-4">
-                              <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg ${imovel.status === 'Disponível' ? 'bg-green-500 text-white' :
+                              <span className={`px - 3 py - 1.5 rounded - lg text - [9px] font - black uppercase tracking - widest shadow - lg ${imovel.status === 'Disponível' ? 'bg-green-500 text-white' :
                                  imovel.status === 'Ocupado' ? 'bg-zinc-900 text-white' : 'bg-yellow-500 text-zinc-900'
-                                 }`}>
+                                 } `}>
                                  {imovel.status}
                               </span>
                            </div>
@@ -704,7 +713,7 @@ const RealEstatePage: React.FC = () => {
                                     </div>
                                  </td>
                                  <td className="px-8 py-5">
-                                    <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${c.tipo === 'Aluguer Diário' ? 'bg-purple-100 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
+                                    <span className={`px - 2 py - 1 rounded - lg text - [9px] font - black uppercase tracking - widest ${c.tipo === 'Aluguer Diário' ? 'bg-purple-100 text-purple-700' : 'bg-blue-50 text-blue-700'} `}>
                                        {c.tipo}
                                     </span>
                                     <p className="text-[10px] text-zinc-400 font-bold mt-1 uppercase">{new Date(c.data_inicio).toLocaleDateString()} - {new Date(c.data_fim).toLocaleDateString()}</p>
@@ -713,9 +722,9 @@ const RealEstatePage: React.FC = () => {
                                     {formatAOA(c.valor_mensal)} <span className="text-[9px] text-zinc-400 font-bold">{c.tipo === 'Arrendamento' ? '/mês' : '/dia'}</span>
                                  </td>
                                  <td className="px-8 py-5 text-center">
-                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${c.status === 'Activo' ? 'bg-green-100 text-green-700' :
+                                    <span className={`px - 3 py - 1 rounded - full text - [9px] font - black uppercase tracking - widest ${c.status === 'Activo' ? 'bg-green-100 text-green-700' :
                                        c.status === 'Inadimplente' ? 'bg-red-100 text-red-700' : 'bg-zinc-100 text-zinc-500'
-                                       }`}>{c.status}</span>
+                                       } `}>{c.status}</span>
                                  </td>
                                  <td className="px-8 py-5 text-right">
                                     <button onClick={() => { setEditingContrato(c); setShowContratoModal(true); }} className="text-zinc-400 hover:text-yellow-600 font-bold text-xs uppercase underline">Editar</button>
@@ -776,10 +785,10 @@ const RealEstatePage: React.FC = () => {
                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{obra.descricao}</p>
                                     </div>
                                  </div>
-                                 <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${obra.status === 'Em Execução' ? 'bg-blue-100 text-blue-700' :
+                                 <span className={`px - 3 py - 1 rounded - lg text - [9px] font - black uppercase tracking - widest ${obra.status === 'Em Execução' ? 'bg-blue-100 text-blue-700' :
                                     obra.status === 'Concluída' ? 'bg-green-100 text-green-700' :
                                        'bg-yellow-100 text-yellow-700'
-                                    }`}>{obra.status}</span>
+                                    } `}>{obra.status}</span>
                               </div>
 
                               <div className="space-y-4 my-6">
@@ -789,7 +798,7 @@ const RealEstatePage: React.FC = () => {
                                        <span>{obra.progresso}%</span>
                                     </div>
                                     <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden">
-                                       <div className={`h-full ${obra.progresso === 100 ? 'bg-green-500' : 'bg-orange-500'}`} style={{ width: `${obra.progresso}%` }}></div>
+                                       <div className={`h - full ${obra.progresso === 100 ? 'bg-green-500' : 'bg-orange-500'} `} style={{ width: `${obra.progresso}% ` }}></div>
                                     </div>
                                  </div>
 
@@ -800,7 +809,7 @@ const RealEstatePage: React.FC = () => {
                                     </div>
                                     <div className="bg-zinc-50 p-3 rounded-xl">
                                        <p className="text-[9px] font-bold text-zinc-400 uppercase">Executado</p>
-                                       <p className={`text-sm font-black ${obra.custo_atual > obra.orcamento_previsto ? 'text-red-500' : 'text-green-600'}`}>{formatAOA(obra.custo_atual)}</p>
+                                       <p className={`text - sm font - black ${obra.custo_atual > obra.orcamento_previsto ? 'text-red-500' : 'text-green-600'} `}>{formatAOA(obra.custo_atual)}</p>
                                     </div>
                                  </div>
                               </div>

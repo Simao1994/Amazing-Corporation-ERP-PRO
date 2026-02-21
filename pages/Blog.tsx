@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Newspaper, Plus, Search, Edit, Trash2, Calendar, User, Tag, Eye, X, Send, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import { Newspaper, Plus, Search, Edit, Trash2, Calendar, User, Tag, Eye, X, Send, Image as ImageIcon, RefreshCw, Play, Lock } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { BlogPost } from '../types';
-import { supabase } from '../src/lib/supabase';
+import { supabase, uploadBlogMedia } from '../src/lib/supabase';
+import { Upload, FileVideo } from 'lucide-react';
 
 const BlogPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
@@ -14,6 +15,12 @@ const BlogPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   const [posts, setPosts] = useState<BlogPost[]>([]);
+
+  // File upload state
+  const [headerFile, setHeaderFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const headerInputRef = React.useRef<HTMLInputElement>(null);
+  const videoInputRef = React.useRef<HTMLInputElement>(null);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -34,7 +41,11 @@ const BlogPage: React.FC = () => {
         autor: p.autor_name,
         data: p.data_publicacao,
         imagem_url: p.imagem_url,
-        visualizacoes: p.visualizacoes
+        video_url: p.video_url,
+        galeria_urls: p.galeria_urls,
+        tipo: p.tipo || 'artigo',
+        is_publico: p.is_publico !== false,
+        visualizacoes: p.visualizacoes || 0
       }));
 
       setPosts(mapped as any);
@@ -60,17 +71,38 @@ const BlogPage: React.FC = () => {
     const formData = new FormData(e.currentTarget);
     const isEditing = !!editingItem;
 
-    const dataPayload = {
-      titulo: formData.get('titulo') as string,
-      categoria: formData.get('categoria') as any || 'Institucional',
-      conteudo: formData.get('conteudo') as string,
-      autor_name: formData.get('autor') as string,
-      data_publicacao: editingItem?.data || new Date().toISOString().split('T')[0],
-      imagem_url: formData.get('imagem_url') as string || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800',
-      updated_at: new Date().toISOString()
-    };
-
     try {
+      let finalImageUrl = formData.get('imagem_url') as string;
+      let finalVideoUrl = formData.get('video_url') as string;
+
+      // Upload Header Image if selected
+      if (headerFile) {
+        finalImageUrl = await uploadBlogMedia(headerFile);
+      }
+
+      // Upload Video if selected
+      if (videoFile) {
+        finalVideoUrl = await uploadBlogMedia(videoFile);
+      }
+
+      const tipo = formData.get('tipo') as any || 'artigo';
+      const galeriaString = formData.get('galeria_urls') as string;
+      const galeriaArray = galeriaString ? galeriaString.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+      const dataPayload = {
+        titulo: formData.get('titulo') as string,
+        categoria: formData.get('categoria') as any || 'Institucional',
+        conteudo: formData.get('conteudo') as string,
+        autor_name: formData.get('autor') as string,
+        data_publicacao: editingItem?.data || new Date().toISOString().split('T')[0],
+        imagem_url: finalImageUrl,
+        video_url: finalVideoUrl || null,
+        galeria_urls: galeriaArray,
+        tipo: tipo,
+        is_publico: formData.get('is_publico') === 'on',
+        updated_at: new Date().toISOString()
+      };
+
       if (isEditing) {
         const { error } = await supabase
           .from('blog_posts')
@@ -87,9 +119,11 @@ const BlogPage: React.FC = () => {
       await fetchPosts();
       setShowModal(false);
       setEditingItem(null);
+      setHeaderFile(null);
+      setVideoFile(null);
     } catch (err) {
       console.error('Erro ao guardar artigo:', err);
-      alert('Não foi possível publicar o artigo.');
+      alert('Não foi possível publicar o artigo. Verifique se o bucket "blog-media" existe no Supabase.');
     } finally {
       setSaving(false);
     }
@@ -110,6 +144,15 @@ const BlogPage: React.FC = () => {
     }
   };
 
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -141,51 +184,57 @@ const BlogPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {loading ? (
-          <div className="col-span-full py-20 flex flex-col items-center bg-white rounded-[3rem] border border-sky-100 italic font-bold">
-            <RefreshCw size={40} className="text-yellow-500 animate-spin mb-4" />
-            <p className="text-zinc-400 uppercase tracking-widest text-xs">Consultando Arquivos...</p>
-          </div>
-        ) : filtered.length > 0 ? filtered.map(post => (
-          <div key={post.id} className="bg-white rounded-[3rem] overflow-hidden border border-sky-100 shadow-sm hover:shadow-2xl transition-all group flex flex-col md:flex-row">
-            {/* ... rest of the card content ... */}
-            <div className="md:w-1/3 aspect-video md:aspect-auto overflow-hidden relative">
-              <img src={post.imagem_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={post.titulo} />
-              <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
-                  {post.categoria}
-                </span>
+        {filtered.length > 0 ? (
+          filtered.map(post => (
+            <div key={post.id} className="bg-white rounded-[3rem] overflow-hidden border border-sky-100 shadow-sm hover:shadow-2xl transition-all group flex flex-col md:flex-row">
+              <div className="md:w-1/3 aspect-video md:aspect-auto overflow-hidden relative">
+                <img src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={post.titulo} />
+                <div className="absolute top-4 left-4 flex gap-2">
+                  <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                    {post.categoria}
+                  </span>
+                  {!post.is_publico && (
+                    <span className="px-3 py-1 bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg flex items-center gap-1">
+                      <Lock size={10} /> Interno
+                    </span>
+                  )}
+                </div>
+                <div className="absolute bottom-4 right-4">
+                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-xl text-zinc-900">
+                    {post.tipo === 'video' ? <Play size={18} fill="currentColor" /> : post.tipo === 'galeria' ? <ImageIcon size={18} /> : <Newspaper size={18} />}
+                  </div>
+                </div>
+              </div>
+              <div className="md:w-2/3 p-8 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-black text-zinc-900 leading-tight group-hover:text-yellow-600 transition-colors uppercase tracking-tight">{post.titulo}</h3>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditingItem(post); setShowModal(true); }} className="p-2 text-zinc-300 hover:text-yellow-600 transition-colors"><Edit size={16} /></button>
+                      <button onClick={() => handleDelete(post.id, post.titulo)} className="p-2 text-zinc-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                  <p className="text-zinc-500 text-sm line-clamp-2 font-medium mb-6">
+                    {post.conteudo}
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-zinc-50 flex items-center justify-between text-zinc-400">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
+                      <User size={12} className="text-yellow-500" /> {post.autor}
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
+                      <Calendar size={12} className="text-yellow-500" /> {new Date(post.data).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
+                    <Eye size={12} className="text-yellow-500" /> {post.visualizacoes}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="md:w-2/3 p-8 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-black text-zinc-900 leading-tight group-hover:text-yellow-600 transition-colors">{post.titulo}</h3>
-                  <div className="flex gap-2">
-                    <button onClick={() => { setEditingItem(post); setShowModal(true); }} className="p-2 text-zinc-300 hover:text-yellow-600 transition-colors"><Edit size={16} /></button>
-                    <button onClick={() => handleDelete(post.id, post.titulo)} className="p-2 text-zinc-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                  </div>
-                </div>
-                <p className="text-zinc-500 text-sm line-clamp-2 font-medium mb-6">
-                  {post.conteudo}
-                </p>
-              </div>
-              <div className="pt-4 border-t border-zinc-50 flex items-center justify-between text-zinc-400">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
-                    <User size={12} className="text-yellow-500" /> {post.autor}
-                  </div>
-                  <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
-                    <Calendar size={12} className="text-yellow-500" /> {new Date(post.data).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
-                  <Eye size={12} className="text-yellow-500" /> {post.visualizacoes}
-                </div>
-              </div>
-            </div>
-          </div>
-        )) : (
+          ))
+        ) : (
           <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-sky-100">
             <Newspaper size={64} className="mx-auto text-sky-100 mb-4" />
             <p className="text-zinc-400 font-bold italic text-lg">Nenhum artigo encontrado no blog.</p>
@@ -201,20 +250,81 @@ const BlogPage: React.FC = () => {
                 <Send className="text-yellow-500" />
                 {editingItem ? 'Editar Conteúdo' : 'Redigir Novo Artigo'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingItem(null);
+                  setHeaderFile(null);
+                  setVideoFile(null);
+                }}
+                className="p-3 hover:bg-zinc-200 rounded-full transition-all"
+              >
+                <X size={24} />
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="p-10 space-y-6 overflow-y-auto max-h-[75vh]">
-              <Input name="titulo" label="Título do Artigo" defaultValue={editingItem?.titulo} required placeholder="Ex: A Nova Era da Logística em Angola" />
               <div className="grid grid-cols-2 gap-6">
-                <Select name="categoria" label="Categoria" defaultValue={editingItem?.categoria} options={[
+                <Select name="tipo" label="Tipo de Conteúdo" defaultValue={editingItem?.tipo || 'artigo'} options={[
+                  { value: 'artigo', label: 'Artigo / Notícia' },
+                  { value: 'video', label: 'Vídeo / Reportagem' },
+                  { value: 'galeria', label: 'Galeria de Fotos' },
+                  { value: 'momento', label: 'Momento Social' }
+                ]} />
+                <Select name="categoria" label="Categoria" defaultValue={editingItem?.categoria || 'Institucional'} options={[
                   { value: 'Logística', label: 'Logística & Transportes' },
                   { value: 'Agronegócio', label: 'Agronegócio' },
                   { value: 'Imobiliário', label: 'Imobiliário' },
-                  { value: 'Institucional', label: 'Institucional / RH' }
+                  { value: 'Institucional', label: 'Institucional / RH' },
+                  { value: 'Social', label: 'Responsabilidade Social' }
                 ]} />
-                <Input name="autor" label="Autor / Fonte" defaultValue={editingItem?.autor || 'Comunicação Amazing'} required />
               </div>
-              <Input name="imagem_url" label="URL da Imagem de Capa" defaultValue={editingItem?.imagem_url} placeholder="https://..." icon={<ImageIcon size={18} />} />
+
+              <Input name="titulo" label="Título do Artigo" defaultValue={editingItem?.titulo} required placeholder="Ex: A Nova Era da Logística em Angola" />
+
+              <div className="grid grid-cols-2 gap-6">
+                <Input name="autor" label="Autor / Fonte" defaultValue={editingItem?.autor || 'Comunicação Amazing'} required />
+                <div className="flex flex-col justify-end">
+                  <label className="flex items-center gap-3 cursor-pointer p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-zinc-100 transition-all">
+                    <input type="checkbox" name="is_publico" defaultChecked={editingItem ? editingItem.is_publico : true} className="w-5 h-5 accent-yellow-500" />
+                    <span className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Publicar no Site Principal</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* IMAGEM DE CAPA - HYBRID */}
+              <div className="space-y-3">
+                <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest">Imagem de Capa</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div
+                    onClick={() => headerInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${headerFile ? 'bg-yellow-50 border-yellow-500 text-yellow-700' : 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-yellow-500 hover:bg-yellow-50'}`}
+                  >
+                    <input type="file" ref={headerInputRef} onChange={(e) => setHeaderFile(e.target.files?.[0] || null)} className="hidden" accept="image/*" />
+                    <Upload size={20} />
+                    <span className="text-[10px] font-bold uppercase">{headerFile ? headerFile.name : 'Carregar do PC'}</span>
+                  </div>
+                  <Input name="imagem_url" label="Ou usar Link Externo" defaultValue={editingItem?.imagem_url} placeholder="https://..." icon={<ImageIcon size={18} />} />
+                </div>
+              </div>
+
+              {/* VÍDEO - HYBRID */}
+              <div className="space-y-3">
+                <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest">Vídeo / Reportagem</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div
+                    onClick={() => videoInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${videoFile ? 'bg-sky-50 border-sky-500 text-sky-700' : 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-sky-500 hover:bg-sky-50'}`}
+                  >
+                    <input type="file" ref={videoInputRef} onChange={(e) => setVideoFile(e.target.files?.[0] || null)} className="hidden" accept="video/*" />
+                    <FileVideo size={20} />
+                    <span className="text-[10px] font-bold uppercase">{videoFile ? videoFile.name : 'Carregar Vídeo'}</span>
+                  </div>
+                  <Input name="video_url" label="Ou Link do YouTube/Vimeo" defaultValue={editingItem?.video_url} placeholder="https://youtube.com/..." icon={<Play size={18} />} />
+                </div>
+              </div>
+
+              <Input name="galeria_urls" label="Galeria (Links separados por vírgula)" defaultValue={editingItem?.galeria_urls?.join(', ')} placeholder="Link1, Link2, Link3..." icon={<ImageIcon size={18} />} />
+
               <div className="space-y-1">
                 <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-1">Conteúdo do Artigo</label>
                 <textarea
@@ -232,7 +342,7 @@ const BlogPage: React.FC = () => {
                   className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-zinc-800 transition-all disabled:opacity-70"
                 >
                   {saving ? <RefreshCw size={18} className="animate-spin" /> : <Send size={18} />}
-                  {saving ? 'PUBLICANDO...' : (editingItem ? 'SALVAR ALTERAÇÕES' : 'PUBLICAR ARTIGO AGORA')}
+                  {saving ? 'PROCESSANDO UPLOAD...' : (editingItem ? 'SALVAR ALTERAÇÕES' : 'PUBLICAR ARTIGO AGORA')}
                 </button>
               </div>
             </form>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../src/lib/supabase';
-import { Wallet, FileText, Plus, Search, TrendingUp, PieChart, Download, X, Trash2, Edit, Save, Tag, Filter } from 'lucide-react';
+import { Wallet, FileText, Plus, Search, TrendingUp, PieChart, Download, X, Trash2, Edit, Save, Tag, Filter, RefreshCw } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -125,6 +125,15 @@ const FinancePage: React.FC = () => {
   const getCategoryColor = (catName: string) => {
     return CATEGORIAS_FINANCEIRAS.find(c => c.value === catName)?.color || 'bg-zinc-100 text-zinc-700';
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">

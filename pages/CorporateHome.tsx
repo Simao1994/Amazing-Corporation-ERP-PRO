@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { 
+import React, { useState, useEffect } from 'react';
+import {
   ArrowRight,
   User as UserIcon,
   Truck,
@@ -35,13 +35,190 @@ import {
   AlertTriangle,
   BarChart3,
   LogIn,
-  LayoutDashboard
+  LayoutDashboard,
+  Newspaper,
+  Eye,
+  Calendar,
+  User as UserMini
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { CorporateSettings, Solicitacao, User } from '../types';
+import { CorporateSettings, Solicitacao, User, BlogPost } from '../types';
+import { supabase } from '../src/lib/supabase';
+
+const PublicNewsGrid: React.FC = () => {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+
+  useEffect(() => {
+    const fetchPublicPosts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('is_publico', true)
+          .order('data_publicacao', { ascending: false })
+          .limit(6);
+
+        if (error) throw error;
+        setPosts(data as any);
+      } catch (err) {
+        console.error('Erro ao buscar notícias publicas:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPublicPosts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-[400px] bg-zinc-100 rounded-[3rem] animate-pulse"></div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {posts.map(post => (
+          <div
+            key={post.id}
+            className="group bg-white rounded-[3.5rem] overflow-hidden border border-zinc-100 shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer"
+            onClick={() => setSelectedPost(post)}
+          >
+            <div className="relative aspect-[4/3] overflow-hidden">
+              <img
+                src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                alt={post.titulo}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-8">
+                <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-zinc-900 shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  {post.tipo === 'video' ? <Play size={24} fill="currentColor" /> : <Eye size={24} />}
+                </div>
+              </div>
+              <div className="absolute top-6 left-6 flex gap-2">
+                <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                  {post.categoria}
+                </span>
+                {post.tipo !== 'artigo' && (
+                  <span className="px-3 py-1 bg-zinc-900/50 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                    {post.tipo}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="p-10 space-y-6">
+              <div className="flex items-center gap-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                <span className="flex items-center gap-1"><Calendar size={12} className="text-yellow-500" /> {new Date(post.data).toLocaleDateString()}</span>
+                <span className="w-1 h-1 bg-zinc-200 rounded-full"></span>
+                <span className="flex items-center gap-1"><UserMini size={12} className="text-yellow-500" /> {post.autor_name || post.autor}</span>
+              </div>
+
+              <h3 className="text-2xl font-black text-zinc-900 leading-tight group-hover:text-yellow-600 transition-colors line-clamp-2 uppercase tracking-tight">
+                {post.titulo}
+              </h3>
+
+              <p className="text-zinc-500 font-medium line-clamp-3 leading-relaxed">
+                {post.conteudo}
+              </p>
+
+              <div className="pt-4 flex items-center gap-2 text-yellow-600 font-black text-[10px] uppercase tracking-widest group-hover:gap-4 transition-all">
+                Ler Artigo Completo <ArrowRight size={16} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selectedPost && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-12 bg-zinc-950/95 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-5xl h-full max-h-[90vh] rounded-[4rem] shadow-3xl overflow-hidden relative flex flex-col animate-in zoom-in-95 duration-500">
+            <button
+              onClick={() => setSelectedPost(null)}
+              className="absolute top-8 right-8 p-4 bg-zinc-100 hover:bg-zinc-200 rounded-full transition-all text-zinc-500 z-10 hover:rotate-90"
+            >
+              <X size={24} />
+            </button>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {selectedPost.tipo === 'video' && selectedPost.video_url ? (
+                <div className="aspect-video w-full bg-black">
+                  <iframe
+                    src={selectedPost.video_url.replace('watch?v=', 'embed/')}
+                    className="w-full h-full"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              ) : (
+                <div className="h-[400px] w-full overflow-hidden">
+                  <img src={selectedPost.imagem_url} className="w-full h-full object-cover" alt={selectedPost.titulo} />
+                </div>
+              )}
+
+              <div className="p-12 md:p-20 space-y-8">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 text-[12px] font-black text-yellow-600 uppercase tracking-[0.4em]">
+                    <span>{selectedPost.categoria}</span>
+                    <span className="w-1.5 h-1.5 bg-zinc-200 rounded-full"></span>
+                    <span className="text-zinc-400">{new Date(selectedPost.data).toLocaleDateString()}</span>
+                  </div>
+                  <h2 className="text-4xl md:text-6xl font-black text-zinc-900 tracking-tighter uppercase leading-none">
+                    {selectedPost.titulo}
+                  </h2>
+                  <div className="flex items-center gap-3 pt-4">
+                    <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400">
+                      <UserMini size={20} />
+                    </div>
+                    <p className="text-sm font-black text-zinc-900 uppercase tracking-widest">{selectedPost.autor_name || selectedPost.autor}</p>
+                  </div>
+                </div>
+
+                <div className="prose prose-zinc max-w-none">
+                  <p className="text-xl text-zinc-600 leading-relaxed font-medium whitespace-pre-line">
+                    {selectedPost.conteudo}
+                  </p>
+                </div>
+
+                {/* Galeria se existir */}
+                {selectedPost.galeria_urls && selectedPost.galeria_urls.length > 0 && (
+                  <div className="pt-12 space-y-6">
+                    <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.5em]">Galeria do Momento</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedPost.galeria_urls.map((url, i) => (
+                        <div key={i} className="aspect-square rounded-[2rem] overflow-hidden border border-zinc-100 shadow-sm hover:shadow-xl transition-all">
+                          <img src={url} className="w-full h-full object-cover hover:scale-110 transition-all duration-700" alt="Gallery item" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-10 border-t border-zinc-100 bg-zinc-50 flex justify-between items-center shrink-0">
+              <Logo className="h-10" />
+              <button
+                onClick={() => setSelectedPost(null)}
+                className="px-10 py-4 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+              >
+                Fechar Notícia
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
 
 const SECTOR_HISTORIES = {
   express: {
@@ -175,6 +352,17 @@ const CorporateHome: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState<keyof typeof SECTOR_HISTORIES | null>(null);
   const [selectedLegalDoc, setSelectedLegalDoc] = useState<keyof typeof LEGAL_DOCS | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Initial loading simulation or actual check
+    const checkState = async () => {
+      // Small delay to ensure smooth transition
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setLoading(false);
+    };
+    checkState();
+  }, []);
 
   // Get current user to determine button state
   const currentUser = AmazingStorage.get<User | null>(STORAGE_KEYS.USER, null);
@@ -187,61 +375,85 @@ const CorporateHome: React.FC = () => {
     mensagem: ''
   });
 
-  const corpInfo = AmazingStorage.get<CorporateSettings>(STORAGE_KEYS.CORPORATE_INFO, {
-    ceo_nome: 'Euclides Cadastro Nvula',
-    ceo_mensagem: 'Liderando Angola rumo a uma nova era de logística eficiente e agronegócio sustentável.',
-    ceo_foto_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800',
-    fundacao_ano: '2018',
-    sede_principal: 'Benguela, Angola'
-  });
+  // State for CEO/Corporate Info
+  const [corpInfo, setCorpInfo] = useState<CorporateSettings>(() =>
+    AmazingStorage.get<CorporateSettings>(STORAGE_KEYS.CORPORATE_INFO, {
+      ceo_nome: 'Euclides Cadastro Nvula',
+      ceo_mensagem: 'Liderando Angola rumo a uma nova era de logística eficiente e agronegócio sustentável.',
+      ceo_foto_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800',
+      fundacao_ano: '2018',
+      sede_principal: 'Benguela, Angola'
+    })
+  );
+
+  useEffect(() => {
+    // If the data in storage changes (e.g. after sync), update state
+    const timer = setInterval(() => {
+      const latest = AmazingStorage.get<CorporateSettings>(STORAGE_KEYS.CORPORATE_INFO, corpInfo);
+      if (JSON.stringify(latest) !== JSON.stringify(corpInfo)) {
+        setCorpInfo(latest);
+      }
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [corpInfo]);
 
   const scrollIntoView = (id: string) => {
     const element = document.getElementById(id);
     if (element) element.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSubmitContact = (e: React.FormEvent) => {
+  const handleSubmitContact = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSending(true);
 
-    // Criar objecto da solicitação para o ERP
-    const novaSolicitacao: Solicitacao = {
-      id: `TKT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      nome: contactForm.nome,
-      email: contactForm.email,
-      assunto: contactForm.assunto,
-      mensagem: contactForm.mensagem,
-      status: 'pendente',
-      data: new Date().toISOString()
-    };
+    try {
+      const { error } = await supabase
+        .from('solicitacoes')
+        .insert([{
+          nome: contactForm.nome,
+          email: contactForm.email,
+          assunto: contactForm.assunto,
+          mensagem: contactForm.mensagem,
+          status: 'pendente'
+        }]);
 
-    // Simulação de delay de envio
-    setTimeout(() => {
-      // Guardar na lista de solicitações do ERP
-      const currentRequests = AmazingStorage.get<Solicitacao[]>(STORAGE_KEYS.SOLICITACOES, []);
-      AmazingStorage.save(STORAGE_KEYS.SOLICITACOES, [novaSolicitacao, ...currentRequests]);
-      
+      if (error) throw error;
+
       // Log de acção
       AmazingStorage.logAction('Contacto', 'Website', `Nova mensagem recebida de ${contactForm.nome}`);
 
-      setIsSending(false);
       setSuccessMsg('Mensagem enviada com sucesso! O nosso suporte técnico responderá em breve.');
       setContactForm({ nome: '', email: '', assunto: 'Contacto Geral', mensagem: '' });
-      
+
       setTimeout(() => setSuccessMsg(''), 6000);
-    }, 1500);
+    } catch (err) {
+      console.error('Erro ao enviar mensagem:', err);
+      alert('Ocorreu um erro ao enviar a mensagem. Por favor, tente novamente.');
+    } finally {
+      setIsSending(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-4">
+        <RefreshCw className="w-12 h-12 text-yellow-500 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">Iniciando Experiência Amazing...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white font-sans text-zinc-900 scroll-smooth selection:bg-yellow-500 selection:text-zinc-900 overflow-x-hidden">
       {/* NAVIGATION BAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-zinc-100 px-6 md:px-12 py-4 flex items-center justify-between shadow-sm">
-        <Logo className="h-10 cursor-pointer" onClick={() => scrollIntoView('inicio')} />
+        <Logo className="h-14 md:h-16 cursor-pointer" onClick={() => scrollIntoView('inicio')} />
         <div className="hidden lg:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">
           <button onClick={() => scrollIntoView('inicio')} className="hover:text-yellow-600 transition-colors">Início</button>
           <button onClick={() => scrollIntoView('sectores')} className="hover:text-yellow-600 transition-colors">Sectores</button>
+          <button onClick={() => scrollIntoView('noticias')} className="hover:text-yellow-600 transition-colors text-zinc-900">Notícias</button>
           <Link to="/arena" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition-all bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
-            <Gamepad2 size={16}/> Amazing Arena Gamer
+            <Gamepad2 size={16} /> Amazing Arena Gamer
           </Link>
           <button onClick={() => scrollIntoView('carreiras')} className="text-zinc-900 hover:text-yellow-600 transition-colors">Trabalhe Connosco</button>
           <button onClick={() => scrollIntoView('contactos')} className="hover:text-yellow-600 transition-colors">Contactos</button>
@@ -260,24 +472,30 @@ const CorporateHome: React.FC = () => {
       </nav>
 
       {/* HERO SECTION - 100% WIDTH & HEIGHT */}
-      <section id="inicio" className="relative h-screen w-full flex items-center pt-20 overflow-hidden">
+      <section id="inicio" className="relative h-screen w-full flex items-center pt-32 lg:pt-40 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070" className="w-full h-full object-cover" alt="Amazing Corporation Holding" />
+          <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070" className="w-full h-full object-cover scale-110 animate-slow-zoom" alt="Amazing Corporation Holding" />
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent"></div>
         </div>
-        <div className="relative z-10 w-full px-8 md:px-20 lg:px-32 flex flex-col items-start gap-8 animate-in fade-in slide-in-from-left-10 duration-1000">
-          <button 
-            onClick={() => scrollIntoView('sectores')}
-            className="inline-flex items-center gap-2 bg-yellow-500 text-zinc-900 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-yellow-400 transition-all active:scale-95 shadow-xl shadow-yellow-500/20"
-          >
-            <Zap size={14} /> Soluções Multissectoriais Angolanas
-          </button>
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white tracking-tighter leading-none">
-            Impulsionando <br/><span className="text-yellow-500">Angola</span> ao Futuro.
-          </h1>
-          <p className="text-zinc-300 text-xl md:text-2xl font-medium max-w-3xl leading-relaxed">
-            Do transporte logístico à inovação digital, a Amazing Corporation lidera o mercado com eficiência, ética e tecnologia através das suas 5 unidades estratégicas.
-          </p>
+        <div className="relative z-10 w-full px-8 md:px-20 lg:px-32 flex flex-col items-start gap-12 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+          <div className="flex flex-col items-start gap-6 max-w-5xl">
+            <button
+              onClick={() => scrollIntoView('sectores')}
+              className="inline-flex items-center gap-2 bg-yellow-500 text-zinc-900 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:bg-yellow-400 transition-all active:scale-95 shadow-2xl shadow-yellow-500/20"
+            >
+              <Zap size={14} /> Soluções Multissectoriais Angolanas
+            </button>
+            <div className="space-y-4">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-tighter leading-[0.9] drop-shadow-2xl">
+                Impulsionando <br /><span className="text-yellow-500">Angola</span> ao Futuro.
+              </h1>
+              <div className="h-1.5 w-32 bg-yellow-500 rounded-full"></div>
+            </div>
+            <p className="text-zinc-300 text-xl md:text-2xl font-medium max-w-3xl leading-relaxed mt-4 drop-shadow-lg">
+              Do transporte logístico à inovação digital, a Amazing Corporation lidera o mercado com eficiência, ética e tecnologia através das suas 5 unidades estratégicas.
+            </p>
+          </div>
+
           <div className="flex flex-col sm:flex-row items-center gap-6 pt-4">
             <button onClick={() => scrollIntoView('sectores')} className="w-full sm:w-auto px-12 py-6 bg-yellow-500 text-zinc-900 font-black rounded-2xl hover:bg-yellow-400 transition-all flex items-center justify-center gap-4 shadow-2xl text-xs uppercase tracking-widest group">
               Explorar Sectores <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
@@ -287,17 +505,23 @@ const CorporateHome: React.FC = () => {
             </Link>
           </div>
         </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 hidden md:flex flex-col items-center gap-4 text-white/40">
+          <span className="text-[10px] font-black uppercase tracking-[0.5em] rotate-180 [writing-mode:vertical-lr]">Scroll</span>
+          <div className="w-[1px] h-16 bg-gradient-to-b from-yellow-500 to-transparent"></div>
+        </div>
       </section>
 
       {/* SECTORES SECTION - EXPANSIVE GRID */}
       <section id="sectores" className="min-h-screen py-32 px-8 md:px-20 lg:px-32 bg-zinc-50 flex flex-col justify-center">
         <div className="w-full">
           <div className="text-center space-y-4 mb-24">
-             <span className="text-yellow-600 text-[18px] font-black uppercase tracking-[0.6em]">Pilar Estratégico</span>
-             <h2 className="text-5xl md:text-7xl font-black text-zinc-900 tracking-tighter uppercase leading-tight">Ecossistema de Soluções <span className="text-yellow-500">Amazing</span></h2>
-             <p className="text-zinc-500 max-w-5xl mx-auto font-medium text-lg md:text-xl leading-relaxed">
-                Exploramos o potencial máximo do mercado nacional, integrando logística de ponta, agronegócio sustentável, gestão imobiliária, consultoria contábil e entretenimento digital.
-             </p>
+            <span className="text-yellow-600 text-[18px] font-black uppercase tracking-[0.6em]">Pilar Estratégico</span>
+            <h2 className="text-5xl md:text-7xl font-black text-zinc-900 tracking-tighter uppercase leading-tight">Ecossistema de Soluções <span className="text-yellow-500">Amazing</span></h2>
+            <p className="text-zinc-500 max-w-5xl mx-auto font-medium text-lg md:text-xl leading-relaxed">
+              Exploramos o potencial máximo do mercado nacional, integrando logística de ponta, agronegócio sustentável, gestão imobiliária, consultoria contábil e entretenimento digital.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
@@ -377,32 +601,49 @@ const CorporateHome: React.FC = () => {
       {/* CEO MESSAGE - 100% WIDTH */}
       <section className="min-h-screen py-32 px-8 md:px-20 lg:px-32 bg-white flex items-center">
         <div className="w-full flex flex-col md:flex-row items-center gap-20">
-           <div className="md:w-1/3 relative">
-              <div className="absolute -inset-4 bg-yellow-500 rounded-[3rem] rotate-3"></div>
-              <img src={corpInfo.ceo_foto_url} className="relative z-10 w-full rounded-[3rem] shadow-2xl grayscale hover:grayscale-0 transition-all duration-700" alt="CEO" />
-           </div>
-           <div className="md:w-2/3 space-y-8">
-              <div className="p-10 md:p-20 bg-zinc-50 rounded-[4rem] relative shadow-inner">
-                 <Star className="absolute top-8 left-8 text-yellow-500 opacity-20" size={80} />
-                 <p className="text-2xl md:text-4xl font-medium text-zinc-700 italic leading-relaxed relative z-10">
-                    "{corpInfo.ceo_mensagem}"
-                 </p>
-                 <div className="mt-12 pt-12 border-t border-zinc-200">
-                    <p className="text-3xl font-black text-zinc-900">{corpInfo.ceo_nome}</p>
-                    <p className="text-[12px] font-black text-yellow-600 uppercase tracking-[0.4em] mt-2">Presidente & CEO, Amazing Corporation</p>
-                 </div>
+          <div className="md:w-1/3 relative">
+            <div className="absolute -inset-4 bg-yellow-500 rounded-[3rem] rotate-3"></div>
+            <img src={corpInfo.ceo_foto_url} className="relative z-10 w-full rounded-[3rem] shadow-2xl grayscale hover:grayscale-0 transition-all duration-700" alt="CEO" />
+          </div>
+          <div className="md:w-2/3 space-y-8">
+            <div className="p-10 md:p-20 bg-zinc-50 rounded-[4rem] relative shadow-inner">
+              <Star className="absolute top-8 left-8 text-yellow-500 opacity-20" size={80} />
+              <p className="text-2xl md:text-4xl font-medium text-zinc-700 italic leading-relaxed relative z-10">
+                "{corpInfo.ceo_mensagem}"
+              </p>
+              <div className="mt-12 pt-12 border-t border-zinc-200">
+                <p className="text-3xl font-black text-zinc-900">{corpInfo.ceo_nome}</p>
+                <p className="text-[12px] font-black text-yellow-600 uppercase tracking-[0.4em] mt-2">Presidente & CEO, Amazing Corporation</p>
               </div>
-           </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* BLOG / NEWS SECTION - PUBLIC FEED */}
+      <section id="noticias" className="min-h-screen py-32 px-8 md:px-20 lg:px-32 bg-zinc-50">
+        <div className="w-full">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-20">
+            <div className="space-y-4">
+              <span className="text-yellow-600 text-[14px] font-black uppercase tracking-[0.6em]">Actualidade Amazing</span>
+              <h2 className="text-5xl md:text-7xl font-black text-zinc-900 tracking-tighter uppercase leading-tight">Momentos & <br /><span className="text-yellow-500">Notícias Recentes</span></h2>
+            </div>
+            <p className="text-zinc-500 max-w-xl font-medium text-lg leading-relaxed mb-4">
+              Acompanhe o crescimento do nosso grupo, eventos corporativos e os momentos que marcam o nosso dia-a-dia em Angola.
+            </p>
+          </div>
+
+          <PublicNewsGrid />
         </div>
       </section>
 
       {/* CARREIRAS / RECRUTAMENTO SECTION - 100% WIDTH */}
       <section id="carreiras" className="min-h-[70vh] py-32 px-8 md:px-20 lg:px-32 bg-zinc-900 text-white relative overflow-hidden flex items-center">
         <div className="absolute top-0 right-0 p-20 opacity-5">
-           <Briefcase size={500} />
+          <Briefcase size={500} />
         </div>
         <div className="w-full text-center space-y-12 relative z-10">
-          <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter">Faça Parte da Nossa <br/><span className="text-yellow-500">História de Sucesso.</span></h2>
+          <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter">Faça Parte da Nossa <br /><span className="text-yellow-500">História de Sucesso.</span></h2>
           <p className="text-zinc-400 text-xl md:text-2xl max-w-5xl mx-auto leading-relaxed">
             Estamos sempre em busca de talentos excepcionais para as nossas divisões de Logística, Agro e Tecnologia. Sua carreira começa aqui.
           </p>
@@ -419,86 +660,86 @@ const CorporateHome: React.FC = () => {
         <div className="w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
             <div className="space-y-12">
-               <div className="space-y-4">
-                  <h2 className="text-5xl font-black text-zinc-900 tracking-tight">Entre em Contacto</h2>
-                  <p className="text-zinc-500 text-lg font-medium">Nossa equipa de atendimento corporativo está pronta para responder às suas questões.</p>
-               </div>
-               
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8">
-                  <div className="flex items-center gap-6">
-                    <div className="p-4 bg-zinc-100 rounded-2xl text-yellow-600"><MapPin size={24}/></div>
-                    <div>
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Sede Central</p>
-                      <p className="font-bold text-zinc-800">Benguela, Bairro Massangarala, Angola</p>
-                      <a 
-                        href="https://www.google.com/maps/search/?api=1&query=Massangarala+Benguela+Angola" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-yellow-600 hover:text-yellow-700 mt-1 transition-colors"
-                      >
-                        <Navigation size={12} /> Ver no GPS
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="p-4 bg-zinc-100 rounded-2xl text-yellow-600"><Phone size={24}/></div>
-                    <div>
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Atendimento 24/7</p>
-                      <p className="font-bold text-zinc-800">+244 929 882 067</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="p-4 bg-zinc-100 rounded-2xl text-yellow-600"><Mail size={24}/></div>
-                    <div>
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">E-mail Corporativo</p>
-                      <p className="font-bold text-zinc-800">geral@amazing.ao</p>
-                    </div>
-                  </div>
-               </div>
+              <div className="space-y-4">
+                <h2 className="text-5xl font-black text-zinc-900 tracking-tight">Entre em Contacto</h2>
+                <p className="text-zinc-500 text-lg font-medium">Nossa equipa de atendimento corporativo está pronta para responder às suas questões.</p>
+              </div>
 
-               <form onSubmit={handleSubmitContact} className="space-y-6 pt-10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input 
-                      placeholder="Seu Nome" 
-                      required 
-                      className="bg-zinc-50 border-zinc-200 py-4" 
-                      value={contactForm.nome}
-                      onChange={e => setContactForm({...contactForm, nome: e.target.value})}
-                    />
-                    <Input 
-                      placeholder="E-mail" 
-                      type="email" 
-                      required 
-                      className="bg-zinc-50 border-zinc-200 py-4" 
-                      value={contactForm.email}
-                      onChange={e => setContactForm({...contactForm, email: e.target.value})}
-                    />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8">
+                <div className="flex items-center gap-6">
+                  <div className="p-4 bg-zinc-100 rounded-2xl text-yellow-600"><MapPin size={24} /></div>
+                  <div>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Sede Central</p>
+                    <p className="font-bold text-zinc-800">Benguela, Bairro Massangarala, Angola</p>
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=Massangarala+Benguela+Angola"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-yellow-600 hover:text-yellow-700 mt-1 transition-colors"
+                    >
+                      <Navigation size={12} /> Ver no GPS
+                    </a>
                   </div>
-                  <textarea 
-                    placeholder="Como podemos ajudar?" 
-                    required 
-                    className="w-full p-6 bg-zinc-50 border border-zinc-200 rounded-2xl h-40 outline-none focus:ring-4 focus:ring-yellow-500/10 transition-all font-medium" 
-                    value={contactForm.mensagem}
-                    onChange={e => setContactForm({...contactForm, mensagem: e.target.value})}
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="p-4 bg-zinc-100 rounded-2xl text-yellow-600"><Phone size={24} /></div>
+                  <div>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Atendimento 24/7</p>
+                    <p className="font-bold text-zinc-800">+244 929 882 067</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="p-4 bg-zinc-100 rounded-2xl text-yellow-600"><Mail size={24} /></div>
+                  <div>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">E-mail Corporativo</p>
+                    <p className="font-bold text-zinc-800">geral@amazing.ao</p>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmitContact} className="space-y-6 pt-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    placeholder="Seu Nome"
+                    required
+                    className="bg-zinc-50 border-zinc-200 py-4"
+                    value={contactForm.nome}
+                    onChange={e => setContactForm({ ...contactForm, nome: e.target.value })}
                   />
-                  <button type="submit" disabled={isSending} className="px-12 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-zinc-800 transition-all flex items-center gap-3 disabled:opacity-50">
-                    {isSending ? <RefreshCw className="animate-spin" /> : <Send size={18}/>} 
-                    {isSending ? 'Enviando...' : 'Enviar Mensagem'}
-                  </button>
-                  {successMsg && <p className="text-green-600 font-bold text-sm animate-in fade-in">{successMsg}</p>}
-               </form>
+                  <Input
+                    placeholder="E-mail"
+                    type="email"
+                    required
+                    className="bg-zinc-50 border-zinc-200 py-4"
+                    value={contactForm.email}
+                    onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+                  />
+                </div>
+                <textarea
+                  placeholder="Como podemos ajudar?"
+                  required
+                  className="w-full p-6 bg-zinc-50 border border-zinc-200 rounded-2xl h-40 outline-none focus:ring-4 focus:ring-yellow-500/10 transition-all font-medium"
+                  value={contactForm.mensagem}
+                  onChange={e => setContactForm({ ...contactForm, mensagem: e.target.value })}
+                />
+                <button type="submit" disabled={isSending} className="px-12 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-zinc-800 transition-all flex items-center gap-3 disabled:opacity-50">
+                  {isSending ? <RefreshCw className="animate-spin" /> : <Send size={18} />}
+                  {isSending ? 'Enviando...' : 'Enviar Mensagem'}
+                </button>
+                {successMsg && <p className="text-green-600 font-bold text-sm animate-in fade-in">{successMsg}</p>}
+              </form>
             </div>
 
             <div className="relative">
-               <div className="bg-zinc-100 rounded-[4rem] h-full min-h-[600px] overflow-hidden shadow-2xl border-8 border-white">
-                  <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3895.5037!2d13.405!3d-12.583!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1bb3035f55555555%3A0x5555555555555555!2sMassangarala%2C%20Benguela!5e0!3m2!1spt-PT!2sao!4v1710000000000" 
-                    className="w-full h-full grayscale opacity-80"
-                    style={{ border: 0 }} 
-                    allowFullScreen 
-                    loading="lazy" 
-                  />
-               </div>
+              <div className="bg-zinc-100 rounded-[4rem] h-full min-h-[600px] overflow-hidden shadow-2xl border-8 border-white">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3895.5037!2d13.405!3d-12.583!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1bb3035f55555555%3A0x5555555555555555!2sMassangarala%2C%20Benguela!5e0!3m2!1spt-PT!2sao!4v1710000000000"
+                  className="w-full h-full grayscale opacity-80"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -509,15 +750,15 @@ const CorporateHome: React.FC = () => {
         <div className="w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-20 pb-20 border-b border-white/5">
             <div className="space-y-8">
-              <Logo light className="h-12" />
+              <Logo className="h-16 brightness-110 contrast-125 saturate-150" />
               <p className="text-zinc-500 font-medium leading-relaxed">Excelência operativa e inovação constante para transformar o mercado angolano em todos os sectores.</p>
               <div className="flex gap-4">
-                 <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Facebook size={18}/></div>
-                 <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Instagram size={18}/></div>
-                 <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Linkedin size={18}/></div>
+                <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Facebook size={18} /></div>
+                <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Instagram size={18} /></div>
+                <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Linkedin size={18} /></div>
               </div>
             </div>
-            
+
             <div className="space-y-6">
               <h4 className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.4em]">Navegação</h4>
               <ul className="space-y-4 text-zinc-400 font-bold text-sm">
@@ -542,18 +783,18 @@ const CorporateHome: React.FC = () => {
               <h4 className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.4em]">Subscrever News</h4>
               <p className="text-zinc-500 text-xs font-medium">Receba as últimas notícias sobre expansão e investimentos do grupo.</p>
               <div className="flex gap-2">
-                 <input placeholder="E-mail" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs w-full focus:border-yellow-500 outline-none" />
-                 <button className="p-3 bg-yellow-500 text-zinc-900 rounded-xl hover:bg-yellow-400 transition-all"><ArrowRight size={18}/></button>
+                <input placeholder="E-mail" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs w-full focus:border-yellow-500 outline-none" />
+                <button className="p-3 bg-yellow-500 text-zinc-900 rounded-xl hover:bg-yellow-400 transition-all"><ArrowRight size={18} /></button>
               </div>
             </div>
           </div>
-          
+
           <div className="pt-16 flex flex-col md:flex-row justify-between items-center gap-6">
-             <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">© 2026 Amazing Corporation S.A. Todos os direitos reservados.</p>
-             <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">System Operational • v4.2.0</span>
-             </div>
+            <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">© 2026 Amazing Corporation S.A. Todos os direitos reservados.</p>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">System Operational • v4.2.0</span>
+            </div>
           </div>
         </div>
       </footer>
@@ -562,47 +803,47 @@ const CorporateHome: React.FC = () => {
       {selectedHistory && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-2xl rounded-[3.5rem] shadow-3xl overflow-hidden relative animate-in zoom-in-95 duration-500">
-            <button 
+            <button
               onClick={() => setSelectedHistory(null)}
               className="absolute top-8 right-8 p-3 bg-zinc-100 hover:bg-zinc-200 rounded-full transition-all text-zinc-500 hover:rotate-90"
             >
               <X size={20} />
             </button>
-            
+
             <div className={`p-12 text-white ${SECTOR_HISTORIES[selectedHistory].color}`}>
-               <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-white/20 rounded-2xl">
-                    {React.cloneElement(SECTOR_HISTORIES[selectedHistory].icon as React.ReactElement, { size: 32 })}
-                  </div>
-                  <h3 className="text-3xl font-black uppercase tracking-tight">{SECTOR_HISTORIES[selectedHistory].title}</h3>
-               </div>
-               <p className="text-white/80 font-bold text-xs uppercase tracking-widest">Trajetória Institucional & Marcos de Sucesso</p>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-white/20 rounded-2xl">
+                  {React.cloneElement(SECTOR_HISTORIES[selectedHistory].icon as React.ReactElement, { size: 32 })}
+                </div>
+                <h3 className="text-3xl font-black uppercase tracking-tight">{SECTOR_HISTORIES[selectedHistory].title}</h3>
+              </div>
+              <p className="text-white/80 font-bold text-xs uppercase tracking-widest">Trajetória Institucional & Marcos de Sucesso</p>
             </div>
 
             <div className="p-12 space-y-8 overflow-y-auto max-h-[60vh] custom-scrollbar">
-               {SECTOR_HISTORIES[selectedHistory].milestones.map((m, i) => (
-                  <div key={i} className="flex gap-8 group">
-                     <div className="flex flex-col items-center">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xs shadow-lg transition-transform group-hover:scale-110 ${SECTOR_HISTORIES[selectedHistory].color} text-white`}>
-                           {m.year}
-                        </div>
-                        {i !== SECTOR_HISTORIES[selectedHistory].milestones.length - 1 && (
-                          <div className="w-1 flex-1 bg-zinc-100 my-2 rounded-full"></div>
-                        )}
-                     </div>
-                     <div className="pt-2 flex-1 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900 leading-tight mb-2">Pilar Estratégico</p>
-                        <p className="text-zinc-500 font-medium leading-relaxed">{m.event}</p>
-                     </div>
+              {SECTOR_HISTORIES[selectedHistory].milestones.map((m, i) => (
+                <div key={i} className="flex gap-8 group">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xs shadow-lg transition-transform group-hover:scale-110 ${SECTOR_HISTORIES[selectedHistory].color} text-white`}>
+                      {m.year}
+                    </div>
+                    {i !== SECTOR_HISTORIES[selectedHistory].milestones.length - 1 && (
+                      <div className="w-1 flex-1 bg-zinc-100 my-2 rounded-full"></div>
+                    )}
                   </div>
-               ))}
+                  <div className="pt-2 flex-1 pb-4">
+                    <p className="text-2xl font-bold text-zinc-900 leading-tight mb-2">Pilar Estratégico</p>
+                    <p className="text-zinc-500 font-medium leading-relaxed">{m.event}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="p-8 border-t border-zinc-100 bg-zinc-50 flex justify-center">
-               <div className="flex items-center gap-2 text-zinc-400">
-                  <ShieldCheck size={16} />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Registo Oficial Amazing Corporation</span>
-               </div>
+              <div className="flex items-center gap-2 text-zinc-400">
+                <ShieldCheck size={16} />
+                <span className="text-[9px] font-black uppercase tracking-widest">Registo Oficial Amazing Corporation</span>
+              </div>
             </div>
           </div>
         </div>
@@ -612,36 +853,36 @@ const CorporateHome: React.FC = () => {
       {selectedLegalDoc && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-3xl overflow-hidden relative animate-in zoom-in-95 duration-500 flex flex-col max-h-[85vh]">
-            <button 
+            <button
               onClick={() => setSelectedLegalDoc(null)}
               className="absolute top-8 right-8 p-3 bg-zinc-100 hover:bg-zinc-200 rounded-full transition-all text-zinc-500 hover:rotate-90 z-10"
             >
               <X size={20} />
             </button>
-            
+
             <div className="bg-zinc-900 p-10 text-white shrink-0">
-               <div className="flex items-center gap-4 mb-2">
-                  <div className="p-3 bg-white/10 rounded-2xl">
-                    {LEGAL_DOCS[selectedLegalDoc].icon}
-                  </div>
-                  <h3 className="text-2xl font-black uppercase tracking-tight">{LEGAL_DOCS[selectedLegalDoc].title}</h3>
-               </div>
-               <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest pl-16">Documento Oficial • v2026</p>
+              <div className="flex items-center gap-4 mb-2">
+                <div className="p-3 bg-white/10 rounded-2xl">
+                  {LEGAL_DOCS[selectedLegalDoc].icon}
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-tight">{LEGAL_DOCS[selectedLegalDoc].title}</h3>
+              </div>
+              <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest pl-16">Documento Oficial • v2026</p>
             </div>
 
             <div className="p-10 overflow-y-auto custom-scrollbar">
-               <div className="prose prose-zinc max-w-none text-zinc-600 font-medium text-sm leading-relaxed whitespace-pre-line">
-                  {LEGAL_DOCS[selectedLegalDoc].content}
-               </div>
+              <div className="prose prose-zinc max-w-none text-zinc-600 font-medium text-sm leading-relaxed whitespace-pre-line">
+                {LEGAL_DOCS[selectedLegalDoc].content}
+              </div>
             </div>
 
             <div className="p-6 border-t border-zinc-100 bg-zinc-50 flex justify-between items-center shrink-0">
-               <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-green-500"/> Validado por Compliance
-               </span>
-               <button onClick={() => setSelectedLegalDoc(null)} className="px-6 py-2 bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all">
-                  Fechar
-               </button>
+              <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                <ShieldCheck size={14} className="text-green-500" /> Validado por Compliance
+              </span>
+              <button onClick={() => setSelectedLegalDoc(null)} className="px-6 py-2 bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all">
+                Fechar
+              </button>
             </div>
           </div>
         </div>
@@ -654,6 +895,13 @@ const CorporateHome: React.FC = () => {
           25% { transform: rotate(10deg); }
           75% { transform: rotate(-10deg); }
           100% { transform: rotate(0deg); }
+        }
+        @keyframes slow-zoom {
+          0% { transform: scale(1); }
+          100% { transform: scale(1.1); }
+        }
+        .animate-slow-zoom {
+          animation: slow-zoom 20s ease-out forwards;
         }
         .animate-swing {
           animation: swing 2s ease-in-out infinite;

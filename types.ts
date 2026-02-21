@@ -3,17 +3,17 @@ export type CandidaturaStatus = 'pendente' | 'aprovado' | 'rejeitado';
 export type EscolaridadeTipo = 'Ensino Primário' | 'Ensino Médio' | 'Licenciatura' | 'Mestrado' | 'Doutoramento';
 
 // --- USUÁRIOS E SEGURANÇA ---
-export type UserRole = 
-  | 'admin' 
-  | 'director_arena' 
-  | 'director_agro' 
-  | 'director_express' 
-  | 'director_realestate' 
-  | 'director_accounting' 
-  | 'director_treasury' 
-  | 'director_maintenance' 
-  | 'manager_inventory' 
-  | 'director_hr' 
+export type UserRole =
+  | 'admin'
+  | 'director_arena'
+  | 'director_agro'
+  | 'director_express'
+  | 'director_realestate'
+  | 'director_accounting'
+  | 'director_treasury'
+  | 'director_maintenance'
+  | 'manager_inventory'
+  | 'director_hr'
   | 'director_finance';
 
 export interface User {
@@ -115,7 +115,7 @@ export interface ArenaRanking {
 
 // --- RH E PESSOAL ---
 export type ContratoTipo = 'Indeterminado' | 'Determinado' | 'Estágio';
-export type FuncionarioStatus = 'Ativo' | 'Férias' | 'Licença';
+export type FuncionarioStatus = 'ativo' | 'ferias' | 'inativo' | 'rescindido';
 
 export interface Funcionario {
   id: string;
@@ -128,13 +128,14 @@ export interface Funcionario {
   departamento_id: string;
   data_admissao: string;
   tipo_contrato: ContratoTipo;
-  status: string;
+  status: FuncionarioStatus;
   nivel_escolaridade: string;
   area_formacao: string;
   salario_base: number;
   subsidio_alimentacao: number;
   subsidio_transporte: number;
   bonus_assiduidade: number;
+  outros_bonus: number;
   foto_url: string;
   documentos: string[];
   historico_alteracoes: { data: string; usuario: string; acao: string; }[];
@@ -158,11 +159,16 @@ export interface ReciboSalarial {
   mes: string;
   ano: number;
   base: number;
-  subsidios: number;
+  subsidios: number; // For backward compatibility
+  subsidio_alimentacao: number;
+  subsidio_transporte: number;
   horas_extras_valor: number;
+  bonus_premios: number;
   faltas_desconto: number;
   inss_trabalhador: number;
   irt: number;
+  adiantamentos: number;
+  bruto: number;
   liquido: number;
   data_emissao: string;
 }
@@ -309,13 +315,18 @@ export interface TransacaoFinanceira {
 export interface LancamentoContabil {
   id: string;
   data: string;
-  periodo: string;
+  periodo_id?: string;
+  mes_referencia?: string;
+  ano_referencia?: number;
   descricao: string;
   empresa_id: string;
   usuario_id: string;
+  usuario_nome?: string;
   status: 'Postado' | 'Pendente' | 'Anulado';
-  tipo_transacao: 'Manual' | 'Folha' | 'Venda' | 'Compra';
+  tipo_transacao: 'Manual' | 'Folha' | 'Venda' | 'Compra' | 'Ajuste';
   itens: LancamentoItem[];
+  metadata?: any;
+  auditoria?: { data: string; usuario: string; acao: string; }[];
 }
 
 export interface LancamentoItem {
@@ -367,10 +378,22 @@ export interface MovimentoBancario {
 }
 
 export interface PlanoConta {
+  id: string;
   codigo: string;
   nome: string;
   tipo: 'Ativo' | 'Passivo' | 'Capital' | 'Receita' | 'Despesa';
   natureza: 'Devedora' | 'Credora';
+  nivel?: number;
+  pai_id?: string;
+  e_analitica?: boolean;
+}
+
+export interface PeriodoContabil {
+  id: string;
+  ano: number;
+  mes: number;
+  status: 'Aberto' | 'Fechado';
+  data_fecho?: string;
 }
 
 // --- INVENTÁRIO ---
@@ -413,11 +436,15 @@ export interface Post {
 export interface BlogPost {
   id: string;
   titulo: string;
-  categoria: 'Logística' | 'Agronegócio' | 'Imobiliário' | 'Institucional';
+  categoria: 'Logística' | 'Agronegócio' | 'Imobiliário' | 'Institucional' | 'Social';
   conteudo: string;
   autor: string;
   data: string;
   imagem_url: string;
+  video_url?: string;
+  galeria_urls?: string[];
+  tipo: 'artigo' | 'video' | 'galeria' | 'momento';
+  is_publico: boolean;
   visualizacoes: number;
 }
 
@@ -492,7 +519,7 @@ export interface Agricultor {
   cultura_principal: string;
   cooperativa: string;
   foto_url: string;
-  status: 'Ativo' | 'Em Análise' | 'Suspenso';
+  status: 'ativo' | 'inativo' | 'bloqueado';
   data_registo: string;
 }
 

@@ -123,17 +123,24 @@ const FinancialHubPage: React.FC = () => {
 
       return {
          curRec, curDes, lastRec, lastDes,
-         projectedRec, projectedDes,
-         projectedBalance: projectedRec - projectedDes,
+         projectedRec: isFinite(projectedRec) ? projectedRec : 0,
+         projectedDes: isFinite(projectedDes) ? projectedDes : 0,
+         projectedBalance: (isFinite(projectedRec) ? projectedRec : 0) - (isFinite(projectedDes) ? projectedDes : 0),
          alertas
       };
    }, [transactions]);
 
    // --- HANDLERS ---
    const handleAIAnalysis = async () => {
+      const apiKey = process.env.API_KEY || (window as any).VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+         setAiAnalysis("Configuração de IA ausente. Contacte o administrador.");
+         return;
+      }
+
       setIsAnalyzing(true);
       try {
-         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+         const ai = new GoogleGenAI({ apiKey });
          const prompt = `Como Auditor Financeiro, analise estes dados de Angola:
       Mês Atual: Receita ${formatAOA(analysisData.curRec)}, Despesa ${formatAOA(analysisData.curDes)}.
       Mês Anterior: Receita ${formatAOA(analysisData.lastRec)}, Despesa ${formatAOA(analysisData.lastDes)}.
@@ -142,12 +149,13 @@ const FinancialHubPage: React.FC = () => {
       Forneça 2 ações imediatas para conter custos e 1 previsão de risco para o próximo trimestre.`;
 
          const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-1.5-flash',
             contents: prompt,
          });
          setAiAnalysis(response.text);
       } catch (e) {
-         setAiAnalysis("Erro na rede neural. Tente novamente.");
+         console.error('AI Error:', e);
+         setAiAnalysis("Erro na rede neural. Verifique a ligação ou tente novamente.");
       } finally {
          setIsAnalyzing(false);
       }
@@ -189,6 +197,15 @@ const FinancialHubPage: React.FC = () => {
          alert('Erro ao registrar transação');
       }
    };
+
+   if (loading) {
+      return (
+         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+            <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">A processar dados financeiros...</p>
+         </div>
+      );
+   }
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-24">

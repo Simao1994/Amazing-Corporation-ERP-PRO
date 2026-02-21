@@ -93,13 +93,58 @@ export const AmazingStorage = {
 
   loadAllFromCloud: async () => {
     try {
-      const { data } = await supabase.from('erp_data').select('*');
+      const { data, error } = await supabase.from('erp_data').select('*');
+      if (error) throw error;
       if (data) {
         data.forEach((row: any) => {
           localStorage.setItem(row.key_name, JSON.stringify(row.json_data));
         });
       }
-    } catch (err) { }
+      return true;
+    } catch (err) {
+      console.error('Cloud load error:', err);
+      return false;
+    }
+  },
+
+  loadKeyFromCloud: async (key: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('erp_data')
+        .select('json_data')
+        .eq('key_name', key)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
+      if (data?.json_data) {
+        localStorage.setItem(key, JSON.stringify(data.json_data));
+        return data.json_data;
+      }
+      return null;
+    } catch (err) {
+      console.error(`Error loading key ${key} from cloud:`, err);
+      return null;
+    }
+  },
+
+  loadSpecificKeys: async (keys: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from('erp_data')
+        .select('*')
+        .in('key_name', keys);
+
+      if (error) throw error;
+      if (data) {
+        data.forEach((row: any) => {
+          localStorage.setItem(row.key_name, JSON.stringify(row.json_data));
+        });
+      }
+      return true;
+    } catch (err) {
+      console.error('Error loading specific keys:', err);
+      return false;
+    }
   },
 
   logAction: async (action: string, module: string, details: string, type: SystemLog['type'] = 'info') => {

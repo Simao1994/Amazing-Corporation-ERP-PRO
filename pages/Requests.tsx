@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Inbox, MessageSquare, Trash2, Check, X, ShieldCheck, Star } from 'lucide-react';
+import { Inbox, MessageSquare, Trash2, Check, X, ShieldCheck, Star, RefreshCw } from 'lucide-react';
 import { Solicitacao, Testemunho } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
@@ -111,6 +111,15 @@ const RequestsPage: React.FC = () => {
       }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-sky-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">

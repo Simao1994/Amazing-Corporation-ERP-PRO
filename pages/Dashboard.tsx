@@ -88,9 +88,9 @@ const Dashboard: React.FC = () => {
         fleetCount: fleetCount || 0,
         agricultoresCount: agroCount || 0,
         imoveisCount: imoveisData?.length || 0,
-        imoveisValor: imoveisData?.reduce((acc, i) => acc + (Number(i.preco_venda) || 0), 0) || 0,
+        imoveisValor: imoveisData?.reduce((acc, i: any) => acc + (Number(i.preco_venda) || 0), 0) || 0,
         torneiosCount: arenaCount || 0,
-        totalInvoiced: notasData?.reduce((acc, n) => acc + (Number(n.valor_total) || 0), 0) || 0,
+        totalInvoiced: notasData?.reduce((acc, n: any) => acc + (Number(n.valor_total) || 0), 0) || 0,
         staffCount: staffCount || 0
       });
     } catch (error) {
@@ -211,7 +211,7 @@ const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {user.role === 'admin' && (
+          {currentUser.role === 'admin' && (
             <button
               onClick={() => setShowAdModal(true)}
               className="absolute top-6 right-8 bg-zinc-900/80 hover:bg-zinc-900 text-white p-3 rounded-2xl backdrop-blur-md transition-all shadow-lg border border-white/10 z-30"

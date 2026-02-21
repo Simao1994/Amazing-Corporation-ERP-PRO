@@ -68,7 +68,12 @@ const UsersPage: React.FC = () => {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (!error && data) setProfiles(data);
+        if (error) {
+            console.error('Error fetching users:', error);
+            setError('Falha ao carregar utilizadores. Verifique a sua ligação.');
+        } else if (data) {
+            setProfiles(data);
+        }
         setLoading(false);
     };
 
@@ -289,8 +294,9 @@ const UsersPage: React.FC = () => {
 
             {/* Users List */}
             {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-500"></div>
+                <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
+                    <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+                    <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="bg-white border border-zinc-100 rounded-3xl p-12 text-center shadow-sm">

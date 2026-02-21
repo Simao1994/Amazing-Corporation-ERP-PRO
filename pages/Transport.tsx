@@ -140,10 +140,21 @@ const TransportPage: React.FC = () => {
       ];
 
       return {
-         total, countAtivos, parados, dividaTotal,
-         totalDiario, totalSemanal, totalMensal, totalAnual, financialProjectionData,
-         contractPieData, admissionData, contractAlerts,
-         contratosQuaseTerminando, contratosVigentes, contratosTerminados
+         total: total || 0,
+         countAtivos: countAtivos || 0,
+         parados: parados || 0,
+         dividaTotal: dividaTotal || 0,
+         totalDiario: totalDiario || 0,
+         totalSemanal: totalSemanal || 0,
+         totalMensal: totalMensal || 0,
+         totalAnual: totalAnual || 0,
+         financialProjectionData: financialProjectionData || [],
+         contractPieData: contractPieData || [],
+         admissionData: admissionData || [],
+         contractAlerts: contractAlerts || [],
+         contratosQuaseTerminando: contratosQuaseTerminando || 0,
+         contratosVigentes: contratosVigentes || 0,
+         contratosTerminados: contratosTerminados || 0
       };
    }, [motoqueiros]);
 
@@ -402,6 +413,15 @@ const TransportPage: React.FC = () => {
          m.matricula.toLowerCase().includes(searchTerm.toLowerCase())
       ),
       [motoqueiros, searchTerm]);
+
+   if (loading) {
+      return (
+         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+            <RefreshCw className="w-12 h-12 text-yellow-500 animate-spin" />
+            <p className="text-zinc-500 font-bold animate-pulse">Carregando dados da frota...</p>
+         </div>
+      );
+   }
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-20">

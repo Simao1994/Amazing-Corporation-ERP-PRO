@@ -119,6 +119,15 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ user }) => {
   };
 
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-purple-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-1000">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-purple-200/50">
@@ -166,12 +175,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ user }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {loading ? (
-          <div className="col-span-full py-20 flex flex-col items-center">
-            <RefreshCw size={40} className="text-purple-600 animate-spin mb-4" />
-            <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Carregando estrutura...</p>
-          </div>
-        ) : filteredItems.map((dept) => (
+        {filteredItems.map((dept) => (
           <div
             key={dept.id}
             className="group relative bg-white rounded-[2.5rem] p-10 border border-purple-50 shadow-sm hover:shadow-3xl hover:shadow-purple-500/15 transition-all duration-700 hover:-translate-y-2 flex flex-col h-full"

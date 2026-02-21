@@ -39,6 +39,7 @@ export const MENU_ITEMS = [
   { id: 'financeiro', label: 'Finanças', icon: <Wallet size={20} />, path: '/financeiro' },
   { id: 'contabilidade', label: 'Amazing ContábilExpert', icon: <Scale size={20} />, path: '/contabilidade' },
   { id: 'auditoria', label: 'Auditoria & Logs', icon: <ShieldCheck size={20} />, path: '/auditoria' },
+  { id: 'blog', label: 'Blog & Notícias', icon: <Newspaper size={20} />, path: '/blog' },
   { id: 'configuracoes', label: 'Configurações', icon: <Settings size={20} />, path: '/configuracoes' },
   { id: 'parceiros', label: 'Base de Parceiros', icon: <Handshake size={20} />, path: '/parceiros' },
   { id: 'fornecedores', label: 'Gestão de Fornecedores', icon: <Handshake size={20} />, path: '/fornecedores' },
@@ -50,34 +51,34 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
   admin: ['all', 'utilizadores', 'fornecedores', 'parceiros'],
 
   // Director Amazing Arena Gamer - Apenas Arena + Dashboard + Solicitações
-  director_arena: ['home', 'dashboard', 'arena_admin', 'solicitacoes'],
+  director_arena: ['home', 'dashboard', 'arena_admin', 'solicitacoes', 'blog'],
 
   // Director Amazing Agro - Apenas Agro + Dashboard + Solicitações
-  director_agro: ['home', 'dashboard', 'agro', 'solicitacoes'],
+  director_agro: ['home', 'dashboard', 'agro', 'solicitacoes', 'blog'],
 
   // Director da Amazing Express - Apenas Transportes + Dashboard + Solicitações
-  director_express: ['home', 'dashboard', 'transportes', 'solicitacoes'],
+  director_express: ['home', 'dashboard', 'transportes', 'solicitacoes', 'blog'],
 
   // Amazing Imobiliário - Apenas Imobiliário + Dashboard + Solicitações
-  director_realestate: ['home', 'dashboard', 'imobiliario', 'solicitacoes'],
+  director_realestate: ['home', 'dashboard', 'imobiliario', 'solicitacoes', 'blog'],
 
   // Director da Amazing ContábilExpress - Apenas Contabilidade + Dashboard + Solicitações
-  director_accounting: ['home', 'dashboard', 'contabilidade', 'solicitacoes'],
+  director_accounting: ['home', 'dashboard', 'contabilidade', 'solicitacoes', 'blog'],
 
   // Director da Tesouraria - Apenas Tesouraria + Dashboard + Solicitações
-  director_treasury: ['home', 'dashboard', 'tesouraria', 'solicitacoes'],
+  director_treasury: ['home', 'dashboard', 'tesouraria', 'solicitacoes', 'blog'],
 
   // Director da Manutenção - Apenas Manutenção + Dashboard + Solicitações
-  director_maintenance: ['home', 'dashboard', 'manutencao', 'solicitacoes'],
+  director_maintenance: ['home', 'dashboard', 'manutencao', 'solicitacoes', 'blog'],
 
   // Responsável de Inventário & Stock - Apenas Inventário + Dashboard + Solicitações
-  manager_inventory: ['home', 'dashboard', 'inventario', 'solicitacoes'],
+  manager_inventory: ['home', 'dashboard', 'inventario', 'solicitacoes', 'blog'],
 
   // Director de Recursos Humanos - Apenas RH + Dashboard + Solicitações + CANDIDATURAS
-  director_hr: ['home', 'dashboard', 'rh', 'candidaturas', 'solicitacoes'],
+  director_hr: ['home', 'dashboard', 'rh', 'candidaturas', 'solicitacoes', 'blog'],
 
   // Director de Finanças - Apenas Finanças + Dashboard + Solicitações
-  director_finance: ['home', 'dashboard', 'financeiro', 'solicitacoes'],
+  director_finance: ['home', 'dashboard', 'financeiro', 'solicitacoes', 'blog'],
 };
 
 export const formatAOA = (value: number) => {

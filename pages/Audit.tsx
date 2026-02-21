@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Search, Filter, Clock, User, Activity, FileText } from 'lucide-react';
+import { ShieldCheck, Search, Filter, Clock, User, Activity, FileText, RefreshCw } from 'lucide-react';
 import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS, SystemLog } from '../utils/storage';
 
@@ -15,9 +15,9 @@ const AuditPage: React.FC = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('sys_logs')
+        .from('acc_audit_logs')
         .select('*')
-        .order('timestamp', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(200);
       if (error) throw error;
       if (data) setLogs(data);
@@ -33,10 +33,28 @@ const AuditPage: React.FC = () => {
   }, []);
 
   const filteredLogs = logs.filter(log =>
-    log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.module.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (log.details && log.details.toLowerCase().includes(searchTerm.toLowerCase()))
+    (log.acao || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (log.tabela_nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (log.registro_id && log.registro_id.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const safeFormatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? 'Data Inválida' : d.toLocaleString('pt-PT');
+    } catch (e) {
+      return '---';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -56,7 +74,7 @@ const AuditPage: React.FC = () => {
 
       <div className="bg-white p-3 rounded-[2rem] shadow-sm border border-sky-100">
         <Input
-          placeholder="Pesquisar por ação, utilizador ou detalhe da operação..."
+          placeholder="Pesquisar por ação, tabela ou registro..."
           icon={<Search size={20} className="text-zinc-400" />}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -76,7 +94,7 @@ const AuditPage: React.FC = () => {
         <div className="bg-white p-6 rounded-3xl border border-sky-100 shadow-sm">
           <p className="text-zinc-400 text-[10px] font-black uppercase mb-1">Logs Hoje</p>
           <p className="text-3xl font-black text-green-600">
-            {logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString()).length}
+            {logs.filter(l => l.created_at && new Date(l.created_at).toDateString() === new Date().toDateString()).length}
           </p>
         </div>
         <div className="bg-white p-6 rounded-3xl border border-sky-100 shadow-sm">
@@ -90,10 +108,10 @@ const AuditPage: React.FC = () => {
           <thead>
             <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
               <th className="px-8 py-6">Timestamp / Data</th>
-              <th className="px-8 py-6">Módulo / Origem</th>
+              <th className="px-8 py-6">Tabela / Módulo</th>
               <th className="px-8 py-6">Operação</th>
-              <th className="px-8 py-6">Utilizador</th>
-              <th className="px-8 py-6">Detalhes do Evento</th>
+              <th className="px-8 py-6">Registro ID</th>
+              <th className="px-8 py-6">Detalhes</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-50">
@@ -103,30 +121,34 @@ const AuditPage: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <Clock size={14} className="text-zinc-400" />
                     <span className="text-xs font-bold text-zinc-600">
-                      {new Date(log.timestamp).toLocaleString('pt-PT')}
+                      {safeFormatDate(log.created_at)}
                     </span>
                   </div>
                 </td>
                 <td className="px-8 py-5">
-                  <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${log.module === 'Financeiro' ? 'bg-green-100 text-green-700' :
-                      log.module === 'Sessão' ? 'bg-purple-100 text-purple-700' : 'bg-sky-100 text-sky-700'
+                  <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${log.tabela_nome?.includes('acc') ? 'bg-green-100 text-green-700' : 'bg-sky-100 text-sky-700'
                     }`}>
-                    {log.module}
+                    {log.tabela_nome || 'N/A'}
                   </span>
                 </td>
                 <td className="px-8 py-5 font-black text-zinc-900 text-sm">
-                  {log.action}
+                  <span className={`px-2 py-1 rounded-md ${log.acao === 'DELETE' ? 'text-red-600 bg-red-50' :
+                      log.acao === 'INSERT' ? 'text-green-600 bg-green-50' : 'text-sky-600 bg-sky-50'
+                    }`}>
+                    {log.acao}
+                  </span>
                 </td>
                 <td className="px-8 py-5">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-[10px] font-bold">
-                      {log.user.charAt(0)}
-                    </div>
-                    <span className="text-xs font-bold text-zinc-700">{log.user}</span>
+                    <span className="text-[10px] font-mono text-zinc-400 leading-tight">
+                      {log.registro_id?.substring(0, 18)}...
+                    </span>
                   </div>
                 </td>
                 <td className="px-8 py-5">
-                  <p className="text-xs text-zinc-500 font-medium italic">{log.details}</p>
+                  <p className="text-xs text-zinc-500 font-medium italic">
+                    {log.dados_novos ? 'Dados atualizados / inseridos' : 'Registro de sistema'}
+                  </p>
                 </td>
               </tr>
             )) : (

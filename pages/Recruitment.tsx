@@ -275,6 +275,7 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
    };
 
    const updateStatus = async (id: string, newStatus: CandidaturaStatus) => {
+      setIsSaving(true);
       try {
          const { error } = await supabase
             .from('recr_candidaturas')
@@ -285,6 +286,8 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
          AmazingStorage.logAction('Status Candidatura', 'Recrutamento', `Candidatura ${id} alterada para ${newStatus}`);
       } catch (error) {
          alert('Erro ao atualizar status');
+      } finally {
+         setIsSaving(false);
       }
    };
 
@@ -294,9 +297,20 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
    };
 
    const exportToExcel = () => {
+      const escape = (val: any) => `"${String(val || '').replace(/"/g, '""')}"`;
       const headers = "ID,Nome Completo,BI,Idade,Provincia,Escolaridade,Curso,Status,Data Candidatura\n";
       const rows = filteredCandidaturas.map(c =>
-         `${c.id},${c.nome} ${c.sobrenome},${c.bi_numero},${c.idade},${c.provincia},${c.escolaridade},${c.curso},${c.status},${c.data_candidatura}`
+         [
+            escape(c.id),
+            escape(`${c.nome} ${c.sobrenome}`),
+            escape(c.bi_numero),
+            escape(c.idade),
+            escape(c.provincia),
+            escape(c.escolaridade),
+            escape(c.curso),
+            escape(c.status),
+            escape(new Date(c.data_candidatura).toLocaleDateString())
+         ].join(",")
       ).join("\n");
       const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
@@ -310,7 +324,7 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
          `Data: ${new Date().toLocaleString()}\n` +
          `--------------------------------------------------\n\n` +
          filteredCandidaturas.map(c =>
-            `NOME: ${c.nome} ${c.sobrenome}\nCURSO: ${c.curso}\nPROVÍNCIA: ${c.provincia}\nSTATUS: ${c.status}\n-----------------`
+            `NOME: ${c.nome} ${c.sobrenome}\nBI: ${c.bi_numero}\nCURSO: ${c.curso}\nPROVÍNCIA: ${c.provincia}\nSTATUS: ${c.status}\n-----------------`
          ).join("\n\n");
       const blob = new Blob([content], { type: 'application/msword' });
       const link = document.createElement("a");
@@ -318,7 +332,14 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
       link.download = `Relatorio_Recrutamento.doc`;
       link.click();
    };
-
+   if (loading && !isSaving) {
+      return (
+         <div className={`flex flex-col items-center justify-center min-h-[60vh] space-y-4 ${isPublic ? 'bg-sky-50 min-h-screen' : ''}`}>
+            <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">A processar candidaturas...</p>
+         </div>
+      );
+   }
    if (submissionSuccess) {
       return (
          <div className="min-h-screen bg-[#e0f2fe] flex items-center justify-center p-6 animate-in fade-in duration-500">

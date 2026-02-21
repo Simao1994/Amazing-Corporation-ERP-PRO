@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Handshake, Plus, Search, Edit, Trash2, Mail, Phone, Tag, Building2, ShieldCheck, X, FileCheck, AlertCircle } from 'lucide-react';
+import { Handshake, Plus, Search, Edit, Trash2, Mail, Phone, Tag, Building2, ShieldCheck, X, FileCheck, AlertCircle, RefreshCw } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -125,6 +125,15 @@ const FornecedoresPage: React.FC = () => {
       }
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
+        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">

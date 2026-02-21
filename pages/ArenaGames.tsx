@@ -119,6 +119,15 @@ const ArenaGames: React.FC = () => {
       }
    };
 
+   if (loading) {
+      return (
+         <div className="min-h-screen bg-[#07080a] flex flex-col items-center justify-center space-y-4">
+            <RefreshCw className="w-12 h-12 text-indigo-600 animate-spin" />
+            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+         </div>
+      );
+   }
+
    return (
       <div className="min-h-screen bg-[#07080a] text-white font-sans selection:bg-indigo-500">
          {/* NAV FIXA */}
