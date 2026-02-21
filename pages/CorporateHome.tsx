@@ -979,14 +979,16 @@ const CorporateHome: React.FC = () => {
                     className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs w-full focus:border-yellow-500 outline-none transition-all"
                   />
                   <button
+                    type="submit"
                     disabled={isSubscribing}
-                    className="p-3 bg-yellow-500 text-zinc-900 rounded-xl hover:bg-yellow-400 transition-all disabled:opacity-50"
+                    title="Subscrever Newsletter"
+                    className="p-3 bg-yellow-500 text-zinc-900 rounded-xl hover:bg-yellow-400 transition-all disabled:opacity-50 flex items-center justify-center"
                   >
-                    {isSubscribing ? <RefreshCw className="animate-spin w-4 h-4" /> : <ArrowRight size={18} />}
+                    {isSubscribing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Send size={18} />}
                   </button>
                 </div>
                 {newsletterMsg && (
-                  <p className={`text-[10px] font-bold ${newsletterMsg.type === 'success' ? 'text-green-500' : 'text-red-500'} animate-in fade-in slide-in-from-top-1`}>
+                  <p className={`text-xs font-bold ${newsletterMsg.type === 'success' ? 'text-green-500' : 'text-red-500'} animate-in fade-in slide-in-from-top-1`}>
                     {newsletterMsg.text}
                   </p>
                 )}
