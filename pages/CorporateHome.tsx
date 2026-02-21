@@ -39,6 +39,10 @@ import {
   Newspaper,
   Eye,
   Calendar,
+  Maximize2,
+  Video,
+  Image as ImageIcon,
+  Sparkles,
   User as UserMini
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -212,6 +216,118 @@ const PublicNewsGrid: React.FC = () => {
               >
                 Fechar Notícia
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// --- MULTIMEDIA GALLERY COMPONENT ---
+const PublicMediaGallery: React.FC = () => {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMedia, setSelectedMedia] = useState<any | null>(null);
+
+  useEffect(() => {
+    const fetchMedia = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('galeria')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+        setItems(data || []);
+      } catch (err) {
+        console.error('Erro ao buscar galeria:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMedia();
+  }, []);
+
+  if (loading) return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-pulse">
+      {[1, 2, 4, 5, 6, 7, 8].map(i => (
+        <div key={i} className="aspect-square bg-zinc-100 rounded-3xl" />
+      ))}
+    </div>
+  );
+
+  if (items.length === 0) return null;
+
+  return (
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {items.map((item, idx) => (
+          <div
+            key={item.id}
+            onClick={() => setSelectedMedia(item)}
+            className={`group relative overflow-hidden rounded-[2.5rem] bg-zinc-100 cursor-pointer transition-all duration-700 hover:shadow-2xl hover:-translate-y-2 ${idx % 7 === 0 ? 'md:col-span-2 md:row-span-2 aspect-square' : 'aspect-square'}`}
+          >
+            {item.tipo === 'video' ? (
+              <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                <Play className="text-white/40 group-hover:scale-125 transition-transform duration-500" size={60} />
+              </div>
+            ) : (
+              <img
+                src={item.url}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                alt={item.titulo}
+              />
+            )}
+
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
+              <span className="text-yellow-500 font-black text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2">
+                {item.tipo === 'video' ? <Video size={12} /> : <ImageIcon size={12} />}
+                {item.tipo}
+              </span>
+              <h4 className="text-white font-black text-xl leading-tight uppercase">{item.titulo || 'Momento Amazing'}</h4>
+            </div>
+
+            <div className="absolute top-6 right-6 p-3 bg-white/20 backdrop-blur-md rounded-2xl text-white opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 duration-500">
+              <Maximize2 size={20} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selectedMedia && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-zinc-950/98 backdrop-blur-2xl animate-in fade-in duration-500">
+          <button
+            onClick={() => setSelectedMedia(null)}
+            className="absolute top-10 right-10 p-5 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all border border-white/10 z-[100]"
+          >
+            <X size={32} />
+          </button>
+
+          <div className="w-full max-w-6xl aspect-video bg-black rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500 relative">
+            {selectedMedia.tipo === 'video' ? (
+              <video
+                src={selectedMedia.url}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <img
+                src={selectedMedia.url}
+                className="w-full h-full object-contain"
+                alt={selectedMedia.titulo}
+              />
+            )}
+
+            <div className="absolute bottom-0 inset-x-0 p-12 bg-gradient-to-t from-black/80 to-transparent">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-yellow-500 font-black text-[10px] uppercase tracking-[0.4em]">
+                  <Sparkles size={14} /> Galeria Corporativa
+                </div>
+                <h3 className="text-4xl font-black text-white uppercase tracking-tight leading-none">{selectedMedia.titulo}</h3>
+              </div>
             </div>
           </div>
         </div>
@@ -670,6 +786,23 @@ const CorporateHome: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* MULTIMEDIA GALLERY - PUBLIC VIEW */}
+      <section id="galeria" className="py-32 px-8 md:px-20 lg:px-32 bg-white">
+        <div className="w-full">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-20 animate-in fade-in duration-700">
+            <div className="space-y-4">
+              <span className="text-yellow-600 text-[14px] font-black uppercase tracking-[0.6em]">Portfolio de Actividades</span>
+              <h2 className="text-5xl md:text-7xl font-black text-zinc-900 tracking-tighter uppercase leading-tight">Visão & <br /><span className="text-yellow-500">Momentos Reais</span></h2>
+            </div>
+            <p className="text-zinc-500 max-w-xl font-medium text-lg leading-relaxed mb-4">
+              Explore a nossa trajetória através de imagens e vídeos que capturam a essência da nossa expansão, operações no terreno e compromisso com Angola.
+            </p>
+          </div>
+
+          <PublicMediaGallery />
         </div>
       </section>
 

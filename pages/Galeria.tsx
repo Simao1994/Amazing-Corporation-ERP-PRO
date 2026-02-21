@@ -1,14 +1,14 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 // Added MapPin to the imports from lucide-react
-import { Camera, Save, User, Building2, Upload, Sparkles, X, Edit, ShieldCheck, Globe, CheckCircle2, MapPin, RefreshCw } from 'lucide-react';
+import { Camera, Save, User, Building2, Upload, Sparkles, X, Edit, ShieldCheck, Globe, CheckCircle2, MapPin, RefreshCw, Play } from 'lucide-react';
 import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
 import { CorporateSettings, EmpresaAfiliada } from '../types';
 
 const GaleriaPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ceo' | 'empresas'>('ceo');
+  const [activeTab, setActiveTab] = useState<'ceo' | 'empresas' | 'multimedia'>('ceo');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -23,9 +23,11 @@ const GaleriaPage: React.FC = () => {
   });
 
   const [empresas, setEmpresas] = useState<EmpresaAfiliada[]>([]);
+  const [galeriaItems, setGaleriaItems] = useState<any[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const companyFileInputRef = useRef<HTMLInputElement>(null);
+  const multimediaFileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
   const fetchGaleriaData = async () => {
@@ -44,23 +46,20 @@ const GaleriaPage: React.FC = () => {
           }
         });
         setCorpInfo(info);
-      } else {
-        // Initialize config_sistema with defaults if completely empty
-        const initial = [
-          { chave: 'ceo_nome', valor: corpInfo.ceo_nome, descricao: 'Nome do CEO da Amazing Corp' },
-          { chave: 'ceo_mensagem', valor: corpInfo.ceo_mensagem, descricao: 'Mensagem institucional do CEO' },
-          { chave: 'ceo_foto_url', valor: corpInfo.ceo_foto_url, descricao: 'URL da foto oficial do CEO' },
-          { chave: 'fundacao_ano', valor: corpInfo.fundacao_ano, descricao: 'Ano de fundação do grupo' },
-          { chave: 'sede_principal', valor: corpInfo.sede_principal, descricao: 'Localização da sede principal' }
-        ];
-        // Use upsert to avoid conflict if some keys exist
-        await supabase.from('config_sistema').upsert(initial, { onConflict: 'chave' });
       }
 
       // Fetch Empresas
       const { data: empData, error: empError } = await supabase.from('empresas').select('*').order('nome');
       if (empError) throw empError;
       setEmpresas(empData || []);
+
+      // Fetch Galeria Multimédia
+      const { data: galData, error: galError } = await supabase
+        .from('galeria')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (galError) throw galError;
+      setGaleriaItems(galData || []);
 
     } catch (error) {
       console.error('Error fetching gallery data:', error);
@@ -94,6 +93,52 @@ const GaleriaPage: React.FC = () => {
     } catch (err) {
       console.error('Upload error:', err);
       return null;
+    }
+  };
+
+  // Multimedia Handlers
+  const handleAddMultimedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const isVideo = file.type.startsWith('video/');
+      const folder = isVideo ? 'videos' : 'galeria';
+      const publicUrl = await uploadFile(file, folder);
+
+      if (!publicUrl) throw new Error('Falha no upload');
+
+      const { data, error } = await supabase
+        .from('galeria')
+        .insert([{
+          titulo: file.name,
+          url: publicUrl,
+          tipo: isVideo ? 'video' : 'imagem',
+          categoria: 'Geral'
+        }])
+        .select();
+
+      if (error) throw error;
+      setGaleriaItems([data[0], ...galeriaItems]);
+      AmazingStorage.logAction('Add Media', 'Galeria', `Novo item adicionado: ${file.name}`);
+    } catch (err) {
+      alert('Erro ao carregar ficheiro');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteMedia = async (id: string) => {
+    if (!confirm('Tem a certeza que deseja eliminar este item da galeria?')) return;
+
+    try {
+      const { error } = await supabase.from('galeria').delete().eq('id', id);
+      if (error) throw error;
+      setGaleriaItems(prev => prev.filter(item => item.id !== id));
+      AmazingStorage.logAction('Delete Media', 'Galeria', `Item removido da galeria.`);
+    } catch (err) {
+      alert('Erro ao eliminar item');
     }
   };
 
@@ -211,18 +256,24 @@ const GaleriaPage: React.FC = () => {
           <p className="text-zinc-500 font-medium mt-1">Gestão centralizada da imagem institucional do grupo.</p>
         </div>
 
-        <div className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-sky-100">
+        <div className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-sky-100 overflow-x-auto no-scrollbar max-w-full">
           <button
             onClick={() => setActiveTab('ceo')}
-            className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'ceo' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-50'}`}
+            className={`whitespace-nowrap px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'ceo' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-50'}`}
           >
             <User size={16} /> Liderança
           </button>
           <button
             onClick={() => setActiveTab('empresas')}
-            className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'empresas' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-50'}`}
+            className={`whitespace-nowrap px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'empresas' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-50'}`}
           >
             <Building2 size={16} /> Subsidiárias
+          </button>
+          <button
+            onClick={() => setActiveTab('multimedia')}
+            className={`whitespace-nowrap px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'multimedia' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-50'}`}
+          >
+            <Camera size={16} /> Multimédia
           </button>
         </div>
       </div>
@@ -236,9 +287,8 @@ const GaleriaPage: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'ceo' ? (
+      {activeTab === 'ceo' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Card Visual do CEO */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm text-center relative overflow-hidden group">
               <div
@@ -261,17 +311,8 @@ const GaleriaPage: React.FC = () => {
               <h3 className="text-2xl font-black text-zinc-900">{corpInfo.ceo_nome}</h3>
               <p className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mt-1">Presidência Amazing Corp</p>
             </div>
-
-            <div className="bg-zinc-900 p-8 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
-              <Globe size={80} className="absolute -right-4 -bottom-4 opacity-10" />
-              <p className="text-xs font-bold text-zinc-400 mb-2 uppercase tracking-widest">Página Pública</p>
-              <p className="text-sm font-medium italic leading-relaxed">
-                "As alterações aqui realizadas reflectem-se instantaneamente no portal corporativo público para investidores e clientes."
-              </p>
-            </div>
           </div>
 
-          {/* Formulário de Edição */}
           <div className="lg:col-span-2">
             <form onSubmit={handleSaveCeo} className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm space-y-8 h-full">
               <div className="flex items-center justify-between border-b border-zinc-50 pb-6">
@@ -291,22 +332,10 @@ const GaleriaPage: React.FC = () => {
                   placeholder="Ex: Dr. João Manuel"
                   required
                 />
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input
-                    name="fundacao_ano"
-                    label="Ano de Fundação"
-                    defaultValue={corpInfo.fundacao_ano}
-                    placeholder="Ex: 2018"
-                  />
-                  <Input
-                    name="sede_principal"
-                    label="Sede Principal"
-                    defaultValue={corpInfo.sede_principal}
-                    placeholder="Ex: Benguela, Angola"
-                  />
+                  <Input name="fundacao_ano" label="Ano de Fundação" defaultValue={corpInfo.fundacao_ano} />
+                  <Input name="sede_principal" label="Sede Principal" defaultValue={corpInfo.sede_principal} />
                 </div>
-
                 <div className="space-y-2">
                   <label className="block text-[11px] font-black text-zinc-700 uppercase tracking-[0.2em] mb-1">Mensagem do Líder ao Mercado</label>
                   <textarea
@@ -314,93 +343,99 @@ const GaleriaPage: React.FC = () => {
                     defaultValue={corpInfo.ceo_mensagem}
                     required
                     className="w-full p-6 bg-zinc-50 border border-zinc-200 rounded-[2rem] h-48 outline-none focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 font-medium text-zinc-700 italic transition-all"
-                    placeholder="Escreva a visão e compromisso da presidência..."
                   />
                 </div>
               </div>
 
               <div className="pt-6">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className={`w-full py-5 text-white font-black rounded-2xl uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 ${isSaving ? 'bg-zinc-400 cursor-not-allowed' : 'bg-zinc-900 hover:bg-zinc-800 shadow-zinc-900/10'}`}
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      A Processar...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18} /> ACTUALIZAR PERFIL CORPORATIVO
-                    </>
-                  )}
+                <button type="submit" disabled={isSaving} className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-3">
+                  {isSaving ? <RefreshCw className="animate-spin" /> : <Save size={18} />} ACTUALIZAR PERFIL CORPORATIVO
                 </button>
               </div>
             </form>
           </div>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'empresas' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Upload invisível para empresas */}
-          <input
-            type="file"
-            ref={companyFileInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={handleCompanyPhotoChange}
-          />
-
+          <input type="file" ref={companyFileInputRef} className="hidden" accept="image/*" onChange={handleCompanyPhotoChange} />
           {empresas.map(emp => (
-            <div key={emp.id} className="bg-white rounded-[2.5rem] overflow-hidden border border-sky-100 shadow-sm group hover:shadow-2xl transition-all cursor-pointer"
-              onClick={() => handleCompanyPhotoClick(emp.id)}>
+            <div key={emp.id} className="bg-white rounded-[2.5rem] overflow-hidden border border-sky-100 shadow-sm group hover:shadow-2xl transition-all cursor-pointer" onClick={() => handleCompanyPhotoClick(emp.id)}>
               <div className="h-56 relative overflow-hidden">
-                <img
-                  src={emp.foto_url || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800'}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                  alt={emp.nome}
-                />
+                <img src={emp.foto_url || ''} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent"></div>
-
-                <div className={`absolute inset-0 flex items-center justify-center transition-opacity bg-black/20 ${isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                  <div className="bg-white p-4 rounded-2xl shadow-2xl text-zinc-900 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest">
-                    {isUploading ? (
-                      <RefreshCw size={16} className="animate-spin" />
-                    ) : (
-                      <Camera size={16} />
-                    )}
-                    {isUploading ? 'A processar...' : 'Trocar Foto'}
-                  </div>
-                </div>
-
                 <div className="absolute bottom-4 left-6">
                   <h4 className="text-white font-black text-xl">{emp.nome}</h4>
                   <span className="text-yellow-500 text-[9px] font-black uppercase tracking-widest">{emp.setor}</span>
                 </div>
               </div>
-              <div className="p-6 bg-zinc-50/50 flex items-center justify-between border-t border-zinc-50">
-                <div className="flex items-center gap-2">
-                  <MapPin size={14} className="text-zinc-400" />
-                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{emp.localizacao}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest px-2 py-1 bg-sky-50 rounded-lg">{emp.tipo_parceria}</span>
-                  <Edit size={14} className="text-zinc-300 group-hover:text-yellow-600 transition-colors" />
-                </div>
-              </div>
             </div>
           ))}
+        </div>
+      )}
 
-          {/* Botão de Adicionar Nova Unidade */}
-          <div
-            className="bg-zinc-50 rounded-[2.5rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center p-12 text-center group cursor-pointer hover:border-yellow-500 hover:bg-white transition-all"
-            onClick={() => window.location.hash = '#/empresas'}
-          >
-            <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center text-zinc-300 group-hover:text-yellow-500 transition-colors mb-4 border border-zinc-100">
-              <Upload size={32} />
+      {activeTab === 'multimedia' && (
+        <div className="space-y-8">
+          <div className="bg-zinc-900 p-8 md:p-12 rounded-[3.5rem] text-white flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+            <Sparkles className="absolute top-4 right-4 text-yellow-500 opacity-20" size={100} />
+            <div className="space-y-4 relative z-10">
+              <h2 className="text-4xl font-black tracking-tight">Galeria Multimédia Pública</h2>
+              <p className="text-zinc-400 font-medium max-w-xl">Publique momentos, vídeos de expansão e fotos de alta resolução para o público angolano. (Recomendado: 10 a 20 itens).</p>
             </div>
-            <h4 className="text-zinc-900 font-black text-sm uppercase tracking-widest">Adicionar Subsidiária</h4>
-            <p className="text-zinc-400 font-bold text-xs mt-2 italic">Crie uma nova frente de negócio no módulo de Parceiros.</p>
+
+            <button
+              onClick={() => multimediaFileInputRef.current?.click()}
+              disabled={isUploading}
+              className="px-8 py-5 bg-yellow-500 text-zinc-900 font-black rounded-2xl uppercase text-xs tracking-widest hover:bg-yellow-400 transition-all flex items-center gap-3 whitespace-nowrap shadow-xl"
+            >
+              {isUploading ? <RefreshCw className="animate-spin" /> : <Upload size={20} />}
+              Adicionar Media
+            </button>
+            <input
+              type="file"
+              ref={multimediaFileInputRef}
+              className="hidden"
+              accept="image/*,video/*"
+              onChange={handleAddMultimedia}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {galeriaItems.map(item => (
+              <div key={item.id} className="bg-white rounded-3xl overflow-hidden border border-zinc-100 group shadow-sm hover:shadow-xl transition-all relative">
+                <div className="aspect-video relative overflow-hidden bg-zinc-100">
+                  {item.tipo === 'video' ? (
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                      <Play className="text-white opacity-50" size={40} />
+                    </div>
+                  ) : (
+                    <img src={item.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={item.titulo} />
+                  )}
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleDeleteMedia(item.id)}
+                      className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 shadow-lg"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-2 left-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[8px] font-black text-white uppercase tracking-widest">
+                    {item.tipo}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <p className="text-xs font-bold text-zinc-900 truncate">{item.titulo}</p>
+                </div>
+              </div>
+            ))}
+
+            {galeriaItems.length === 0 && (
+              <div className="col-span-full py-20 text-center space-y-4 bg-zinc-50 rounded-[3rem] border-2 border-dashed border-zinc-200">
+                <Camera size={48} className="mx-auto text-zinc-300" />
+                <p className="text-zinc-400 font-bold uppercase tracking-widest text-[10px]">A galeria está vazia. Comece a publicar.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
