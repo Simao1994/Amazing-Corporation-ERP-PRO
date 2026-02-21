@@ -447,6 +447,46 @@ const CorporateHome: React.FC = () => {
     }
   };
 
+  // Newsletter Logic
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [newsletterMsg, setNewsletterMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+
+    setIsSubscribing(true);
+    setNewsletterMsg(null);
+
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert([{ email: newsletterEmail }]);
+
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('Este e-mail já está subscrito na nossa newsletter.');
+        }
+        throw error;
+      }
+
+      setNewsletterMsg({ type: 'success', text: 'Subscrição realizada com sucesso!' });
+      setNewsletterEmail('');
+
+      AmazingStorage.logAction('Newsletter', 'Website', `Novo subscritor: ${newsletterEmail}`);
+    } catch (err: any) {
+      console.error('Erro na newsletter:', err);
+      setNewsletterMsg({
+        type: 'error',
+        text: err.message || 'Ocorreu um erro. Tente novamente.'
+      });
+    } finally {
+      setIsSubscribing(false);
+      setTimeout(() => setNewsletterMsg(null), 5000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-4">
@@ -795,10 +835,29 @@ const CorporateHome: React.FC = () => {
             <div className="space-y-6">
               <h4 className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.4em]">Subscrever News</h4>
               <p className="text-zinc-500 text-xs font-medium">Receba as últimas notícias sobre expansão e investimentos do grupo.</p>
-              <div className="flex gap-2">
-                <input placeholder="E-mail" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs w-full focus:border-yellow-500 outline-none" />
-                <button className="p-3 bg-yellow-500 text-zinc-900 rounded-xl hover:bg-yellow-400 transition-all"><ArrowRight size={18} /></button>
-              </div>
+              <form onSubmit={handleNewsletterSubscribe} className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    required
+                    placeholder="E-mail"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs w-full focus:border-yellow-500 outline-none transition-all"
+                  />
+                  <button
+                    disabled={isSubscribing}
+                    className="p-3 bg-yellow-500 text-zinc-900 rounded-xl hover:bg-yellow-400 transition-all disabled:opacity-50"
+                  >
+                    {isSubscribing ? <RefreshCw className="animate-spin w-4 h-4" /> : <ArrowRight size={18} />}
+                  </button>
+                </div>
+                {newsletterMsg && (
+                  <p className={`text-[10px] font-bold ${newsletterMsg.type === 'success' ? 'text-green-500' : 'text-red-500'} animate-in fade-in slide-in-from-top-1`}>
+                    {newsletterMsg.text}
+                  </p>
+                )}
+              </form>
             </div>
           </div>
 
