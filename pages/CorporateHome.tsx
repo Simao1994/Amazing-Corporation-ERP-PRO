@@ -376,26 +376,39 @@ const CorporateHome: React.FC = () => {
   });
 
   // State for CEO/Corporate Info
-  const [corpInfo, setCorpInfo] = useState<CorporateSettings>(() =>
-    AmazingStorage.get<CorporateSettings>(STORAGE_KEYS.CORPORATE_INFO, {
-      ceo_nome: 'Euclides Cadastro Nvula',
-      ceo_mensagem: 'Liderando Angola rumo a uma nova era de logística eficiente e agronegócio sustentável.',
-      ceo_foto_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800',
-      fundacao_ano: '2018',
-      sede_principal: 'Benguela, Angola'
-    })
-  );
+  const [corpInfo, setCorpInfo] = useState<CorporateSettings>({
+    ceo_nome: 'Euclides Cadastro Nvula',
+    ceo_mensagem: 'Liderando Angola rumo a uma nova era de logística eficiente e agronegócio sustentável.',
+    ceo_foto_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800',
+    fundacao_ano: '2018',
+    sede_principal: 'Benguela, Angola'
+  });
 
   useEffect(() => {
-    // If the data in storage changes (e.g. after sync), update state
-    const timer = setInterval(() => {
-      const latest = AmazingStorage.get<CorporateSettings>(STORAGE_KEYS.CORPORATE_INFO, corpInfo);
-      if (JSON.stringify(latest) !== JSON.stringify(corpInfo)) {
-        setCorpInfo(latest);
+    const fetchCorpInfo = async () => {
+      try {
+        const { data, error } = await supabase.from('config_sistema').select('*');
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const info: any = { ...corpInfo };
+          const relevantKeys = ['ceo_nome', 'ceo_mensagem', 'ceo_foto_url', 'fundacao_ano', 'sede_principal'];
+          data.forEach((item: any) => {
+            if (relevantKeys.includes(item.chave)) {
+              info[item.chave] = item.valor;
+            }
+          });
+          setCorpInfo(info);
+          // Sync to local storage for quick access elsewhere if needed
+          AmazingStorage.save(STORAGE_KEYS.CORPORATE_INFO, info);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar info corporativa:', err);
       }
-    }, 2000);
-    return () => clearInterval(timer);
-  }, [corpInfo]);
+    };
+
+    fetchCorpInfo();
+  }, []);
 
   const scrollIntoView = (id: string) => {
     const element = document.getElementById(id);

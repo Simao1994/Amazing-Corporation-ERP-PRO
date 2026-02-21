@@ -10,6 +10,7 @@ import { CorporateSettings, EmpresaAfiliada } from '../types';
 const GaleriaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ceo' | 'empresas'>('ceo');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -30,30 +31,34 @@ const GaleriaPage: React.FC = () => {
   const fetchGaleriaData = async () => {
     setLoading(true);
     try {
-      // Fetch Corporate Info
-      const { data: corpData, error: corpError } = await supabase.from('galeria').select('*');
+      // Fetch Corporate Info from config_sistema (key-value store)
+      const { data: corpData, error: corpError } = await supabase.from('config_sistema').select('*');
       if (corpError) throw corpError;
 
       if (corpData && corpData.length > 0) {
         const info: any = { ...corpInfo };
+        const relevantKeys = ['ceo_nome', 'ceo_mensagem', 'ceo_foto_url', 'fundacao_ano', 'sede_principal'];
         corpData.forEach((item: any) => {
-          info[item.chave] = item.valor;
+          if (relevantKeys.includes(item.chave)) {
+            info[item.chave] = item.valor;
+          }
         });
         setCorpInfo(info);
       } else {
-        // Initialize with defaults if empty
+        // Initialize config_sistema with defaults if completely empty
         const initial = [
-          { chave: 'ceo_nome', valor: corpInfo.ceo_nome },
-          { chave: 'ceo_mensagem', valor: corpInfo.ceo_mensagem },
-          { chave: 'ceo_foto_url', valor: corpInfo.ceo_foto_url },
-          { chave: 'fundacao_ano', valor: corpInfo.fundacao_ano },
-          { chave: 'sede_principal', valor: corpInfo.sede_principal }
+          { chave: 'ceo_nome', valor: corpInfo.ceo_nome, descricao: 'Nome do CEO da Amazing Corp' },
+          { chave: 'ceo_mensagem', valor: corpInfo.ceo_mensagem, descricao: 'Mensagem institucional do CEO' },
+          { chave: 'ceo_foto_url', valor: corpInfo.ceo_foto_url, descricao: 'URL da foto oficial do CEO' },
+          { chave: 'fundacao_ano', valor: corpInfo.fundacao_ano, descricao: 'Ano de fundação do grupo' },
+          { chave: 'sede_principal', valor: corpInfo.sede_principal, descricao: 'Localização da sede principal' }
         ];
-        await supabase.from('galeria').insert(initial);
+        // Use upsert to avoid conflict if some keys exist
+        await supabase.from('config_sistema').upsert(initial, { onConflict: 'chave' });
       }
 
       // Fetch Empresas
-      const { data: empData, error: empError } = await supabase.from('empresas').select('*');
+      const { data: empData, error: empError } = await supabase.from('empresas').select('*').order('nome');
       if (empError) throw empError;
       setEmpresas(empData || []);
 
@@ -68,24 +73,52 @@ const GaleriaPage: React.FC = () => {
     fetchGaleriaData();
   }, []);
 
+  // Helper for uploading files to Supabase Storage
+  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+    const filePath = `${folder}/${fileName}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('blog-media')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('blog-media')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (err) {
+      console.error('Upload error:', err);
+      return null;
+    }
+  };
 
   // Handler para Foto do CEO
   const handleCeoPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const photoUrl = reader.result as string;
-        try {
-          const { error } = await supabase.from('galeria').upsert({ chave: 'ceo_foto_url', valor: photoUrl }, { onConflict: 'chave' });
-          if (error) throw error;
-          setCorpInfo(prev => ({ ...prev, ceo_foto_url: photoUrl }));
-          AmazingStorage.logAction('Upload Foto', 'Institucional', 'Foto do CEO actualizada.');
-        } catch (err) {
-          alert('Erro ao guardar foto do CEO');
-        }
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        const publicUrl = await uploadFile(file, 'ceo');
+        if (!publicUrl) throw new Error('Falha no upload');
+
+        const { error } = await supabase
+          .from('config_sistema')
+          .upsert({ chave: 'ceo_foto_url', valor: publicUrl }, { onConflict: 'chave' });
+
+        if (error) throw error;
+
+        setCorpInfo(prev => ({ ...prev, ceo_foto_url: publicUrl }));
+        AmazingStorage.logAction('Upload Foto', 'Institucional', 'Foto do CEO actualizada via Storage.');
+      } catch (err) {
+        alert('Erro ao guardar foto do CEO. Verifique a ligação.');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -98,19 +131,25 @@ const GaleriaPage: React.FC = () => {
   const handleCompanyPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && selectedCompanyId) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const photoUrl = reader.result as string;
-        try {
-          const { error } = await supabase.from('empresas').update({ foto_url: photoUrl }).eq('id', selectedCompanyId);
-          if (error) throw error;
-          setEmpresas(prev => prev.map(emp => emp.id === selectedCompanyId ? { ...emp, foto_url: photoUrl } : emp));
-          AmazingStorage.logAction('Upload Foto', 'Empresas', `Foto da subsidiária actualizada.`);
-        } catch (err) {
-          alert('Erro ao guardar foto da empresa');
-        }
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        const publicUrl = await uploadFile(file, 'empresas');
+        if (!publicUrl) throw new Error('Falha no upload');
+
+        const { error } = await supabase
+          .from('empresas')
+          .update({ foto_url: publicUrl })
+          .eq('id', selectedCompanyId);
+
+        if (error) throw error;
+
+        setEmpresas(prev => prev.map(emp => emp.id === selectedCompanyId ? { ...emp, foto_url: publicUrl } : emp));
+        AmazingStorage.logAction('Upload Foto', 'Empresas', `Foto da subsidiária actualizada via Storage.`);
+      } catch (err) {
+        alert('Erro ao guardar foto da empresa');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -128,9 +167,8 @@ const GaleriaPage: React.FC = () => {
     ];
 
     try {
-      for (const update of updates) {
-        await supabase.from('galeria').upsert(update, { onConflict: 'chave' });
-      }
+      const { error } = await supabase.from('config_sistema').upsert(updates, { onConflict: 'chave' });
+      if (error) throw error;
 
       setCorpInfo(prev => ({
         ...prev,
@@ -140,7 +178,7 @@ const GaleriaPage: React.FC = () => {
         sede_principal: updates[3].valor
       }));
 
-      AmazingStorage.logAction('Actualização CEO', 'Institucional', `Perfil do CEO persistido no sistema cloud.`);
+      AmazingStorage.logAction('Actualização CEO', 'Institucional', `Perfil do CEO persistido no config_sistema.`);
 
       setIsSaving(false);
       setShowSuccess(true);
@@ -207,11 +245,15 @@ const GaleriaPage: React.FC = () => {
                 className="w-full aspect-square rounded-[2rem] bg-zinc-50 border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400 relative overflow-hidden mb-6 cursor-pointer hover:border-yellow-500 transition-all"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <img src={corpInfo.ceo_foto_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="CEO" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <img src={corpInfo.ceo_foto_url} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${isUploading ? 'opacity-50 blur-sm' : ''}`} alt="CEO" />
+                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                   <div className="flex flex-col items-center gap-2">
-                    <Camera size={40} className="text-white" />
-                    <span className="text-white text-[10px] font-black uppercase">Alterar Foto</span>
+                    {isUploading ? (
+                      <RefreshCw className="w-10 h-10 text-white animate-spin" />
+                    ) : (
+                      <Camera size={40} className="text-white" />
+                    )}
+                    <span className="text-white text-[10px] font-black uppercase">{isUploading ? 'A carregar...' : 'Alterar Foto'}</span>
                   </div>
                 </div>
               </div>
@@ -320,9 +362,14 @@ const GaleriaPage: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent"></div>
 
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                <div className={`absolute inset-0 flex items-center justify-center transition-opacity bg-black/20 ${isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                   <div className="bg-white p-4 rounded-2xl shadow-2xl text-zinc-900 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest">
-                    <Camera size={16} /> Trocar Foto
+                    {isUploading ? (
+                      <RefreshCw size={16} className="animate-spin" />
+                    ) : (
+                      <Camera size={16} />
+                    )}
+                    {isUploading ? 'A processar...' : 'Trocar Foto'}
                   </div>
                 </div>
 
