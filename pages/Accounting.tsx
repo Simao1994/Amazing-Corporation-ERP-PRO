@@ -194,6 +194,11 @@ const AccountingPage: React.FC = () => {
    const [isSyncingModules, setIsSyncingModules] = useState(false);
    const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
 
+   // --- MODELOS E REGRAS AUTOMÁTICAS ---
+   const [regrasAutomaticas, setRegrasAutomaticas] = useState<any[]>([]);
+   const [validacaoDC, setValidacaoDC] = useState<{ ok: boolean; msg: string }>({ ok: true, msg: '' });
+   const [isAutoLaunching, setIsAutoLaunching] = useState(false);
+
    // --- LÓGICA DE INTEGRIDADE DO LEDGER ---
    const handleCheckLedgerIntegrity = async () => {
       setIsCheckingIntegrity(true);
@@ -289,7 +294,7 @@ const AccountingPage: React.FC = () => {
 
          // 2. Carregar Dados Transacionais em PARALELO (Background)
          const [lnc, lncItens, flh, obl, logs, centros, configs, sLogs, extratosData,
-            faturas, tesouraria, rhRecibos, inventarioItems, stockMov] = await Promise.all([
+            faturas, tesouraria, rhRecibos, inventarioItems, stockMov, regras] = await Promise.all([
                fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }).limit(200), 'Motor Contábil'),
                fetchQuery(supabase.from('acc_lancamento_itens').select('*'), 'Itens'),
                fetchQuery(supabase.from('acc_folhas').select('*').order('mes_referencia', { ascending: false }), 'Folhas'),
@@ -304,7 +309,8 @@ const AccountingPage: React.FC = () => {
                fetchQuery(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }).limit(100), 'Tesouraria'),
                fetchQuery(supabase.from('hr_recibos').select('*').order('created_at', { ascending: false }).limit(100), 'RH/Salários'),
                fetchQuery(supabase.from('inventario').select('*').order('nome'), 'Inventário'),
-               fetchQuery(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100), 'Movimentos Stock')
+               fetchQuery(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100), 'Movimentos Stock'),
+               fetchQuery(supabase.from('acc_regras_automaticas').select('*').order('nome'), 'Modelos de Lançamento')
             ]);
 
          // Merging itens sync
@@ -331,6 +337,7 @@ const AccountingPage: React.FC = () => {
          setExtInventario(inventarioItems || []);
          setExtStockMov(stockMov || []);
          setLastSyncAt(new Date());
+         setRegrasAutomaticas(regras || []);
 
          setLoadingStatus('Sincronização concluída');
       } catch (error) {
@@ -644,15 +651,89 @@ const AccountingPage: React.FC = () => {
       }
    };
 
-   // --- LÓGICA NOVO LANÇAMENTO ---
+   // --- LANÇAMENTOS AUTOMÁTICOS: FATURAÇÃO ---
+   const handleAutoLaunchFromFatura = async (fatura: any) => {
+      if (!selectedEmpresaId || !selectedPeriodoId) {
+         alert('Selecione empresa e período antes de contabilizar.');
+         return;
+      }
+      setIsAutoLaunching(true);
+      try {
+         const regra = regrasAutomaticas.find(r => r.nome.toLowerCase().includes('venda')) || {
+            conta_debito_codigo: '3.1', conta_credito_codigo: '6.1'
+         };
+         const { data: head, error } = await supabase.from('acc_lancamentos').insert([{
+            data: fatura.data_emissao || new Date().toISOString().split('T')[0],
+            periodo_id: selectedPeriodoId,
+            descricao: `Fatura ${fatura.numero_fatura || ''} - ${fatura.cliente_nome || 'Cliente'}`,
+            empresa_id: selectedEmpresaId,
+            usuario_id: null,
+            status: 'Postado',
+            tipo_transacao: 'Automático'
+         }]).select().single();
+         if (error) throw error;
+         await supabase.from('acc_lancamento_itens').insert([
+            { lancamento_id: head.id, conta_codigo: regra.conta_debito_codigo, conta_nome: 'Clientes / Contas a Receber', tipo: 'D', valor: Number(fatura.valor_total) || 0 },
+            { lancamento_id: head.id, conta_codigo: regra.conta_credito_codigo, conta_nome: 'Vendas / Receitas de Serviços', tipo: 'C', valor: Number(fatura.valor_total) || 0 }
+         ]);
+         await fetchAccountingData();
+         alert(`Lançamento automático criado para a fatura ${fatura.numero_fatura || ''}!`);
+      } catch (err) {
+         alert('Erro ao criar lançamento automático.');
+      } finally {
+         setIsAutoLaunching(false);
+      }
+   };
+
+   // --- LANÇAMENTOS AUTOMÁTICOS: TESOURARIA ---
+   const handleAutoLaunchFromTesouraria = async (transacao: any) => {
+      if (!selectedEmpresaId || !selectedPeriodoId) {
+         alert('Selecione empresa e período antes de contabilizar.');
+         return;
+      }
+      setIsAutoLaunching(true);
+      try {
+         const isEntrada = transacao.tipo === 'Entrada' || transacao.tipo === 'entrada' || transacao.tipo === 'receita';
+         const { data: head, error } = await supabase.from('acc_lancamentos').insert([{
+            data: transacao.data || new Date().toISOString().split('T')[0],
+            periodo_id: selectedPeriodoId,
+            descricao: transacao.descricao || transacao.categoria || 'Mov. Tesouraria',
+            empresa_id: selectedEmpresaId,
+            usuario_id: null,
+            status: 'Postado',
+            tipo_transacao: 'Automático'
+         }]).select().single();
+         if (error) throw error;
+         await supabase.from('acc_lancamento_itens').insert([
+            { lancamento_id: head.id, conta_codigo: isEntrada ? '1.1' : '7.5', conta_nome: isEntrada ? 'Caixa/Bancos' : 'Outros Gastos', tipo: 'D', valor: Number(transacao.valor) || 0 },
+            { lancamento_id: head.id, conta_codigo: isEntrada ? '6.1' : '1.1', conta_nome: isEntrada ? 'Receitas' : 'Caixa/Bancos', tipo: 'C', valor: Number(transacao.valor) || 0 }
+         ]);
+         await fetchAccountingData();
+         alert('Lançamento automático de tesouraria criado!');
+      } catch (err) {
+         alert('Erro ao criar lançamento automático.');
+      } finally {
+         setIsAutoLaunching(false);
+      }
+   };
+
+   // --- LÓGICA NOVO LANÇAMENTO (com validação D=C) ---
    const handleNewEntry = async (e: React.FormEvent) => {
       e.preventDefault();
       if (newEntry.valor <= 0) {
-         alert("O valor deve ser maior que zero.");
+         alert('O valor deve ser maior que zero.');
+         return;
+      }
+      if (newEntry.contaDebito === newEntry.contaCredito) {
+         alert('A conta de Débito e a conta de Crédito não podem ser iguais.');
          return;
       }
       const debito = planoContas.find(c => c.codigo === newEntry.contaDebito);
       const credito = planoContas.find(c => c.codigo === newEntry.contaCredito);
+      if (!debito || !credito) {
+         alert('Selecione contas válidas para Débito e Crédito.');
+         return;
+      }
 
       try {
          // 1. Inserir cabeçalho
@@ -665,10 +746,9 @@ const AccountingPage: React.FC = () => {
             status: 'Postado',
             tipo_transacao: 'Manual'
          }]).select().single();
-
          if (hError) throw hError;
 
-         // 2. Inserir itens
+         // 2. Inserir itens D e C (valores iguais — soma D = soma C garantida)
          await supabase.from('acc_lancamento_itens').insert([
             { lancamento_id: head.id, conta_codigo: debito!.codigo, conta_nome: debito!.nome, tipo: 'D', valor: Number(newEntry.valor) },
             { lancamento_id: head.id, conta_codigo: credito!.codigo, conta_nome: credito!.nome, tipo: 'C', valor: Number(newEntry.valor) }
@@ -2001,18 +2081,41 @@ const AccountingPage: React.FC = () => {
          {
             showEntryModal && (
                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                  <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                  <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
                      <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
                         <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
                            <BookOpen className="text-yellow-500" /> Novo Lançamento Contábil
                         </h2>
                         <button onClick={() => setShowEntryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                      </div>
-                     <div className="px-8 pt-6 pb-2">
+
+                     {/* Modelos Pré-definidos */}
+                     {regrasAutomaticas.length > 0 && (
+                        <div className="px-8 pt-6 pb-2">
+                           <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Modelos Pré-definidos</p>
+                           <div className="flex flex-wrap gap-2">
+                              {[
+                                 { label: 'Venda', debito: '3.1', credito: '6.1' },
+                                 { label: 'Compra Stock', debito: '2.1', credito: '3.2' },
+                                 { label: 'Salários', debito: '7.2', credito: '1.1' },
+                                 { label: 'Pagamento Fornecedor', debito: '4.1', credito: '1.1' },
+                                 { label: 'Recibo de Cliente', debito: '1.1', credito: '3.1' },
+                                 ...regrasAutomaticas.map(r => ({ label: r.nome, debito: r.conta_debito_codigo, credito: r.conta_credito_codigo }))
+                              ].filter((v, i, a) => a.findIndex(x => x.label === v.label) === i).map((modelo, i) => (
+                                 <button key={i} type="button"
+                                    onClick={() => setNewEntry(prev => ({ ...prev, contaDebito: modelo.debito, contaCredito: modelo.credito, descricao: prev.descricao || modelo.label }))}
+                                    className="px-3 py-1.5 bg-zinc-50 border border-zinc-200 hover:bg-yellow-50 hover:border-yellow-300 text-zinc-600 hover:text-yellow-700 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">
+                                    {modelo.label}
+                                 </button>
+                              ))}
+                           </div>
+                        </div>
+                     )}
+
+                     <div className="px-8 pt-4 pb-2">
                         <div
                            onClick={async () => {
                               alert("Funcionalidade de Scanner de Documentos Activa. Seleccione um PDF para análise via Amazing IA.");
-                              // Lógica simulada de OCR/IA para o demo
                               setTimeout(() => {
                                  setNewEntry({
                                     ...newEntry,
@@ -2045,6 +2148,7 @@ const AccountingPage: React.FC = () => {
                               {isSuggestingAccounts ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
                            </button>
                         </div>
+
                         <div className="grid grid-cols-2 gap-6">
                            <Select name="contaDebito" label="Conta a Debitar"
                               value={newEntry.contaDebito} onChange={e => setNewEntry({ ...newEntry, contaDebito: e.target.value })}
@@ -2065,6 +2169,23 @@ const AccountingPage: React.FC = () => {
                               value={newEntry.data} onChange={e => setNewEntry({ ...newEntry, data: e.target.value })}
                            />
                         </div>
+                        {/* Indicador de validação D = C em tempo real */}
+                        {(() => {
+                           const debitoConta = planoContas.find(c => c.codigo === newEntry.contaDebito);
+                           const creditoConta = planoContas.find(c => c.codigo === newEntry.contaCredito);
+                           const valOk = newEntry.valor > 0 && debitoConta && creditoConta && newEntry.contaDebito !== newEntry.contaCredito;
+                           return (
+                              <div className={`flex items-center justify-between p-4 rounded-2xl border-2 ${valOk ? 'bg-green-50 border-green-200' : 'bg-zinc-50 border-zinc-200'}`}>
+                                 <div className="flex items-center gap-2">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${valOk ? 'bg-green-500' : 'bg-zinc-300'}`} />
+                                    <span className={`text-[9px] font-black uppercase tracking-widest ${valOk ? 'text-green-700' : 'text-zinc-400'}`}>
+                                       {valOk ? 'Débito = Crédito — Lançamento equilibrado' : 'Selecione contas e valor para validar'}
+                                    </span>
+                                 </div>
+                                 {valOk && <span className="text-[9px] font-black text-green-700 bg-green-100 px-2 py-1 rounded-lg">D = C = {safeFormatAOA(newEntry.valor)}</span>}
+                              </div>
+                           );
+                        })()}
                         <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
                            <Save size={18} /> Confirmar Lançamento
                         </button>
@@ -2114,7 +2235,8 @@ const AccountingPage: React.FC = () => {
                      label: f.numero_fatura || f.cliente_nome || '—',
                      value: safeFormatAOA(f.valor_total),
                      sub: f.status || '',
-                     date: f.data_emissao || ''
+                     date: f.data_emissao || '',
+                     onAutoLaunch: () => handleAutoLaunchFromFatura(f)
                   }))
                },
                {
@@ -2129,7 +2251,8 @@ const AccountingPage: React.FC = () => {
                      label: t.descricao || t.categoria || '—',
                      value: safeFormatAOA(t.valor),
                      sub: t.tipo || '',
-                     date: t.data || ''
+                     date: t.data || '',
+                     onAutoLaunch: () => handleAutoLaunchFromTesouraria(t)
                   }))
                },
                {
@@ -2144,7 +2267,8 @@ const AccountingPage: React.FC = () => {
                      label: `${r.mes || ''}/${r.ano || ''}`,
                      value: safeFormatAOA(r.liquido),
                      sub: `Bruto: ${safeFormatAOA(r.bruto)}`,
-                     date: ''
+                     date: '',
+                     onAutoLaunch: undefined
                   }))
                },
                {
@@ -2159,7 +2283,8 @@ const AccountingPage: React.FC = () => {
                      label: i.nome || '—',
                      value: `${Number(i.quantidade_atual) || 0} ${i.unidade || 'un'}`,
                      sub: safeFormatAOA((Number(i.quantidade_atual) || 0) * (Number(i.preco_unitario) || 0)),
-                     date: ''
+                     date: '',
+                     onAutoLaunch: undefined
                   }))
                },
             ];
@@ -2226,12 +2351,21 @@ const AccountingPage: React.FC = () => {
                                     {mod.items.map((item, k) => (
                                        <div key={k} className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0">
                                           <div>
-                                             <p className="text-xs font-bold text-zinc-700 truncate max-w-[160px]">{item.label}</p>
+                                             <p className="text-xs font-bold text-zinc-700 truncate max-w-[140px]">{item.label}</p>
                                              <p className="text-[9px] text-zinc-400 font-bold">{item.sub}</p>
                                           </div>
-                                          <div className="text-right">
-                                             <p className="text-xs font-black text-zinc-900">{item.value}</p>
-                                             {item.date && <p className="text-[8px] text-zinc-400">{item.date}</p>}
+                                          <div className="text-right flex items-center gap-2">
+                                             <div>
+                                                <p className="text-xs font-black text-zinc-900">{item.value}</p>
+                                                {item.date && <p className="text-[8px] text-zinc-400">{item.date}</p>}
+                                             </div>
+                                             {item.onAutoLaunch && (
+                                                <button onClick={item.onAutoLaunch} disabled={isAutoLaunching}
+                                                   title="Contabilizar automaticamente"
+                                                   className="p-1.5 bg-zinc-900 text-yellow-400 rounded-lg hover:bg-yellow-500 hover:text-zinc-900 transition-all disabled:opacity-40 text-[8px]">
+                                                   <BookOpen size={10} />
+                                                </button>
+                                             )}
                                           </div>
                                        </div>
                                     ))}
