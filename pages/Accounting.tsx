@@ -7,7 +7,7 @@ import {
    MoreVertical, Lock, ShieldAlert, Search, Building2, DollarSign,
    Plus, Download, FileText, BookOpen, Briefcase,
    Save, X, Printer, FileCheck, ShieldCheck, RefreshCw, ShieldAlert as AuditIcon,
-   ListFilter, Share2, PieChart as PieChartIcon
+   ListFilter, Share2, PieChart as PieChartIcon, ShoppingCart, RotateCcw
 } from 'lucide-react';
 import {
    ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
@@ -199,6 +199,26 @@ const AccountingPage: React.FC = () => {
    const [validacaoDC, setValidacaoDC] = useState<{ ok: boolean; msg: string }>({ ok: true, msg: '' });
    const [isAutoLaunching, setIsAutoLaunching] = useState(false);
 
+   // --- COMPRAS ---
+   const [compras, setCompras] = useState<any[]>([]);
+   const [showCompraModal, setShowCompraModal] = useState(false);
+   const [newCompra, setNewCompra] = useState({
+      numero_compra: '', fornecedor_nome: '', fornecedor_nif: '',
+      data_compra: new Date().toISOString().split('T')[0],
+      descricao: '', categoria: 'Mercadorias', valor_total: 0, iva: 0, valor_liquido: 0, status: 'Pendente'
+   });
+   const [isSavingCompra, setIsSavingCompra] = useState(false);
+
+   // --- APROVAÇÃO DE LANÇAMENTOS ---
+   const [pendingApproval, setPendingApproval] = useState<any[]>([]);
+   const [isApprovingId, setIsApprovingId] = useState<string | null>(null);
+   const [showApprovalModal, setShowApprovalModal] = useState(false);
+   const [approvalTarget, setApprovalTarget] = useState<any | null>(null);
+   const [approvalObs, setApprovalObs] = useState('');
+
+   // --- ESTORNO ---
+   const [isEstornandoId, setIsEstornandoId] = useState<string | null>(null);
+
    // --- LÓGICA DE INTEGRIDADE DO LEDGER ---
    const handleCheckLedgerIntegrity = async () => {
       setIsCheckingIntegrity(true);
@@ -294,7 +314,7 @@ const AccountingPage: React.FC = () => {
 
          // 2. Carregar Dados Transacionais em PARALELO (Background)
          const [lnc, lncItens, flh, obl, logs, centros, configs, sLogs, extratosData,
-            faturas, tesouraria, rhRecibos, inventarioItems, stockMov, regras] = await Promise.all([
+            faturas, tesouraria, rhRecibos, inventarioItems, stockMov, regras, comprasData] = await Promise.all([
                fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }).limit(200), 'Motor Contábil'),
                fetchQuery(supabase.from('acc_lancamento_itens').select('*'), 'Itens'),
                fetchQuery(supabase.from('acc_folhas').select('*').order('mes_referencia', { ascending: false }), 'Folhas'),
@@ -310,7 +330,8 @@ const AccountingPage: React.FC = () => {
                fetchQuery(supabase.from('hr_recibos').select('*').order('created_at', { ascending: false }).limit(100), 'RH/Salários'),
                fetchQuery(supabase.from('inventario').select('*').order('nome'), 'Inventário'),
                fetchQuery(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100), 'Movimentos Stock'),
-               fetchQuery(supabase.from('acc_regras_automaticas').select('*').order('nome'), 'Modelos de Lançamento')
+               fetchQuery(supabase.from('acc_regras_automaticas').select('*').order('nome'), 'Modelos de Lançamento'),
+               fetchQuery(supabase.from('compras').select('*').order('data_compra', { ascending: false }).limit(100), 'Compras')
             ]);
 
          // Merging itens sync
@@ -338,6 +359,9 @@ const AccountingPage: React.FC = () => {
          setExtStockMov(stockMov || []);
          setLastSyncAt(new Date());
          setRegrasAutomaticas(regras || []);
+         setCompras(comprasData || []);
+         // Lançamentos aguardando aprovação (status 'Rascunho' ou 'PendenteAprovacao')
+         setPendingApproval((mergedLnc || []).filter((l: any) => l.status === 'Rascunho' || l.status === 'PendenteAprovacao'));
 
          setLoadingStatus('Sincronização concluída');
       } catch (error) {
@@ -717,8 +741,147 @@ const AccountingPage: React.FC = () => {
       }
    };
 
+   // ============================================================
+   // --- COMPRAS: REGISTO + LANÇAMENTO AUTOMÁTICO ---
+   // ============================================================
+   const handleSaveCompra = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!selectedEmpresaId) { alert('Selecione uma empresa.'); return; }
+      setIsSavingCompra(true);
+      try {
+         // 1. Inserir compra
+         const { data: compra, error: cErr } = await supabase.from('compras').insert([{
+            ...newCompra,
+            empresa_id: selectedEmpresaId,
+            periodo_id: selectedPeriodoId || null,
+            valor_liquido: Number(newCompra.valor_total) - Number(newCompra.iva)
+         }]).select().single();
+         if (cErr) throw cErr;
+
+         // 2. Criar lançamento automático se a empresa tiver período activo
+         if (selectedPeriodoId) {
+            const regra = regrasAutomaticas.find(r => r.nome.toLowerCase().includes('compra')) || {
+               conta_debito_codigo: '2.1', conta_credito_codigo: '3.2'
+            };
+            const { data: head, error: hErr } = await supabase.from('acc_lancamentos').insert([{
+               data: newCompra.data_compra,
+               periodo_id: selectedPeriodoId,
+               descricao: `Compra ${newCompra.numero_compra || ''} — ${newCompra.fornecedor_nome || 'Fornecedor'}`,
+               empresa_id: selectedEmpresaId,
+               usuario_id: null,
+               status: 'Postado',
+               tipo_transacao: 'Automático'
+            }]).select().single();
+            if (!hErr && head) {
+               await supabase.from('acc_lancamento_itens').insert([
+                  { lancamento_id: head.id, conta_codigo: regra.conta_debito_codigo, conta_nome: 'Inventário / Activos Circulantes', tipo: 'D', valor: Number(newCompra.valor_total) },
+                  { lancamento_id: head.id, conta_codigo: regra.conta_credito_codigo, conta_nome: 'Fornecedores / Contas a Pagar', tipo: 'C', valor: Number(newCompra.valor_total) }
+               ]);
+               // Marcar compra como contabilizada
+               await supabase.from('compras').update({ contabilizado: true, lancamento_id: head.id }).eq('id', compra.id);
+            }
+         }
+
+         await fetchAccountingData();
+         setShowCompraModal(false);
+         setNewCompra({ numero_compra: '', fornecedor_nome: '', fornecedor_nif: '', data_compra: new Date().toISOString().split('T')[0], descricao: '', categoria: 'Mercadorias', valor_total: 0, iva: 0, valor_liquido: 0, status: 'Pendente' });
+         alert('Compra registada e contabilizada com sucesso!');
+      } catch (err) {
+         alert('Erro ao registar compra.');
+      } finally {
+         setIsSavingCompra(false);
+      }
+   };
+
+   // ============================================================
+   // --- APROVAÇÃO DE LANÇAMENTOS ---
+   // ============================================================
+   const handleAprovarLancamento = async (lancamento: any, obs: string) => {
+      setIsApprovingId(lancamento.id);
+      try {
+         const { error } = await supabase.from('acc_lancamentos').update({
+            status: 'Postado',
+            aprovado_por: 'Utilizador Actual',
+            aprovado_em: new Date().toISOString(),
+            aprovacao_obs: obs || null
+         }).eq('id', lancamento.id);
+         if (error) throw error;
+         await fetchAccountingData();
+         setShowApprovalModal(false);
+         setApprovalTarget(null);
+         setApprovalObs('');
+         alert('Lançamento aprovado e postado com sucesso!');
+      } catch (err) {
+         alert('Erro ao aprovar lançamento.');
+      } finally {
+         setIsApprovingId(null);
+      }
+   };
+
+   const handleRejeitarLancamento = async (lancamento: any) => {
+      if (!confirm('Rejeitar e eliminar este lançamento?')) return;
+      try {
+         await supabase.from('acc_lancamento_itens').delete().eq('lancamento_id', lancamento.id);
+         await supabase.from('acc_lancamentos').delete().eq('id', lancamento.id);
+         await fetchAccountingData();
+      } catch (err) {
+         alert('Erro ao rejeitar lançamento.');
+      }
+   };
+
+   // ============================================================
+   // --- ESTORNO DE LANÇAMENTOS ---
+   // ============================================================
+   const handleEstornarLancamento = async (lancamento: any) => {
+      if (lancamento.estornado) { alert('Este lançamento já foi estornado.'); return; }
+      if (!confirm(`Criar estorno do lançamento "${lancamento.descricao}"? Esta acção é irreversível.`)) return;
+      setIsEstornandoId(lancamento.id);
+      try {
+         // 1. Criar lançamento espelho com D/C invertidos
+         const { data: estornoHead, error: eErr } = await supabase.from('acc_lancamentos').insert([{
+            data: new Date().toISOString().split('T')[0],
+            periodo_id: lancamento.periodo_id || selectedPeriodoId,
+            descricao: `ESTORNO: ${lancamento.descricao}`,
+            empresa_id: lancamento.empresa_id,
+            usuario_id: null,
+            status: 'Postado',
+            tipo_transacao: 'Estorno'
+         }]).select().single();
+         if (eErr) throw eErr;
+
+         // 2. Inverter itens D→C e C→D
+         const itensOriginais = lancamento.itens || [];
+         if (itensOriginais.length > 0) {
+            await supabase.from('acc_lancamento_itens').insert(
+               itensOriginais.map((it: any) => ({
+                  lancamento_id: estornoHead.id,
+                  conta_codigo: it.conta_codigo,
+                  conta_nome: it.conta_nome,
+                  tipo: it.tipo === 'D' ? 'C' : 'D',
+                  valor: it.valor
+               }))
+            );
+         }
+
+         // 3. Marcar original como estornado
+         await supabase.from('acc_lancamentos').update({
+            estornado: true,
+            estorno_ref_id: estornoHead.id,
+            estorno_em: new Date().toISOString()
+         }).eq('id', lancamento.id);
+
+         await fetchAccountingData();
+         alert(`Estorno criado com sucesso! Referência: ${estornoHead.id.slice(0, 8).toUpperCase()}`);
+      } catch (err) {
+         alert('Erro ao criar estorno.');
+      } finally {
+         setIsEstornandoId(null);
+      }
+   };
+
    // --- LÓGICA NOVO LANÇAMENTO (com validação D=C) ---
    const handleNewEntry = async (e: React.FormEvent) => {
+
       e.preventDefault();
       if (newEntry.valor <= 0) {
          alert('O valor deve ser maior que zero.');
@@ -1268,6 +1431,12 @@ const AccountingPage: React.FC = () => {
                         </div>
                      )}
                      <button
+                        onClick={() => setShowCompraModal(true)}
+                        className="px-6 py-4 bg-orange-100 text-orange-700 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-orange-500 hover:text-white transition-all"
+                     >
+                        <ShoppingCart size={16} /> Registar Compra
+                     </button>
+                     <button
                         onClick={() => setShowEntryModal(true)}
                         disabled={periodos.find(p => p.id === selectedPeriodoId)?.status === 'Fechado'}
                         className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl disabled:opacity-50"
@@ -1286,6 +1455,8 @@ const AccountingPage: React.FC = () => {
                            <th className="px-10 py-6">Histórico / Descrição</th>
                            <th className="px-10 py-6 text-right">Valor Total</th>
                            <th className="px-10 py-6 text-center">Status</th>
+                           <th className="px-10 py-6 text-center">Tipo</th>
+                           <th className="px-6 py-6 text-center">Acções</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-zinc-100">
@@ -1313,12 +1484,31 @@ const AccountingPage: React.FC = () => {
                                     {safeFormatAOA(l.itens?.filter(i => i.tipo === 'D').reduce((acc, it) => acc + (Number(it.valor) || 0), 0) || 0)}
                                  </td>
                                  <td className="px-10 py-8 text-center">
-                                    <span className="px-5 py-2.5 bg-green-50 text-green-600 rounded-2xl text-[9px] font-black uppercase tracking-widest border border-green-100">{l.status || 'Postado'}</span>
+                                    <span className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border ${l.estornado ? 'bg-red-50 text-red-600 border-red-100' :
+                                       l.status === 'Postado' ? 'bg-green-50 text-green-600 border-green-100' :
+                                          l.status === 'Rascunho' || l.status === 'PendenteAprovacao' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                                             'bg-zinc-50 text-zinc-500 border-zinc-100'
+                                       }`}>{l.estornado ? 'Estornado' : (l.status || 'Postado')}</span>
+                                 </td>
+                                 <td className="px-10 py-8 text-center">
+                                    <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest ${l.tipo_transacao === 'Automático' ? 'bg-blue-50 text-blue-600' :
+                                       l.tipo_transacao === 'Estorno' ? 'bg-red-50 text-red-600' :
+                                          l.tipo_transacao === 'Folha' ? 'bg-purple-50 text-purple-600' :
+                                             'bg-zinc-50 text-zinc-500'
+                                       }`}>{l.tipo_transacao || 'Manual'}</span>
+                                 </td>
+                                 <td className="px-6 py-8 text-center">
+                                    {!l.estornado && l.status === 'Postado' ? (
+                                       <button onClick={() => handleEstornarLancamento(l)} disabled={isEstornandoId === l.id}
+                                          title="Criar Estorno" className="p-2 bg-zinc-50 hover:bg-red-50 hover:text-red-600 text-zinc-400 rounded-xl transition-all disabled:opacity-40">
+                                          {isEstornandoId === l.id ? <RefreshCw size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                                       </button>
+                                    ) : <span className="text-zinc-200">—</span>}
                                  </td>
                               </tr>
                            ))
                         ) : (
-                           <tr><td colSpan={5} className="text-center py-20 text-zinc-400 font-bold italic">Nenhum lançamento registado para este período.</td></tr>
+                           <tr><td colSpan={7} className="text-center py-20 text-zinc-400 font-bold italic">Nenhum lançamento registado para este período.</td></tr>
                         )}
                      </tbody>
                   </table>
@@ -2194,8 +2384,155 @@ const AccountingPage: React.FC = () => {
                </div>
             )
          }
+         {/* ===== MODAL DE COMPRAS ===== */}
+         {showCompraModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-orange-50">
+                     <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                        <ShoppingCart className="text-orange-500" size={24} /> Registar Compra
+                     </h2>
+                     <button onClick={() => setShowCompraModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
+                  </div>
+                  <form onSubmit={handleSaveCompra} className="p-8 space-y-5">
+                     <div className="grid grid-cols-2 gap-4">
+                        <Input name="numero_compra" label="N.º Compra" value={newCompra.numero_compra}
+                           onChange={e => setNewCompra({ ...newCompra, numero_compra: e.target.value })} placeholder="COMP-001" />
+                        <Input name="data_compra" label="Data" type="date" required value={newCompra.data_compra}
+                           onChange={e => setNewCompra({ ...newCompra, data_compra: e.target.value })} />
+                     </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <Input name="fornecedor_nome" label="Fornecedor" required value={newCompra.fornecedor_nome}
+                           onChange={e => setNewCompra({ ...newCompra, fornecedor_nome: e.target.value })} placeholder="Nome do fornecedor" />
+                        <Input name="fornecedor_nif" label="NIF Fornecedor" value={newCompra.fornecedor_nif}
+                           onChange={e => setNewCompra({ ...newCompra, fornecedor_nif: e.target.value })} placeholder="000000000" />
+                     </div>
+                     <Input name="descricao" label="Descrição / Artigos" value={newCompra.descricao}
+                        onChange={e => setNewCompra({ ...newCompra, descricao: e.target.value })} placeholder="Ex: Aquisição de materiais de escritório" />
+                     <div className="grid grid-cols-3 gap-4">
+                        <Input name="valor_total" label="Valor Total (AOA)" type="number" required value={newCompra.valor_total}
+                           onChange={e => setNewCompra({ ...newCompra, valor_total: Number(e.target.value) })} />
+                        <Input name="iva" label="IVA (AOA)" type="number" value={newCompra.iva}
+                           onChange={e => setNewCompra({ ...newCompra, iva: Number(e.target.value) })} />
+                        <div>
+                           <label className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Categoria</label>
+                           <select value={newCompra.categoria} onChange={e => setNewCompra({ ...newCompra, categoria: e.target.value })}
+                              className="w-full border border-zinc-200 rounded-xl p-2.5 text-xs font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                              {['Mercadorias', 'Serviços', 'Imobilizado', 'Matérias-Primas', 'Outros'].map(c => (
+                                 <option key={c} value={c}>{c}</option>
+                              ))}
+                           </select>
+                        </div>
+                     </div>
+                     {/* Preview lançamento automático */}
+                     {newCompra.valor_total > 0 && (
+                        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
+                           <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2">Lançamento Automático Gerado</p>
+                           <div className="flex justify-between text-xs font-bold text-zinc-700">
+                              <span>D: 2.1 Inventário / Activos</span>
+                              <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
+                           </div>
+                           <div className="flex justify-between text-xs font-bold text-zinc-700">
+                              <span>C: 3.2 Fornecedores / Contas a Pagar</span>
+                              <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
+                           </div>
+                        </div>
+                     )}
+                     <button type="submit" disabled={isSavingCompra}
+                        className="w-full py-5 bg-orange-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-orange-600 transition-all disabled:opacity-50">
+                        {isSavingCompra ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                        {isSavingCompra ? 'A Guardar...' : 'Registar Compra + Contabilizar'}
+                     </button>
+                  </form>
+               </div>
+            </div>
+         )}
+
+         {/* ===== PAINEL DE APROVAÇÃO PENDENTE (badge flutuante) ===== */}
+         {pendingApproval.length > 0 && (
+            <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
+               <button onClick={() => setShowApprovalModal(true)}
+                  className="flex items-center gap-3 bg-yellow-500 text-zinc-900 px-5 py-4 rounded-2xl shadow-2xl font-black text-sm hover:bg-yellow-400 transition-all">
+                  <div className="relative">
+                     <CheckCircle2 size={22} />
+                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+                        {pendingApproval.length}
+                     </span>
+                  </div>
+                  {pendingApproval.length} Lançamento{pendingApproval.length > 1 ? 's' : ''} Aguarda{pendingApproval.length === 1 ? '' : 'm'} Aprovação
+               </button>
+            </div>
+         )}
+
+         {/* ===== MODAL DE APROVAÇÃO ===== */}
+         {showApprovalModal && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-yellow-50">
+                     <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                        <CheckCircle2 className="text-yellow-500" size={24} /> Aprovação de Lançamentos
+                     </h2>
+                     <button onClick={() => { setShowApprovalModal(false); setApprovalTarget(null); setApprovalObs(''); }} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
+                  </div>
+                  {approvalTarget ? (
+                     // Detalhe do lançamento a aprovar
+                     <div className="p-8 space-y-5">
+                        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4">
+                           <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">Lançamento</p>
+                           <p className="font-black text-zinc-900">{approvalTarget.descricao}</p>
+                           <p className="text-xs text-zinc-500 mt-1">{approvalTarget.data ? new Date(approvalTarget.data).toLocaleDateString('pt-PT') : ''} · {approvalTarget.tipo_transacao}</p>
+                        </div>
+                        <div className="space-y-2">
+                           <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens do Lançamento</p>
+                           {(approvalTarget.itens || []).map((it: any, i: number) => (
+                              <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-50 text-xs">
+                                 <span className="font-bold text-zinc-700">{it.conta_codigo} — {it.conta_nome}</span>
+                                 <span className={`font-black px-2 py-0.5 rounded-lg ${it.tipo === 'D' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
+                                    {it.tipo} {safeFormatAOA(it.valor)}
+                                 </span>
+                              </div>
+                           ))}
+                        </div>
+                        <div>
+                           <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Observações (Opcional)</label>
+                           <textarea value={approvalObs} onChange={e => setApprovalObs(e.target.value)}
+                              className="w-full border border-zinc-200 rounded-2xl p-4 text-xs text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400" rows={3}
+                              placeholder="Notas de aprovação..." />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                           <button onClick={() => handleRejeitarLancamento(approvalTarget)}
+                              className="py-4 bg-red-50 text-red-700 border border-red-200 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                              <X size={14} /> Rejeitar
+                           </button>
+                           <button onClick={() => handleAprovarLancamento(approvalTarget, approvalObs)} disabled={isApprovingId === approvalTarget.id}
+                              className="py-4 bg-green-500 text-white font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                              {isApprovingId ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Aprovar e Postar
+                           </button>
+                        </div>
+                        <button onClick={() => { setApprovalTarget(null); setApprovalObs(''); }} className="w-full text-xs text-zinc-400 hover:text-zinc-600 transition-colors">← Voltar à lista</button>
+                     </div>
+                  ) : (
+                     // Lista de lançamentos pendentes
+                     <div className="p-8 space-y-3">
+                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-4">{pendingApproval.length} lançamento(s) aguardam revisão</p>
+                        {pendingApproval.map(l => (
+                           <div key={l.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-yellow-50 hover:border-yellow-200 transition-all cursor-pointer" onClick={() => setApprovalTarget(l)}>
+                              <div>
+                                 <p className="text-sm font-black text-zinc-800">{l.descricao}</p>
+                                 <p className="text-[9px] text-zinc-400 font-bold uppercase">{l.tipo_transacao} · {l.data ? new Date(l.data).toLocaleDateString('pt-PT') : ''}</p>
+                              </div>
+                              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-[9px] font-black rounded-lg uppercase tracking-widest">Pendente</span>
+                           </div>
+                        ))}
+                     </div>
+                  )}
+               </div>
+            </div>
+         )}
+
          {/* --- ABA: FONTES DE DADOS (INTEGRAÇÃO AUTOMÁTICA) --- */}
          {activeTab === 'fontes' && (() => {
+
             // ─── Métricas por Módulo ───
             const totalFaturas = extFaturas.reduce((s, f) => s + (Number(f.valor_total) || 0), 0);
             const faturasPagas = extFaturas.filter(f => f.status === 'pago' || f.status === 'Paga').length;
