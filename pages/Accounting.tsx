@@ -73,7 +73,8 @@ const AccountingPage: React.FC = () => {
 
    // --- LÓGICA DE PERÍODOS ---
    const handleOpenYear = async () => {
-      const lastYear = periodos.length > 0 ? Math.max(...periodos.map(p => Number(p.ano))) : new Date().getFullYear();
+      const companyPeriods = periodos.filter(p => p.empresa_id === selectedEmpresaId);
+      const lastYear = companyPeriods.length > 0 ? Math.max(...companyPeriods.map(p => Number(p.ano))) : new Date().getFullYear();
       const nextYear = lastYear + 1;
 
       if (!confirm(`Deseja abrir o exercício fiscal de ${nextYear}?`)) return;
@@ -292,6 +293,18 @@ const AccountingPage: React.FC = () => {
    useEffect(() => {
       fetchAccountingData();
    }, []);
+
+   // Garantir que o período selecionado pertence à empresa selecionada
+   useEffect(() => {
+      if (!selectedEmpresaId || periodos.length === 0) return;
+
+      const companyPeriods = periodos.filter(p => p.empresa_id === selectedEmpresaId);
+      const isPeriodValid = companyPeriods.some(p => p.id === selectedPeriodoId);
+
+      if (!isPeriodValid && companyPeriods.length > 0) {
+         setSelectedPeriodoId(companyPeriods[0].id);
+      }
+   }, [selectedEmpresaId, periodos, selectedPeriodoId]);
 
    const currentEmpresa = empresas?.find(e => e.id === selectedEmpresaId) || empresas?.[0];
 
@@ -726,7 +739,7 @@ const AccountingPage: React.FC = () => {
                      onChange={(e) => setSelectedPeriodoId(e.target.value)}
                      className="bg-transparent border-none focus:ring-0 text-sm font-black uppercase text-zinc-800 pr-10 cursor-pointer outline-none"
                   >
-                     {(periodos || []).map(p => (
+                     {(periodos || []).filter(p => p.empresa_id === selectedEmpresaId).map(p => (
                         <option key={p.id} value={p.id}>{`${p.mes}/${p.ano} - ${p.status}`}</option>
                      ))}
                      {(!periodos || periodos.length === 0) && <option value="">Sem Períodos</option>}
@@ -1312,7 +1325,7 @@ const AccountingPage: React.FC = () => {
                            </button>
                         </div>
                         <div className="divide-y divide-zinc-100">
-                           {periodos.map(p => (
+                           {periodos.filter(p => p.empresa_id === selectedEmpresaId).map(p => (
                               <div key={p.id} className="p-8 flex items-center justify-between group hover:bg-zinc-50 transition-all">
                                  <div className="flex items-center gap-6">
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${p.status === 'Aberto' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
@@ -1340,8 +1353,8 @@ const AccountingPage: React.FC = () => {
                                  </div>
                               </div>
                            ))}
-                           {periodos.length === 0 && (
-                              <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum período contabilístico configurado.</div>
+                           {periodos.filter(p => p.empresa_id === selectedEmpresaId).length === 0 && (
+                              <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum período contabilístico configurado para esta unidade.</div>
                            )}
                         </div>
                      </div>
