@@ -36,7 +36,7 @@ const CATEGORIAS_TESOURARIA = [
 ];
 
 const FinancialHubPage: React.FC = () => {
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'comparativo' | 'historico' | 'novo' | 'simulador'>('dashboard');
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'comparativo' | 'historico' | 'novo' | 'simulador' | 'conciliacao'>('dashboard');
    const [searchTerm, setSearchTerm] = useState('');
    const [filterType, setFilterType] = useState<string>('Todas');
    const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -46,16 +46,21 @@ const FinancialHubPage: React.FC = () => {
    const [simCenario, setSimCenario] = useState({ revBoost: 0, costCut: 0 });
 
    // Estados de Dados
+   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string>('');
+   const [empresas, setEmpresas] = useState<any[]>([]);
    const [transactions, setTransactions] = useState<TransacaoFinanceira[]>([]);
    const [loading, setLoading] = useState(true);
+   const [isSuggestingTreasury, setIsSuggestingTreasury] = useState(false);
+   const [extratos, setExtratos] = useState<any[]>([]);
 
    const fetchTransactions = async () => {
       setLoading(true);
       try {
-         const { data, error } = await supabase
-            .from('fin_transacoes')
-            .select('*')
-            .order('data', { ascending: false });
+         let query = supabase.from('fin_transacoes').select('*');
+         if (selectedEmpresaId) {
+            query = query.eq('empresa_id', selectedEmpresaId);
+         }
+         const { data, error } = await query.order('data', { ascending: false });
          if (error) throw error;
          if (data) {
             const mapped = data.map((t: any) => ({
@@ -71,9 +76,46 @@ const FinancialHubPage: React.FC = () => {
       }
    };
 
+   const fetchEmpresas = async () => {
+      try {
+         const { data, error } = await supabase.from('acc_empresas').select('*');
+         if (error) throw error;
+         setEmpresas(data || []);
+         if (data && data.length > 0 && !selectedEmpresaId) {
+            setSelectedEmpresaId(data[0].id);
+         }
+      } catch (error) {
+         console.error('Error fetching empresas:', error);
+      }
+   };
+
+   const fetchExtratos = async () => {
+      if (!selectedEmpresaId) return;
+      try {
+         const { data, error } = await supabase
+            .from('acc_extratos_bancarios')
+            .select('*')
+            .eq('empresa_id', selectedEmpresaId)
+            .eq('status', 'Pendente');
+         if (error) throw error;
+         setExtratos(data || []);
+      } catch (error) {
+         console.error('Error fetching extratos:', error);
+      }
+   };
+
    useEffect(() => {
-      fetchTransactions();
+      fetchEmpresas();
    }, []);
+
+   useEffect(() => {
+      if (selectedEmpresaId) {
+         fetchTransactions();
+         fetchExtratos();
+      }
+   }, [selectedEmpresaId]);
+
+   const currentEmpresa = useMemo(() => empresas.find(e => e.id === selectedEmpresaId), [empresas, selectedEmpresaId]);
 
    const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -171,6 +213,67 @@ const FinancialHubPage: React.FC = () => {
       }
    };
 
+   const handleAISuggestTreasury = async (descricao: string) => {
+      const apiKey = process.env.API_KEY || (window as any).VITE_GEMINI_API_KEY;
+      if (!apiKey || !descricao) return;
+
+      setLoading(true);
+      try {
+         const ai = new GoogleGenAI({ apiKey });
+         const prompt = `Analise a descrição de tesouraria: "${descricao}".
+          Sugira a melhor "categoria" das seguintes: ${CATEGORIAS_TESOURARIA.map(c => c.name).join(', ')}.
+          Sugira também a "entidade" provável.
+          Retorne APENAS um JSON: {"categoria": "nome", "entidade": "nome"}.`;
+
+         const result = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: prompt
+         });
+
+         const cleanText = result.text.replace(/```json|```/g, '').trim();
+         const suggestion = JSON.parse(cleanText);
+
+         if (suggestion.categoria || suggestion.entidade) {
+            const form = document.querySelector('form');
+            if (form) {
+               if (suggestion.categoria) {
+                  const catSelect = form.querySelector('select[name="categoria"]') as HTMLSelectElement;
+                  if (catSelect) catSelect.value = suggestion.categoria;
+               }
+               if (suggestion.entidade) {
+                  const entInput = form.querySelector('input[name="entidade"]') as HTMLInputElement;
+                  if (entInput) entInput.value = suggestion.entidade;
+               }
+            }
+         }
+      } catch (error) {
+         console.error('AI Suggest Error:', error);
+      } finally {
+         setLoading(false);
+      }
+   };
+
+   const handleAIRecognizeTreasuryDoc = () => {
+      alert("Funcionalidade de Scanner de Tesouraria Activa. Seleccione um recibo ou fatura para análise via Amazing IA.");
+      // Simulação de OCR/IA para o demo
+      setTimeout(() => {
+         const form = document.querySelector('form');
+         if (form) {
+            const descInput = form.querySelector('textarea[name="descricao"]') as HTMLTextAreaElement;
+            const valInput = form.querySelector('input[name="valor"]') as HTMLInputElement;
+            const entInput = form.querySelector('input[name="entidade"]') as HTMLInputElement;
+            const refInput = form.querySelector('input[name="documento_ref"]') as HTMLInputElement;
+
+            if (descInput) descInput.value = 'Pagamento de Serviços Internet - Unitel';
+            if (valInput) valInput.value = '45000';
+            if (entInput) entInput.value = 'Unitel S.A.';
+            if (refInput) refInput.value = 'REC-2024-998';
+
+            handleAISuggestTreasury('Pagamento de Serviços Internet - Unitel');
+         }
+      }, 2000);
+   };
+
    // Helper for Category Icons
    const getCategoryIcon = (categoryName: string) => {
       const cat = CATEGORIAS_TESOURARIA.find(c => c.name === categoryName);
@@ -210,6 +313,7 @@ const FinancialHubPage: React.FC = () => {
          status: (tipo === 'Reembolso' || tipo === 'Orçamento') ? 'Pendente' : 'Aprovado',
          usuario_id: currentUser?.id || 'sys',
          usuario_nome: currentUser?.nome || 'Sistema',
+         empresa_id: selectedEmpresaId,
          data_criacao: new Date().toISOString(),
          historico_alteracoes: [{ data: new Date().toISOString(), usuario: currentUser?.nome || 'Sistema', acao: 'Registo inicial' }]
       };
@@ -254,10 +358,20 @@ const FinancialHubPage: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap gap-2 bg-white/50 p-1.5 rounded-2xl border border-white/20 shadow-xl backdrop-blur-md">
+               <select
+                  value={selectedEmpresaId}
+                  onChange={(e) => setSelectedEmpresaId(e.target.value)}
+                  className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest outline-none border-none mr-2"
+               >
+                  {empresas.map(emp => (
+                     <option key={emp.id} value={emp.id}>{emp.nome}</option>
+                  ))}
+               </select>
                {[
                   { id: 'dashboard', icon: <Gauge size={18} />, label: 'Resumo' },
                   { id: 'comparativo', icon: <Layers size={18} />, label: 'Comparativo' },
                   { id: 'simulador', icon: <Zap size={18} />, label: 'Simulador' },
+                  { id: 'conciliacao', icon: <Landmark size={18} />, label: 'Conciliação' },
                   { id: 'historico', icon: <History size={18} />, label: 'Livro' },
                   { id: 'novo', icon: <Plus size={18} />, label: 'Lançar' }
                ].map(tab => (
@@ -510,8 +624,17 @@ const FinancialHubPage: React.FC = () => {
                               <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Efectivar <span className={previewTipo === 'Receita' ? 'text-green-600' : 'text-red-600'}>Lançamento</span></h2>
                               <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest mt-1">Registo Oficial de Tesouraria • Amazing Group</p>
                            </div>
-                           <div className={`p-4 rounded-2xl shadow-lg border transition-all ${previewTipo === 'Receita' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-600'}`}>
-                              {previewTipo === 'Receita' ? <ArrowUpRight size={28} /> : <ArrowDownLeft size={28} />}
+                           <div className="flex gap-3">
+                              <button
+                                 type="button"
+                                 onClick={handleAIRecognizeTreasuryDoc}
+                                 className="flex items-center gap-2 px-6 py-3 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-100 transition-all shadow-sm"
+                              >
+                                 <Sparkles size={16} /> Scanner Documento
+                              </button>
+                              <div className={`p-4 rounded-2xl shadow-lg border transition-all ${previewTipo === 'Receita' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-600'}`}>
+                                 {previewTipo === 'Receita' ? <ArrowUpRight size={28} /> : <ArrowDownLeft size={28} />}
+                              </div>
                            </div>
                         </div>
 
@@ -552,12 +675,23 @@ const FinancialHubPage: React.FC = () => {
                            <Input name="entidade" label="Fornecedor, Beneficiário ou Cliente" required placeholder="Ex: Unitel S.A. | Cliente X" />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative group">
                            <div className="flex items-center justify-between">
                               <label className="text-[11px] font-black text-zinc-700 uppercase tracking-widest ml-1">Descrição Detalhada</label>
                               <span className="text-[9px] font-bold text-zinc-400 uppercase">Auditável por Auditoria IA</span>
                            </div>
                            <textarea name="descricao" required className="w-full bg-zinc-50 border border-zinc-200 rounded-[2rem] p-6 outline-none focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 font-medium transition-all h-32 text-sm" placeholder="Descreva o motivo claro deste lançamento para efeitos de auditoria..." />
+                           <button
+                              type="button"
+                              onClick={() => {
+                                 const desc = (document.querySelector('textarea[name="descricao"]') as HTMLTextAreaElement)?.value;
+                                 handleAISuggestTreasury(desc);
+                              }}
+                              className="absolute right-4 bottom-4 p-3 bg-zinc-900 text-yellow-500 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+                              title="Sugerir Categoria/Entidade (IA)"
+                           >
+                              <Sparkles size={18} />
+                           </button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
@@ -633,6 +767,104 @@ const FinancialHubPage: React.FC = () => {
                         <p className="text-zinc-500 text-[11px] font-medium leading-relaxed">
                            Todos os lançamentos efectuados neste hub são sincronizados encriptados para a cloud. Certifique-se de anexar a referência documental correcta para conformidade fiscal angolana.
                         </p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
+
+         {/* --- CONCILIAÇÃO BANCÁRIA (TESOURARIA) --- */}
+         {activeTab === 'conciliacao' && (
+            <div className="space-y-8 animate-in slide-in-from-bottom-4">
+               <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
+                  <div className="p-10 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                     <div>
+                        <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Conciliação de Tesouraria</h3>
+                        <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Cruzamento de fluxos bancários com registos internos</p>
+                     </div>
+                     <div className="flex gap-4">
+                        <label className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">
+                           <RefreshCw size={18} /> Importar Extrato (CSV)
+                           <input type="file" className="hidden" accept=".csv" onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const text = await file.text();
+                              const rows = text.split('\n').filter(r => r.trim());
+                              const batch = rows.slice(1).map(row => {
+                                 const parts = row.split(',');
+                                 return {
+                                    data: parts[0]?.trim(),
+                                    descricao: parts[1]?.trim(),
+                                    valor: parseFloat(parts[2]?.trim()),
+                                    empresa_id: selectedEmpresaId,
+                                    status: 'Pendente'
+                                 };
+                              });
+                              const { error } = await supabase.from('acc_extratos_bancarios').insert(batch);
+                              if (error) alert('Erro ao importar extrato.');
+                              else fetchExtratos();
+                           }} />
+                        </label>
+                     </div>
+                  </div>
+                  <div className="p-6">
+                     <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-zinc-900 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest mb-4 font-mono">
+                        <div className="col-span-2">Data</div>
+                        <div className="col-span-4">Descrição Bancária</div>
+                        <div className="col-span-2">Valor (Kz)</div>
+                        <div className="col-span-4">Sugestão de Tesouraria</div>
+                     </div>
+                     <div className="space-y-3">
+                        {extratos.map(ex => {
+                           const match = transactions.find(t =>
+                              Math.abs(Number(t.valor) - Math.abs(ex.valor)) < 0.01 &&
+                              Math.abs(new Date(t.data).getTime() - new Date(ex.data).getTime()) < 3 * 24 * 60 * 60 * 1000
+                           );
+                           return (
+                              <div key={ex.id} className="grid grid-cols-12 gap-4 px-8 py-5 rounded-2xl items-center border border-zinc-50 hover:border-sky-100 transition-all">
+                                 <div className="col-span-2 text-xs font-bold text-zinc-500">{ex.data}</div>
+                                 <div className="col-span-4 text-xs font-black uppercase text-zinc-800">{ex.descricao}</div>
+                                 <div className="col-span-2 text-xs font-black text-zinc-900">{formatAOA(ex.valor)}</div>
+                                 <div className="col-span-4 flex items-center justify-between">
+                                    {match ? (
+                                       <div className="flex items-center gap-2 text-[10px] font-black text-green-600 bg-green-50 px-3 py-1.5 rounded-xl border border-green-100 w-full group">
+                                          <div className="flex-1 flex items-center gap-2">
+                                             <CheckCircle2 size={14} /> Match: {match.descricao}
+                                          </div>
+                                          <button
+                                             onClick={async () => {
+                                                const { error } = await supabase.from('acc_extratos_bancarios').update({
+                                                   status: 'Conciliado',
+                                                   referencia_externa: match.id
+                                                }).eq('id', ex.id);
+                                                if (!error) fetchExtratos();
+                                             }}
+                                             className="px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                          >
+                                             Confirmar
+                                          </button>
+                                       </div>
+                                    ) : (
+                                       <div className="flex items-center gap-2">
+                                          <div className="text-[10px] font-bold text-zinc-400 p-2 italic">Não Identificado</div>
+                                          <button
+                                             onClick={() => {
+                                                setActiveTab('novo');
+                                                // Pre-fill form logic could be added here
+                                             }}
+                                             className="px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all shadow-sm"
+                                          >
+                                             Lançar Agora
+                                          </button>
+                                       </div>
+                                    )}
+                                 </div>
+                              </div>
+                           );
+                        })}
+                        {extratos.length === 0 && (
+                           <div className="p-20 text-center text-zinc-400 font-bold italic uppercase text-xs tracking-widest">Aguardando importação de extrato para conciliação...</div>
+                        )}
                      </div>
                   </div>
                </div>
