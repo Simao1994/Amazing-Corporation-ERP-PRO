@@ -101,6 +101,10 @@ const EmpresasPage: React.FC = () => {
       tipo_parceria: formData.get('tipo_parceria') as any || 'Operacional',
       foto_url: photoPreview || editingItem?.foto_url,
       historico: historicoLocal,
+      regime_agt: formData.get('regime_agt') as any,
+      taxa_iva: Number(formData.get('taxa_iva')) || 0,
+      taxa_ii: Number(formData.get('taxa_ii')) || 0,
+      retencao_fonte: formData.get('retencao_fonte') === 'Sim',
       updated_at: new Date().toISOString()
     };
 
@@ -353,6 +357,28 @@ const EmpresasPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <Input name="responsavel" label="Responsável de Unidade" defaultValue={editingItem?.responsavel} required />
                   <Input name="website" label="Portal Digital" defaultValue={editingItem?.website} placeholder="www.amazing.ao" />
+                </div>
+
+                <div className="pt-6 border-t border-zinc-100 mt-6">
+                  <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <ShieldCheck size={16} className="text-yellow-500" /> Configuração Fiscal (AGT Angola)
+                  </h3>
+                  <div className="grid grid-cols-2 gap-6">
+                    <Select name="regime_agt" label="Regime de IVA" defaultValue={editingItem?.regime_agt || 'Simplificado'} options={[
+                      { value: 'Geral', label: 'Regime Geral' },
+                      { value: 'Simplificado', label: 'Regime Simplificado (7%)' },
+                      { value: 'Exclusão', label: 'Regime de Exclusão' },
+                      { value: 'Isento', label: 'Isento' }
+                    ]} />
+                    <Input name="taxa_iva" label="Taxa Personalizada IVA (%)" type="number" defaultValue={editingItem?.taxa_iva || 14} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-6 mt-4">
+                    <Input name="taxa_ii" label="Taxa Imposto Industrial (%)" type="number" defaultValue={editingItem?.taxa_ii || 25} />
+                    <Select name="retencao_fonte" label="Sujeito a Retenção na Fonte?" defaultValue={editingItem?.retencao_fonte ? 'Sim' : 'Não'} options={[
+                      { value: 'Sim', label: 'Sim' },
+                      { value: 'Não', label: 'Não' }
+                    ]} />
+                  </div>
                 </div>
 
                 <div className="pt-4">

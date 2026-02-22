@@ -30,9 +30,12 @@ import ParceirosPage from './pages/Parceiros';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import UsersPage from './pages/Users';
+import EmpresasPage from './pages/Empresas';
 import { supabase, getUserProfile } from './src/lib/supabase';
 import { AmazingStorage, STORAGE_KEYS } from './utils/storage';
 import { User } from './types';
+import ForgotPasswordPage from './pages/ForgotPassword';
+import ResetPasswordPage from './pages/ResetPassword';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -148,6 +151,8 @@ const App: React.FC = () => {
             <Route path="/" element={<CorporateHome />} />
             <Route path="/candidatura" element={<RecruitmentPage isPublic={true} />} />
             <Route path="/arena" element={<ArenaGames />} />
+            <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
+            <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
 
             {/* Rotas Protegidas (Exigem Login) */}
             <Route path="/*" element={
@@ -178,6 +183,7 @@ const App: React.FC = () => {
                     <Route path="/agro" element={<ProtectedRoute user={user} path="/agro"><AgroPage /></ProtectedRoute>} />
                     <Route path="/imobiliario" element={<ProtectedRoute user={user} path="/imobiliario"><RealEstatePage /></ProtectedRoute>} />
                     <Route path="/fornecedores" element={<ProtectedRoute user={user} path="/fornecedores"><FornecedoresPage /></ProtectedRoute>} />
+                    <Route path="/empresas" element={<ProtectedRoute user={user} path="/empresas"><EmpresasPage /></ProtectedRoute>} />
                     <Route path="/parceiros" element={<ProtectedRoute user={user} path="/parceiros"><ParceirosPage /></ProtectedRoute>} />
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>

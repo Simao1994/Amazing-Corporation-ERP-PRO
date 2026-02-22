@@ -88,6 +88,12 @@ const UsersPage: React.FC = () => {
         setSuccess('');
 
         try {
+            // Validação: Mínimo dois nomes
+            const nameParts = form.nome.trim().split(/\s+/);
+            if (nameParts.length < 2) {
+                throw new Error('O nome completo deve conter pelo menos dois nomes (ex: Simão Pambo).');
+            }
+
             // Get fresh session token
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !session) throw new Error('Sessão inválida. Por favor faça login novamente.');
@@ -118,6 +124,10 @@ const UsersPage: React.FC = () => {
             if (!response.ok || !result.success) {
                 throw new Error(result.error || `Erro ${response.status}: Falha ao processar pedido.`);
             }
+
+            // Log action
+            const { AmazingStorage } = await import('../utils/storage');
+            AmazingStorage.logAction('Segurança', 'Utilizadores', `Administrador criou novo utilizador: ${form.nome.trim()} (${form.email})`);
 
             setSuccess(`✅ ${result.message || 'Utilizador criado com sucesso!'}`);
             setForm({ nome: '', email: '', password: '', role: 'admin' });
@@ -188,12 +198,19 @@ const UsersPage: React.FC = () => {
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Nome Completo *</label>
                             <input
                                 type="text"
-                                placeholder="Ex: SIMÃO PAMBO PUCA"
+                                placeholder="Ex: Simão Pambo Puca"
                                 value={form.nome}
-                                onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    // Permitir apenas letras e espaços
+                                    if (val === '' || /^[A-Za-zÀ-ÖØ-öø-ÿ\s]*$/.test(val)) {
+                                        setForm(f => ({ ...f, nome: val }));
+                                    }
+                                }}
                                 required
                                 className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
                             />
+                            <p className="text-[9px] text-zinc-400 mt-1 uppercase font-bold">Mínimo dois nomes, apenas letras e espaços.</p>
                         </div>
 
                         <div>

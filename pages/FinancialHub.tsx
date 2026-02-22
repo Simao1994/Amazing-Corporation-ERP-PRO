@@ -5,7 +5,9 @@ import {
    Wallet, DollarSign, ArrowUpRight, ArrowDownLeft, Calendar, FileText,
    CheckCircle2, AlertTriangle, X, Save, Upload, Download, History,
    ShieldCheck, BrainCircuit, Sparkles, RefreshCw, Layers, Trash2, Printer,
-   ChevronRight, Gauge, Lightbulb, Zap, ArrowRight, BarChart4
+   ChevronRight, Gauge, Lightbulb, Zap, ArrowRight, BarChart4,
+   Banknote, CreditCard, Landmark, Tag, Briefcase, Activity, ShoppingCart,
+   Construction, Shield, Mail, FileCheck, Globe, Info
 } from 'lucide-react';
 import {
    ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -21,8 +23,16 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 
 const CATEGORIAS_TESOURARIA = [
-   'Vendas de Serviços', 'Manutenção Frota', 'Combustível', 'Salários',
-   'Impostos', 'Marketing', 'Aluguer', 'Material de Escritório', 'Seguros'
+   { name: 'Vendas de Serviços', icon: <Globe size={14} /> },
+   { name: 'Manutenção Frota', icon: <Construction size={14} /> },
+   { name: 'Combustível', icon: <Zap size={14} /> },
+   { name: 'Salários', icon: <Briefcase size={14} /> },
+   { name: 'Impostos', icon: <Shield size={14} /> },
+   { name: 'Marketing', icon: <Sparkles size={14} /> },
+   { name: 'Aluguer', icon: <Landmark size={14} /> },
+   { name: 'Material de Escritório', icon: <ShoppingCart size={14} /> },
+   { name: 'Seguros', icon: <ShieldCheck size={14} /> },
+   { name: 'Outros', icon: <Info size={14} /> }
 ];
 
 const FinancialHubPage: React.FC = () => {
@@ -98,11 +108,11 @@ const FinancialHubPage: React.FC = () => {
       const curMonthTransactions = transactions.filter(t => filterByMonth(t, currentMonth, currentYear));
       const lastMonthTransactions = transactions.filter(t => filterByMonth(t, lastMonth, currentYear));
 
-      const curRec = curMonthTransactions.filter(t => t.tipo === 'Receita').reduce((a, b) => a + b.valor, 0);
-      const curDes = curMonthTransactions.filter(t => t.tipo === 'Despesa').reduce((a, b) => a + b.valor, 0);
+      const curRec = curMonthTransactions.filter(t => t.tipo === 'Receita').reduce((a, b) => a + (isNaN(b.valor) ? 0 : b.valor), 0);
+      const curDes = curMonthTransactions.filter(t => t.tipo === 'Despesa').reduce((a, b) => a + (isNaN(b.valor) ? 0 : b.valor), 0);
 
-      const lastRec = lastMonthTransactions.filter(t => t.tipo === 'Receita').reduce((a, b) => a + b.valor, 0);
-      const lastDes = lastMonthTransactions.filter(t => t.tipo === 'Despesa').reduce((a, b) => a + b.valor, 0);
+      const lastRec = lastMonthTransactions.filter(t => t.tipo === 'Receita').reduce((a, b) => a + (isNaN(b.valor) ? 0 : b.valor), 0);
+      const lastDes = lastMonthTransactions.filter(t => t.tipo === 'Despesa').reduce((a, b) => a + (isNaN(b.valor) ? 0 : b.valor), 0);
 
       // Previsão Automática (Linear Baseada em Dias Passados)
       const dayOfMonth = now.getDate();
@@ -113,11 +123,11 @@ const FinancialHubPage: React.FC = () => {
       // Alertas de Gastos (Anomalias por Categoria)
       const alertas: { categoria: string, excesso: number, media: number }[] = [];
       CATEGORIAS_TESOURARIA.forEach(cat => {
-         const catSpentCur = curMonthTransactions.filter(t => t.categoria === cat && t.tipo === 'Despesa').reduce((a, b) => a + b.valor, 0);
-         const catSpentLast = lastMonthTransactions.filter(t => t.categoria === cat && t.tipo === 'Despesa').reduce((a, b) => a + b.valor, 0);
+         const catSpentCur = curMonthTransactions.filter(t => t.categoria === cat.name && t.tipo === 'Despesa').reduce((a, b) => a + (isNaN(b.valor) ? 0 : b.valor), 0);
+         const catSpentLast = lastMonthTransactions.filter(t => t.categoria === cat.name && t.tipo === 'Despesa').reduce((a, b) => a + (isNaN(b.valor) ? 0 : b.valor), 0);
 
          if (catSpentCur > catSpentLast * 1.2 && catSpentLast > 0) {
-            alertas.push({ categoria: cat, excesso: ((catSpentCur / catSpentLast) - 1) * 100, media: catSpentLast });
+            alertas.push({ categoria: cat.name, excesso: ((catSpentCur / catSpentLast) - 1) * 100, media: catSpentLast });
          }
       });
 
@@ -159,6 +169,24 @@ const FinancialHubPage: React.FC = () => {
       } finally {
          setIsAnalyzing(false);
       }
+   };
+
+   // Helper for Category Icons
+   const getCategoryIcon = (categoryName: string) => {
+      const cat = CATEGORIAS_TESOURARIA.find(c => c.name === categoryName);
+      return cat ? cat.icon : <Tag size={14} />;
+   };
+
+   const [previewTipo, setPreviewTipo] = useState<TransacaoTipo>('Despesa');
+   const [previewValor, setPreviewValor] = useState(0);
+
+   // Robust Variation Calculation
+   const calculateVariation = (current: number, last: number) => {
+      if (!last || last === 0) {
+         return current > 0 ? '+100' : '0';
+      }
+      const variation = ((current / last) - 1) * 100;
+      return isFinite(variation) ? variation.toFixed(1) : (variation > 0 ? '+100' : '0');
    };
 
    const handleCreateTransaction = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -420,7 +448,7 @@ const FinancialHubPage: React.FC = () => {
                         <div>
                            <p className="text-[10px] font-black text-zinc-400 uppercase">Variação Percentual</p>
                            <p className={`text-4xl font-black ${analysisData.curRec >= analysisData.lastRec ? 'text-green-600' : 'text-red-600'}`}>
-                              {(((analysisData.curRec / analysisData.lastRec) - 1) * 100).toFixed(1)}%
+                              {calculateVariation(analysisData.curRec, analysisData.lastRec)}%
                            </p>
                         </div>
                         <div className="text-right">
@@ -445,7 +473,7 @@ const FinancialHubPage: React.FC = () => {
                         <div>
                            <p className="text-[10px] font-black text-zinc-400 uppercase">Variação Percentual</p>
                            <p className={`text-4xl font-black ${analysisData.curDes <= analysisData.lastDes ? 'text-green-600' : 'text-red-600'}`}>
-                              {(((analysisData.curDes / analysisData.lastDes) - 1) * 100).toFixed(1)}%
+                              {calculateVariation(analysisData.curDes, analysisData.lastDes)}%
                            </p>
                         </div>
                         <div className="text-right">
@@ -467,100 +495,244 @@ const FinancialHubPage: React.FC = () => {
             </div>
          )}
 
-         {/* --- FORMULÁRIO (Mantido com melhorias visuais) --- */}
+         {/* --- MÓDULO DE LANÇAMENTO (LAPIDADO) --- */}
          {activeTab === 'novo' && (
-            <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-6">
-               <form onSubmit={handleCreateTransaction} className="bg-white p-12 rounded-[4rem] shadow-3xl border border-sky-100 space-y-10">
-                  <div className="flex justify-between items-center border-b border-zinc-100 pb-8">
-                     <div>
-                        <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Novo Lançamento</h2>
-                        <p className="text-zinc-500 font-medium">Controlo Financeiro Amazing Corporation</p>
+            <div className="max-w-6xl mx-auto animate-in fade-in-up duration-700">
+               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Formulário Principal */}
+                  <div className="lg:col-span-2">
+                     <form onSubmit={handleCreateTransaction} className="bg-white p-12 rounded-[3.5rem] shadow-3xl border border-sky-100 space-y-12 relative overflow-hidden">
+                        {/* Indicador de Tipo de Transação Dinâmico */}
+                        <div className={`absolute top-0 right-0 w-32 h-32 opacity-10 -mr-16 -mt-16 rounded-full transition-all duration-500 ${previewTipo === 'Receita' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+
+                        <div className="flex justify-between items-center border-b border-zinc-100 pb-8">
+                           <div>
+                              <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Efectivar <span className={previewTipo === 'Receita' ? 'text-green-600' : 'text-red-600'}>Lançamento</span></h2>
+                              <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest mt-1">Registo Oficial de Tesouraria • Amazing Group</p>
+                           </div>
+                           <div className={`p-4 rounded-2xl shadow-lg border transition-all ${previewTipo === 'Receita' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-600'}`}>
+                              {previewTipo === 'Receita' ? <ArrowUpRight size={28} /> : <ArrowDownLeft size={28} />}
+                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                           <div className="space-y-6">
+                              <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                 <Tag size={12} /> Identificação Básica
+                              </h4>
+                              <Select
+                                 name="tipo"
+                                 label="Natureza da Operação"
+                                 required
+                                 value={previewTipo}
+                                 onChange={(e) => setPreviewTipo(e.target.value as any)}
+                                 options={[
+                                    { value: 'Despesa', label: 'Despesa / Pagamento' },
+                                    { value: 'Receita', label: 'Receita / Venda' },
+                                    { value: 'Reembolso', label: 'Pedido de Reembolso' },
+                                    { value: 'Orçamento', label: 'Proposta Orçamental' }
+                                 ]}
+                              />
+                              <Input name="data" label="Data do Evento" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                           </div>
+
+                           <div className="space-y-6">
+                              <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                 <Layers size={12} /> Classificação Contábil
+                              </h4>
+                              <Select name="categoria" label="Rubrica Financeira" options={CATEGORIAS_TESOURARIA.map(c => ({ value: c.name, label: c.name }))} />
+                              <Input name="documento_ref" label="Nº de Referência / DOC" required placeholder="Ex: FT/2026/001" />
+                           </div>
+                        </div>
+
+                        <div className="space-y-6">
+                           <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                              <Landmark size={12} /> Entidade Envolvida
+                           </h4>
+                           <Input name="entidade" label="Fornecedor, Beneficiário ou Cliente" required placeholder="Ex: Unitel S.A. | Cliente X" />
+                        </div>
+
+                        <div className="space-y-2">
+                           <div className="flex items-center justify-between">
+                              <label className="text-[11px] font-black text-zinc-700 uppercase tracking-widest ml-1">Descrição Detalhada</label>
+                              <span className="text-[9px] font-bold text-zinc-400 uppercase">Auditável por Auditoria IA</span>
+                           </div>
+                           <textarea name="descricao" required className="w-full bg-zinc-50 border border-zinc-200 rounded-[2rem] p-6 outline-none focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 font-medium transition-all h-32 text-sm" placeholder="Descreva o motivo claro deste lançamento para efeitos de auditoria..." />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
+                           <div className="space-y-2">
+                              <label className="text-[11px] font-black text-zinc-700 uppercase tracking-widest ml-1">Montante (AOA)</label>
+                              <div className="relative">
+                                 <input
+                                    name="valor"
+                                    type="number"
+                                    step="0.01"
+                                    required
+                                    onChange={(e) => setPreviewValor(Number(e.target.value))}
+                                    className="w-full bg-white border-2 border-zinc-900 rounded-2xl px-6 py-4 text-2xl font-black focus:ring-4 focus:ring-yellow-500/20 transition-all outline-none"
+                                    placeholder="0,00"
+                                 />
+                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-zinc-400">AOA</div>
+                              </div>
+                           </div>
+                           <Select name="forma_pagamento" label="Meio de Liquidação" options={[{ value: 'Transferência', label: 'Transferência' }, { value: 'Multicaixa', label: 'TPA' }, { value: 'Cash', label: 'Cash' }, { value: 'Cheque', label: 'Cheque' }]} />
+                           <Input name="centro_custo" label="Centro de Custo" required placeholder="Sede / Divisão X" />
+                        </div>
+
+                        <div className="pt-10 border-t border-zinc-100 flex justify-end gap-6">
+                           <button type="button" onClick={() => setActiveTab('dashboard')} className="px-10 py-5 text-[11px] font-black uppercase text-zinc-400 hover:text-zinc-600 transition-colors">Cancelar</button>
+                           <button type="submit" className="px-16 py-5 bg-zinc-900 text-white font-black rounded-3xl uppercase text-[11px] tracking-[0.2em] shadow-2xl hover:bg-zinc-800 transition-all flex items-center gap-4 group">
+                              <Save size={20} className="group-hover:scale-110 transition-transform" /> Confirmar Registo
+                           </button>
+                        </div>
+                     </form>
+                  </div>
+
+                  {/* Sidebar de Contexto / Mini-Resumo */}
+                  <div className="space-y-6">
+                     <div className="bg-zinc-900 text-white p-10 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-10"><RefreshCw size={100} /></div>
+                        <h3 className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.4em] mb-8">Estado do Mês</h3>
+
+                        <div className="space-y-8">
+                           <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                              <span className="text-zinc-400 text-[10px] uppercase font-black">Receita Total</span>
+                              <span className="text-xl font-black text-green-400">{formatAOA(analysisData.curRec)}</span>
+                           </div>
+                           <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                              <span className="text-zinc-400 text-[10px] uppercase font-black">Despesa Total</span>
+                              <span className="text-xl font-black text-red-400">{formatAOA(analysisData.curDes)}</span>
+                           </div>
+
+                           <div className="pt-4">
+                              <p className="text-zinc-500 text-[9px] uppercase font-black mb-1">Saldo Remanescente</p>
+                              <p className={`text-4xl font-black ${analysisData.curRec - analysisData.curDes >= 0 ? 'text-white' : 'text-red-500'}`}>
+                                 {formatAOA(analysisData.curRec - analysisData.curDes)}
+                              </p>
+                           </div>
+
+                           {previewValor > 0 && (
+                              <div className="mt-8 p-6 bg-white/5 rounded-3xl border border-white/10 animate-in zoom-in-95">
+                                 <p className="text-yellow-500 text-[9px] uppercase font-black mb-2">Simulação de Lançamento</p>
+                                 <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold">Novo Saldo</span>
+                                    <span className="text-sm font-black">
+                                       {formatAOA((analysisData.curRec - analysisData.curDes) + (previewTipo === 'Receita' ? previewValor : -previewValor))}
+                                    </span>
+                                 </div>
+                              </div>
+                           )}
+                        </div>
                      </div>
-                     <Zap className="text-yellow-500" size={32} />
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <Select name="tipo" label="Natureza" required options={[
-                        { value: 'Despesa', label: 'Despesa / Pagamento' },
-                        { value: 'Receita', label: 'Receita / Venda' },
-                        { value: 'Reembolso', label: 'Pedido de Reembolso' },
-                        { value: 'Orçamento', label: 'Proposta Orçamental' }
-                     ]} />
-                     <Input name="data" label="Data do Evento" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                     <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm space-y-4">
+                        <div className="flex items-center gap-3 text-zinc-900 font-black text-xs uppercase tracking-widest">
+                           <Info size={16} className="text-yellow-500" /> Notas de Auditoria
+                        </div>
+                        <p className="text-zinc-500 text-[11px] font-medium leading-relaxed">
+                           Todos os lançamentos efectuados neste hub são sincronizados encriptados para a cloud. Certifique-se de anexar a referência documental correcta para conformidade fiscal angolana.
+                        </p>
+                     </div>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <Select name="categoria" label="Classificação" options={CATEGORIAS_TESOURARIA.map(c => ({ value: c, label: c }))} />
-                     <Input name="documento_ref" label="Ref. Documento" required placeholder="Nº Factura/Recibo" />
-                  </div>
-
-                  <Input name="entidade" label="Fornecedor / Beneficiário" required placeholder="Ex: Unitel S.A." />
-
-                  <div className="space-y-2">
-                     <label className="text-[11px] font-black text-zinc-700 uppercase tracking-widest ml-1">Descrição</label>
-                     <textarea name="descricao" required className="w-full bg-zinc-50 border border-zinc-200 rounded-[2rem] p-6 outline-none focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 font-medium transition-all h-32" placeholder="Motivo detalhado do lançamento..." />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                     <Input name="valor" label="Montante (AOA)" type="number" step="0.01" required className="text-2xl font-black" />
-                     <Select name="forma_pagamento" label="Liquidação" options={[{ value: 'Transferência', label: 'Transferência' }, { value: 'Multicaixa', label: 'TPA' }, { value: 'Cash', label: 'Cash' }]} />
-                     <Input name="centro_custo" label="C. Custo" required placeholder="Unidade Sede" />
-                  </div>
-
-                  <div className="pt-6 flex justify-end gap-6">
-                     <button type="button" onClick={() => setActiveTab('dashboard')} className="px-10 py-5 text-[11px] font-black uppercase text-zinc-400">Cancelar</button>
-                     <button type="submit" className="px-16 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[11px] tracking-[0.2em] shadow-2xl hover:bg-zinc-800 transition-all flex items-center gap-3">
-                        <Save size={20} /> Efectivar Registo
-                     </button>
-                  </div>
-               </form>
+               </div>
             </div>
          )}
 
-         {/* --- LISTAGEM (Mantido com melhorias) --- */}
+         {/* --- LISTAGEM (LAPIDADA) --- */}
          {activeTab === 'historico' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               <div className="bg-white p-3 rounded-[2.5rem] shadow-sm border border-sky-100 flex flex-col md:flex-row items-center gap-4">
-                  <div className="flex-1 w-full px-4 flex items-center gap-3">
-                     <Search className="text-zinc-300" />
-                     <input placeholder="Pesquisar histórico..." className="w-full bg-transparent border-none focus:ring-0 text-zinc-900 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <div className="space-y-6 animate-in fade-in-up duration-700">
+               <div className="bg-white p-4 rounded-3xl shadow-sm border border-sky-100 flex flex-col md:flex-row items-center gap-6">
+                  <div className="flex-1 w-full px-4 flex items-center gap-4 group">
+                     <Search className="text-zinc-300 group-focus-within:text-yellow-500 transition-colors" />
+                     <input
+                        placeholder="Pesquisar por entidade, descrição ou ID..."
+                        className="w-full bg-transparent border-none focus:ring-0 text-zinc-900 font-bold placeholder:text-zinc-300"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                     />
+                  </div>
+                  <div className="flex gap-2 pr-4">
+                     {['Todas', 'Receita', 'Despesa'].map(type => (
+                        <button
+                           key={type}
+                           onClick={() => setFilterType(type)}
+                           className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filterType === type ? 'bg-zinc-900 text-white' : 'text-zinc-400 hover:bg-zinc-100'}`}
+                        >
+                           {type}
+                        </button>
+                     ))}
                   </div>
                </div>
 
-               <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
+               <div className="bg-white rounded-[3.5rem] shadow-xl border border-sky-50 overflow-hidden relative">
                   <table className="w-full text-left">
                      <thead>
-                        <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                           <th className="px-10 py-8">ID / Data</th>
-                           <th className="px-10 py-8">Entidade</th>
-                           <th className="px-10 py-8">Tipo / Categoria</th>
-                           <th className="px-10 py-8 text-right">Valor Bruto</th>
-                           <th className="px-10 py-8 text-right">Estado</th>
+                        <tr className="bg-zinc-900 border-b border-white/5 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">
+                           <th className="px-10 py-10">Data / Registo</th>
+                           <th className="px-10 py-10">Entidade & Detalhes</th>
+                           <th className="px-10 py-10 text-center">Classificação</th>
+                           <th className="px-10 py-10 text-right">Valor Líquido</th>
+                           <th className="px-10 py-10 text-right">Acções / Estado</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-zinc-50">
-                        {transactions.filter(t => t.descricao.toLowerCase().includes(searchTerm.toLowerCase())).map(t => (
-                           <tr key={t.id} className="hover:bg-zinc-50/50 transition-all">
-                              <td className="px-10 py-6">
-                                 <span className="font-black text-zinc-400 block text-[9px]">{t.id}</span>
-                                 <span className="text-zinc-900 font-bold text-sm">{new Date(t.data).toLocaleDateString()}</span>
-                              </td>
-                              <td className="px-10 py-6 font-black text-zinc-800 text-sm">{t.entidade}</td>
-                              <td className="px-10 py-6">
-                                 <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${t.tipo === 'Receita' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{t.tipo}</span>
-                                 <span className="block text-[10px] font-bold text-zinc-400 mt-1 uppercase">{t.categoria}</span>
-                              </td>
-                              <td className="px-10 py-6 text-right font-black text-zinc-900">{formatAOA(t.valor)}</td>
-                              <td className="px-10 py-6 text-right">
-                                 <div className="flex items-center justify-end gap-2">
-                                    <span className={`w-2 h-2 rounded-full ${t.status === 'Aprovado' ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
-                                    <span className="text-[10px] font-black text-zinc-700 uppercase">{t.status}</span>
-                                 </div>
-                              </td>
-                           </tr>
-                        ))}
+                        {transactions
+                           .filter(t =>
+                              (filterType === 'Todas' || t.tipo === filterType) &&
+                              (t.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                 t.entidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                 t.id.toLowerCase().includes(searchTerm.toLowerCase()))
+                           )
+                           .map(t => (
+                              <tr key={t.id} className="group hover:bg-zinc-50/80 transition-all duration-300">
+                                 <td className="px-10 py-8">
+                                    <span className="font-black text-zinc-300 block text-[9px] mb-1 tracking-widest group-hover:text-yellow-600 transition-colors">{t.id}</span>
+                                    <div className="flex items-center gap-2 text-zinc-900 font-black text-sm">
+                                       <Calendar size={14} className="text-zinc-400" /> {new Date(t.data).toLocaleDateString()}
+                                    </div>
+                                 </td>
+                                 <td className="px-10 py-8">
+                                    <span className="font-black text-zinc-900 text-base block mb-1 uppercase tracking-tight">{t.entidade}</span>
+                                    <p className="text-zinc-400 font-bold text-[10px] line-clamp-1 max-w-[200px] uppercase">{t.descricao}</p>
+                                 </td>
+                                 <td className="px-10 py-8">
+                                    <div className="flex flex-col items-center gap-2">
+                                       <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] shadow-sm flex items-center gap-2 ${t.tipo === 'Receita' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                                          {t.tipo === 'Receita' ? <ArrowUpRight size={10} /> : <ArrowDownLeft size={10} />} {t.tipo}
+                                       </div>
+                                       <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase">
+                                          {getCategoryIcon(t.categoria)}
+                                          {t.categoria}
+                                       </div>
+                                    </div>
+                                 </td>
+                                 <td className="px-10 py-8 text-right">
+                                    <span className={`text-lg font-black tracking-tighter ${t.tipo === 'Receita' ? 'text-green-600' : 'text-zinc-900'}`}>
+                                       {t.tipo === 'Receita' ? '+' : '-'} {formatAOA(t.valor)}
+                                    </span>
+                                    <span className="block text-[10px] font-bold text-zinc-300 uppercase mt-1">{t.forma_pagamento} • AOA</span>
+                                 </td>
+                                 <td className="px-10 py-8">
+                                    <div className="flex items-center justify-end gap-3">
+                                       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${t.status === 'Aprovado' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-yellow-50 border-yellow-100 text-yellow-700'}`}>
+                                          <span className={`w-1.5 h-1.5 rounded-full ${t.status === 'Aprovado' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></span>
+                                          <span className="text-[9px] font-black uppercase tracking-widest">{t.status}</span>
+                                       </div>
+                                       <button className="p-2 bg-zinc-100 rounded-xl text-zinc-400 hover:bg-zinc-900 hover:text-white transition-all">
+                                          <Info size={16} />
+                                       </button>
+                                    </div>
+                                 </td>
+                              </tr>
+                           ))}
                      </tbody>
                   </table>
+                  {loading && (
+                     <div className="absolute inset-x-0 bottom-0 p-8 bg-white/80 backdrop-blur-md flex justify-center">
+                        <RefreshCw className="animate-spin text-yellow-500" />
+                     </div>
+                  )}
                </div>
             </div>
          )}

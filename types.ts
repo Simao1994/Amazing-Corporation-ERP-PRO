@@ -487,6 +487,8 @@ export interface Fornecedor {
   status: 'ativo' | 'inativo';
 }
 
+export type RegimeAGT = 'Geral' | 'Simplificado' | 'Exclusão' | 'Isento';
+
 export interface EmpresaAfiliada {
   id: string;
   nome: string;
@@ -499,6 +501,12 @@ export interface EmpresaAfiliada {
   website?: string;
   foto_url?: string;
   historico?: MarcoHistorico[];
+  // Campos Fiscais (AGT)
+  regime_agt?: RegimeAGT;
+  taxa_iva?: number;
+  taxa_ii?: number; // Imposto Industrial
+  incidencia_irt?: boolean;
+  retencao_fonte?: boolean;
 }
 
 export interface MarcoHistorico {

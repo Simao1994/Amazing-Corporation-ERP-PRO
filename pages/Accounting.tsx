@@ -59,6 +59,95 @@ const AccountingPage: React.FC = () => {
    // Modals States
    const [showEntryModal, setShowEntryModal] = useState(false);
    const [showReportModal, setShowReportModal] = useState(false);
+   const [showAccountModal, setShowAccountModal] = useState(false);
+
+   // New Account Form
+   const [newAccount, setNewAccount] = useState({
+      codigo: '',
+      nome: '',
+      tipo: 'Ativo' as any,
+      natureza: 'Devedora' as any,
+      nivel: 1,
+      pai_id: ''
+   });
+
+   // --- LÓGICA DE PERÍODOS ---
+   const handleOpenYear = async () => {
+      const lastYear = periodos.length > 0 ? Math.max(...periodos.map(p => Number(p.ano))) : new Date().getFullYear();
+      const nextYear = lastYear + 1;
+
+      if (!confirm(`Deseja abrir o exercício fiscal de ${nextYear}?`)) return;
+
+      try {
+         const { error } = await supabase.from('acc_periodos').insert({
+            ano: nextYear,
+            mes: 1,
+            status: 'Aberto',
+            empresa_id: selectedEmpresaId
+         });
+         if (error) throw error;
+         alert(`Exercício ${nextYear} aberto com sucesso.`);
+         fetchAccountingData();
+      } catch (error) {
+         alert('Erro ao abrir novo ano.');
+      }
+   };
+
+   const handleOpenMonth = async () => {
+      const currentPeriods = periodos.filter(p => p.empresa_id === selectedEmpresaId);
+      let nextMes = 1;
+      let nextAno = new Date().getFullYear();
+
+      if (currentPeriods.length > 0) {
+         const sorted = [...currentPeriods].sort((a, b) => b.ano - a.ano || b.mes - a.mes);
+         const last = sorted[0];
+         nextMes = last.mes === 12 ? 1 : last.mes + 1;
+         nextAno = last.mes === 12 ? last.ano + 1 : last.ano;
+      }
+
+      if (!confirm(`Abrir período contábil de ${nextMes}/${nextAno}?`)) return;
+
+      try {
+         const { error } = await supabase.from('acc_periodos').insert({
+            ano: nextAno,
+            mes: nextMes,
+            status: 'Aberto',
+            empresa_id: selectedEmpresaId
+         });
+         if (error) throw error;
+         alert(`Mês ${nextMes}/${nextAno} aberto.`);
+         fetchAccountingData();
+      } catch (error) {
+         alert('Erro ao abrir novo mês.');
+      }
+   };
+
+   const handleClosePeriod = async (id: string) => {
+      if (!confirm("Tem certeza que deseja fechar este período? Novos lançamentos serão bloqueados.")) return;
+      try {
+         const { error } = await supabase.from('acc_periodos').update({ status: 'Fechado' }).eq('id', id);
+         if (error) throw error;
+         fetchAccountingData();
+      } catch (error) {
+         alert('Erro ao fechar período.');
+      }
+   };
+
+   const handleCreateAccount = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+         const { error } = await supabase.from('acc_contas').insert({
+            ...newAccount,
+            empresa_id: selectedEmpresaId
+         });
+         if (error) throw error;
+         alert('Conta criada com sucesso.');
+         setShowAccountModal(false);
+         fetchAccountingData();
+      } catch (error) {
+         alert('Erro ao criar conta.');
+      }
+   };
 
    // Loading States
    const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -113,8 +202,22 @@ const AccountingPage: React.FC = () => {
 
          // 1. Carregar Dados Estruturais em PARALELO para Velocidade Máxima
          setLoadingStatus('Sincronizando Estrutura...');
+
+         const fetchEmps = async () => {
+            const e1 = await fetchQuery(supabase.from('empresas').select('*').order('nome'), 'Entidades (Geral)');
+            const e2 = await fetchQuery(supabase.from('acc_empresas').select('*').order('nome'), 'Entidades (Contábil)');
+            // Priorizar dados da tabela 'empresas' mas incluir fallback
+            const combined = [...(e1 || [])];
+            (e2 || []).forEach((e: any) => {
+               if (!combined.find(x => x.id === e.id || x.nif === e.nif)) {
+                  combined.push(e);
+               }
+            });
+            return combined;
+         };
+
          const [emps, funcs, dataContas, dataPeriodos] = await Promise.all([
-            fetchQuery(supabase.from('acc_empresas').select('*').order('nome'), 'Entidades'),
+            fetchEmps(),
             fetchQuery(supabase.from('funcionarios').select('*').order('nome'), 'Equipa'),
             fetchQuery(supabase.from('acc_contas').select('*').order('codigo'), 'Plano de Contas'),
             fetchQuery(supabase.from('acc_periodos').select('*').order('ano', { ascending: false }).order('mes', { ascending: false }), 'Ciclos Fiscais')
@@ -359,9 +462,18 @@ const AccountingPage: React.FC = () => {
 
    // --- LÓGICA DE PAYROLL ---
    const runPayroll = async () => {
-      const funcionariosAtivos = funcionarios.filter(f => f.status === 'Ativo');
+      if (!selectedEmpresaId) {
+         alert("Selecione uma empresa antes de processar a folha.");
+         return;
+      }
+
+      const funcionariosAtivos = funcionarios.filter(f =>
+         (f.status === 'ativo' || f.status === 'Ativo') &&
+         f.empresa_id === selectedEmpresaId
+      );
+
       if (funcionariosAtivos.length === 0) {
-         alert("Não há funcionários ativos para processar.");
+         alert("Não há funcionários ativos vinculados a esta empresa para processar.");
          return;
       }
       if (!currentEmpresa) {
@@ -475,11 +587,48 @@ const AccountingPage: React.FC = () => {
    };
 
    const handleExportFiscal = () => {
+      if (!selectedEmpresaId) return alert("Selecione uma empresa.");
       setIsExportingFiscal(true);
       setTimeout(() => {
          setIsExportingFiscal(false);
          window.print();
-      }, 2000);
+      }, 1500);
+   };
+
+   const handleExportBalancete = () => {
+      if (!selectedEmpresaId) return alert("Selecione uma empresa.");
+      const win = window.open('', '_blank');
+      if (!win) return alert("Por favor, permita popups.");
+
+      const content = `
+          <html>
+             <head>
+                <title>Balancete - ${currentEmpresa?.nome}</title>
+                <style>
+                   body { font-family: sans-serif; padding: 40px; }
+                   table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                   th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                </style>
+             </head>
+             <body>
+                <h1>Balancete de Verificação</h1>
+                <p>Empresa: ${currentEmpresa?.nome}</p>
+                <table>
+                   <thead>
+                      <tr><th>Código</th><th>Conta</th><th>Saldo</th></tr>
+                   </thead>
+                   <tbody>
+                      ${planoContas.filter(c => financeReports.saldos[c.codigo] !== 0).map(c => `
+                         <tr><td>${c.codigo}</td><td>${c.nome}</td><td>${safeFormatAOA(financeReports.saldos[c.codigo])}</td></tr>
+                      `).join('')}
+                   </tbody>
+                </table>
+                <script>window.print();</script>
+             </body>
+          </html>
+       `;
+      win.document.write(content);
+      win.document.close();
    };
 
 
@@ -959,7 +1108,10 @@ const AccountingPage: React.FC = () => {
                            </h3>
                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Saldos Acumulados por Conta no Período</p>
                         </div>
-                        <button className="px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl">
+                        <button
+                           onClick={handleExportBalancete}
+                           className="px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+                        >
                            Exportar Balancete
                         </button>
                      </div>
@@ -1095,7 +1247,10 @@ const AccountingPage: React.FC = () => {
                         <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Estrutura do Plano de Contas (PGN)</h3>
                         <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Gestão de Contas Analíticas e Centros de Custo</p>
                      </div>
-                     <button className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl">
+                     <button
+                        onClick={() => setShowAccountModal(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+                     >
                         <Plus size={18} /> Nova Conta
                      </button>
                   </div>
@@ -1138,13 +1293,21 @@ const AccountingPage: React.FC = () => {
                         <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-6">Controlo de Exercício</h4>
                         <p className="text-3xl font-black mb-2">Ano 2024</p>
                         <p className="text-xs text-zinc-500 font-bold uppercase">Exercício Corrente</p>
-                        <button className="mt-8 px-6 py-3 bg-white/10 hover:bg-yellow-500 hover:text-zinc-900 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Abrir Novo Ano</button>
+                        <button
+                           onClick={handleOpenYear}
+                           className="mt-8 px-6 py-3 bg-white/10 hover:bg-yellow-500 hover:text-zinc-900 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                           Abrir Novo Ano
+                        </button>
                      </div>
 
                      <div className="md:col-span-2 bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
                         <div className="p-10 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
                            <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Meses Contabilísticos</h3>
-                           <button className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all">
+                           <button
+                              onClick={handleOpenMonth}
+                              className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
+                           >
                               <Plus size={18} /> Novo Mês
                            </button>
                         </div>
@@ -1162,7 +1325,12 @@ const AccountingPage: React.FC = () => {
                                  </div>
                                  <div className="flex gap-4">
                                     {p.status === 'Aberto' ? (
-                                       <button className="px-6 py-3 bg-zinc-100 text-zinc-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all">Fechar Período</button>
+                                       <button
+                                          onClick={() => handleClosePeriod(p.id)}
+                                          className="px-6 py-3 bg-zinc-100 text-zinc-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all"
+                                       >
+                                          Fechar Período
+                                       </button>
                                     ) : (
                                        <button className="px-6 py-3 bg-red-50 text-red-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center gap-2">
                                           <ShieldAlert size={14} /> Reabrir (Audit)
@@ -1337,9 +1505,10 @@ const AccountingPage: React.FC = () => {
                   </h3>
                   <div className="space-y-4">
                      {[
-                        { t: 'IVA - Declaração Periódica', d: '2024-03-25', v: (Number(financeReports.receitaTotal) || 0) * 0.14 },
+                        { t: 'IVA - Declaração Periódica', d: '2024-03-25', v: (Number(financeReports.receitaTotal) || 0) * ((currentEmpresa?.regime_agt === 'Simplificado' ? 0.07 : (currentEmpresa?.taxa_iva || 14) / 100)) },
                         { t: 'INSS - Guia de Pagamento', d: '2024-03-10', v: folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.inss_trabalhador) || 0) + (Number(b.inss_empresa) || 0), 0) || 0 },
-                        { t: 'IRT - Retenções na Fonte', d: '2024-03-30', v: folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.irt) || 0), 0) || 0 },
+                        { t: 'IRT - Retenções na Fonte', d: '2024-03-30', v: (currentEmpresa?.incidencia_irt !== false) ? (folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.irt) || 0), 0) || 0) : 0 },
+                        { t: 'II - Imposto Industrial (Estimativa)', d: '2024-05-31', v: (Number(financeReports.lucroLiquido) > 0 ? (Number(financeReports.lucroLiquido) * (currentEmpresa?.taxa_ii || 25) / 100) : 0) },
                      ].map((o, i) => (
                         <div key={i} className="flex items-center justify-between p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
                            <div className="flex items-center gap-4">
@@ -1358,12 +1527,12 @@ const AccountingPage: React.FC = () => {
                      <h3 className="text-xl font-black uppercase tracking-tight">Carga Tributária Estimada</h3>
                      <div className="space-y-8">
                         <div className="space-y-2">
-                           <div className="flex justify-between text-[10px] font-black uppercase"><span>IVA (14%)</span><span>{safeFormatAOA(financeReports.receitaTotal * 0.14)}</span></div>
-                           <div className="h-2 bg-white/10 rounded-full"><div className="h-full bg-yellow-500 w-[60%]"></div></div>
+                           <div className="flex justify-between text-[10px] font-black uppercase"><span>IVA Estimado</span><span>{safeFormatAOA(financeReports.receitaTotal * ((currentEmpresa?.taxa_iva || 14) / 100))}</span></div>
+                           <div className="h-2 bg-white/10 rounded-full"><div className="h-full bg-yellow-500" style={{ width: `${Math.min(100, (currentEmpresa?.taxa_iva || 14) * 5)}%` }}></div></div>
                         </div>
                         <div className="space-y-2">
-                           <div className="flex justify-between text-[10px] font-black uppercase"><span>INSS Total</span><span>{safeFormatAOA(folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.inss_empresa) || 0) + (Number(b.inss_trabalhador) || 0), 0) || 0)}</span></div>
-                           <div className="h-2 bg-white/10 rounded-full"><div className="h-full bg-sky-400 w-[45%]"></div></div>
+                           <div className="flex justify-between text-[10px] font-black uppercase"><span>Imp. Industrial ({currentEmpresa?.taxa_ii || 25}%)</span><span>{safeFormatAOA(financeReports.lucroLiquido > 0 ? financeReports.lucroLiquido * ((currentEmpresa?.taxa_ii || 25) / 100) : 0)}</span></div>
+                           <div className="h-2 bg-white/10 rounded-full"><div className="h-full bg-sky-400" style={{ width: '45%' }}></div></div>
                         </div>
                      </div>
                   </div>
@@ -1481,6 +1650,65 @@ const AccountingPage: React.FC = () => {
                         </div>
                         <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
                            <Save size={18} /> Confirmar Lançamento
+                        </button>
+                     </form>
+                  </div>
+               </div>
+            )
+         }
+         {/* --- MODAL NOVA CONTA (PLANO DE CONTAS) --- */}
+         {
+            showAccountModal && (
+               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                  <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                        <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                           <Plus className="text-yellow-500" /> Registar Nova Conta (PGN)
+                        </h2>
+                        <button onClick={() => setShowAccountModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                     </div>
+                     <form onSubmit={handleCreateAccount} className="p-8 space-y-6">
+                        <Input name="codigo" label="Código da Conta (Ex: 1.1.2)" required
+                           value={newAccount.codigo} onChange={e => setNewAccount({ ...newAccount, codigo: e.target.value })}
+                           placeholder="Código PGN"
+                        />
+                        <Input name="nome" label="Nome da Conta" required
+                           value={newAccount.nome} onChange={e => setNewAccount({ ...newAccount, nome: e.target.value })}
+                           placeholder="Descrição da Conta"
+                        />
+                        <div className="grid grid-cols-2 gap-6">
+                           <Select name="tipo" label="Tipo de Conta"
+                              value={newAccount.tipo} onChange={e => setNewAccount({ ...newAccount, tipo: e.target.value as any })}
+                              options={[
+                                 { value: 'Ativo', label: 'Ativo' },
+                                 { value: 'Passivo', label: 'Passivo' },
+                                 { value: 'Capital', label: 'Capital Próprio' },
+                                 { value: 'Receita', label: 'Receita' },
+                                 { value: 'Despesa', label: 'Despesa' }
+                              ]}
+                           />
+                           <Select name="natureza" label="Natureza"
+                              value={newAccount.natureza} onChange={e => setNewAccount({ ...newAccount, natureza: e.target.value as any })}
+                              options={[
+                                 { value: 'Devedora', label: 'Devedora' },
+                                 { value: 'Credora', label: 'Credora' }
+                              ]}
+                           />
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                           <Input name="nivel" label="Nível Hierárquico" type="number" required
+                              value={newAccount.nivel} onChange={e => setNewAccount({ ...newAccount, nivel: Number(e.target.value) })}
+                           />
+                           <Select name="pai_id" label="Conta Mãe (ID)"
+                              value={newAccount.pai_id} onChange={e => setNewAccount({ ...newAccount, pai_id: e.target.value })}
+                              options={[
+                                 { value: '', label: 'Nenhuma' },
+                                 ...planoContas.filter(c => c.nivel < (newAccount.nivel || 1)).map(c => ({ value: c.id, label: `${c.codigo} - ${c.nome}` }))
+                              ]}
+                           />
+                        </div>
+                        <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
+                           <Save size={18} /> Criar Conta no PGN
                         </button>
                      </form>
                   </div>
