@@ -6,7 +6,7 @@ import {
    Briefcase, Calendar, AlertCircle, FileText, LayoutDashboard,
    BarChart3, PieChart as PieIcon, TrendingUp, TrendingDown, Layers,
    BellRing, CalendarDays, AlertTriangle, BarChart4, Wallet,
-   GraduationCap, Users, Home, RefreshCw
+   GraduationCap, Users, Home, RefreshCw, ShieldCheck, Shirt, Package
 } from 'lucide-react';
 import {
    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -139,6 +139,12 @@ const TransportPage: React.FC = () => {
          { name: 'Terminados', value: contratosTerminados }
       ];
 
+      const operationalPieData = [
+         { name: 'Ativos', value: countAtivos },
+         { name: 'Inativos', value: motoqueiros.filter(m => m.status === 'Inativo').length },
+         { name: 'Manutenção', value: 0 } // Placeholder until integrated with Maintenance
+      ];
+
       return {
          total: total || 0,
          countAtivos: countAtivos || 0,
@@ -154,7 +160,8 @@ const TransportPage: React.FC = () => {
          contractAlerts: contractAlerts || [],
          contratosQuaseTerminando: contratosQuaseTerminando || 0,
          contratosVigentes: contratosVigentes || 0,
-         contratosTerminados: contratosTerminados || 0
+         contratosTerminados: contratosTerminados || 0,
+         operationalPieData: operationalPieData || []
       };
    }, [motoqueiros]);
 
@@ -211,7 +218,14 @@ const TransportPage: React.FC = () => {
       doc_carta_conducao: '',
       doc_cv: '',
       doc_motivacao: '',
-      doc_outros: ''
+      doc_outros: '',
+
+      // Gestão de Equipamento & Operação (Novos Campos)
+      epi_capacete: false,
+      epi_colete: false,
+      epi_mochila: false,
+      consumo_mensal_estimado: 0,
+      historico_ocorrencias: ''
    });
 
    // Cálculo da Idade (Automático)
@@ -323,7 +337,14 @@ const TransportPage: React.FC = () => {
          doc_carta_conducao: formDataContract.doc_carta_conducao,
          doc_cv: formDataContract.doc_cv,
          doc_motivacao: formDataContract.doc_motivacao,
-         notas_pessoais: formDataContract.notas_pessoais
+         notas_pessoais: formDataContract.notas_pessoais,
+
+         // Operacional & EPI
+         epi_capacete: formDataContract.epi_capacete,
+         epi_colete: formDataContract.epi_colete,
+         epi_mochila: formDataContract.epi_mochila,
+         consumo_mensal_estimado: formDataContract.consumo_mensal_estimado,
+         historico_ocorrencias: formDataContract.historico_ocorrencias
       } as any;
 
       try {
@@ -390,7 +411,14 @@ const TransportPage: React.FC = () => {
          doc_carta_conducao: m.doc_carta_conducao || '',
          doc_cv: m.doc_cv || '',
          doc_motivacao: m.doc_motivacao || '',
-         doc_outros: ''
+         doc_outros: '',
+
+         // Gestão de Equipamento & Operação
+         epi_capacete: m.epi_capacete || false,
+         epi_colete: m.epi_colete || false,
+         epi_mochila: m.epi_mochila || false,
+         consumo_mensal_estimado: m.consumo_mensal_estimado || 0,
+         historico_ocorrencias: m.historico_ocorrencias || ''
       });
       setShowModal(true);
    };
@@ -609,8 +637,33 @@ const TransportPage: React.FC = () => {
                </div>
 
                {/* Charts */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="bg-white p-10 rounded-[3.5rem] border border-sky-100 shadow-sm h-[450px]">
+               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[400px]">
+                     <h3 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-zinc-400"><Layers className="text-yellow-500" size={14} /> Estado Operacional</h3>
+                     <ResponsiveContainer width="100%" height="80%">
+                        <PieChart>
+                           <Pie
+                              data={stats.operationalPieData}
+                              cx="50%" cy="50%"
+                              innerRadius={50}
+                              outerRadius={80}
+                              paddingAngle={5}
+                              dataKey="value"
+                           >
+                              {[
+                                 { name: 'Ativos', color: '#22c55e' },
+                                 { name: 'Inativos', color: '#94a3b8' },
+                                 { name: 'Manutenção', color: '#eab308' }
+                              ].map((entry, index) => (
+                                 <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                              ))}
+                           </Pie>
+                           <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
+                        </PieChart>
+                     </ResponsiveContainer>
+                  </div>
+
+                  <div className="bg-white p-10 rounded-[3.5rem] border border-sky-100 shadow-sm h-[400px]">
                      <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2"><BarChart4 className="text-zinc-900" size={20} /> Fluxo de Prestação</h3>
                      <ResponsiveContainer width="100%" height="80%">
                         <BarChart data={stats.financialProjectionData} layout="vertical">
@@ -631,7 +684,7 @@ const TransportPage: React.FC = () => {
                      </ResponsiveContainer>
                   </div>
 
-                  <div className="bg-white p-10 rounded-[3.5rem] border border-sky-100 shadow-sm h-[450px]">
+                  <div className="bg-white p-10 rounded-[3.5rem] border border-sky-100 shadow-sm h-[400px]">
                      <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2"><CalendarDays className="text-green-600" size={20} /> Saúde dos Contratos</h3>
                      <div className="flex-1 w-full min-h-0 relative h-full">
                         <ResponsiveContainer width="100%" height="80%">
@@ -733,6 +786,23 @@ const TransportPage: React.FC = () => {
                                     <div className="flex items-center gap-2 mt-2 bg-orange-50 p-2 rounded-lg border border-orange-100">
                                        <AlertTriangle size={14} className="text-orange-500" />
                                        <span className="text-[10px] font-black text-orange-600 uppercase">Expira em {diasRestantes} dias</span>
+                                    </div>
+                                 )}
+                              </div>
+
+                              <div className="flex gap-2 pt-2 border-t border-zinc-100">
+                                 <div title="Capacete" className={`p-2 rounded-xl border ${m.epi_capacete ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-100 text-red-300'}`}>
+                                    <ShieldCheck size={14} />
+                                 </div>
+                                 <div title="Colete" className={`p-2 rounded-xl border ${m.epi_colete ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-100 text-red-300'}`}>
+                                    <Shirt size={14} />
+                                 </div>
+                                 <div title="Mochila" className={`p-2 rounded-xl border ${m.epi_mochila ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-100 text-red-300'}`}>
+                                    <Package size={14} />
+                                 </div>
+                                 {m.historico_ocorrencias && (
+                                    <div title="Tem Ocorrências" className="p-2 rounded-xl border bg-orange-50 border-orange-200 text-orange-600 ml-auto">
+                                       <AlertTriangle size={14} />
                                     </div>
                                  )}
                               </div>
@@ -905,6 +975,48 @@ const TransportPage: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                            <Select name="supervisor" label="Supervisor Responsável" value={formDataContract.supervisor} onChange={e => setFormDataContract({ ...formDataContract, supervisor: e.target.value })} options={supervisores.map(s => ({ value: s, label: s }))} />
                            <Select name="municipio" label="Município de Operação" value={formDataContract.municipio} onChange={e => setFormDataContract({ ...formDataContract, municipio: e.target.value })} options={municipios.map(m => ({ value: m, label: m }))} />
+                        </div>
+
+                        {/* NOVOS CAMPOS: EPI & OPERAÇÃO */}
+                        <div className="pt-6 border-t border-zinc-200">
+                           <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 mb-6"><ShieldCheck size={14} /> Equipamento & Proteção (EPI)</h4>
+                           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                              {[
+                                 { key: 'epi_capacete', label: 'Capacete Amazing', icon: <div className="w-5 h-5 bg-zinc-400 rounded-full" /> },
+                                 { key: 'epi_colete', label: 'Colete Refletor', icon: <div className="w-5 h-5 bg-orange-400 rounded-sm" /> },
+                                 { key: 'epi_mochila', label: 'Mochila Térmica', icon: <div className="w-5 h-5 border-2 border-zinc-400 rounded-lg" /> }
+                              ].map((epi) => (
+                                 <div
+                                    key={epi.key}
+                                    onClick={() => setFormDataContract({ ...formDataContract, [epi.key]: !formDataContract[epi.key as keyof typeof formDataContract] })}
+                                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col items-center gap-2 ${formDataContract[epi.key as keyof typeof formDataContract] ? 'bg-green-50 border-green-500 text-green-700' : 'bg-white border-zinc-100 text-zinc-400 hover:border-yellow-500'}`}
+                                 >
+                                    {formDataContract[epi.key as keyof typeof formDataContract] ? <CheckCircle2 size={24} /> : epi.icon}
+                                    <span className="text-[9px] font-black uppercase text-center">{epi.label}</span>
+                                 </div>
+                              ))}
+                              <div className="col-span-1">
+                                 <Input
+                                    name="consumo_mensal"
+                                    label="Consumo Mensal (Kz)"
+                                    type="number"
+                                    value={formDataContract.consumo_mensal_estimado}
+                                    onChange={e => setFormDataContract({ ...formDataContract, consumo_mensal_estimado: Number(e.target.value) })}
+                                    placeholder="Estimativa"
+                                 />
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="space-y-2">
+                           <label className="text-sm font-medium text-zinc-700 block text-xs font-black uppercase tracking-widest text-zinc-400">Histórico de Ocorrências / Incidentes</label>
+                           <textarea
+                              name="historico_ocorrencias"
+                              className="w-full bg-white border border-zinc-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 min-h-[100px] text-sm resize-none placeholder:text-zinc-300"
+                              placeholder="Registe aqui multas, acidentes ou advertências operacionais..."
+                              value={formDataContract.historico_ocorrencias}
+                              onChange={e => setFormDataContract({ ...formDataContract, historico_ocorrencias: e.target.value })}
+                           />
                         </div>
                      </div>
 

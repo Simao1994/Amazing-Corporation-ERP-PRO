@@ -239,6 +239,12 @@ export interface Motoqueiro {
   supervisor: string;
   observacoes: string;
   tempo_contrato: string;
+  // Gestão de Equipamento & Operação
+  epi_capacete?: boolean;
+  epi_colete?: boolean;
+  epi_mochila?: boolean;
+  consumo_mensal_estimado?: number;
+  historico_ocorrencias?: string;
   // Documentos Digitais
   doc_bi?: string;
   doc_cv?: string;
