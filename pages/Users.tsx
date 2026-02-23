@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/lib/supabase';
-import { UserPlus, Trash2, RefreshCw, ShieldCheck, User, Search, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Trash2, RefreshCw, ShieldCheck, User, Search, Eye, EyeOff, Edit2, Key } from 'lucide-react';
 
 const SUPABASE_URL = 'https://jgktemwegesmmomlftgt.supabase.co';
 
@@ -53,6 +53,7 @@ const UsersPage: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [editingUser, setEditingUser] = useState<Profile | null>(null);
 
     const [form, setForm] = useState({
         nome: '',
@@ -98,19 +99,33 @@ const UsersPage: React.FC = () => {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !session) throw new Error('Sessão inválida. Por favor faça login novamente.');
 
-            const response = await fetch(`${SUPABASE_URL}/functions/v1/create-user`, {
+            const url = editingUser
+                ? `${SUPABASE_URL}/functions/v1/update-user`
+                : `${SUPABASE_URL}/functions/v1/create-user`;
+
+            const body = editingUser
+                ? {
+                    id: editingUser.id,
+                    email: form.email.toLowerCase().trim(),
+                    password: form.password || undefined,
+                    nome: form.nome.trim(),
+                    role: form.role,
+                }
+                : {
+                    email: form.email.toLowerCase().trim(),
+                    password: form.password,
+                    nome: form.nome.trim(),
+                    role: form.role,
+                };
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`,
                     'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY as string,
                 },
-                body: JSON.stringify({
-                    email: form.email.toLowerCase().trim(),
-                    password: form.password,
-                    nome: form.nome.trim(),
-                    role: form.role,
-                }),
+                body: JSON.stringify(body),
             });
 
             let result: any = {};
@@ -127,18 +142,36 @@ const UsersPage: React.FC = () => {
 
             // Log action
             const { AmazingStorage } = await import('../utils/storage');
-            AmazingStorage.logAction('Segurança', 'Utilizadores', `Administrador criou novo utilizador: ${form.nome.trim()} (${form.email})`);
+            const actionText = editingUser
+                ? `Administrador atualizou utilizador: ${form.nome.trim()} (${form.email})`
+                : `Administrador criou novo utilizador: ${form.nome.trim()} (${form.email})`;
 
-            setSuccess(`✅ ${result.message || 'Utilizador criado com sucesso!'}`);
+            AmazingStorage.logAction('Segurança', 'Utilizadores', actionText);
+
+            setSuccess(`✅ ${result.message || (editingUser ? 'Utilizador atualizado com sucesso!' : 'Utilizador criado com sucesso!')}`);
             setForm({ nome: '', email: '', password: '', role: 'admin' });
             setShowForm(false);
+            setEditingUser(null);
             await fetchUsers();
 
         } catch (err: any) {
-            setError(err.message || 'Erro ao criar utilizador');
+            setError(err.message || 'Erro ao processar pedido');
         } finally {
             setCreating(false);
         }
+    };
+
+    const handleEdit = (user: Profile) => {
+        setEditingUser(user);
+        setForm({
+            nome: user.nome || '',
+            email: user.email || '',
+            password: '',
+            role: user.role || 'admin',
+        });
+        setShowForm(true);
+        setError('');
+        setSuccess('');
     };
 
     const filtered = profiles.filter(p =>
@@ -164,7 +197,13 @@ const UsersPage: React.FC = () => {
                         <RefreshCw size={18} className={loading ? 'animate-spin text-zinc-500' : 'text-zinc-600'} />
                     </button>
                     <button
-                        onClick={() => { setShowForm(!showForm); setError(''); setSuccess(''); }}
+                        onClick={() => {
+                            setShowForm(!showForm);
+                            setEditingUser(null);
+                            setForm({ nome: '', email: '', password: '', role: 'admin' });
+                            setError('');
+                            setSuccess('');
+                        }}
                         className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-black px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-yellow-500/30 text-sm uppercase tracking-wider"
                     >
                         <UserPlus size={18} />
@@ -189,8 +228,12 @@ const UsersPage: React.FC = () => {
             {showForm && (
                 <div className="bg-white border border-sky-100 rounded-3xl shadow-xl p-8 animate-in slide-in-from-top duration-300">
                     <h2 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
-                        <UserPlus size={20} className="text-yellow-500" />
-                        Cadastrar Novo Utilizador
+                        {editingUser ? (
+                            <Edit2 size={20} className="text-yellow-500" />
+                        ) : (
+                            <UserPlus size={20} className="text-yellow-500" />
+                        )}
+                        {editingUser ? 'Editar Utilizador' : 'Cadastrar Novo Utilizador'}
                     </h2>
 
                     <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -226,14 +269,16 @@ const UsersPage: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Senha *</label>
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">
+                                {editingUser ? 'Alterar Senha' : 'Senha *'}
+                            </label>
                             <div className="relative">
                                 <input
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder="Senha segura"
+                                    placeholder={editingUser ? "Deixe em branco para não alterar" : "Senha segura"}
                                     value={form.password}
                                     onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                                    required
+                                    required={!editingUser}
                                     minLength={6}
                                     className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 pr-12 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
                                 />
@@ -241,6 +286,11 @@ const UsersPage: React.FC = () => {
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
+                            {editingUser && (
+                                <p className="text-[9px] text-zinc-400 mt-1 uppercase font-bold flex items-center gap-1">
+                                    <Key size={10} /> Deixe em branco para manter a senha atual.
+                                </p>
+                            )}
                         </div>
 
                         <div className="sm:col-span-2">
@@ -263,7 +313,11 @@ const UsersPage: React.FC = () => {
                                 disabled={creating}
                                 className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-black py-3 rounded-xl transition-colors shadow-lg shadow-yellow-500/30 text-sm uppercase tracking-wider disabled:opacity-50 flex items-center justify-center gap-2"
                             >
-                                {creating ? <><RefreshCw size={16} className="animate-spin" /> A criar...</> : <><ShieldCheck size={16} /> Criar Utilizador</>}
+                                {creating ? (
+                                    <><RefreshCw size={16} className="animate-spin" /> {editingUser ? 'A atualizar...' : 'A criar...'}</>
+                                ) : (
+                                    <><ShieldCheck size={16} /> {editingUser ? 'Salvar Alterações' : 'Criar Utilizador'}</>
+                                )}
                             </button>
                             <button
                                 type="button"
@@ -352,9 +406,18 @@ const UsersPage: React.FC = () => {
                                 <span className="text-[10px] text-zinc-400 font-medium">
                                     {new Date(profile.created_at).toLocaleDateString('pt-PT')}
                                 </span>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Ativo"></span>
-                                    <span className="text-[10px] text-green-600 font-bold">Ativo</span>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleEdit(profile)}
+                                        className="p-2.5 bg-zinc-50 rounded-xl text-zinc-400 hover:text-yellow-600 hover:bg-yellow-50 transition-all border border-zinc-100 hover:border-yellow-100"
+                                        title="Editar Utilizador"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity items-center">
+                                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Ativo"></span>
+                                        <span className="text-[10px] text-green-600 font-bold">Ativo</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
