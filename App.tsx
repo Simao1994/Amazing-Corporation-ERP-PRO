@@ -55,20 +55,20 @@ const App: React.FC = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Fetch profile BEFORE finalizing initialization, so the app never
-        // renders with a stale/default role ('user') causing broken states.
-        const { data: profile } = await getUserProfile(session.user.id);
-        const userData: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
-          role: profile?.role || 'admin', // Default to admin only if profile missing (fail-safe)
-        };
-        setUser(userData);
-        AmazingStorage.save(STORAGE_KEYS.USER, userData);
-
-        // Now safe to finalize initialization (profile is resolved)
+        // Show the app immediately without blocking on profile fetch
         setIsInitializing(false);
+
+        // Load profile in background — all write operations have their own session guards
+        getUserProfile(session.user.id).then(({ data: profile }) => {
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
+            role: profile?.role || 'admin',
+          };
+          setUser(userData);
+          AmazingStorage.save(STORAGE_KEYS.USER, userData);
+        });
 
         // Targeted sync for essential info (background)
         AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
