@@ -181,9 +181,9 @@ const FinancePage: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header Exclusivo para Impressão */}
-      <div className="hidden print:block mb-10 border-b-4 border-zinc-900 pb-6 text-center">
-        <h1 className="text-4xl font-black uppercase tracking-widest text-zinc-900">Amazing Corporation</h1>
-        <p className="text-lg font-bold text-zinc-500 uppercase tracking-widest mt-2">Relatório Financeiro de Tesouraria</p>
+      <div className="hidden print:flex flex-col items-center mb-10 border-b-4 border-zinc-900 pb-10">
+        <img src="/assets/logo.png" alt="Logo" className="h-24 mb-6" />
+        <p className="text-lg font-bold text-zinc-500 uppercase tracking-widest">Relatório Financeiro de Tesouraria</p>
         <div className="mt-4 flex justify-between items-center text-xs font-black uppercase text-zinc-400">
           <span>Emitido em: {new Date().toLocaleDateString()}</span>
           <span>Período: {reportType === 'all' ? 'Histórico Completo' :

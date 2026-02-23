@@ -518,11 +518,7 @@ const InventoryPage: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center text-yellow-500 font-black text-2xl">A</div>
-                    <div>
-                      <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">Amazing Corporation</h1>
-                      <p className="text-[10px] font-black tracking-[0.3em] text-zinc-400 uppercase">Enterprise Solutions</p>
-                    </div>
+                    <img src="/assets/logo.png" alt="Logo" className="h-16 object-contain" />
                   </div>
                   <div className="text-[10px] text-zinc-600 space-y-0.5 font-bold uppercase leading-relaxed">
                     <p>Endereço: Bairro da Massangarala, Província de Benguela, Município de Benguela</p>

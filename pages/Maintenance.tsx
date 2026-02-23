@@ -315,7 +315,6 @@ const MaintenancePage: React.FC = () => {
             <div className="text-right">
               <h1 className="text-3xl font-black uppercase tracking-tighter">Ordem de Serviço</h1>
               <p className="text-zinc-500 font-bold">Nº Registo: {printingItem.id}</p>
-              <p className="text-xs font-black text-yellow-600 uppercase tracking-widest">Amazing Corporation S.A.</p>
             </div>
           </div>
 

@@ -1260,11 +1260,10 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <div className="absolute top-0 left-12 p-8 z-10 w-full">
                         <div className="flex justify-between items-start">
                            <div className="flex items-center gap-5">
-                              <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center p-2">
-                                 <Logo />
+                              <div className="w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-2">
+                                 <Logo className="h-20" />
                               </div>
                               <div className="space-y-1">
-                                 <h1 className="text-3xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Amazing Corporation</h1>
                                  <div className="text-[9px] font-bold text-zinc-500 uppercase leading-tight">
                                     <p>NIF: 5000218797</p>
                                     <p>Massangarala, Benguela - Angola</p>
