@@ -161,6 +161,13 @@ const UsersPage: React.FC = () => {
         }
     };
 
+    const resetForm = () => {
+        setForm({ nome: '', email: '', password: '', role: 'admin' });
+        setEditingUser(null);
+        setError('');
+        setSuccess('');
+    };
+
     const handleEdit = (user: Profile) => {
         setEditingUser(user);
         setForm({
@@ -308,11 +315,11 @@ const UsersPage: React.FC = () => {
                             </select>
                         </div>
 
-                        <div className="sm:col-span-2 flex gap-3 pt-2">
+                        <div className="sm:col-span-2 flex flex-wrap gap-3 pt-2">
                             <button
                                 type="submit"
                                 disabled={creating}
-                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-black py-3 rounded-xl transition-colors shadow-lg shadow-yellow-500/30 text-sm uppercase tracking-wider disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-black py-3 rounded-xl transition-colors shadow-lg shadow-yellow-500/30 text-sm uppercase tracking-wider disabled:opacity-50 flex items-center justify-center gap-2 min-w-[160px]"
                             >
                                 {creating ? (
                                     <><RefreshCw size={16} className="animate-spin" /> {editingUser ? 'A atualizar...' : 'A criar...'}</>
@@ -322,8 +329,17 @@ const UsersPage: React.FC = () => {
                             </button>
                             <button
                                 type="button"
+                                onClick={resetForm}
+                                className="px-6 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-black py-3 rounded-xl transition-colors text-sm uppercase tracking-wider flex items-center gap-2"
+                                title="Limpar todos os campos e cancelar edição"
+                            >
+                                <RefreshCw size={14} />
+                                Limpar
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => setShowForm(false)}
-                                className="px-6 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-black py-3 rounded-xl transition-colors text-sm uppercase tracking-wider"
+                                className="px-6 bg-zinc-50 hover:bg-zinc-100 text-zinc-400 font-bold py-3 rounded-xl transition-colors text-sm uppercase tracking-wider"
                             >
                                 Cancelar
                             </button>
