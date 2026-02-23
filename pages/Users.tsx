@@ -172,6 +172,7 @@ const UsersPage: React.FC = () => {
         setShowForm(true);
         setError('');
         setSuccess('');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const filtered = profiles.filter(p =>
@@ -408,8 +409,11 @@ const UsersPage: React.FC = () => {
                                 </span>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => handleEdit(profile)}
-                                        className="p-2.5 bg-zinc-50 rounded-xl text-zinc-400 hover:text-yellow-600 hover:bg-yellow-50 transition-all border border-zinc-100 hover:border-yellow-100"
+                                        onClick={() => {
+                                            console.log('Edit clicked for user:', profile.nome);
+                                            handleEdit(profile);
+                                        }}
+                                        className="p-2.5 bg-yellow-50 rounded-xl text-yellow-600 hover:text-white hover:bg-yellow-500 transition-all border border-yellow-200 hover:border-yellow-600 shadow-sm active:scale-95"
                                         title="Editar Utilizador"
                                     >
                                         <Edit2 size={16} />
