@@ -46,6 +46,7 @@ interface Profile {
 
 const UsersPage: React.FC = () => {
     const [profiles, setProfiles] = useState<Profile[]>([]);
+    const formRef = React.useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
     const [showForm, setShowForm] = useState(false);
@@ -179,7 +180,11 @@ const UsersPage: React.FC = () => {
         setShowForm(true);
         setError('');
         setSuccess('');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Timeout para garantir que o formulário está renderizado antes do scroll
+        setTimeout(() => {
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     };
 
     const filtered = profiles.filter(p =>
@@ -234,7 +239,7 @@ const UsersPage: React.FC = () => {
 
             {/* Create Form */}
             {showForm && (
-                <div className="bg-white border border-sky-100 rounded-3xl shadow-xl p-8 animate-in slide-in-from-top duration-300">
+                <div ref={formRef} className="bg-white border border-sky-100 rounded-3xl shadow-xl p-8 animate-in slide-in-from-top duration-300 scroll-mt-6">
                     <h2 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
                         {editingUser ? (
                             <Edit2 size={20} className="text-yellow-500" />
