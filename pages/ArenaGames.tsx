@@ -5,14 +5,28 @@ import {
    CheckCircle2, X, Search, Globe, Play, Trophy,
    TrendingUp, Calendar, Award, Target, Save,
    Smartphone, Wallet, ShieldCheck, ArrowRight,
-   RefreshCw, QrCode, Mail, History, Info, Medal, MapPin, Map, Navigation
+   RefreshCw, QrCode, Mail, History, Info, Medal, MapPin, Map, Navigation,
+   AlertCircle, Copy, Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
 import Input from '../components/ui/Input';
 import { supabase } from '../src/lib/supabase';
-import { Game, GamePayment, ArenaTournament, ArenaRanking, PaymentMethod } from '../types';
+import { Game, ArenaTournament, ArenaRanking, PaymentMethod } from '../types';
 import { formatAOA } from '../constants';
+
+// Gera referência de pagamento única: ARENA-YYMMDD-XXXX
+const gerarReferencia = () => {
+   const now = new Date();
+   const yy = String(now.getFullYear()).slice(2);
+   const mm = String(now.getMonth() + 1).padStart(2, '0');
+   const dd = String(now.getDate()).padStart(2, '0');
+   const rand = Math.floor(1000 + Math.random() * 9000);
+   return `ARENA-${yy}${mm}${dd}-${rand}`;
+};
+
+const NUMERO_MCX = '929 882 067';
+const SUPABASE_FUNCTIONS_URL = 'https://jgktemwegesmmomlftgt.supabase.co/functions/v1';
 
 const ArenaGames: React.FC = () => {
    const [activeStep, setActiveStep] = useState<'catalog' | 'tournaments' | 'ranking'>('catalog');
@@ -22,9 +36,11 @@ const ArenaGames: React.FC = () => {
    // Fluxo de Solicitação e Pagamento
    const [selectedItem, setSelectedItem] = useState<{ id: string, titulo: string, preco: number, tipo: 'jogo' | 'torneio', imagem_url?: string } | null>(null);
    const [isRequesting, setIsRequesting] = useState(false);
-   const [paymentStep, setPaymentStep] = useState<'details' | 'method' | 'processing' | 'success'>('details');
+   const [paymentStep, setPaymentStep] = useState<'details' | 'method' | 'processing' | 'pending' | 'failed'>('details');
    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Multicaixa');
    const [clientData, setClientData] = useState({ nome: '', tel: '', email: '' });
+   const [referencia, setReferencia] = useState('');
+   const [copied, setCopied] = useState(false);
 
    // --- ESTADOS DE DADOS ---
    const [games, setGames] = useState<Game[]>([]);
@@ -70,52 +86,55 @@ const ArenaGames: React.FC = () => {
          imagem_url: tipo === 'jogo' ? item.imagem_url : undefined
       });
       setPaymentStep('details');
+      setReferencia('');
+      setCopied(false);
+      setClientData({ nome: '', tel: '', email: '' });
       setIsRequesting(true);
    };
 
-   const processPayment = async (e: React.FormEvent) => {
-      e.preventDefault();
+   const handleCloseModal = () => {
+      setIsRequesting(false);
+      setPaymentStep('details');
+      setReferencia('');
+   };
+
+   const copyReferencia = () => {
+      navigator.clipboard.writeText(referencia).then(() => {
+         setCopied(true);
+         setTimeout(() => setCopied(false), 2000);
+      });
+   };
+
+   const processPayment = async (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
       setPaymentStep('processing');
 
       try {
+         const ref = gerarReferencia();
+         setReferencia(ref);
+
          const paymentPayload = {
-            game_id: selectedItem?.tipo === 'jogo' ? selectedItem.id : null,
+            game_id: selectedItem!.id,
             game_titulo: selectedItem!.titulo,
+            tipo: selectedItem!.tipo,
             valor: selectedItem!.preco,
-            metodo: paymentMethod,
-            status: 'Confirmado',
+            metodo_pagamento: paymentMethod,
+            referencia_transacao: ref,
+            status: 'Pendente',  // ← SEMPRE começa como Pendente
             cliente_nome: clientData.nome,
             cliente_telefone: clientData.tel,
-            data: new Date().toISOString()
+            criado_em: new Date().toISOString()
          };
 
-         // 1. Inserir pagamento
-         const { error: pError } = await supabase.from('arena_payments').insert([paymentPayload]);
+         const { error: pError } = await supabase.from('arena_pagamentos').insert([paymentPayload]);
          if (pError) throw pError;
 
-         // 2. Atualizar vagas
-         if (selectedItem?.tipo === 'jogo') {
-            const game = games.find(g => g.id === selectedItem.id);
-            if (game) {
-               await supabase.from('arena_games')
-                  .update({ vagas_disponiveis: Math.max(0, game.vagas_disponiveis - 1) })
-                  .eq('id', selectedItem.id);
-            }
-         } else {
-            const tourney = tournaments.find(t => t.id === selectedItem?.id);
-            if (tourney) {
-               await supabase.from('arena_tournaments')
-                  .update({ vagas: Math.max(0, tourney.vagas - 1) })
-                  .eq('id', selectedItem.id);
-            }
-         }
+         // NÃO decrementamos vagas aqui — só após confirmação do admin
+         setPaymentStep('pending');
 
-         await fetchArenaData();
-         setPaymentStep('success');
       } catch (error) {
          console.error('Payment error:', error);
-         alert('Erro ao processar pagamento. Tente novamente.');
-         setPaymentStep('method');
+         setPaymentStep('failed');
       }
    };
 
@@ -234,7 +253,11 @@ const ArenaGames: React.FC = () => {
                                     <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Preço da Sessão</p>
                                     <p className="text-2xl font-black text-white">{formatAOA(game.preco_sessao)}</p>
                                  </div>
-                                 <button onClick={() => handleOpenRequest(game, 'jogo')} className="px-8 py-5 bg-white text-zinc-900 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-xl active:scale-95 flex items-center gap-3">
+                                 <button
+                                    onClick={() => handleOpenRequest(game, 'jogo')}
+                                    disabled={game.vagas_disponiveis === 0}
+                                    className="px-8 py-5 bg-white text-zinc-900 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-xl active:scale-95 flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
+                                 >
                                     <Zap size={18} fill="currentColor" /> Solicitar Jogo
                                  </button>
                               </div>
@@ -329,10 +352,14 @@ const ArenaGames: React.FC = () => {
             )}
          </div>
 
-         {/* MODAL DE CHECKOUT */}
+         {/* ============================================================ */}
+         {/* MODAL DE CHECKOUT COMPLETO                                   */}
+         {/* ============================================================ */}
          {isRequesting && selectedItem && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in">
-               <div className="bg-[#111216] w-full max-w-4xl rounded-[4rem] shadow-3xl overflow-hidden border border-white/10 flex flex-col md:flex-row">
+               <div className="bg-[#111216] w-full max-w-4xl rounded-[4rem] shadow-3xl overflow-hidden border border-white/10 flex flex-col md:flex-row max-h-[95vh]">
+
+                  {/* PAINEL ESQUERDO — RESUMO DO PEDIDO */}
                   <div className="md:w-2/5 bg-zinc-900 p-12 flex flex-col justify-between border-r border-white/5">
                      <div className="space-y-10">
                         <div>
@@ -347,6 +374,22 @@ const ArenaGames: React.FC = () => {
                               </div>
                            </div>
                         </div>
+
+                        {/* Status do processo */}
+                        <div className="space-y-3">
+                           {[
+                              { label: 'Identificação', done: ['method', 'processing', 'pending', 'failed'].includes(paymentStep) },
+                              { label: 'Método de Pagamento', done: ['processing', 'pending', 'failed'].includes(paymentStep) },
+                              { label: 'Confirmação', done: paymentStep === 'pending' },
+                           ].map((step, i) => (
+                              <div key={i} className="flex items-center gap-3">
+                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black ${step.done ? 'bg-green-500 text-white' : 'bg-white/10 text-zinc-500'}`}>
+                                    {step.done ? '✓' : i + 1}
+                                 </div>
+                                 <span className={`text-[10px] font-black uppercase tracking-widest ${step.done ? 'text-zinc-300' : 'text-zinc-600'}`}>{step.label}</span>
+                              </div>
+                           ))}
+                        </div>
                      </div>
                      <div className="pt-10 flex items-center gap-3 opacity-30">
                         <ShieldCheck size={20} />
@@ -354,23 +397,32 @@ const ArenaGames: React.FC = () => {
                      </div>
                   </div>
 
-                  <div className="md:w-3/5 p-12 relative flex flex-col justify-center">
-                     <button onClick={() => setIsRequesting(false)} className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-all"><X size={28} /></button>
+                  {/* PAINEL DIREITO — STEPS */}
+                  <div className="md:w-3/5 p-12 relative flex flex-col justify-center overflow-y-auto">
+                     <button onClick={handleCloseModal} className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-all z-10"><X size={28} /></button>
 
+                     {/* STEP 1: IDENTIFICAÇÃO */}
                      {paymentStep === 'details' && (
                         <div className="space-y-8 animate-in slide-in-from-right-4">
-                           <h2 className="text-4xl font-black uppercase tracking-tighter">Identificação</h2>
+                           <div>
+                              <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Passo 1 de 2</p>
+                              <h2 className="text-4xl font-black uppercase tracking-tighter">Identificação</h2>
+                           </div>
                            <form onSubmit={(e) => { e.preventDefault(); setPaymentStep('method'); }} className="space-y-4">
-                              <Input label="Seu Gamer Tag / Nome" required className="bg-white/5 border-white/10 text-white" value={clientData.nome} onChange={e => setClientData({ ...clientData, nome: e.target.value })} />
-                              <Input label="Telemóvel" required placeholder="+244" className="bg-white/5 border-white/10 text-white" value={clientData.tel} onChange={e => setClientData({ ...clientData, tel: e.target.value })} />
-                              <button type="submit" className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-3">Escolher Pagamento <ArrowRight size={16} /></button>
+                              <Input label="Gamer Tag / Nome Completo" required className="bg-white/5 border-white/10 text-white" value={clientData.nome} onChange={e => setClientData({ ...clientData, nome: e.target.value })} />
+                              <Input label="Telemóvel" required placeholder="+244 9XX XXX XXX" className="bg-white/5 border-white/10 text-white" value={clientData.tel} onChange={e => setClientData({ ...clientData, tel: e.target.value })} />
+                              <button type="submit" className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all">Escolher Pagamento <ArrowRight size={16} /></button>
                            </form>
                         </div>
                      )}
 
+                     {/* STEP 2: MÉTODO DE PAGAMENTO */}
                      {paymentStep === 'method' && (
                         <div className="space-y-8 animate-in slide-in-from-right-4">
-                           <h2 className="text-4xl font-black uppercase tracking-tighter">Pagamento</h2>
+                           <div>
+                              <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Passo 2 de 2</p>
+                              <h2 className="text-4xl font-black uppercase tracking-tighter">Pagamento</h2>
+                           </div>
                            <div className="grid grid-cols-2 gap-4">
                               {[
                                  { id: 'Multicaixa', label: 'MCX Express', icon: <Smartphone /> },
@@ -383,35 +435,130 @@ const ArenaGames: React.FC = () => {
                                  </button>
                               ))}
                            </div>
+
+                           {/* Instruções de pagamento por método */}
                            {paymentMethod === 'Multicaixa' && (
-                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-indigo-500 animate-in fade-in">
-                                 <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">Conta de Envio Arena</p>
-                                 <p className="text-xl font-black text-white">929 882 067</p>
+                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-indigo-500 animate-in fade-in space-y-3">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções MCX Express</p>
+                                 <p className="text-sm text-zinc-300 font-medium">Após confirmar, envie o valor para o número abaixo e use a referência gerada como comprovativo.</p>
+                                 <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
+                                    <div>
+                                       <p className="text-[8px] text-zinc-500 uppercase font-black">Número Arena</p>
+                                       <p className="text-xl font-black text-white">{NUMERO_MCX}</p>
+                                    </div>
+                                    <Smartphone className="text-green-400" size={24} />
+                                 </div>
                               </div>
                            )}
-                           <button onClick={processPayment} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl">Finalizar e Receber Ticket</button>
+                           {paymentMethod === 'Unitel Money' && (
+                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-orange-500 animate-in fade-in space-y-2">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Unitel Money</p>
+                                 <p className="text-xl font-black text-white">{NUMERO_MCX}</p>
+                              </div>
+                           )}
+                           {(paymentMethod === 'PayPal' || paymentMethod === 'Visa/Mastercard') && (
+                              <div className="bg-indigo-500/10 p-6 rounded-3xl border border-indigo-500/20 animate-in fade-in">
+                                 <div className="flex items-start gap-3">
+                                    <AlertCircle size={18} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-zinc-400 font-medium">Após confirmar, receberá instruções de pagamento por SMS. A sua reserva ficará pendente até à confirmação do valor.</p>
+                                 </div>
+                              </div>
+                           )}
+
+                           <button
+                              onClick={processPayment}
+                              className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-indigo-500 transition-all flex items-center justify-center gap-3"
+                           >
+                              <ShieldCheck size={16} /> Gerar Referência e Confirmar
+                           </button>
                         </div>
                      )}
 
+                     {/* PROCESSANDO */}
                      {paymentStep === 'processing' && (
-                        <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95">
+                        <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 py-20">
                            <RefreshCw size={80} className="text-indigo-500 animate-spin" />
                            <div className="text-center space-y-2">
-                              <h2 className="text-2xl font-black uppercase">Sincronizando...</h2>
-                              <p className="text-zinc-500 text-sm font-medium">Validando transação com a Rede Amazing.</p>
+                              <h2 className="text-2xl font-black uppercase">A registar...</h2>
+                              <p className="text-zinc-500 text-sm font-medium">A gerar referência e registar pedido.</p>
                            </div>
                         </div>
                      )}
 
-                     {paymentStep === 'success' && (
-                        <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95">
-                           <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/20"><CheckCircle2 size={48} className="text-white" /></div>
-                           <div className="text-center space-y-2">
-                              <h2 className="text-4xl font-black uppercase tracking-tight">Sucesso!</h2>
-                              <p className="text-zinc-500 font-medium">O seu acesso foi reservado com sucesso.</p>
+                     {/* PENDENTE — Sucesso com referência */}
+                     {paymentStep === 'pending' && (
+                        <div className="space-y-8 animate-in zoom-in-95 py-4">
+                           <div className="text-center space-y-3">
+                              <div className="w-20 h-20 bg-yellow-500/10 border-2 border-yellow-500/40 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/10">
+                                 <Clock size={36} className="text-yellow-400" />
+                              </div>
+                              <h2 className="text-3xl font-black uppercase tracking-tight">Pedido Registado</h2>
+                              <p className="text-zinc-400 font-medium text-sm max-w-xs mx-auto">O seu pedido foi registado com sucesso. Efectue o pagamento e aguarde confirmação.</p>
                            </div>
-                           <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl relative"><QrCode size={180} className="text-zinc-900" /></div>
-                           <button onClick={() => setIsRequesting(false)} className="w-full py-5 bg-white text-zinc-900 font-black rounded-2xl uppercase text-[10px] tracking-widest">Fechar e Jogar</button>
+
+                           {/* Caixa de referência */}
+                           <div className="bg-zinc-900 p-6 rounded-3xl border border-yellow-500/30 space-y-4">
+                              <p className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">Referência do Pagamento</p>
+                              <div className="flex items-center justify-between bg-black/50 p-4 rounded-2xl border border-white/10">
+                                 <span className="text-2xl font-black text-white tracking-wider font-mono">{referencia}</span>
+                                 <button onClick={copyReferencia} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-all text-zinc-400 hover:text-white">
+                                    {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
+                                 </button>
+                              </div>
+                              <p className="text-[10px] text-zinc-500 font-medium">Use este código como referência ao efectuar o pagamento.</p>
+                           </div>
+
+                           {/* Instruções */}
+                           <div className="bg-zinc-900 p-6 rounded-3xl border border-white/5 space-y-4">
+                              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções de Pagamento</p>
+                              <div className="space-y-3">
+                                 <div className="flex items-start gap-3">
+                                    <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">1</span>
+                                    <p className="text-sm text-zinc-300">Efectue o pagamento de <strong className="text-white">{formatAOA(selectedItem.preco)}</strong> via {paymentMethod}</p>
+                                 </div>
+                                 {(paymentMethod === 'Multicaixa' || paymentMethod === 'Unitel Money') && (
+                                    <div className="flex items-start gap-3">
+                                       <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">2</span>
+                                       <p className="text-sm text-zinc-300">Envie para o número <strong className="text-white">{NUMERO_MCX}</strong></p>
+                                    </div>
+                                 )}
+                                 <div className="flex items-start gap-3">
+                                    <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">{paymentMethod === 'Multicaixa' || paymentMethod === 'Unitel Money' ? '3' : '2'}</span>
+                                    <p className="text-sm text-zinc-300">A sua vaga será <strong className="text-white">confirmada em até 30 minutos</strong> após o pagamento</p>
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* Status */}
+                           <div className="flex items-center gap-3 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl">
+                              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                              <p className="text-[11px] font-black text-yellow-400 uppercase tracking-widest">Aguardando Confirmação de Pagamento</p>
+                           </div>
+
+                           <button onClick={handleCloseModal} className="w-full py-5 bg-white text-zinc-900 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-zinc-100 transition-all">
+                              Fechar — Obrigado!
+                           </button>
+                        </div>
+                     )}
+
+                     {/* FALHADO */}
+                     {paymentStep === 'failed' && (
+                        <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 py-20">
+                           <div className="w-24 h-24 bg-red-500/10 border-2 border-red-500/30 rounded-full flex items-center justify-center">
+                              <AlertCircle size={48} className="text-red-400" />
+                           </div>
+                           <div className="text-center space-y-2">
+                              <h2 className="text-3xl font-black uppercase tracking-tight text-red-400">Erro no Pedido</h2>
+                              <p className="text-zinc-500 font-medium text-sm">Ocorreu um erro ao registar o seu pedido. Por favor tente novamente.</p>
+                           </div>
+                           <div className="flex flex-col gap-3 w-full">
+                              <button onClick={() => setPaymentStep('method')} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest">
+                                 Tentar Novamente
+                              </button>
+                              <button onClick={handleCloseModal} className="w-full py-5 bg-white/5 text-zinc-400 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all">
+                                 Cancelar
+                              </button>
+                           </div>
                         </div>
                      )}
                   </div>

@@ -6,7 +6,8 @@ import {
    Monitor, Users, Activity, PieChart as PieIcon,
    ArrowUpRight, ArrowDownRight, CreditCard, Clock, Camera,
    Settings, History, Filter, Download, Zap, RefreshCw, Medal,
-   UserPlus, Star, ImageIcon, Eye, EyeOff
+   UserPlus, Star, ImageIcon, Eye, EyeOff,
+   CheckCircle2, AlertCircle, Copy, Check, FileText
 } from 'lucide-react';
 import {
    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -14,7 +15,27 @@ import {
 } from 'recharts';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
-import { Game, GamePayment, ArenaTournament, ArenaRanking, GameStatus } from '../types';
+import { Game, ArenaTournament, ArenaRanking, GameStatus } from '../types';
+
+// Tipo local para pagamentos da nova tabela
+interface ArenaPagamento {
+   id: string;
+   game_id: string;
+   game_titulo: string;
+   tipo: 'jogo' | 'torneio';
+   valor: number;
+   metodo_pagamento: string;
+   referencia_transacao: string;
+   status: 'Pendente' | 'Confirmado' | 'Falhado' | 'Cancelado';
+   cliente_nome: string;
+   cliente_telefone?: string;
+   notas_admin?: string;
+   criado_em: string;
+   confirmado_em?: string;
+}
+
+const FUNCTIONS_URL = 'https://jgktemwegesmmomlftgt.supabase.co/functions/v1';
+const ADMIN_KEY = 'amazing-arena-admin-2026';
 import { supabase } from '../src/lib/supabase';
 import { formatAOA } from '../constants';
 
@@ -25,9 +46,15 @@ const ArenaAdmin: React.FC = () => {
 
    // States de Dados
    const [games, setGames] = useState<Game[]>([]);
-   const [payments, setPayments] = useState<GamePayment[]>([]);
+   const [payments, setPayments] = useState<ArenaPagamento[]>([]);
    const [tournaments, setTournaments] = useState<ArenaTournament[]>([]);
    const [rankings, setRankings] = useState<ArenaRanking[]>([]);
+
+   // Pagamentos — filtros, recibo e loading
+   const [pagamentoFilter, setPagamentoFilter] = useState<'Todos' | 'Pendente' | 'Confirmado' | 'Falhado'>('Todos');
+   const [selectedPagamento, setSelectedPagamento] = useState<ArenaPagamento | null>(null);
+   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+   const [copiedRef, setCopiedRef] = useState(false);
 
    // Modals e Edição
    const [showGameModal, setShowGameModal] = useState(false);
@@ -50,7 +77,7 @@ const ArenaAdmin: React.FC = () => {
             { data: rnks }
          ] = await Promise.all([
             supabase.from('arena_games').select('*').order('titulo'),
-            supabase.from('arena_payments').select('*').order('data', { ascending: false }),
+            supabase.from('arena_pagamentos').select('*').order('criado_em', { ascending: false }),
             supabase.from('arena_tournaments').select('*').order('data_inicio', { ascending: false }),
             supabase.from('arena_ranking').select('*').order('rank', { ascending: true })
          ]);
@@ -73,6 +100,7 @@ const ArenaAdmin: React.FC = () => {
    // --- MOTOR DE ANALYTICS (DADOS REAIS) ---
    const bizStats = useMemo(() => {
       const revenue = payments.filter(p => p.status === 'Confirmado').reduce((a, b) => a + Number(b.valor), 0);
+      const pendentes = payments.filter(p => p.status === 'Pendente').length;
       const activePlayers = [...new Set(payments.map(p => p.cliente_nome))].length;
 
       const gameSales: Record<string, number> = {};
@@ -87,8 +115,55 @@ const ArenaAdmin: React.FC = () => {
       const totalEstacoes = games.reduce((acc, g) => acc + (g.vagas_disponiveis || 0), 0);
       const taxaOcupacao = totalEstacoes > 0 ? 75 : 0;
 
-      return { revenue, activePlayers, pieData, taxaOcupacao };
+      return { revenue, activePlayers, pieData, taxaOcupacao, pendentes };
    }, [payments, games]);
+
+   // --- ACÇÕES DE PAGAMENTO (via Edge Function) ---
+   const handleConfirmarPagamento = async (p: ArenaPagamento) => {
+      if (!confirm(`Confirmar pagamento de ${p.cliente_nome} — Ref: ${p.referencia_transacao}?`)) return;
+      setConfirmandoId(p.id);
+      try {
+         const res = await fetch(`${FUNCTIONS_URL}/arena-confirm-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+            body: JSON.stringify({ pagamento_id: p.id, action: 'confirmar' })
+         });
+         const data = await res.json();
+         if (!res.ok) throw new Error(data.error);
+         fetchData();
+         setSelectedPagamento(null);
+         alert('✅ Pagamento confirmado! Vagas actualizadas.');
+      } catch (err: any) {
+         alert('Erro: ' + err.message);
+      } finally {
+         setConfirmandoId(null);
+      }
+   };
+
+   const handleRejeitarPagamento = async (p: ArenaPagamento) => {
+      if (!confirm(`Rejeitar pagamento de ${p.cliente_nome}? Esta acção não pode ser desfeita.`)) return;
+      setConfirmandoId(p.id);
+      try {
+         const res = await fetch(`${FUNCTIONS_URL}/arena-confirm-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+            body: JSON.stringify({ pagamento_id: p.id, action: 'rejeitar', notas_admin: 'Rejeitado pelo administrador' })
+         });
+         const data = await res.json();
+         if (!res.ok) throw new Error(data.error);
+         fetchData();
+         setSelectedPagamento(null);
+      } catch (err: any) {
+         alert('Erro: ' + err.message);
+      } finally {
+         setConfirmandoId(null);
+      }
+   };
+
+   const pagamentosFiltrados = useMemo(() =>
+      payments.filter(p => pagamentoFilter === 'Todos' || p.status === pagamentoFilter),
+      [payments, pagamentoFilter]
+   );
 
    // --- CRUD JOGOS ---
    const handleSaveGame = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -263,7 +338,7 @@ const ArenaAdmin: React.FC = () => {
                   <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
                      <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Receita Acumulada</p>
                      <p className="text-3xl font-black text-zinc-900">{formatAOA(bizStats.revenue)}</p>
-                     <div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit"><ArrowUpRight size={12} /> Operacional</div>
+                     <div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit"><ArrowUpRight size={12} /> Confirmados</div>
                   </div>
                   <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
                      <Zap className="absolute -right-4 -bottom-4 opacity-10" size={100} />
@@ -271,10 +346,10 @@ const ArenaAdmin: React.FC = () => {
                      <p className="text-4xl font-black">{bizStats.activePlayers}</p>
                      <p className="text-[9px] font-bold text-zinc-500 mt-2 uppercase">Histórico Geral</p>
                   </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-center items-center text-center">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Taxa de Ocupação</p>
-                     <p className="text-4xl font-black text-zinc-900">{bizStats.taxaOcupacao}%</p>
-                     <p className="text-[9px] font-bold text-green-600 uppercase mt-1">Tempo Real</p>
+                  <div className={`p-8 rounded-[2.5rem] shadow-sm flex flex-col justify-center items-center text-center border ${bizStats.pendentes > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-sky-100'}`}>
+                     <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${bizStats.pendentes > 0 ? 'text-yellow-600' : 'text-zinc-400'}`}>Pendentes</p>
+                     <p className={`text-4xl font-black ${bizStats.pendentes > 0 ? 'text-yellow-600' : 'text-zinc-900'}`}>{bizStats.pendentes}</p>
+                     <p className="text-[9px] font-bold text-zinc-400 uppercase mt-1">Aguardam confirmação</p>
                   </div>
                   <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-center items-center text-center">
                      <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Jogos no Catálogo</p>
@@ -397,33 +472,186 @@ const ArenaAdmin: React.FC = () => {
 
          {/* FINANCEIRO / PAGAMENTOS ADMIN */}
          {activeTab === 'payments' && (
-            <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
-               <div className="p-10 border-b border-zinc-50 flex justify-between items-center">
-                  <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3"><DollarSign className="text-green-600" /> Fluxo de Caixa Arena</h2>
-                  <button onClick={() => window.print()} className="px-6 py-3 bg-zinc-50 text-zinc-400 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-zinc-100 transition-all"><Download size={16} /> Exportar Mapas</button>
-               </div>
-               <table className="w-full text-left">
-                  <thead>
-                     <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                        <th className="px-10 py-6">ID / Data</th>
-                        <th className="px-10 py-6">Cliente</th>
-                        <th className="px-10 py-6">Jogo / Serviço</th>
-                        <th className="px-10 py-6 text-right">Montante</th>
-                        <th className="px-10 py-6 text-center">Estado</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-50">
-                     {payments.map(p => (
-                        <tr key={p.id} className="hover:bg-zinc-50/50 transition-all">
-                           <td className="px-10 py-5"><p className="text-[10px] font-black text-zinc-400 mb-1">{p.id}</p><p className="text-xs font-bold">{new Date(p.data).toLocaleString()}</p></td>
-                           <td className="px-10 py-5 font-black text-zinc-900 text-sm">{p.cliente_nome}</td>
-                           <td className="px-10 py-5 text-sm font-bold text-indigo-600">{p.game_titulo}</td>
-                           <td className="px-10 py-5 text-right font-black text-zinc-900">{formatAOA(p.valor)}</td>
-                           <td className="px-10 py-5 text-center"><span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[9px] font-black uppercase tracking-widest">{p.status}</span></td>
-                        </tr>
+            <div className="space-y-6 animate-in slide-in-from-bottom-4">
+               {/* Header com filtros */}
+               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                     <h2 className="text-2xl font-black text-zinc-900 uppercase flex items-center gap-3"><DollarSign className="text-green-600" /> Pagamentos Arena</h2>
+                     <p className="text-zinc-400 text-sm font-medium mt-1">{payments.length} transacções no total · {bizStats.pendentes} pendentes</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                     {(['Todos', 'Pendente', 'Confirmado', 'Falhado'] as const).map(f => (
+                        <button key={f} onClick={() => setPagamentoFilter(f)} className={`px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${pagamentoFilter === f
+                              ? f === 'Pendente' ? 'bg-yellow-500 text-white shadow-xl' :
+                                 f === 'Confirmado' ? 'bg-green-600 text-white shadow-xl' :
+                                    f === 'Falhado' ? 'bg-red-500 text-white shadow-xl' :
+                                       'bg-zinc-900 text-white shadow-xl'
+                              : 'bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50'
+                           }`}>
+                           {f === 'Pendente' && <span className="inline-block w-1.5 h-1.5 bg-current rounded-full mr-1.5 animate-pulse" />}
+                           {f}
+                        </button>
                      ))}
-                  </tbody>
-               </table>
+                     <button onClick={() => window.print()} className="px-5 py-2.5 bg-white border border-zinc-200 text-zinc-400 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-zinc-50 transition-all"><Download size={14} /></button>
+                  </div>
+               </div>
+
+               {/* Tabela */}
+               <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
+                  <table className="w-full text-left">
+                     <thead>
+                        <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                           <th className="px-8 py-6">Referência / Data</th>
+                           <th className="px-8 py-6">Cliente</th>
+                           <th className="px-8 py-6">Jogo / Método</th>
+                           <th className="px-8 py-6 text-right">Valor</th>
+                           <th className="px-8 py-6 text-center">Estado</th>
+                           <th className="px-8 py-6 text-center">Acções</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-zinc-50">
+                        {pagamentosFiltrados.length === 0 ? (
+                           <tr><td colSpan={6} className="text-center py-16 text-zinc-400 text-sm font-medium">Nenhum pagamento encontrado</td></tr>
+                        ) : pagamentosFiltrados.map(p => {
+                           const isPendente = p.status === 'Pendente';
+                           const isProcessing = confirmandoId === p.id;
+                           return (
+                              <tr key={p.id} className={`hover:bg-zinc-50/50 transition-all ${isPendente ? 'bg-yellow-50/30' : ''}`}>
+                                 <td className="px-8 py-5">
+                                    <p className="text-[10px] font-black text-indigo-600 mb-1 font-mono">{p.referencia_transacao || '—'}</p>
+                                    <p className="text-xs font-bold text-zinc-500">{new Date(p.criado_em).toLocaleString('pt-AO')}</p>
+                                 </td>
+                                 <td className="px-8 py-5">
+                                    <p className="font-black text-zinc-900 text-sm">{p.cliente_nome}</p>
+                                    <p className="text-[10px] text-zinc-400 font-bold">{p.cliente_telefone}</p>
+                                 </td>
+                                 <td className="px-8 py-5">
+                                    <p className="text-sm font-bold text-indigo-600">{p.game_titulo}</p>
+                                    <p className="text-[10px] text-zinc-400 font-black uppercase">{p.metodo_pagamento}</p>
+                                 </td>
+                                 <td className="px-8 py-5 text-right font-black text-zinc-900 text-sm">{formatAOA(p.valor)}</td>
+                                 <td className="px-8 py-5 text-center">
+                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${p.status === 'Confirmado' ? 'bg-green-100 text-green-700' :
+                                          p.status === 'Pendente' ? 'bg-yellow-100 text-yellow-700' :
+                                             p.status === 'Falhado' ? 'bg-red-100 text-red-700' :
+                                                'bg-zinc-100 text-zinc-500'
+                                       }`}>
+                                       {isPendente && <span className="inline-block w-1.5 h-1.5 bg-yellow-500 rounded-full mr-1 animate-pulse" />}
+                                       {p.status}
+                                    </span>
+                                 </td>
+                                 <td className="px-8 py-5">
+                                    <div className="flex items-center justify-center gap-2">
+                                       <button onClick={() => setSelectedPagamento(p)} className="p-2 text-zinc-400 hover:text-indigo-600 bg-zinc-50 hover:bg-indigo-50 rounded-xl transition-all" title="Ver Recibo">
+                                          <FileText size={16} />
+                                       </button>
+                                       {isPendente && (
+                                          <>
+                                             <button
+                                                onClick={() => handleConfirmarPagamento(p)}
+                                                disabled={isProcessing}
+                                                className="p-2 text-green-600 hover:text-white bg-green-50 hover:bg-green-600 rounded-xl transition-all disabled:opacity-50" title="Confirmar Pagamento"
+                                             >
+                                                {isProcessing ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                                             </button>
+                                             <button
+                                                onClick={() => handleRejeitarPagamento(p)}
+                                                disabled={isProcessing}
+                                                className="p-2 text-red-500 hover:text-white bg-red-50 hover:bg-red-500 rounded-xl transition-all disabled:opacity-50" title="Rejeitar Pagamento"
+                                             >
+                                                <X size={16} />
+                                             </button>
+                                          </>
+                                       )}
+                                    </div>
+                                 </td>
+                              </tr>
+                           );
+                        })}
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         )}
+
+         {/* MODAL RECIBO */}
+         {selectedPagamento && (
+            <div className="fixed inset-0 z-[130] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-3xl overflow-hidden border border-zinc-100">
+                  <div className={`p-8 flex justify-between items-center ${selectedPagamento.status === 'Confirmado' ? 'bg-green-600' :
+                        selectedPagamento.status === 'Pendente' ? 'bg-yellow-500' : 'bg-red-500'
+                     } text-white`}>
+                     <div className="flex items-center gap-3">
+                        <FileText size={24} />
+                        <div>
+                           <h2 className="text-xl font-black uppercase tracking-tight">Recibo de Pagamento</h2>
+                           <p className="text-[10px] font-bold opacity-70">Amazing Arena Gamer</p>
+                        </div>
+                     </div>
+                     <button onClick={() => setSelectedPagamento(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><X size={22} /></button>
+                  </div>
+
+                  <div className="p-10 space-y-6">
+                     <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-100 space-y-4">
+                        <div className="flex justify-between items-center">
+                           <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Referência</span>
+                           <div className="flex items-center gap-2">
+                              <span className="font-black text-zinc-900 font-mono text-sm">{selectedPagamento.referencia_transacao}</span>
+                              <button onClick={() => { navigator.clipboard.writeText(selectedPagamento.referencia_transacao); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 1500); }} className="p-1 text-zinc-400 hover:text-zinc-900">
+                                 {copiedRef ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                              </button>
+                           </div>
+                        </div>
+                        {[
+                           { label: 'Cliente', value: selectedPagamento.cliente_nome },
+                           { label: 'Telemóvel', value: selectedPagamento.cliente_telefone || '—' },
+                           { label: 'Serviço', value: selectedPagamento.game_titulo },
+                           { label: 'Tipo', value: selectedPagamento.tipo === 'jogo' ? 'Sessão de Jogo' : 'Inscrição Torneio' },
+                           { label: 'Método', value: selectedPagamento.metodo_pagamento },
+                           { label: 'Data', value: new Date(selectedPagamento.criado_em).toLocaleString('pt-AO') },
+                        ].map(row => (
+                           <div key={row.label} className="flex justify-between">
+                              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{row.label}</span>
+                              <span className="text-sm font-bold text-zinc-700">{row.value}</span>
+                           </div>
+                        ))}
+                     </div>
+
+                     <div className="flex justify-between items-center p-6 bg-zinc-900 rounded-2xl text-white">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Total</span>
+                        <span className="text-3xl font-black text-yellow-400">{formatAOA(selectedPagamento.valor)}</span>
+                     </div>
+
+                     {selectedPagamento.status === 'Pendente' && (
+                        <div className="grid grid-cols-2 gap-4">
+                           <button
+                              onClick={() => handleConfirmarPagamento(selectedPagamento)}
+                              disabled={confirmandoId === selectedPagamento.id}
+                              className="py-4 bg-green-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                           >
+                              {confirmandoId === selectedPagamento.id ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Confirmar
+                           </button>
+                           <button
+                              onClick={() => handleRejeitarPagamento(selectedPagamento)}
+                              disabled={confirmandoId === selectedPagamento.id}
+                              className="py-4 bg-red-50 text-red-600 border border-red-200 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                           >
+                              <X size={16} /> Rejeitar
+                           </button>
+                        </div>
+                     )}
+
+                     {selectedPagamento.status !== 'Pendente' && (
+                        <div className={`p-4 rounded-2xl text-center ${selectedPagamento.status === 'Confirmado' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                           }`}>
+                           <p className={`text-[11px] font-black uppercase tracking-widest ${selectedPagamento.status === 'Confirmado' ? 'text-green-700' : 'text-red-600'
+                              }`}>
+                              {selectedPagamento.status === 'Confirmado' ? '✓ Confirmado em ' + new Date(selectedPagamento.confirmado_em!).toLocaleString('pt-AO') : '✗ Rejeitado'}
+                           </p>
+                        </div>
+                     )}
+                  </div>
+               </div>
             </div>
          )}
 
