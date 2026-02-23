@@ -999,9 +999,15 @@ const CorporateHome: React.FC = () => {
               <Logo className="h-16 brightness-110 contrast-125 saturate-150" />
               <p className="text-zinc-500 font-medium leading-relaxed">Excelência operativa e inovação constante para transformar o mercado angolano em todos os sectores.</p>
               <div className="flex gap-4">
-                <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Facebook size={18} /></div>
-                <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Instagram size={18} /></div>
-                <div className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer"><Linkedin size={18} /></div>
+                <a href="https://facebook.com/amazingcorporation.ao" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">
+                  <Facebook size={18} />
+                </a>
+                <a href="https://instagram.com/amazing_corporation" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">
+                  <Instagram size={18} />
+                </a>
+                <a href="https://linkedin.com/company/amazing-corporation" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">
+                  <Linkedin size={18} />
+                </a>
               </div>
             </div>
 
