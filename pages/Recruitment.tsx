@@ -104,6 +104,13 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
       doc_bi: '',
       doc_cv: '',
       doc_certificados: '',
+      genero: '',
+      municipio: '',
+      disponibilidade: '',
+      pretensao_salarial: 0,
+      linkedin_url: '',
+      deficiencia: false,
+      aceita_termos: false,
       notificar_email: true
    });
 
@@ -232,6 +239,13 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
          estado_civil: fd.get('estado_civil') as string,
          telefone: fd.get('telefone') as string,
          email: email,
+         genero: fd.get('genero') as string,
+         municipio: fd.get('municipio') as string,
+         disponibilidade: fd.get('disponibilidade') as string,
+         pretensao_salarial: Number(fd.get('pretensao_salarial')),
+         linkedin_url: fd.get('linkedin_url') as string,
+         deficiencia: formData.deficiencia,
+         aceita_termos: formData.aceita_termos,
          carta_conducao: fd.get('carta') as string,
          experiencia: fd.get('experiencia') as string,
          escolaridade: fd.get('escolaridade') as any,
@@ -718,14 +732,15 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
             </div>
          )}
 
-         {/* FORMUL√ÅRIO (PUBLIC OU MODAL) */}
+
+         {/* FORMUL¡RIO (PUBLIC OU MODAL) */}
          {(activeTab === 'candidatura' || showModal) && (
-            <div className={`${isPublic ? 'max-w-4xl mx-auto' : ''} animate-in slide-in-from-bottom-4`}>
+            <div className={${isPublic ? 'max-w-4xl mx-auto' : ''} animate-in slide-in-from-bottom-4}>
                <form onSubmit={handleSaveCandidatura} className="bg-white p-12 rounded-[4rem] shadow-3xl border border-sky-100 space-y-12">
                   <div className="flex justify-between items-center border-b border-zinc-100 pb-8">
                      <div className="space-y-1">
-                        <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Ficha de Inscri√ß√£o</h2>
-                        <p className="text-zinc-500 font-medium italic">Portal de Carreiras & Recrutamento Estrat√©gico</p>
+                        <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Ficha de InscriÁ„o</h2>
+                        <p className="text-zinc-500 font-medium italic">Portal de Carreiras & Recrutamento EstratÈgico</p>
                      </div>
                      {!isPublic && <button type="button" onClick={() => setShowModal(false)} className="p-4 bg-zinc-50 rounded-full hover:bg-red-50 text-red-400"><X size={24} /></button>}
                   </div>
@@ -733,7 +748,7 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                   {/* DADOS PESSOAIS */}
                   <div className="space-y-8">
                      <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.4em] flex items-center gap-3">
-                        <IdCard size={18} className="text-zinc-900" /> Identifica√ß√£o Pessoal
+                        <IdCard size={18} className="text-zinc-900" /> IdentificaÁ„o Pessoal
                      </h3>
                      <div className="grid grid-cols-2 gap-6">
                         <Input name="nome" label="Nome" required defaultValue={editingItem?.nome} />
@@ -745,43 +760,55 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                            value={formData.data_nascimento}
                            onChange={e => setFormData({ ...formData, data_nascimento: e.target.value })}
                         />
-                        <Input label="Idade (Auto)" readOnly value={formData.idade} className="bg-zinc-50 font-black text-center" />
+                        <Select name="genero" label="GÈnero" required defaultValue={editingItem?.genero} options={[{ value: 'Masculino', label: 'Masculino' }, { value: 'Feminino', label: 'Feminino' }, { value: 'Outro', label: 'Outro/Preferir n„o dizer' }]} />
                         <Input name="nacionalidade" label="Nacionalidade" required defaultValue={editingItem?.nacionalidade || 'Angolana'} />
                      </div>
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Input name="bi_numero" label="N¬∫ BI" required defaultValue={editingItem?.bi_numero} placeholder="000000000XX000" />
+                        <Input name="bi_numero" label="N∫ BI" required defaultValue={editingItem?.bi_numero} placeholder="000000000XX000" />
                         <Input
-                           name="bi_emissao" label="Data Emiss√£o BI" type="date" required
+                           name="bi_emissao" label="Data Emiss„o BI" type="date" required
                            value={formData.bi_emissao}
                            onChange={e => setFormData({ ...formData, bi_emissao: e.target.value })}
                         />
                         <Input label="Validade BI (Auto 10 Anos)" readOnly value={formData.bi_validade} className="bg-zinc-50 font-bold" />
                      </div>
-                     <div className="grid grid-cols-2 gap-6">
-                        <Input name="nome_pai" label="Filia√ß√£o (Pai)" required defaultValue={editingItem?.nome_pai} />
-                        <Input name="nome_mae" label="Filia√ß√£o (M√£e)" required defaultValue={editingItem?.nome_mae} />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Select name="provincia" label="ProvÌncia de ResidÍncia" required options={PROVINCIAS_ANGOLA.map(p => ({ value: p, label: p }))} defaultValue={editingItem?.provincia || 'Benguela'} />
+                        <Input name="municipio" label="MunicÌpio / Cidade" required defaultValue={editingItem?.municipio} placeholder="Ex: BaÌa Farta" />
                      </div>
                      <div className="grid grid-cols-2 gap-6">
-                        <Input name="telefone" label="Telem√≥vel" required defaultValue={editingItem?.telefone} placeholder="+244" icon={<Phone size={14} />} />
-                        <Input name="email" label="E-mail de Notifica√ß√£o" type="email" required defaultValue={editingItem?.email} icon={<Mail size={14} />} />
+                        <Input name="nome_pai" label="FiliaÁ„o (Pai)" required defaultValue={editingItem?.nome_pai} />
+                        <Input name="nome_mae" label="FiliaÁ„o (M„e)" required defaultValue={editingItem?.nome_mae} />
+                     </div>
+                     <div className="grid grid-cols-2 gap-6">
+                        <Input name="telefone" label="TelemÛvel" required defaultValue={editingItem?.telefone} placeholder="+244" icon={<Phone size={14} />} />
+                        <Input name="email" label="E-mail de NotificaÁ„o" type="email" required defaultValue={editingItem?.email} icon={<Mail size={14} />} />
                      </div>
                   </div>
 
-                  {/* PROFISSIONAL & OBRIGAT√ìRIO */}
+                  {/* PROFISSIONAL & OBRIGAT”RIO */}
                   <div className="space-y-8">
                      <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.4em] flex items-center gap-3">
                         <Briefcase size={18} className="text-zinc-900" /> Perfil & Requisitos
                      </h3>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Select name="escolaridade" label="Escolaridade M√°xima" required options={ESCOLARIDADES} defaultValue={editingItem?.escolaridade} />
-                        <Input name="curso" label="√Årea / Curso Principal" required defaultValue={editingItem?.curso} placeholder="Ex: Engenharia de Transportes" />
+                        <Select name="escolaridade" label="Escolaridade M·xima" required options={ESCOLARIDADES} defaultValue={editingItem?.escolaridade} />
+                        <Input name="curso" label="¡rea / Curso Principal" required defaultValue={editingItem?.curso} placeholder="Ex: Engenharia de Transportes" />
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Select name="disponibilidade" label="Disponibilidade" required options={[{ value: 'Imediata', label: 'Imediata' }, { value: '15 Dias', label: '15 Dias' }, { value: '30 Dias+', label: '30 Dias+' }]} defaultValue={editingItem?.disponibilidade || 'Imediata'} />
+                        <Input name="pretensao_salarial" label="Pretens„o Salarial (AOA)" type="number" defaultValue={editingItem?.pretensao_salarial} placeholder="Opcional" />
+                        <Input name="linkedin_url" label="LinkedIn / PortfÛlio" defaultValue={editingItem?.linkedin_url} placeholder="https://linkedin.com/in/..." icon={<Globe size={14} />} />
                      </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input name="carta" label="Licen√ßa de Condu√ß√£o (Obrigat√≥rio)" required defaultValue={editingItem?.carta_conducao} placeholder="N¬∫ da Carta de Condu√ß√£o" />
-                        <Select name="provincia" label="Prov√≠ncia de Resid√™ncia" required options={PROVINCIAS_ANGOLA.map(p => ({ value: p, label: p }))} defaultValue={editingItem?.provincia || 'Benguela'} />
+                        <Input name="carta" label="LicenÁa de ConduÁ„o (ObrigatÛrio)" required defaultValue={editingItem?.carta_conducao} placeholder="N∫ da Carta de ConduÁ„o" />
+                        <div className="flex items-center gap-4 bg-zinc-50 p-6 rounded-2xl border border-zinc-200">
+                           <label className="text-[11px] font-black text-zinc-700 uppercase tracking-widest flex-1">Possui alguma deficiÍncia?</label>
+                           <input type="checkbox" checked={formData.deficiencia} onChange={e => setFormData({ ...formData, deficiencia: e.target.checked })} className="w-6 h-6 rounded-lg text-yellow-500 focus:ring-yellow-500 border-zinc-300" />
+                        </div>
                      </div>
                      <div className="space-y-2">
-                        <label className="text-[11px] font-black text-zinc-700 uppercase tracking-widest ml-1">Resumo de Experi√™ncia Profissional</label>
+                        <label className="text-[11px] font-black text-zinc-700 uppercase tracking-widest ml-1">Resumo de ExperiÍncia Profissional</label>
                         <textarea name="experiencia" required defaultValue={editingItem?.experiencia} className="w-full bg-zinc-50 border border-zinc-200 rounded-[2rem] p-6 outline-none focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 font-medium transition-all h-32" />
                      </div>
                   </div>
@@ -789,50 +816,43 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                   {/* UPLOADS FUNCIONAIS */}
                   <div className="space-y-8">
                      <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.4em] flex items-center gap-3">
-                        <Upload size={18} className="text-zinc-900" /> Documenta√ß√£o de Suporte
+                        <Upload size={18} className="text-zinc-900" /> DocumentaÁ„o de Suporte
                      </h3>
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div onClick={() => document.getElementById('up_bi')?.click()} className={`p-8 border-2 border-dashed rounded-[2rem] text-center cursor-pointer transition-all ${formData.doc_bi ? 'bg-green-50 border-green-200' : 'bg-zinc-50 border-zinc-200 hover:border-yellow-500'}`}>
+                        <div onClick={() => document.getElementById('up_bi')?.click()} className={p-8 border-2 border-dashed rounded-[2rem] text-center cursor-pointer transition-all }>
                            {formData.doc_bi ? <CheckCircle2 className="mx-auto text-green-500 mb-2" /> : <FileSearch className="mx-auto text-zinc-300 mb-2" />}
                            <p className="text-[10px] font-black uppercase text-zinc-400">{formData.doc_bi ? 'BI Carregado' : 'Carregar BI'}</p>
                            <input type="file" id="up_bi" className="hidden" accept="image/*,.pdf" onChange={e => handleFileUpload(e, 'doc_bi')} />
                         </div>
-                        <div onClick={() => document.getElementById('up_cv')?.click()} className={`p-8 border-2 border-dashed rounded-[2rem] text-center cursor-pointer transition-all ${formData.doc_cv ? 'bg-green-50 border-green-200' : 'bg-zinc-50 border-zinc-200 hover:border-yellow-500'}`}>
+                        <div onClick={() => document.getElementById('up_cv')?.click()} className={p-8 border-2 border-dashed rounded-[2rem] text-center cursor-pointer transition-all }>
                            {formData.doc_cv ? <CheckCircle2 className="mx-auto text-green-500 mb-2" /> : <FileText className="mx-auto text-zinc-300 mb-2" />}
                            <p className="text-[10px] font-black uppercase text-zinc-400">{formData.doc_cv ? 'Curriculum Vitae' : 'Carregar CV'}</p>
                            <input type="file" id="up_cv" className="hidden" accept=".pdf,.doc,.docx" onChange={e => handleFileUpload(e, 'doc_cv')} />
                         </div>
-                        <div onClick={() => document.getElementById('up_cert')?.click()} className={`p-8 border-2 border-dashed rounded-[2rem] text-center cursor-pointer transition-all ${formData.doc_certificados ? 'bg-green-50 border-green-200' : 'bg-zinc-50 border-zinc-200 hover:border-yellow-500'}`}>
+                        <div onClick={() => document.getElementById('up_cert')?.click()} className={p-8 border-2 border-dashed rounded-[2rem] text-center cursor-pointer transition-all }>
                            {formData.doc_certificados ? <CheckCircle2 className="mx-auto text-green-500 mb-2" /> : <Award className="mx-auto text-zinc-300 mb-2" />}
                            <p className="text-[10px] font-black uppercase text-zinc-400">{formData.doc_certificados ? 'Certificados OK' : 'Certificados'}</p>
-                           <input type="file" id="up_cert" className="hidden" accept=".pdf,.jpg" onChange={e => handleFileUpload(e, 'doc_certificados')} />
+                           <input type="file" id="up_cert" className="hidden" accept=".pdf,.doc,.docx" onChange={e => handleFileUpload(e, 'doc_certificados')} multiple />
                         </div>
                      </div>
                   </div>
 
-                  {/* NOTIFICA√á√ÉO POR EMAIL */}
-                  <div className="bg-sky-50 p-8 rounded-[3rem] border border-sky-100 flex items-center justify-between">
-                     <div className="flex items-center gap-4">
-                        <div className="p-4 bg-white rounded-2xl shadow-sm text-sky-600">
-                           <Mail size={24} />
-                        </div>
-                        <div>
-                           <p className="font-black text-zinc-900 uppercase text-xs tracking-widest">Protocolo Digital</p>
-                           <p className="text-zinc-500 text-sm font-medium">Desejo receber o comprovativo da candidatura por e-mail.</p>
-                        </div>
+                  {/* TERMOS E CONDI«’ES & BOT’ES */}
+                  <div className="space-y-8">
+                     <div className="flex items-center gap-4 bg-zinc-50 p-6 rounded-2xl border border-zinc-200">
+                        <input type="checkbox" checked={formData.aceita_termos} onChange={e => setFormData({ ...formData, aceita_termos: e.target.checked })} className="w-6 h-6 rounded-lg text-yellow-500 focus:ring-yellow-500 border-zinc-300" required />
+                        <label className="text-[11px] font-black text-zinc-700 uppercase tracking-widest flex-1">
+                           Declaro que li e aceito os <a href="#" className="text-yellow-500 hover:underline">Termos e CondiÁıes</a> de Tratamento de Dados
+                        </label>
                      </div>
-                     <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={formData.notificar_email} onChange={e => setFormData({ ...formData, notificar_email: e.target.checked })} className="sr-only peer" />
-                        <div className="w-14 h-7 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
-                     </label>
-                  </div>
-
-                  <div className="pt-6 flex justify-end gap-6">
-                     <button type="button" onClick={() => isPublic ? (window.location.hash = '#/') : setShowModal(false)} className="px-10 py-5 text-[11px] font-black uppercase text-zinc-400">Cancelar</button>
-                     <button type="submit" disabled={isSaving || isSendingEmail} className="px-16 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[11px] tracking-[0.2em] shadow-2xl hover:bg-zinc-800 transition-all flex items-center gap-3 disabled:opacity-50">
-                        {(isSaving || isSendingEmail) ? <RefreshCw size={20} className="animate-spin" /> : <Save size={20} />}
-                        {isSendingEmail ? 'Enviando Protocolo...' : isSaving ? 'Processando...' : editingItem ? 'Actualizar Registo' : 'Finalizar Candidatura'}
-                     </button>
+                     <div className="flex justify-end gap-4">
+                        <button type="button" onClick={() => { if (!isPublic) setShowModal(false); }} className="px-8 py-4 bg-zinc-100 text-zinc-500 rounded-full font-black uppercase tracking-wide hover:bg-zinc-200 transition-all">
+                           {(isPublic) ? 'InÌcio' : 'Cancelar'}
+                        </button>
+                        <button type="submit" className="px-8 py-4 bg-yellow-500 text-white rounded-full font-black uppercase tracking-wide hover:bg-yellow-600 transition-all">
+                           {editingItem ? 'Atualizar Candidatura' : 'Submeter Candidatura'}
+                        </button>
+                     </div>
                   </div>
                </form>
             </div>

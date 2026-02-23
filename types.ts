@@ -625,6 +625,13 @@ export interface Candidatura {
   estado_civil: string;
   telefone: string;
   email: string;
+  genero?: string;
+  municipio?: string;
+  disponibilidade?: string;
+  pretensao_salarial?: number;
+  linkedin_url?: string;
+  deficiencia?: boolean;
+  aceita_termos: boolean;
   carta_conducao: string;
   experiencia: string;
   escolaridade: EscolaridadeTipo;
