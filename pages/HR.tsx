@@ -673,6 +673,16 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-20">
+         <style>{`
+            @media print {
+               @page { size: A4 portrait; margin: 15mm; }
+               body { background: white !important; }
+               .no-print { display: none !important; }
+               .print-only { display: block !important; }
+               .fixed { display: none !important; }
+               .active-tab-content { padding: 0 !important; margin: 0 !important; }
+            }
+         `}</style>
 
          {/* ... (MODALS DE RECIBO E FICHA TÉCNICA MANTIDOS DO CÓDIGO ANTERIOR) ... */}
 
@@ -1231,11 +1241,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
          {/* MODAL RECIBO PROFISSIONAL (ESTILO CANVA) */}
          {viewingRecibo && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10">
+            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10 print:static print:p-0 print:bg-white print:block">
                <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-full min-h-[1120px] flex flex-col overflow-hidden">
 
                   {/* DESIGN GEOMÉTRICO SUPERIOR (TEMPLATE) */}
-                  <div className="relative h-48 w-full print:h-48 overflow-hidden bg-white">
+                  <div className="relative h-56 w-full print:h-56 overflow-hidden bg-white border-b-4 border-zinc-900">
                      {/* Blue Polygon */}
                      <div
                         className="absolute top-0 right-0 w-[65%] h-full bg-sky-600 origin-top-right print:bg-sky-600"
@@ -1247,14 +1257,27 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)' }}
                      ></div>
 
-                     <div className="absolute top-0 left-16 p-8 z-10">
-                        <div className="flex items-center gap-4">
-                           <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center p-2">
-                              <Logo />
+                     <div className="absolute top-0 left-12 p-8 z-10 w-full">
+                        <div className="flex justify-between items-start">
+                           <div className="flex items-center gap-5">
+                              <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center p-2">
+                                 <Logo />
+                              </div>
+                              <div className="space-y-1">
+                                 <h1 className="text-3xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Amazing Corporation</h1>
+                                 <div className="text-[9px] font-bold text-zinc-500 uppercase leading-tight">
+                                    <p>NIF: 5000218797</p>
+                                    <p>Massangarala, Benguela - Angola</p>
+                                    <p>Telf: (+244) 929 882 067</p>
+                                    <p>Email: geral.amazingcorporatio@gmail.com</p>
+                                 </div>
+                              </div>
                            </div>
-                           <div>
-                              <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Amazing</h1>
-                              <p className="text-sky-600 font-bold text-xs uppercase tracking-widest mt-1">Aqui o cliente é que faz a escolha</p>
+                           <div className="text-right pr-16 pt-2">
+                              <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10">
+                                 <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Recibo de Salário</p>
+                                 <p className="text-[8px] font-bold text-white/50 uppercase mt-1">Documento Interno # {viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
+                              </div>
                            </div>
                         </div>
                      </div>

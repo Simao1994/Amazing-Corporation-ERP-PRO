@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Handshake, Plus, Search, Edit, Trash2, Mail, Phone, Tag, Building2, ShieldCheck, X, FileCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import { Handshake, Plus, Search, Edit, Trash2, Mail, Phone, Tag, Building2, ShieldCheck, X, FileCheck, AlertCircle, RefreshCw, Star, MapPin, Landmark } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -67,7 +67,12 @@ const FornecedoresPage: React.FC = () => {
       contato: formData.get('contato') as string,
       email: formData.get('email') as string,
       categoria: formData.get('categoria') as string,
-      status: (formData.get('status') as any) || 'ativo'
+      status: (formData.get('status') as any) || 'ativo',
+      iban: formData.get('iban') as string,
+      banco: formData.get('banco') as string,
+      telefone: formData.get('telefone') as string,
+      morada: formData.get('morada') as string,
+      avaliacao: Number(formData.get('avaliacao')) || 0
     };
 
     if (!validate(data)) return;
@@ -82,7 +87,12 @@ const FornecedoresPage: React.FC = () => {
         contato: data.contato,
         email: data.email,
         categoria: data.categoria,
-        status: data.status
+        status: data.status,
+        iban: data.iban,
+        banco: data.banco,
+        telefone: data.telefone,
+        morada: data.morada,
+        avaliacao: data.avaliacao
       };
 
       if (isEditing) {
@@ -183,7 +193,12 @@ const FornecedoresPage: React.FC = () => {
             <h3 className="text-xl font-black text-zinc-900 mb-1 group-hover:text-yellow-600 transition-colors">{f.nome}</h3>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">NIF: {f.nif}</span>
-              <span className={`w-2 h-2 rounded-full ${f.status === 'ativo' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+              <span className={`w-2 h-2 rounded - full ${f.status === 'ativo' ? 'bg-green-500' : 'bg-red-500'} `}></span>
+              <div className="flex ml-auto">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} size={10} className={`${(f.avaliacao || 0) >= star ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-200'} `} />
+                ))}
+              </div>
             </div>
 
             <div className="space-y-4 pt-6 border-t border-zinc-50 relative z-10">
@@ -235,6 +250,25 @@ const FornecedoresPage: React.FC = () => {
                 <Input name="contato" label="Telemóvel de Contacto" defaultValue={editingItem?.contato} required placeholder="+244 ..." />
               </div>
               <div className="pt-4 flex flex-col gap-4">
+                <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100 space-y-4">
+                  <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                    <Landmark size={14} className="text-yellow-600" /> Detalhes Financeiros & Localização
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input name="banco" label="Banco" defaultValue={editingItem?.banco} placeholder="Ex: BFA, BAI" />
+                    <Input name="iban" label="IBAN" defaultValue={editingItem?.iban} placeholder="AO06..." />
+                  </div>
+                  <Input name="morada" label="Endereço Físico / Sede" defaultValue={editingItem?.morada} placeholder="Ex: Morro Bento, Estrada 21" />
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Avaliação de Performance</label>
+                    <div className="flex gap-1">
+                      <select name="avaliacao" defaultValue={editingItem?.avaliacao || 5} className="bg-transparent border-none font-black text-yellow-600 outline-none">
+                        {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v} Estrelas</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <Select name="status" label="Status do Contrato" defaultValue={editingItem?.status || 'ativo'} options={[
                   { value: 'ativo', label: 'Activo / Homologado' },
                   { value: 'inativo', label: 'Inactivo / Suspenso' }

@@ -44,7 +44,12 @@ const MaintenancePage: React.FC = () => {
           observacoes_gerais: m.notas?.replace(/Supervisor:.*|Condutor:.*|Município:.*|Grupo:.*|Resp. Grupo:.*/g, '').trim(),
           status: m.status as any,
           categoria: m.tipo_manutencao as any,
-          itens: m.pecas_utilizadas || []
+          itens: m.pecas_utilizadas || [],
+          quilometragem: m.quilometragem,
+          proxima_revisao_km: m.proxima_revisao_km,
+          nivel_combustivel: m.nivel_combustivel,
+          estado_pneus: m.estado_pneus,
+          tipo_veiculo: m.tipo_veiculo
         })));
       }
 
@@ -76,7 +81,12 @@ const MaintenancePage: React.FC = () => {
     responsavelGrupo: '',
     observacoesGerais: '',
     status: 'Pendente' as Manutencao['status'],
-    categoria: 'Correctiva' as Manutencao['categoria']
+    categoria: 'Correctiva' as Manutencao['categoria'],
+    quilometragem: '' as string | number,
+    proximaRevisao: '' as string | number,
+    nivelCombustivel: '1/2' as Manutencao['nivel_combustivel'],
+    estadoPneus: 'Bom',
+    tipoVeiculo: 'Mota'
   });
 
   // Efeito: Vincula automaticamente Condutor, Grupo e Município ao selecionar Matrícula
@@ -181,7 +191,12 @@ const MaintenancePage: React.FC = () => {
         responsavelGrupo: item.responsavel_grupo || '',
         observacoesGerais: item.observacoes_gerais || '',
         status: item.status,
-        categoria: item.categoria
+        categoria: item.categoria,
+        quilometragem: item.quilometragem || '',
+        proximaRevisao: item.proxima_revisao_km || '',
+        nivelCombustivel: item.nivel_combustivel || '1/2',
+        estadoPneus: item.estado_pneus || 'Bom',
+        tipoVeiculo: item.tipo_veiculo || 'Mota'
       });
       initializeTable(item.itens);
     } else {
@@ -196,7 +211,12 @@ const MaintenancePage: React.FC = () => {
         responsavelGrupo: '',
         observacoesGerais: '',
         status: 'Pendente',
-        categoria: 'Correctiva'
+        categoria: 'Correctiva',
+        quilometragem: '',
+        proximaRevisao: '',
+        nivelCombustivel: '1/2',
+        estadoPneus: 'Bom',
+        tipoVeiculo: 'Mota'
       });
       initializeTable();
     }
@@ -240,7 +260,12 @@ const MaintenancePage: React.FC = () => {
       prioridade: 'Média',
       pecas_utilizadas: filledItems,
       notas: combinedNotes,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      quilometragem: Number(formData.quilometragem) || null,
+      proxima_revisao_km: Number(formData.proximaRevisao) || null,
+      nivel_combustivel: formData.nivelCombustivel,
+      estado_pneus: formData.estadoPneus,
+      tipo_veiculo: formData.tipoVeiculo
     };
 
     try {
@@ -314,6 +339,27 @@ const MaintenancePage: React.FC = () => {
                   <div>
                     <p className="text-[10px] font-bold text-zinc-400 uppercase">Grupo</p>
                     <p className="text-sm font-bold text-zinc-800">{printingItem.grupo || '-'}</p>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-zinc-200 mt-2">
+                  <h4 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Dados Técnicos do Veículo</h4>
+                  <div className="grid grid-cols-2 gap-y-3">
+                    <div>
+                      <p className="text-[8px] font-bold text-zinc-400 uppercase">Quilometragem</p>
+                      <p className="text-sm font-black">{printingItem.quilometragem || '-'} KM</p>
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-bold text-zinc-400 uppercase">Combustível</p>
+                      <p className="text-sm font-black">{printingItem.nivel_combustivel || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-bold text-zinc-400 uppercase">Próxima Revisão</p>
+                      <p className="text-sm font-bold text-zinc-600">{printingItem.proxima_revisao_km ? `${printingItem.proxima_revisao_km} KM` : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-bold text-zinc-400 uppercase">Estado Pneus</p>
+                      <p className="text-sm font-bold text-zinc-600">{printingItem.estado_pneus || '-'}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -599,6 +645,63 @@ const MaintenancePage: React.FC = () => {
                         ]}
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Dados do Veículo (Novo Bloco) */}
+                <div className="bg-white p-6 rounded-3xl border border-sky-100 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Car size={16} className="text-yellow-600" />
+                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Informação Técnica do Veículo</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <Input
+                      label="Quilometragem Actual (KM)"
+                      type="number"
+                      placeholder="Ex: 15400"
+                      value={formData.quilometragem}
+                      onChange={(e) => setFormData({ ...formData, quilometragem: e.target.value })}
+                    />
+                    <Input
+                      label="Próxima Revisão (KM)"
+                      type="number"
+                      placeholder="Ex: 20000"
+                      value={formData.proximaRevisao}
+                      onChange={(e) => setFormData({ ...formData, proximaRevisao: e.target.value })}
+                    />
+                    <Select
+                      label="Nível de Combustível"
+                      value={formData.nivelCombustivel}
+                      onChange={(e) => setFormData({ ...formData, nivelCombustivel: e.target.value as any })}
+                      options={[
+                        { value: 'Vazio', label: 'Vazio' },
+                        { value: '1/4', label: '1/4' },
+                        { value: '1/2', label: '1/2' },
+                        { value: '3/4', label: '3/4' },
+                        { value: 'Cheio', label: 'Cheio' }
+                      ]}
+                    />
+                    <Select
+                      label="Estado dos Pneus"
+                      value={formData.estadoPneus}
+                      onChange={(e) => setFormData({ ...formData, estadoPneus: e.target.value })}
+                      options={[
+                        { value: 'Novo', label: 'Novos/Excelentes' },
+                        { value: 'Bom', label: 'Bom Estado' },
+                        { value: 'Desgastado', label: 'Desgastados (Troca Próxima)' },
+                        { value: 'Critico', label: 'Crítico (Trocar Agora)' }
+                      ]}
+                    />
+                    <Select
+                      label="Tipo de Veículo"
+                      value={formData.tipoVeiculo}
+                      onChange={(e) => setFormData({ ...formData, tipoVeiculo: e.target.value })}
+                      options={[
+                        { value: 'Mota', label: 'Motociclo / Mota' },
+                        { value: 'Ligeiro', label: 'Viatura Ligeira' },
+                        { value: 'Pesado', label: 'Viatura Pesada' }
+                      ]}
+                    />
                   </div>
                 </div>
 

@@ -177,6 +177,7 @@ const AgroPage: React.FC = () => {
          cooperativa: fd.get('cooperativa') as string,
          foto_url: photoPreview || `https://ui-avatars.com/api/?name=${fd.get('nome')}&background=166534&color=fff`,
          status: (fd.get('status') as any) || 'ativo',
+         nif: fd.get('nif') as string,
       };
 
       try {
@@ -204,7 +205,9 @@ const AgroPage: React.FC = () => {
          agronomo: fd.get('agronomo') as string,
          fase_cultura: fd.get('fase') as any,
          recomendacoes: fd.get('recomendacoes') as string,
-         foto_evidencia: isEditing ? editingVisit?.foto_evidencia : undefined
+         foto_evidencia: isEditing ? editingVisit?.foto_evidencia : undefined,
+         estado_solo: fd.get('estado_solo') as string,
+         pragas_detetadas: fd.get('pragas') as string,
       };
 
       try {
@@ -673,429 +676,435 @@ const AgroPage: React.FC = () => {
                   </table>
                </div>
             </div>
-   )
-}
+         )
+         }
 
-{/* --- VISITAS TÉCNICAS --- */ }
-{
-   activeTab === 'assistencia' && (
-      <div className="space-y-6 animate-in slide-in-from-bottom-4">
-         <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="flex-1">
-               <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
-                  <ClipboardCheck className="text-green-600" /> Relatórios de Campo
-               </h2>
-               <p className="text-zinc-500 text-sm font-medium mt-1">Acompanhamento técnico e monitoria de safras.</p>
-            </div>
-            <div className="flex items-center gap-4 w-full md:w-auto">
-               <div className="flex-1 md:w-64 bg-white p-2 rounded-[1.5rem] border border-green-100 flex items-center shadow-sm">
-                  <Search className="ml-4 text-zinc-300" size={18} />
-                  <input
-                     placeholder="Pesquisar relatório..."
-                     className="w-full bg-transparent border-none focus:ring-0 py-3 px-4 text-zinc-900 font-bold text-sm"
-                     value={searchTerm}
-                     onChange={e => setSearchTerm(e.target.value)}
-                  />
-               </div>
-               <button
-                  onClick={() => { setEditingVisit(null); setShowVisitModal(true); }}
-                  className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-green-700 shadow-xl flex items-center gap-3 transition-all"
-               >
-                  <Plus size={20} /> Nova Visita
-               </button>
-            </div>
-         </div>
-
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {visitas.length > 0 ? visitas.filter(v => {
-               const agri = agricultores.find(a => a.id === v.agricultor_id);
-               const searchLower = searchTerm.toLowerCase();
-               return (
-                  agri?.nome.toLowerCase().includes(searchLower) ||
-                  v.agronomo.toLowerCase().includes(searchLower) ||
-                  v.fase_cultura.toLowerCase().includes(searchLower)
-               );
-            }).map(v => {
-               const agri = agricultores.find(a => a.id === v.agricultor_id);
-               return (
-                  <div key={v.id} className="bg-white p-8 rounded-[2.5rem] border border-green-50 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all group">
-                     <div>
-                        <div className="flex justify-between items-start mb-4">
-                           <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-green-700">
-                                 <Map size={20} />
-                              </div>
-                              <div>
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{new Date(v.data).toLocaleDateString()}</p>
-                                 <h4 className="font-black text-zinc-900">{agri?.nome || 'Agricultor N/A'}</h4>
-                              </div>
-                           </div>
-                           <button onClick={() => { setEditingVisit(v); setShowVisitModal(true); }} className="p-2 text-zinc-300 hover:text-green-600 transition-colors"><Edit size={16} /></button>
-                        </div>
-
-                        <div className="space-y-4">
-                           <div className="flex justify-between items-center text-xs font-bold text-zinc-600 bg-zinc-50 p-3 rounded-xl">
-                              <span>Fase:</span>
-                              <span className="text-green-700 uppercase">{v.fase_cultura}</span>
-                           </div>
-                           <div>
-                              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Recomendações</p>
-                              <p className="text-sm font-medium text-zinc-600 leading-relaxed italic">"{v.recomendacoes}"</p>
-                           </div>
-                        </div>
+         {/* --- VISITAS TÉCNICAS --- */}
+         {
+            activeTab === 'assistencia' && (
+               <div className="space-y-6 animate-in slide-in-from-bottom-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                     <div className="flex-1">
+                        <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
+                           <ClipboardCheck className="text-green-600" /> Relatórios de Campo
+                        </h2>
+                        <p className="text-zinc-500 text-sm font-medium mt-1">Acompanhamento técnico e monitoria de safras.</p>
                      </div>
-
-                     <div className="mt-6 pt-6 border-t border-zinc-100 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                           <div className="w-6 h-6 rounded-full bg-zinc-200 border-2 border-white"></div>
-                           <p className="text-[10px] font-bold text-zinc-500">Agrónomo: {v.agronomo}</p>
+                     <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="flex-1 md:w-64 bg-white p-2 rounded-[1.5rem] border border-green-100 flex items-center shadow-sm">
+                           <Search className="ml-4 text-zinc-300" size={18} />
+                           <input
+                              placeholder="Pesquisar relatório..."
+                              className="w-full bg-transparent border-none focus:ring-0 py-3 px-4 text-zinc-900 font-bold text-sm"
+                              value={searchTerm}
+                              onChange={e => setSearchTerm(e.target.value)}
+                           />
                         </div>
-                        {v.foto_evidencia && <span className="text-[9px] font-black text-green-600 uppercase flex items-center gap-1"><Camera size={12} /> Evidência</span>}
-                     </div>
-                  </div>
-               );
-            }) : (
-               <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-green-100">
-                  <ClipboardCheck size={48} className="mx-auto text-green-200 mb-4" />
-                  <p className="text-zinc-400 font-bold italic">Nenhuma visita técnica registada ainda.</p>
-               </div>
-            )}
-         </div>
-      </div>
-   )
-}
-
-{/* --- PRODUÇÃO --- */ }
-{
-   activeTab === 'producao' && (
-      <div className="space-y-6 animate-in slide-in-from-bottom-4">
-         <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="flex-1">
-               <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
-                  <Wheat className="text-green-600" /> Registo de Colheitas
-               </h2>
-               <p className="text-zinc-500 text-sm font-medium mt-1">Gestão de safra e destino da produção.</p>
-            </div>
-            <div className="flex items-center gap-4 w-full md:w-auto">
-               <div className="flex-1 md:w-64 bg-white p-2 rounded-[1.5rem] border border-green-100 flex items-center shadow-sm">
-                  <Search className="ml-4 text-zinc-300" size={18} />
-                  <input
-                     placeholder="Pesquisar colheita..."
-                     className="w-full bg-transparent border-none focus:ring-0 py-3 px-4 text-zinc-900 font-bold text-sm"
-                     value={searchTerm}
-                     onChange={e => setSearchTerm(e.target.value)}
-                  />
-               </div>
-               <button
-                  onClick={() => { setEditingProduction(null); setShowProductionModal(true); }}
-                  className="px-10 py-5 bg-green-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-green-800 shadow-xl flex items-center gap-3 transition-all"
-               >
-                  <Plus size={20} /> Nova Colheita
-               </button>
-            </div>
-         </div>
-
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {colheitas.length > 0 ? colheitas.filter(c => {
-               const agri = agricultores.find(a => a.id === c.agricultor_id);
-               const searchLower = searchTerm.toLowerCase();
-               return (
-                  agri?.nome.toLowerCase().includes(searchLower) ||
-                  c.cultura.toLowerCase().includes(searchLower)
-               );
-            }).map(c => {
-               const agri = agricultores.find(a => a.id === c.agricultor_id);
-               return (
-                  <div key={c.id} className="bg-white p-8 rounded-[2.5rem] border border-green-50 shadow-sm flex flex-col hover:shadow-lg transition-all">
-                     <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-4">
-                           <div className="w-12 h-12 rounded-2xl bg-yellow-50 flex items-center justify-center text-yellow-600">
-                              <Wheat size={24} />
-                           </div>
-                           <div>
-                              <h4 className="font-black text-zinc-900 text-lg">{c.cultura}</h4>
-                              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{agri?.nome}</p>
-                           </div>
-                        </div>
-                        <button onClick={() => { setEditingProduction(c); setShowProductionModal(true); }} className="p-2 text-zinc-300 hover:text-green-600 transition-colors"><Edit size={16} /></button>
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-zinc-50 p-4 rounded-2xl">
-                           <p className="text-[9px] font-black text-zinc-400 uppercase mb-1 flex items-center gap-1"><Scale size={10} /> Quantidade</p>
-                           <p className="text-xl font-black text-zinc-900">{c.qtd_kg} <span className="text-xs text-zinc-500">kg</span></p>
-                        </div>
-                        <div className="bg-zinc-50 p-4 rounded-2xl">
-                           <p className="text-[9px] font-black text-zinc-400 uppercase mb-1 flex items-center gap-1"><Calendar size={10} /> Data</p>
-                           <p className="text-sm font-bold text-zinc-900">{new Date(c.data).toLocaleDateString()}</p>
-                        </div>
-                     </div>
-
-                     <div className="mt-auto pt-4 border-t border-zinc-50 flex justify-between items-center">
-                        <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${c.destino === 'Venda Cooperativa' ? 'bg-green-100 text-green-700 border-green-200' :
-                           c.destino === 'Armazém' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                              'bg-orange-100 text-orange-700 border-orange-200'
-                           }`}>
-                           {c.destino}
-                        </span>
-                        <Store size={16} className="text-zinc-300" />
-                     </div>
-                  </div>
-               );
-            }) : (
-               <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-green-100">
-                  <Wheat size={48} className="mx-auto text-green-200 mb-4" />
-                  <p className="text-zinc-400 font-bold italic">Nenhuma colheita registada ainda.</p>
-               </div>
-            )}
-         </div>
-      </div>
-   )
-}
-
-{/* --- MODAL CADASTRO AGRICULTOR --- */ }
-{
-   showModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-         <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
-            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-               <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                  <Sprout className="text-green-600" /> {editingAgricultor ? 'Editar Produtor' : 'Registar Agricultor'}
-               </h2>
-               <button onClick={() => setShowModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><XCircle size={28} /></button>
-            </div>
-
-            <form onSubmit={handleSaveAgricultor} className="overflow-y-auto p-10 space-y-8">
-               <div className="flex justify-center mb-6">
-                  <div
-                     className="w-32 h-32 rounded-full bg-zinc-100 border-4 border-white shadow-xl flex items-center justify-center cursor-pointer overflow-hidden relative group"
-                     onClick={() => fileInputRef.current?.click()}
-                  >
-                     {photoPreview ? <img src={photoPreview} className="w-full h-full object-cover" /> : <Camera className="text-zinc-300" size={32} />}
-                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                        <span className="text-white text-[9px] font-black uppercase">Alterar</span>
-                     </div>
-                  </div>
-                  <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => {
-                     const file = e.target.files?.[0];
-                     if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => setPhotoPreview(reader.result as string);
-                        reader.readAsDataURL(file);
-                     }
-                  }} />
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input name="nome" label="Nome Completo" defaultValue={editingAgricultor?.nome} required />
-                  <Input name="bi" label="Bilhete de Identidade" defaultValue={editingAgricultor?.bi} required />
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Input name="telefone" label="Telefone" defaultValue={editingAgricultor?.telefone} />
-                  <Input name="localidade" label="Localidade / Aldeia" defaultValue={editingAgricultor?.localidade} required />
-                  <Select
-                     name="provincia"
-                     label="Província"
-                     defaultValue={editingAgricultor?.provincia || 'Benguela'}
-                     options={PROVINCIAS_ANGOLA.map(p => ({ value: p, label: p }))}
-                  />
-               </div>
-
-               <div className="bg-green-50 p-6 rounded-3xl border border-green-100">
-                  <h3 className="text-xs font-black text-green-800 uppercase tracking-widest mb-4">Dados de Produção</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                     <div className="flex items-end gap-2">
-                        <Select
-                           name="cultura"
-                           label="Cultivo Principal"
-                           defaultValue={editingAgricultor?.cultura_principal}
-                           options={cultivos.map(c => ({ value: c, label: c }))}
-                        />
                         <button
-                           type="button"
-                           onClick={handleAddCultivo}
-                           className="p-3 bg-green-700 text-white rounded-lg hover:bg-green-800 mb-0.5"
-                           title="Adicionar Novo Cultivo"
+                           onClick={() => { setEditingVisit(null); setShowVisitModal(true); }}
+                           className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-green-700 shadow-xl flex items-center gap-3 transition-all"
                         >
-                           <Plus size={16} />
+                           <Plus size={20} /> Nova Visita
                         </button>
                      </div>
-                     <Input name="area" label="Área (Hectares)" type="number" step="0.1" defaultValue={editingAgricultor?.area_cultivada_ha} required />
-                     <Input name="cooperativa" label="Cooperativa (Opcional)" defaultValue={editingAgricultor?.cooperativa} />
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                     {visitas.length > 0 ? visitas.filter(v => {
+                        const agri = agricultores.find(a => a.id === v.agricultor_id);
+                        const searchLower = searchTerm.toLowerCase();
+                        return (
+                           agri?.nome.toLowerCase().includes(searchLower) ||
+                           v.agronomo.toLowerCase().includes(searchLower) ||
+                           v.fase_cultura.toLowerCase().includes(searchLower)
+                        );
+                     }).map(v => {
+                        const agri = agricultores.find(a => a.id === v.agricultor_id);
+                        return (
+                           <div key={v.id} className="bg-white p-8 rounded-[2.5rem] border border-green-50 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all group">
+                              <div>
+                                 <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-3">
+                                       <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-green-700">
+                                          <Map size={20} />
+                                       </div>
+                                       <div>
+                                          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{new Date(v.data).toLocaleDateString()}</p>
+                                          <h4 className="font-black text-zinc-900">{agri?.nome || 'Agricultor N/A'}</h4>
+                                       </div>
+                                    </div>
+                                    <button onClick={() => { setEditingVisit(v); setShowVisitModal(true); }} className="p-2 text-zinc-300 hover:text-green-600 transition-colors"><Edit size={16} /></button>
+                                 </div>
+
+                                 <div className="space-y-4">
+                                    <div className="flex justify-between items-center text-xs font-bold text-zinc-600 bg-zinc-50 p-3 rounded-xl">
+                                       <span>Fase:</span>
+                                       <span className="text-green-700 uppercase">{v.fase_cultura}</span>
+                                    </div>
+                                    <div>
+                                       <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Recomendações</p>
+                                       <p className="text-sm font-medium text-zinc-600 leading-relaxed italic">"{v.recomendacoes}"</p>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div className="mt-6 pt-6 border-t border-zinc-100 flex items-center justify-between">
+                                 <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-zinc-200 border-2 border-white"></div>
+                                    <p className="text-[10px] font-bold text-zinc-500">Agrónomo: {v.agronomo}</p>
+                                 </div>
+                                 {v.foto_evidencia && <span className="text-[9px] font-black text-green-600 uppercase flex items-center gap-1"><Camera size={12} /> Evidência</span>}
+                              </div>
+                           </div>
+                        );
+                     }) : (
+                        <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-green-100">
+                           <ClipboardCheck size={48} className="mx-auto text-green-200 mb-4" />
+                           <p className="text-zinc-400 font-bold italic">Nenhuma visita técnica registada ainda.</p>
+                        </div>
+                     )}
                   </div>
                </div>
+            )
+         }
 
-               <div className="flex justify-end pt-4">
-                  <button type="submit" className="px-12 py-5 bg-green-700 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-800 transition-all flex items-center gap-3">
-                     <CheckCircle2 size={18} /> Guardar Ficha do Produtor
-                  </button>
+         {/* --- PRODUÇÃO --- */}
+         {
+            activeTab === 'producao' && (
+               <div className="space-y-6 animate-in slide-in-from-bottom-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                     <div className="flex-1">
+                        <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
+                           <Wheat className="text-green-600" /> Registo de Colheitas
+                        </h2>
+                        <p className="text-zinc-500 text-sm font-medium mt-1">Gestão de safra e destino da produção.</p>
+                     </div>
+                     <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="flex-1 md:w-64 bg-white p-2 rounded-[1.5rem] border border-green-100 flex items-center shadow-sm">
+                           <Search className="ml-4 text-zinc-300" size={18} />
+                           <input
+                              placeholder="Pesquisar colheita..."
+                              className="w-full bg-transparent border-none focus:ring-0 py-3 px-4 text-zinc-900 font-bold text-sm"
+                              value={searchTerm}
+                              onChange={e => setSearchTerm(e.target.value)}
+                           />
+                        </div>
+                        <button
+                           onClick={() => { setEditingProduction(null); setShowProductionModal(true); }}
+                           className="px-10 py-5 bg-green-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-green-800 shadow-xl flex items-center gap-3 transition-all"
+                        >
+                           <Plus size={20} /> Nova Colheita
+                        </button>
+                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     {colheitas.length > 0 ? colheitas.filter(c => {
+                        const agri = agricultores.find(a => a.id === c.agricultor_id);
+                        const searchLower = searchTerm.toLowerCase();
+                        return (
+                           agri?.nome.toLowerCase().includes(searchLower) ||
+                           c.cultura.toLowerCase().includes(searchLower)
+                        );
+                     }).map(c => {
+                        const agri = agricultores.find(a => a.id === c.agricultor_id);
+                        return (
+                           <div key={c.id} className="bg-white p-8 rounded-[2.5rem] border border-green-50 shadow-sm flex flex-col hover:shadow-lg transition-all">
+                              <div className="flex justify-between items-start mb-6">
+                                 <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-yellow-50 flex items-center justify-center text-yellow-600">
+                                       <Wheat size={24} />
+                                    </div>
+                                    <div>
+                                       <h4 className="font-black text-zinc-900 text-lg">{c.cultura}</h4>
+                                       <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{agri?.nome}</p>
+                                    </div>
+                                 </div>
+                                 <button onClick={() => { setEditingProduction(c); setShowProductionModal(true); }} className="p-2 text-zinc-300 hover:text-green-600 transition-colors"><Edit size={16} /></button>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mb-6">
+                                 <div className="bg-zinc-50 p-4 rounded-2xl">
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase mb-1 flex items-center gap-1"><Scale size={10} /> Quantidade</p>
+                                    <p className="text-xl font-black text-zinc-900">{c.qtd_kg} <span className="text-xs text-zinc-500">kg</span></p>
+                                 </div>
+                                 <div className="bg-zinc-50 p-4 rounded-2xl">
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase mb-1 flex items-center gap-1"><Calendar size={10} /> Data</p>
+                                    <p className="text-sm font-bold text-zinc-900">{new Date(c.data).toLocaleDateString()}</p>
+                                 </div>
+                              </div>
+
+                              <div className="mt-auto pt-4 border-t border-zinc-50 flex justify-between items-center">
+                                 <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${c.destino === 'Venda Cooperativa' ? 'bg-green-100 text-green-700 border-green-200' :
+                                    c.destino === 'Armazém' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                       'bg-orange-100 text-orange-700 border-orange-200'
+                                    }`}>
+                                    {c.destino}
+                                 </span>
+                                 <Store size={16} className="text-zinc-300" />
+                              </div>
+                           </div>
+                        );
+                     }) : (
+                        <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-green-100">
+                           <Wheat size={48} className="mx-auto text-green-200 mb-4" />
+                           <p className="text-zinc-400 font-bold italic">Nenhuma colheita registada ainda.</p>
+                        </div>
+                     )}
+                  </div>
                </div>
-            </form>
-         </div>
-      </div>
-   )
-}
+            )
+         }
 
-{/* --- MODAL VISITA TÉCNICA --- */ }
-{
-   showVisitModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-         <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-               <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                  <ClipboardCheck className="text-green-600" /> {editingVisit ? 'Editar Relatório' : 'Nova Visita'}
-               </h2>
-               <button onClick={() => setShowVisitModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><XCircle size={28} /></button>
-            </div>
+         {/* --- MODAL CADASTRO AGRICULTOR --- */}
+         {
+            showModal && (
+               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                  <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                        <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                           <Sprout className="text-green-600" /> {editingAgricultor ? 'Editar Produtor' : 'Registar Agricultor'}
+                        </h2>
+                        <button onClick={() => setShowModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><XCircle size={28} /></button>
+                     </div>
 
-            <form onSubmit={handleSaveVisit} className="p-10 space-y-6">
-               <Select
-                  name="agricultor_id"
-                  label="Agricultor Visitado"
-                  defaultValue={editingVisit?.agricultor_id}
-                  required
-                  options={agricultores.map(a => ({ value: a.id, label: `${a.nome} (${a.localidade})` }))}
-               />
+                     <form onSubmit={handleSaveAgricultor} className="overflow-y-auto p-10 space-y-8">
+                        <div className="flex justify-center mb-6">
+                           <div
+                              className="w-32 h-32 rounded-full bg-zinc-100 border-4 border-white shadow-xl flex items-center justify-center cursor-pointer overflow-hidden relative group"
+                              onClick={() => fileInputRef.current?.click()}
+                           >
+                              {photoPreview ? <img src={photoPreview} className="w-full h-full object-cover" /> : <Camera className="text-zinc-300" size={32} />}
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                 <span className="text-white text-[9px] font-black uppercase">Alterar</span>
+                              </div>
+                           </div>
+                           <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                 const reader = new FileReader();
+                                 reader.onloadend = () => setPhotoPreview(reader.result as string);
+                                 reader.readAsDataURL(file);
+                              }
+                           }} />
+                        </div>
 
-               <div className="grid grid-cols-2 gap-6">
-                  <Input name="data" label="Data da Visita" type="date" defaultValue={editingVisit?.data || new Date().toISOString().split('T')[0]} required />
-                  <Input name="agronomo" label="Técnico Agrónomo" defaultValue={editingVisit?.agronomo} required placeholder="Nome do técnico" />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                           <Input name="nome" label="Nome Completo" defaultValue={editingAgricultor?.nome} required />
+                           <Input name="bi" label="Bilhete de Identidade" defaultValue={editingAgricultor?.bi} required />
+                           <Input name="nif" label="NIF (Contribuinte)" defaultValue={editingAgricultor?.nif} />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                           <Input name="telefone" label="Telefone" defaultValue={editingAgricultor?.telefone} />
+                           <Input name="localidade" label="Localidade / Aldeia" defaultValue={editingAgricultor?.localidade} required />
+                           <Select
+                              name="provincia"
+                              label="Província"
+                              defaultValue={editingAgricultor?.provincia || 'Benguela'}
+                              options={PROVINCIAS_ANGOLA.map(p => ({ value: p, label: p }))}
+                           />
+                        </div>
+
+                        <div className="bg-green-50 p-6 rounded-3xl border border-green-100">
+                           <h3 className="text-xs font-black text-green-800 uppercase tracking-widest mb-4">Dados de Produção</h3>
+                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              <div className="flex items-end gap-2">
+                                 <Select
+                                    name="cultura"
+                                    label="Cultivo Principal"
+                                    defaultValue={editingAgricultor?.cultura_principal}
+                                    options={cultivos.map(c => ({ value: c, label: c }))}
+                                 />
+                                 <button
+                                    type="button"
+                                    onClick={handleAddCultivo}
+                                    className="p-3 bg-green-700 text-white rounded-lg hover:bg-green-800 mb-0.5"
+                                    title="Adicionar Novo Cultivo"
+                                 >
+                                    <Plus size={16} />
+                                 </button>
+                              </div>
+                              <Input name="area" label="Área (Hectares)" type="number" step="0.1" defaultValue={editingAgricultor?.area_cultivada_ha} required />
+                              <Input name="cooperativa" label="Cooperativa (Opcional)" defaultValue={editingAgricultor?.cooperativa} />
+                           </div>
+                        </div>
+
+                        <div className="flex justify-end pt-4">
+                           <button type="submit" className="px-12 py-5 bg-green-700 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-800 transition-all flex items-center gap-3">
+                              <CheckCircle2 size={18} /> Guardar Ficha do Produtor
+                           </button>
+                        </div>
+                     </form>
+                  </div>
                </div>
+            )
+         }
 
-               <Select
-                  name="fase"
-                  label="Fase da Cultura"
-                  defaultValue={editingVisit?.fase_cultura}
-                  options={[
-                     { value: 'Preparação', label: 'Preparação do Solo' },
-                     { value: 'Sementeira', label: 'Sementeira / Plantio' },
-                     { value: 'Crescimento', label: 'Crescimento / Vegetativa' },
-                     { value: 'Colheita', label: 'Maturação / Colheita' }
-                  ]}
-               />
+         {/* --- MODAL VISITA TÉCNICA --- */}
+         {
+            showVisitModal && (
+               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                  <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                        <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                           <ClipboardCheck className="text-green-600" /> {editingVisit ? 'Editar Relatório' : 'Nova Visita'}
+                        </h2>
+                        <button onClick={() => setShowVisitModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><XCircle size={28} /></button>
+                     </div>
 
-               <div className="space-y-1">
-                  <label className="text-sm font-medium text-zinc-700">Recomendações Técnicas</label>
-                  <textarea
-                     name="recomendacoes"
-                     defaultValue={editingVisit?.recomendacoes}
-                     required
-                     className="w-full p-4 bg-white border border-zinc-200 rounded-2xl outline-none focus:border-green-500 h-32 font-medium text-zinc-700"
-                     placeholder="Descreva as orientações passadas ao produtor..."
-                  />
+                     <form onSubmit={handleSaveVisit} className="p-10 space-y-6">
+                        <Select
+                           name="agricultor_id"
+                           label="Agricultor Visitado"
+                           defaultValue={editingVisit?.agricultor_id}
+                           required
+                           options={agricultores.map(a => ({ value: a.id, label: `${a.nome} (${a.localidade})` }))}
+                        />
+
+                        <div className="grid grid-cols-2 gap-6">
+                           <Input name="data" label="Data da Visita" type="date" defaultValue={editingVisit?.data || new Date().toISOString().split('T')[0]} required />
+                           <Input name="agronomo" label="Técnico Agrónomo" defaultValue={editingVisit?.agronomo} required placeholder="Nome do técnico" />
+                        </div>
+
+                        <Select
+                           name="fase"
+                           label="Fase da Cultura"
+                           defaultValue={editingVisit?.fase_cultura}
+                           options={[
+                              { value: 'Preparação', label: 'Preparação do Solo' },
+                              { value: 'Sementeira', label: 'Sementeira / Plantio' },
+                              { value: 'Crescimento', label: 'Crescimento / Vegetativa' },
+                              { value: 'Colheita', label: 'Maturação / Colheita' }
+                           ]}
+                        />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <Input name="estado_solo" label="Estado do Solo (Humidade/PH)" defaultValue={editingVisit?.estado_solo} placeholder="Ex: Solo húmido, PH 6.5" />
+                           <Input name="pragas" label="Pragas ou Doenças Detetadas" defaultValue={editingVisit?.pragas_detetadas} placeholder="Ex: Nenhuma ou Larva do Funil" />
+                        </div>
+
+                        <div className="space-y-1">
+                           <label className="text-sm font-medium text-zinc-700">Recomendações Técnicas</label>
+                           <textarea
+                              name="recomendacoes"
+                              defaultValue={editingVisit?.recomendacoes}
+                              required
+                              className="w-full p-4 bg-white border border-zinc-200 rounded-2xl outline-none focus:border-green-500 h-32 font-medium text-zinc-700"
+                              placeholder="Descreva as orientações passadas ao produtor..."
+                           />
+                        </div>
+
+                        <div className="flex justify-end pt-4">
+                           <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3">
+                              <Save size={18} /> Salvar Relatório
+                           </button>
+                        </div>
+                     </form>
+                  </div>
                </div>
+            )
+         }
 
-               <div className="flex justify-end pt-4">
-                  <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3">
-                     <Save size={18} /> Salvar Relatório
-                  </button>
+         {/* --- MODAL PRODUÇÃO (COLHEITA) --- */}
+         {
+            showProductionModal && (
+               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                  <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                        <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                           <Wheat className="text-green-600" /> {editingProduction ? 'Editar Colheita' : 'Nova Colheita'}
+                        </h2>
+                        <button onClick={() => setShowProductionModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><XCircle size={28} /></button>
+                     </div>
+
+                     <form onSubmit={handleSaveProduction} className="p-10 space-y-6">
+                        <Select
+                           name="agricultor_id"
+                           label="Agricultor"
+                           defaultValue={editingProduction?.agricultor_id}
+                           required
+                           options={agricultores.map(a => ({ value: a.id, label: a.nome }))}
+                        />
+
+                        <div className="grid grid-cols-2 gap-6">
+                           <Select name="cultura" label="Cultura" defaultValue={editingProduction?.cultura} options={cultivos.map(c => ({ value: c, label: c }))} />
+                           <Input name="qtd" label="Quantidade (KG)" type="number" defaultValue={editingProduction?.qtd_kg} required />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                           <Input name="data" label="Data Colheita" type="date" defaultValue={editingProduction?.data || new Date().toISOString().split('T')[0]} required />
+                           <Select name="destino" label="Destino da Produção" defaultValue={editingProduction?.destino} options={[
+                              { value: 'Consumo Próprio', label: 'Consumo Próprio' },
+                              { value: 'Venda Cooperativa', label: 'Venda à Cooperativa' },
+                              { value: 'Armazém', label: 'Armazenamento' }
+                           ]} />
+                        </div>
+
+                        <div className="flex justify-end pt-4">
+                           <button type="submit" className="w-full py-5 bg-green-700 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-800 transition-all flex items-center justify-center gap-3">
+                              <Save size={18} /> Registar Produção
+                           </button>
+                        </div>
+                     </form>
+                  </div>
                </div>
-            </form>
-         </div>
-      </div>
-   )
-}
+            )
+         }
 
-{/* --- MODAL PRODUÇÃO (COLHEITA) --- */ }
-{
-   showProductionModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-         <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-               <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                  <Wheat className="text-green-600" /> {editingProduction ? 'Editar Colheita' : 'Nova Colheita'}
-               </h2>
-               <button onClick={() => setShowProductionModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><XCircle size={28} /></button>
-            </div>
+         {/* --- MODAL FINANCIAMENTO --- */}
+         {
+            showLoanModal && (
+               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                  <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                        <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                           <HandCoins className="text-green-600" /> {editingLoan ? 'Editar Crédito' : 'Nova Solicitação'}
+                        </h2>
+                        <button onClick={() => setShowLoanModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><XCircle size={28} /></button>
+                     </div>
 
-            <form onSubmit={handleSaveProduction} className="p-10 space-y-6">
-               <Select
-                  name="agricultor_id"
-                  label="Agricultor"
-                  defaultValue={editingProduction?.agricultor_id}
-                  required
-                  options={agricultores.map(a => ({ value: a.id, label: a.nome }))}
-               />
+                     <form onSubmit={handleSaveLoan} className="p-10 space-y-6">
+                        <Select
+                           name="agricultor_id"
+                           label="Agricultor Beneficiário"
+                           defaultValue={editingLoan?.agricultor_id || preSelectedAgricultorId}
+                           required
+                           options={agricultores.map(a => ({ value: a.id, label: `${a.nome} (ID: ${a.id.substring(0, 4)})` }))}
+                        />
 
-               <div className="grid grid-cols-2 gap-6">
-                  <Select name="cultura" label="Cultura" defaultValue={editingProduction?.cultura} options={cultivos.map(c => ({ value: c, label: c }))} />
-                  <Input name="qtd" label="Quantidade (KG)" type="number" defaultValue={editingProduction?.qtd_kg} required />
+                        <div className="grid grid-cols-2 gap-6">
+                           <Select name="tipo" label="Tipo de Apoio" defaultValue={editingLoan?.tipo} options={[
+                              { value: 'Sementes', label: 'Kit Sementes' },
+                              { value: 'Fertilizantes', label: 'Fertilizantes' },
+                              { value: 'Equipamento', label: 'Equipamento' },
+                              { value: 'Monetário', label: 'Micro-Crédito' }
+                           ]} />
+                           <Input name="valor" label="Valor Estimado (AOA)" type="number" defaultValue={editingLoan?.valor_solicitado} required />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                           <Input name="data" label="Data Solicitação" type="date" defaultValue={editingLoan?.data_solicitacao || new Date().toISOString().split('T')[0]} required />
+                           <Input name="prazo" label="Prazo Pagamento" type="date" defaultValue={editingLoan?.prazo_pagamento || new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString().split('T')[0]} required />
+                        </div>
+
+                        <Select name="status" label="Estado do Pedido" defaultValue={editingLoan?.status || 'Pendente'} options={[
+                           { value: 'Pendente', label: 'Pendente' },
+                           { value: 'Aprovado', label: 'Aprovado' },
+                           { value: 'Rejeitado', label: 'Rejeitado' },
+                           { value: 'Liquidado', label: 'Liquidado / Pago' }
+                        ]} />
+
+                        <div className="flex justify-end pt-4">
+                           <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3">
+                              <CreditCard size={18} /> Confirmar Solicitação
+                           </button>
+                        </div>
+                     </form>
+                  </div>
                </div>
-
-               <div className="grid grid-cols-2 gap-6">
-                  <Input name="data" label="Data Colheita" type="date" defaultValue={editingProduction?.data || new Date().toISOString().split('T')[0]} required />
-                  <Select name="destino" label="Destino da Produção" defaultValue={editingProduction?.destino} options={[
-                     { value: 'Consumo Próprio', label: 'Consumo Próprio' },
-                     { value: 'Venda Cooperativa', label: 'Venda à Cooperativa' },
-                     { value: 'Armazém', label: 'Armazenamento' }
-                  ]} />
-               </div>
-
-               <div className="flex justify-end pt-4">
-                  <button type="submit" className="w-full py-5 bg-green-700 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-800 transition-all flex items-center justify-center gap-3">
-                     <Save size={18} /> Registar Produção
-                  </button>
-               </div>
-            </form>
-         </div>
-      </div>
-   )
-}
-
-{/* --- MODAL FINANCIAMENTO --- */ }
-{
-   showLoanModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-         <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-               <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                  <HandCoins className="text-green-600" /> {editingLoan ? 'Editar Crédito' : 'Nova Solicitação'}
-               </h2>
-               <button onClick={() => setShowLoanModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><XCircle size={28} /></button>
-            </div>
-
-            <form onSubmit={handleSaveLoan} className="p-10 space-y-6">
-               <Select
-                  name="agricultor_id"
-                  label="Agricultor Beneficiário"
-                  defaultValue={editingLoan?.agricultor_id || preSelectedAgricultorId}
-                  required
-                  options={agricultores.map(a => ({ value: a.id, label: `${a.nome} (ID: ${a.id.substring(0, 4)})` }))}
-               />
-
-               <div className="grid grid-cols-2 gap-6">
-                  <Select name="tipo" label="Tipo de Apoio" defaultValue={editingLoan?.tipo} options={[
-                     { value: 'Sementes', label: 'Kit Sementes' },
-                     { value: 'Fertilizantes', label: 'Fertilizantes' },
-                     { value: 'Equipamento', label: 'Equipamento' },
-                     { value: 'Monetário', label: 'Micro-Crédito' }
-                  ]} />
-                  <Input name="valor" label="Valor Estimado (AOA)" type="number" defaultValue={editingLoan?.valor_solicitado} required />
-               </div>
-
-               <div className="grid grid-cols-2 gap-6">
-                  <Input name="data" label="Data Solicitação" type="date" defaultValue={editingLoan?.data_solicitacao || new Date().toISOString().split('T')[0]} required />
-                  <Input name="prazo" label="Prazo Pagamento" type="date" defaultValue={editingLoan?.prazo_pagamento || new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString().split('T')[0]} required />
-               </div>
-
-               <Select name="status" label="Estado do Pedido" defaultValue={editingLoan?.status || 'Pendente'} options={[
-                  { value: 'Pendente', label: 'Pendente' },
-                  { value: 'Aprovado', label: 'Aprovado' },
-                  { value: 'Rejeitado', label: 'Rejeitado' },
-                  { value: 'Liquidado', label: 'Liquidado / Pago' }
-               ]} />
-
-               <div className="flex justify-end pt-4">
-                  <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3">
-                     <CreditCard size={18} /> Confirmar Solicitação
-                  </button>
-               </div>
-            </form>
-         </div>
-      </div>
-   )
-}
+            )
+         }
       </div >
    );
 };

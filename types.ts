@@ -271,6 +271,11 @@ export interface Manutencao {
   observacoes_gerais?: string;
   status: 'Pendente' | 'Em Curso' | 'Concluída';
   categoria: 'Preventiva' | 'Correctiva';
+  quilometragem?: number;
+  proxima_revisao_km?: number;
+  nivel_combustivel?: 'Vazio' | '1/4' | '1/2' | '3/4' | 'Cheio';
+  estado_pneus?: string;
+  tipo_veiculo?: string;
   itens: ManutencaoItem[];
 }
 
@@ -412,6 +417,22 @@ export interface InventarioItem {
   qtd_minima: number;
   preco: number;
   total: number;
+  data_validade?: string;
+  lote?: string;
+  fornecedor_id?: string;
+  referencia?: string; // OEM / Ref Técnica
+  compatibilidade?: string; // Modelos de motorizadas
+  garantia_meses?: number;
+}
+
+export interface InventarioAnalytics {
+  id: string;
+  periodo: string;
+  giro_stock: number;
+  curva_abc: 'A' | 'B' | 'C';
+  margem_media: number;
+  valor_total_vendas: number;
+  unidades_vendidas: number;
 }
 
 export interface MovimentacaoEstoque {
@@ -491,6 +512,11 @@ export interface Fornecedor {
   email: string;
   categoria: string;
   status: 'ativo' | 'inativo';
+  iban?: string;
+  banco?: string;
+  telefone?: string;
+  morada?: string;
+  avaliacao?: number; // 1 a 5
 }
 
 export type RegimeAGT = 'Geral' | 'Simplificado' | 'Exclusão' | 'Isento';
@@ -535,6 +561,7 @@ export interface Agricultor {
   foto_url: string;
   status: 'ativo' | 'inativo' | 'bloqueado';
   data_registo: string;
+  nif?: string;
 }
 
 export interface FinanciamentoAgro {
@@ -556,6 +583,8 @@ export interface VisitaTecnica {
   fase_cultura: 'Preparação' | 'Sementeira' | 'Crescimento' | 'Colheita';
   recomendacoes: string;
   foto_evidencia?: string;
+  estado_solo?: string;
+  pragas_detetadas?: string;
 }
 
 export interface Colheita {
@@ -582,6 +611,8 @@ export interface Imovel {
   foto_principal: string;
   rentabilidade_estimada: number;
   custo_manutencao_mensal: number;
+  documentacao_status?: 'Escritura' | 'IPU Pendente' | 'Legalizado' | 'Em Processo';
+  comodidades?: string[];
 }
 
 export type ImovelStatus = 'Disponível' | 'Ocupado' | 'Manutenção' | 'Vendido' | 'Reservado';

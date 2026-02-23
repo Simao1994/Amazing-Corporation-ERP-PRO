@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Handshake, Plus, Search, Edit, Trash2, Mail, Phone, Tag, Building2, ShieldCheck, X, FileCheck, Star, RefreshCw } from 'lucide-react';
+import { Handshake, Plus, Search, Edit, Trash2, Mail, Phone, Tag, Building2, ShieldCheck, X, FileCheck, Star, RefreshCw, MapPin, Landmark } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -66,7 +66,12 @@ const ParceirosPage: React.FC = () => {
       contato: formData.get('contato') as string,
       email: formData.get('email') as string,
       categoria: formData.get('categoria') as string,
-      status: (formData.get('status') as any) || 'ativo'
+      status: (formData.get('status') as any) || 'ativo',
+      iban: formData.get('iban') as string,
+      banco: formData.get('banco') as string,
+      telefone: formData.get('telefone') as string,
+      morada: formData.get('morada') as string,
+      avaliacao: Number(formData.get('avaliacao')) || 0
     };
 
     if (!validate(data)) return;
@@ -81,7 +86,12 @@ const ParceirosPage: React.FC = () => {
         contato: data.contato,
         email: data.email,
         categoria: data.categoria,
-        status: data.status
+        status: data.status,
+        iban: data.iban,
+        banco: data.banco,
+        telefone: data.telefone,
+        morada: data.morada,
+        avaliacao: data.avaliacao
       };
 
       if (isEditing) {
@@ -183,6 +193,11 @@ const ParceirosPage: React.FC = () => {
             <h3 className="text-xl font-black text-zinc-900 mb-1 group-hover:text-yellow-600 transition-colors">{p.nome}</h3>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">BI/NIF: {p.nif}</span>
+              <div className="flex ml-auto">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} size={10} className={`${(p.avaliacao || 0) >= star ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-200'} `} />
+                ))}
+              </div>
             </div>
 
             <div className="space-y-4 pt-6 border-t border-zinc-50 relative z-10">
@@ -231,6 +246,25 @@ const ParceirosPage: React.FC = () => {
                 <Input name="contato" label="Telemóvel" defaultValue={editingItem?.contato} required />
               </div>
               <div className="pt-4 flex flex-col gap-4">
+                <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100 space-y-4">
+                  <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                    <Landmark size={14} className="text-yellow-600" /> Detalhes Financeiros & Localização
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input name="banco" label="Banco" defaultValue={editingItem?.banco} placeholder="Ex: BNA, BIC" />
+                    <Input name="iban" label="IBAN" defaultValue={editingItem?.iban} placeholder="AO06..." />
+                  </div>
+                  <Input name="morada" label="Sede Social / Endereço" defaultValue={editingItem?.morada} />
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Peso Estratégico (1-5)</label>
+                    <div className="flex gap-1">
+                      <select name="avaliacao" defaultValue={editingItem?.avaliacao || 5} className="bg-transparent border-none font-black text-yellow-600 outline-none">
+                        {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v} Estrelas</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <Select name="status" label="Estado da Parceria" defaultValue={editingItem?.status || 'ativo'} options={[
                   { value: 'ativo', label: 'Vigente' },
                   { value: 'inativo', label: 'Suspenso / Encerrado' }
