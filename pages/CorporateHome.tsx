@@ -97,24 +97,57 @@ const PublicNewsGrid: React.FC = () => {
             className="group bg-white rounded-[3.5rem] overflow-hidden border border-zinc-100 shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer"
             onClick={() => setSelectedPost(post)}
           >
-            <div className="relative aspect-[4/3] overflow-hidden">
-              <img
-                src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                alt={post.titulo}
-              />
+            <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
+              {post.video_url ? (() => {
+                const url = post.video_url as string;
+                const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+                if (ytMatch) {
+                  return (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${ytMatch[1]}?rel=0&mute=1`}
+                      className="w-full h-full pointer-events-none"
+                      title={post.titulo}
+                    />
+                  );
+                } else if (vimeoMatch) {
+                  return (
+                    <iframe
+                      src={`https://player.vimeo.com/video/${vimeoMatch[1]}?muted=1`}
+                      className="w-full h-full pointer-events-none"
+                      title={post.titulo}
+                    />
+                  );
+                } else {
+                  return (
+                    <video
+                      src={url}
+                      muted
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                      poster={post.imagem_url || undefined}
+                    />
+                  );
+                }
+              })() : (
+                <img
+                  src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  alt={post.titulo}
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-8">
                 <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-zinc-900 shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  {post.tipo === 'video' ? <Play size={24} fill="currentColor" /> : <Eye size={24} />}
+                  {post.video_url ? <Play size={24} fill="currentColor" /> : <Eye size={24} />}
                 </div>
               </div>
               <div className="absolute top-6 left-6 flex gap-2">
                 <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
                   {post.categoria}
                 </span>
-                {post.tipo !== 'artigo' && (
-                  <span className="px-3 py-1 bg-zinc-900/50 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
-                    {post.tipo}
+                {post.video_url && (
+                  <span className="px-3 py-1 bg-zinc-900/60 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg flex items-center gap-1">
+                    <Play size={8} fill="currentColor" /> Vídeo
                   </span>
                 )}
               </div>
@@ -136,90 +169,117 @@ const PublicNewsGrid: React.FC = () => {
               </p>
 
               <div className="pt-4 flex items-center gap-2 text-yellow-600 font-black text-[10px] uppercase tracking-widest group-hover:gap-4 transition-all">
-                Ler Artigo Completo <ArrowRight size={16} />
+                {post.video_url ? 'Ver Vídeo' : 'Ler Artigo Completo'} <ArrowRight size={16} />
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {selectedPost && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-12 bg-zinc-950/95 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-5xl h-full max-h-[90vh] rounded-[4rem] shadow-3xl overflow-hidden relative flex flex-col animate-in zoom-in-95 duration-500">
-            <button
-              onClick={() => setSelectedPost(null)}
-              className="absolute top-8 right-8 p-4 bg-zinc-100 hover:bg-zinc-200 rounded-full transition-all text-zinc-500 z-10 hover:rotate-90"
-            >
-              <X size={24} />
-            </button>
+      {selectedPost && (() => {
+        const vUrl = selectedPost.video_url as string | undefined;
+        const ytMatch = vUrl?.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        const vimeoMatch = vUrl?.match(/vimeo\.com\/(\d+)/);
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {selectedPost.tipo === 'video' && selectedPost.video_url ? (
-                <div className="aspect-video w-full bg-black">
-                  <iframe
-                    src={selectedPost.video_url.replace('watch?v=', 'embed/')}
-                    className="w-full h-full"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              ) : (
-                <div className="h-[400px] w-full overflow-hidden">
-                  <img src={selectedPost.imagem_url} className="w-full h-full object-cover" alt={selectedPost.titulo} />
-                </div>
-              )}
-
-              <div className="p-12 md:p-20 space-y-8">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 text-[12px] font-black text-yellow-600 uppercase tracking-[0.4em]">
-                    <span>{selectedPost.categoria}</span>
-                    <span className="w-1.5 h-1.5 bg-zinc-200 rounded-full"></span>
-                    <span className="text-zinc-400">{new Date(selectedPost.data).toLocaleDateString()}</span>
-                  </div>
-                  <h2 className="text-4xl md:text-6xl font-black text-zinc-900 tracking-tighter uppercase leading-none">
-                    {selectedPost.titulo}
-                  </h2>
-                  <div className="flex items-center gap-3 pt-4">
-                    <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400">
-                      <UserMini size={20} />
-                    </div>
-                    <p className="text-sm font-black text-zinc-900 uppercase tracking-widest">{selectedPost.autor_name || selectedPost.autor}</p>
-                  </div>
-                </div>
-
-                <div className="prose prose-zinc max-w-none">
-                  <p className="text-xl text-zinc-600 leading-relaxed font-medium whitespace-pre-line">
-                    {selectedPost.conteudo}
-                  </p>
-                </div>
-
-                {/* Galeria se existir */}
-                {selectedPost.galeria_urls && selectedPost.galeria_urls.length > 0 && (
-                  <div className="pt-12 space-y-6">
-                    <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.5em]">Galeria do Momento</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {selectedPost.galeria_urls.map((url, i) => (
-                        <div key={i} className="aspect-square rounded-[2rem] overflow-hidden border border-zinc-100 shadow-sm hover:shadow-xl transition-all">
-                          <img src={url} className="w-full h-full object-cover hover:scale-110 transition-all duration-700" alt="Gallery item" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="p-10 border-t border-zinc-100 bg-zinc-50 flex justify-between items-center shrink-0">
-              <Logo className="h-10" />
+        return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-12 bg-zinc-950/95 backdrop-blur-xl animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-5xl h-full max-h-[90vh] rounded-[4rem] shadow-3xl overflow-hidden relative flex flex-col animate-in zoom-in-95 duration-500">
               <button
                 onClick={() => setSelectedPost(null)}
-                className="px-10 py-4 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+                className="absolute top-8 right-8 p-4 bg-zinc-100 hover:bg-zinc-200 rounded-full transition-all text-zinc-500 z-10 hover:rotate-90"
               >
-                Fechar Notícia
+                <X size={24} />
               </button>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {/* Player de Vídeo Inteligente */}
+                {vUrl ? (
+                  <div className="aspect-video w-full bg-black">
+                    {ytMatch ? (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={selectedPost.titulo}
+                      />
+                    ) : vimeoMatch ? (
+                      <iframe
+                        src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`}
+                        className="w-full h-full"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        title={selectedPost.titulo}
+                      />
+                    ) : (
+                      <video
+                        src={vUrl}
+                        controls
+                        autoPlay
+                        className="w-full h-full object-contain"
+                        poster={selectedPost.imagem_url || undefined}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-[400px] w-full overflow-hidden">
+                    <img src={selectedPost.imagem_url} className="w-full h-full object-cover" alt={selectedPost.titulo} />
+                  </div>
+                )}
+
+                <div className="p-12 md:p-20 space-y-8">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 text-[12px] font-black text-yellow-600 uppercase tracking-[0.4em]">
+                      <span>{selectedPost.categoria}</span>
+                      <span className="w-1.5 h-1.5 bg-zinc-200 rounded-full"></span>
+                      <span className="text-zinc-400">{new Date(selectedPost.data).toLocaleDateString()}</span>
+                    </div>
+                    <h2 className="text-4xl md:text-6xl font-black text-zinc-900 tracking-tighter uppercase leading-none">
+                      {selectedPost.titulo}
+                    </h2>
+                    <div className="flex items-center gap-3 pt-4">
+                      <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400">
+                        <UserMini size={20} />
+                      </div>
+                      <p className="text-sm font-black text-zinc-900 uppercase tracking-widest">{selectedPost.autor_name || selectedPost.autor}</p>
+                    </div>
+                  </div>
+
+                  <div className="prose prose-zinc max-w-none">
+                    <p className="text-xl text-zinc-600 leading-relaxed font-medium whitespace-pre-line">
+                      {selectedPost.conteudo}
+                    </p>
+                  </div>
+
+                  {/* Galeria se existir */}
+                  {selectedPost.galeria_urls && selectedPost.galeria_urls.length > 0 && (
+                    <div className="pt-12 space-y-6">
+                      <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.5em]">Galeria do Momento</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {selectedPost.galeria_urls.map((url, i) => (
+                          <div key={i} className="aspect-square rounded-[2rem] overflow-hidden border border-zinc-100 shadow-sm hover:shadow-xl transition-all">
+                            <img src={url} className="w-full h-full object-cover hover:scale-110 transition-all duration-700" alt="Gallery item" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-10 border-t border-zinc-100 bg-zinc-50 flex justify-between items-center shrink-0">
+                <Logo className="h-10" />
+                <button
+                  onClick={() => setSelectedPost(null)}
+                  className="px-10 py-4 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </>
   );
 };
