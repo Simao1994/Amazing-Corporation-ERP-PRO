@@ -55,10 +55,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Show the app immediately without blocking on profile fetch
-        setIsInitializing(false);
-
-        // Load profile in background — all write operations have their own session guards
+        // Load profile - only unblock app when profile is ready
         getUserProfile(session.user.id).then(({ data: profile }) => {
           const userData: User = {
             id: session.user.id,
@@ -68,6 +65,10 @@ const App: React.FC = () => {
           };
           setUser(userData);
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
+          setIsInitializing(false); // Unblock only after user is set
+        }).catch(err => {
+          console.error("Error loading profile:", err);
+          setIsInitializing(false); // Still unblock if fetch fails, but handle user state
         });
 
         // Targeted sync for essential info (background)
