@@ -100,10 +100,15 @@ const FinancePage: React.FC = () => {
     const formData = new FormData(e.currentTarget);
     const valor = Number(formData.get('valor'));
     const isEditing = !!editingItem;
-    const generatedId = isEditing ? editingItem!.id : Math.random().toString(36).substr(2, 9);
+
+    // Guard: ensure authenticated session before writing
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert('Sessão expirada. Por favor faça login novamente.');
+      return;
+    }
 
     const dbData = {
-      short_id: generatedId,
       numero: formData.get('numero') as string,
       fornecedor: formData.get('fornecedor') as string,
       data_emissao: formData.get('data') as string,
@@ -114,8 +119,23 @@ const FinancePage: React.FC = () => {
     };
 
     try {
-      const { error } = await supabase.from('fin_notas').upsert([dbData], { onConflict: 'short_id' });
-      if (error) throw error;
+      let saveError;
+      if (isEditing) {
+        // Update existing record using short_id
+        const { error } = await supabase
+          .from('fin_notas')
+          .update(dbData)
+          .eq('short_id', editingItem!.id);
+        saveError = error;
+      } else {
+        // Insert new record with a generated short_id
+        const { error } = await supabase
+          .from('fin_notas')
+          .insert([{ ...dbData, short_id: Math.random().toString(36).substr(2, 9) }]);
+        saveError = error;
+      }
+
+      if (saveError) throw saveError;
 
       fetchNotas();
       setShowModal(false);
@@ -125,8 +145,10 @@ const FinancePage: React.FC = () => {
         'Contabilidade',
         `Nota ${dbData.numero} ${isEditing ? 'atualizada' : 'inserida em ' + dbData.categoria}`
       );
-    } catch (error) {
-      alert('Erro ao salvar nota fiscal');
+    } catch (err: any) {
+      const msg = err?.message || 'Erro desconhecido';
+      alert(`Erro ao salvar nota fiscal: ${msg}`);
+      console.error('Finance save error:', err);
     }
   };
 
