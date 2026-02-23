@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-   Gamepad2, Rocket, Zap, Star, Clock, CreditCard,
+   Gamepad2, Zap, Star, Clock, CreditCard,
    CheckCircle2, X, Search, Globe, Play, Trophy,
-   TrendingUp, Calendar, Award, Target, Save,
-   Smartphone, Wallet, ShieldCheck, ArrowRight,
-   RefreshCw, QrCode, Mail, History, Info, Medal, MapPin, Map, Navigation,
+   TrendingUp, Calendar, Award, Target,
+   Smartphone, ShieldCheck, ArrowRight,
+   RefreshCw, History, Medal, MapPin, Navigation,
    AlertCircle, Copy, Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -25,7 +25,7 @@ const gerarReferencia = () => {
    return `ARENA-${yy}${mm}${dd}-${rand}`;
 };
 
-const NUMERO_MCX = '929 882 067';
+const NUMERO_ARENA = '929 882 067';
 const SUPABASE_FUNCTIONS_URL = 'https://jgktemwegesmmomlftgt.supabase.co/functions/v1';
 
 const ArenaGames: React.FC = () => {
@@ -423,12 +423,11 @@ const ArenaGames: React.FC = () => {
                               <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Passo 2 de 2</p>
                               <h2 className="text-4xl font-black uppercase tracking-tighter">Pagamento</h2>
                            </div>
-                           <div className="grid grid-cols-2 gap-4">
+                           <div className="grid grid-cols-3 gap-4">
                               {[
-                                 { id: 'Multicaixa', label: 'MCX Express', icon: <Smartphone /> },
-                                 { id: 'PayPal', label: 'PayPal', icon: <Globe /> },
-                                 { id: 'Visa/Mastercard', label: 'Cartão Int.', icon: <CreditCard /> },
-                                 { id: 'Unitel Money', label: 'Unitel Money', icon: <Wallet /> }
+                                 { id: 'Multicaixa', label: 'MCX Express', icon: <Smartphone size={28} /> },
+                                 { id: 'PayPal', label: 'PayPal', icon: <Globe size={28} /> },
+                                 { id: 'Stripe', label: 'Stripe', icon: <CreditCard size={28} /> },
                               ].map(m => (
                                  <button key={m.id} onClick={() => setPaymentMethod(m.id as any)} className={`p-6 rounded-3xl border flex flex-col items-center gap-3 transition-all ${paymentMethod === m.id ? 'bg-white text-zinc-900 border-white shadow-xl' : 'bg-white/5 border-white/10 text-zinc-500 hover:bg-white/10'}`}>
                                     {m.icon} <span className="text-[9px] font-black uppercase tracking-widest">{m.label}</span>
@@ -438,29 +437,41 @@ const ArenaGames: React.FC = () => {
 
                            {/* Instruções de pagamento por método */}
                            {paymentMethod === 'Multicaixa' && (
-                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-indigo-500 animate-in fade-in space-y-3">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções MCX Express</p>
-                                 <p className="text-sm text-zinc-300 font-medium">Após confirmar, envie o valor para o número abaixo e use a referência gerada como comprovativo.</p>
+                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-green-500 animate-in fade-in space-y-3">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — Multicaixa Express</p>
+                                 <p className="text-sm text-zinc-300 font-medium">Envie o valor para o número abaixo e use a referência gerada como comprovativo.</p>
                                  <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
                                     <div>
-                                       <p className="text-[8px] text-zinc-500 uppercase font-black">Número Arena</p>
-                                       <p className="text-xl font-black text-white">{NUMERO_MCX}</p>
+                                       <p className="text-[8px] text-zinc-500 uppercase font-black">Número MCX — Arena</p>
+                                       <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
                                     </div>
                                     <Smartphone className="text-green-400" size={24} />
                                  </div>
                               </div>
                            )}
-                           {paymentMethod === 'Unitel Money' && (
-                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-orange-500 animate-in fade-in space-y-2">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Unitel Money</p>
-                                 <p className="text-xl font-black text-white">{NUMERO_MCX}</p>
+                           {paymentMethod === 'Stripe' && (
+                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-indigo-500 animate-in fade-in space-y-3">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — Stripe</p>
+                                 <p className="text-sm text-zinc-300 font-medium">Transferência via Stripe. Contacte-nos com a referência para receber o link de pagamento.</p>
+                                 <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
+                                    <div>
+                                       <p className="text-[8px] text-zinc-500 uppercase font-black">Contacto Arena</p>
+                                       <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
+                                    </div>
+                                    <CreditCard className="text-indigo-400" size={24} />
+                                 </div>
                               </div>
                            )}
-                           {(paymentMethod === 'PayPal' || paymentMethod === 'Visa/Mastercard') && (
-                              <div className="bg-indigo-500/10 p-6 rounded-3xl border border-indigo-500/20 animate-in fade-in">
-                                 <div className="flex items-start gap-3">
-                                    <AlertCircle size={18} className="text-indigo-400 flex-shrink-0 mt-0.5" />
-                                    <p className="text-sm text-zinc-400 font-medium">Após confirmar, receberá instruções de pagamento por SMS. A sua reserva ficará pendente até à confirmação do valor.</p>
+                           {paymentMethod === 'PayPal' && (
+                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-blue-500 animate-in fade-in space-y-3">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — PayPal</p>
+                                 <p className="text-sm text-zinc-300 font-medium">Contacte-nos com a referência gerada para receber o link de pagamento PayPal.</p>
+                                 <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
+                                    <div>
+                                       <p className="text-[8px] text-zinc-500 uppercase font-black">Contacto Arena</p>
+                                       <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
+                                    </div>
+                                    <Globe className="text-blue-400" size={24} />
                                  </div>
                               </div>
                            )}
@@ -516,14 +527,20 @@ const ArenaGames: React.FC = () => {
                                     <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">1</span>
                                     <p className="text-sm text-zinc-300">Efectue o pagamento de <strong className="text-white">{formatAOA(selectedItem.preco)}</strong> via {paymentMethod}</p>
                                  </div>
-                                 {(paymentMethod === 'Multicaixa' || paymentMethod === 'Unitel Money') && (
+                                 {paymentMethod === 'Multicaixa' && (
                                     <div className="flex items-start gap-3">
                                        <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">2</span>
-                                       <p className="text-sm text-zinc-300">Envie para o número <strong className="text-white">{NUMERO_MCX}</strong></p>
+                                       <p className="text-sm text-zinc-300">Envie para o número MCX <strong className="text-white">{NUMERO_ARENA}</strong></p>
+                                    </div>
+                                 )}
+                                 {(paymentMethod === 'PayPal' || paymentMethod === 'Stripe') && (
+                                    <div className="flex items-start gap-3">
+                                       <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">2</span>
+                                       <p className="text-sm text-zinc-300">Contacte-nos pelo <strong className="text-white">{NUMERO_ARENA}</strong> para receber o link de pagamento</p>
                                     </div>
                                  )}
                                  <div className="flex items-start gap-3">
-                                    <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">{paymentMethod === 'Multicaixa' || paymentMethod === 'Unitel Money' ? '3' : '2'}</span>
+                                    <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">3</span>
                                     <p className="text-sm text-zinc-300">A sua vaga será <strong className="text-white">confirmada em até 30 minutos</strong> após o pagamento</p>
                                  </div>
                               </div>
