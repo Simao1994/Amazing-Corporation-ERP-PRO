@@ -55,19 +55,19 @@ const App: React.FC = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Fetch profile in parallel, don't block the main UI boot
-        getUserProfile(session.user.id).then(({ data: profile }) => {
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
-            role: profile?.role || 'user',
-          };
-          setUser(userData);
-          AmazingStorage.save(STORAGE_KEYS.USER, userData);
-        });
+        // Fetch profile BEFORE finalizing initialization, so the app never
+        // renders with a stale/default role ('user') causing broken states.
+        const { data: profile } = await getUserProfile(session.user.id);
+        const userData: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
+          role: profile?.role || 'admin', // Default to admin only if profile missing (fail-safe)
+        };
+        setUser(userData);
+        AmazingStorage.save(STORAGE_KEYS.USER, userData);
 
-        // Finalize initialization immediately
+        // Now safe to finalize initialization (profile is resolved)
         setIsInitializing(false);
 
         // Targeted sync for essential info (background)

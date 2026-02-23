@@ -65,6 +65,18 @@ const UsersPage: React.FC = () => {
 
     const fetchUsers = async () => {
         setLoading(true);
+        setError('');
+
+        // Ensure authentication session is active before querying.
+        // Without this, the query may run as 'anon' (before session is restored)
+        // and RLS will return 0 rows silently.
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            setError('Sem sessão autenticada. Por favor faça login novamente.');
+            setLoading(false);
+            return;
+        }
+
         const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -72,7 +84,7 @@ const UsersPage: React.FC = () => {
 
         if (error) {
             console.error('Error fetching users:', error);
-            setError('Falha ao carregar utilizadores. Verifique a sua ligação.');
+            setError(`Falha ao carregar utilizadores: ${error.message} (código: ${error.code})`);
         } else if (data) {
             setProfiles(data);
         }
