@@ -62,7 +62,7 @@ const Dashboard: React.FC = () => {
       ad.active &&
       ad.startDate <= today &&
       ad.endDate >= today &&
-      (ad.targetRoles === 'all' || ad.targetRoles.includes(currentUser.role))
+      (ad.targetRoles === 'all' || (Array.isArray(ad.targetRoles) && ad.targetRoles.includes(currentUser.role)))
     );
   }, [ads, currentUser]);
 

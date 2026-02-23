@@ -25,6 +25,7 @@ const FinancePage: React.FC = () => {
   const [valorInput, setValorInput] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Todas');
+  const [reportType, setReportType] = useState<'all' | 'weekly' | 'monthly' | 'annual'>('all');
 
   const [notas, setNotas] = useState<NotaFiscal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,17 +57,37 @@ const FinancePage: React.FC = () => {
   }, []);
 
 
-  const totalReceita = useMemo(() => notas.reduce((acc, n) => acc + n.valor_total, 0), [notas]);
-  const totalIVA = totalReceita * 0.14;
-
   const filteredNotas = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Monday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
     return notas.filter(n => {
-      const matchesSearch = n.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        n.fornecedor.toLowerCase().includes(searchTerm.toLowerCase());
+      const notaDate = new Date(n.data_emissao);
+
+      const matchesSearch = (n.numero?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (n.fornecedor?.toLowerCase() || '').includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === 'Todas' || n.categoria === categoryFilter;
-      return matchesSearch && matchesCategory;
+
+      let matchesReport = true;
+      if (reportType === 'weekly') {
+        matchesReport = notaDate >= startOfWeek;
+      } else if (reportType === 'monthly') {
+        matchesReport = notaDate >= startOfMonth;
+      } else if (reportType === 'annual') {
+        matchesReport = notaDate >= startOfYear;
+      }
+
+      return matchesSearch && matchesCategory && matchesReport;
     });
-  }, [searchTerm, categoryFilter, notas]);
+  }, [searchTerm, categoryFilter, reportType, notas]);
+
+  const totalReceita = useMemo(() => filteredNotas.reduce((acc, n) => acc + (Number(n.valor_total) || 0), 0), [filteredNotas]);
+  const totalIVA = totalReceita * 0.14;
 
   const handleOpenModal = (item?: NotaFiscal) => {
     setEditingItem(item || null);
@@ -137,14 +158,47 @@ const FinancePage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Header Exclusivo para Impressão */}
+      <div className="hidden print:block mb-10 border-b-4 border-zinc-900 pb-6 text-center">
+        <h1 className="text-4xl font-black uppercase tracking-widest text-zinc-900">Amazing Corporation</h1>
+        <p className="text-lg font-bold text-zinc-500 uppercase tracking-widest mt-2">Relatório Financeiro de Tesouraria</p>
+        <div className="mt-4 flex justify-between items-center text-xs font-black uppercase text-zinc-400">
+          <span>Emitido em: {new Date().toLocaleDateString()}</span>
+          <span>Período: {reportType === 'all' ? 'Histórico Completo' :
+            reportType === 'weekly' ? 'Semana Actual' :
+              reportType === 'monthly' ? 'Mês Actual' : 'Ano Actual'}</span>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-sky-200">
         <div>
           <h1 className="text-4xl font-black text-zinc-900 tracking-tight uppercase">Gestão Financeira</h1>
           <p className="text-zinc-500 font-medium mt-1">Contabilidade integrada e faturamento da Amazing Corp.</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => window.print()} className="px-6 py-4 rounded-2xl font-bold border-sky-200">
-            <Download size={18} className="mr-2" /> Relatório Semanal
+        <div className="flex flex-wrap gap-2">
+          <div className="flex bg-white/50 p-1 rounded-2xl border border-white/20 shadow-sm mr-2 print:hidden">
+            {[
+              { id: 'all', label: 'Tudo' },
+              { id: 'weekly', label: 'Semanal' },
+              { id: 'monthly', label: 'Mensal' },
+              { id: 'annual', label: 'Anual' }
+            ].map(type => (
+              <button
+                key={type.id}
+                onClick={() => setReportType(type.id as any)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${reportType === type.id ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:text-zinc-900'}`}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            className="px-6 py-4 rounded-2xl font-bold border-sky-200 print:hidden"
+            disabled={filteredNotas.length === 0}
+          >
+            <Download size={18} className="mr-2" /> Gerar Relatório
           </Button>
           <button
             onClick={() => handleOpenModal()}
@@ -162,16 +216,20 @@ const FinancePage: React.FC = () => {
             <div className="p-3 bg-green-50 text-green-600 rounded-2xl"><TrendingUp size={20} /></div>
           </div>
           <p className="text-4xl font-black text-zinc-900">{formatAOA(totalReceita)}</p>
-          <p className="text-xs text-zinc-400 font-bold mt-2">Acumulado do período fiscal</p>
+          <p className="text-xs text-zinc-400 font-bold mt-2">
+            {reportType === 'all' ? 'Acumulado Total' :
+              reportType === 'weekly' ? 'Acumulado esta semana' :
+                reportType === 'monthly' ? 'Acumulado este mês' : 'Acumulado este ano'}
+          </p>
         </div>
 
         <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm group hover:border-sky-500 transition-all duration-500">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em]">Provisão de IVA (14%)</span>
+            <span className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em]">Liquidado de IVA (14%)</span>
             <div className="p-3 bg-sky-50 text-sky-600 rounded-2xl"><PieChart size={20} /></div>
           </div>
           <p className="text-4xl font-black text-zinc-900">{formatAOA(totalIVA)}</p>
-          <p className="text-xs text-zinc-400 font-bold mt-2">Cálculo automático de impostos</p>
+          <p className="text-xs text-zinc-400 font-bold mt-2">Sobre o período filtrado</p>
         </div>
 
         <div className="bg-zinc-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
@@ -179,8 +237,8 @@ const FinancePage: React.FC = () => {
             <FileText size={100} />
           </div>
           <span className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.3em] block mb-4">Eficiência de Lançamento</span>
-          <p className="text-5xl font-black">{notas.length}</p>
-          <p className="text-xs text-zinc-400 font-bold mt-2">Documentos processados</p>
+          <p className="text-5xl font-black">{filteredNotas.length}</p>
+          <p className="text-xs text-zinc-400 font-bold mt-2">Documentos no período</p>
         </div>
       </div>
 

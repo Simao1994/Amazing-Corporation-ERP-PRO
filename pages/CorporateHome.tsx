@@ -1002,7 +1002,7 @@ const CorporateHome: React.FC = () => {
                 <a href="https://facebook.com/amazingcorporation.ao" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">
                   <Facebook size={18} />
                 </a>
-                <a href="https://instagram.com/amazing_corporation" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">
+                <a href="https://instagram.com/amazingcorporation.ao" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">
                   <Instagram size={18} />
                 </a>
                 <a href="https://linkedin.com/company/amazing-corporation" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">

@@ -23,7 +23,7 @@ import {
   FileText,
   Phone
 } from 'lucide-react';
-import { User, ChatMessage, ChatContact } from '../types';
+import { User, ChatMessage, ChatContact, UserRole } from '../types';
 import Logo from './Logo';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 
@@ -190,8 +190,8 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
   const allowedMenuItems = MENU_ITEMS.filter(item => {
     if (user.role === 'admin') return true;
-    const userPermissions = ROLE_ACCESS[user.role] || [];
-    return userPermissions.includes(item.id);
+    const userPermissions = (ROLE_ACCESS[user.role as UserRole] || []) as string[];
+    return userPermissions.includes(item.id) || userPermissions.includes('all');
   });
 
   return (

@@ -23,7 +23,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, children, path })
 
   // 3. Encontrar o ID do menu correspondente ao path
   const menuItem = MENU_ITEMS.find(item => item.path === path);
-  
+
   // Se a rota não estiver mapeada no menu (ex: rota raiz '/'), permitimos acesso básico se logado
   if (!menuItem && path !== '/') {
     // Rotas internas não listadas no menu podem precisar de lógica específica, 
@@ -33,8 +33,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, children, path })
   }
 
   // 4. Verificar permissões baseadas no cargo
-  const allowedMenus = ROLE_ACCESS[user.role];
-  
+  const allowedMenus = ROLE_ACCESS[user.role as UserRole] || [];
+
   // Se menuItem existe e o ID dele está na lista de permitidos
   if (menuItem && allowedMenus.includes(menuItem.id)) {
     return <>{children}</>;
