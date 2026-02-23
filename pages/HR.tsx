@@ -1416,52 +1416,52 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-         {/* MODAL PASSE PVC (REDESENHADO) */}
+         {/* MODAL PASSE PVC (ESCURO - REFINADO) */}
          {printingPass && (
             <div className="fixed inset-0 z-[250] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in py-10 overflow-y-auto">
                <div className="bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto">
                   <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
                      <h2 className="text-xl font-black text-zinc-900 uppercase flex items-center gap-2">
-                        <IdCard className="text-yellow-500" size={24} /> Emissão PVC Profissional
+                        <IdCard className="text-yellow-500" size={24} /> Emissão PVC Corporativo
                      </h2>
                      <button onClick={() => setPrintingPass(null)} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                   </div>
 
                   <div className="p-10 flex flex-col items-center gap-8">
-                     {/* Cartão PVC - Frente (Estilo Corporativo Premium) */}
-                     <div id="pvc-card" className="w-[320px] h-[500px] bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden relative flex flex-col items-center p-0 border border-zinc-100 print:shadow-none">
+                     {/* Cartão PVC - Frente (Tema Escuro solicitado pelo Utilizador) */}
+                     <div id="pvc-card" className="w-[320px] h-[520px] bg-zinc-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden relative flex flex-col items-center p-0 print:shadow-none border border-white/5">
 
-                        {/* Header com Logotipo apenas */}
-                        <div className="w-full h-32 bg-zinc-900 relative flex items-center justify-center overflow-hidden">
-                           <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500 rounded-full -translate-y-16 translate-x-16 opacity-10"></div>
-                           <div className="absolute bottom-0 left-0 w-24 h-24 bg-sky-600 rounded-full translate-y-12 -translate-x-12 opacity-10"></div>
-                           <div className="z-10 scale-125 bg-white p-3 rounded-2xl shadow-xl">
+                        {/* Design superior minimalista */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full -translate-y-32 translate-x-32"></div>
+                        <div className="absolute top-0 left-0 w-48 h-48 bg-sky-600/10 rounded-full -translate-y-24 -translate-x-24"></div>
+
+                        {/* Logotipo ajustado (Menor conforme solicitado) */}
+                        <div className="z-10 mt-10 mb-8 flex flex-col items-center">
+                           <div className="scale-75 opacity-90 filter brightness-0 invert">
                               <Logo />
                            </div>
+                           <div className="w-8 h-1 bg-yellow-500 rounded-full mt-4"></div>
                         </div>
 
-                        {/* Corpo do Passe */}
-                        <div className="flex-1 w-full flex flex-col items-center pt-8 pb-4 px-6 text-center">
-                           <div className="relative mb-6">
-                              <img src={printingPass.foto_url} className="w-28 h-28 rounded-[2rem] object-cover border-4 border-white shadow-2xl relative z-10" />
-                              <div className="absolute inset-0 rounded-[2rem] bg-zinc-900 translate-x-2 translate-y-2 opacity-5"></div>
-                           </div>
+                        {/* Fotografia */}
+                        <div className="relative mb-8">
+                           <img src={printingPass.foto_url} className="w-32 h-32 rounded-[2.5rem] object-cover border-4 border-zinc-800 shadow-2xl relative z-10" />
+                           <div className="absolute -inset-2 bg-gradient-to-tr from-sky-600/20 to-yellow-500/20 rounded-[2.8rem] blur-xl opacity-50"></div>
+                        </div>
 
-                           <div className="space-y-1">
-                              <h2 className="text-xl font-black text-zinc-900 leading-tight uppercase tracking-tighter">{printingPass.nome}</h2>
-                              <div className="inline-block px-3 py-1 bg-yellow-500 text-zinc-900 text-[10px] font-black uppercase rounded-lg tracking-widest">
-                                 {printingPass.funcao}
-                              </div>
-                           </div>
+                        {/* Dados do Funcionário */}
+                        <div className="flex-1 w-full flex flex-col items-center px-8 text-center text-white">
+                           <h2 className="text-2xl font-black leading-tight uppercase tracking-tighter mb-1">{printingPass.nome}</h2>
+                           <p className="text-[11px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-8">{printingPass.funcao}</p>
 
-                           <div className="mt-6 grid grid-cols-2 gap-4 w-full">
-                              <div className="bg-zinc-50 p-3 rounded-2xl border border-zinc-100">
-                                 <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">ID Registo</p>
-                                 <p className="text-xs font-black text-zinc-900 font-mono">#{printingPass.id.substring(0, 8).toUpperCase()}</p>
+                           <div className="grid grid-cols-2 gap-3 w-full mb-10">
+                              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">ID Registo</p>
+                                 <p className="text-[11px] font-black text-white font-mono tracking-tighter">#{printingPass.id.substring(0, 8).toUpperCase()}</p>
                               </div>
-                              <div className="bg-zinc-50 p-3 rounded-2xl border border-zinc-100">
-                                 <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">Validade</p>
-                                 <p className="text-xs font-black text-zinc-900">
+                              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Validade</p>
+                                 <p className="text-[11px] font-black text-white">
                                     {(() => {
                                        const d = new Date();
                                        d.setFullYear(d.getFullYear() + 2);
@@ -1471,25 +1471,25 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               </div>
                            </div>
 
-                           {/* QR Code centralizado e ajustado */}
-                           <div className="mt-auto mb-4 bg-zinc-900 p-2 rounded-2xl shadow-lg border-2 border-zinc-50">
-                              <QrCode size={40} className="text-white" />
+                           {/* QR Code */}
+                           <div className="mt-auto mb-10 bg-white p-2.5 rounded-[1.2rem] shadow-2xl">
+                              <QrCode size={40} className="text-zinc-900" />
                            </div>
                         </div>
 
-                        {/* Barra inferior decorativa */}
-                        <div className="w-full flex h-2">
+                        {/* Accents laterais ou inferiores */}
+                        <div className="absolute bottom-0 left-0 w-full flex h-1.5">
                            <div className="flex-1 bg-sky-600"></div>
                            <div className="flex-1 bg-yellow-500"></div>
-                           <div className="flex-1 bg-zinc-900"></div>
+                           <div className="flex-1 bg-zinc-900 border-t border-white/10"></div>
                         </div>
                      </div>
 
                      <div className="flex gap-4 w-full">
                         <button onClick={() => window.print()} className="flex-1 py-5 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl">
-                           <Printer size={20} /> Imprimir em PVC
+                           <Printer size={20} /> Emitir Passe PVC
                         </button>
-                        <button onClick={() => setPrintingPass(null)} className="px-8 py-5 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-xs uppercase hover:bg-zinc-200 transition-all">Fechar</button>
+                        <button onClick={() => setPrintingPass(null)} className="px-8 py-5 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-xs uppercase hover:bg-zinc-200 transition-all">Sair</button>
                      </div>
                   </div>
                </div>
