@@ -530,283 +530,284 @@ const ArenaGames: React.FC = () => {
                   </div>
                </div>
             )}
+         </div>
 
-            {/* ============================================================ */}
-            {/* MODAL DE CHECKOUT COMPLETO                                   */}
-            {/* ============================================================ */}
-            {isRequesting && selectedItem && (
-               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in">
-                  <div className="bg-[#111216] w-full max-w-4xl rounded-[4rem] shadow-3xl overflow-hidden border border-white/10 flex flex-col md:flex-row max-h-[95vh]">
+         {/* ============================================================ */}
+         {/* MODAL DE CHECKOUT COMPLETO                                   */}
+         {/* ============================================================ */}
+         {isRequesting && selectedItem && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-[#111216] w-full max-w-4xl rounded-[4rem] shadow-3xl overflow-hidden border border-white/10 flex flex-col md:flex-row max-h-[95vh]">
 
-                     {/* PAINEL ESQUERDO — RESUMO DO PEDIDO */}
-                     <div className="md:w-2/5 bg-zinc-900 p-12 flex flex-col justify-between border-r border-white/5">
-                        <div className="space-y-10">
-                           <div>
-                              <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-full text-[8px] font-black uppercase tracking-[0.2em]">{selectedItem.tipo === 'jogo' ? 'Reserva de Sessão' : 'Inscrição de Torneio'}</span>
-                              <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.3em] mt-8 mb-4">Seu Pedido</h3>
-                              <div className="space-y-6">
-                                 {selectedItem.imagem_url && <img src={selectedItem.imagem_url} className="w-full h-32 object-cover rounded-3xl" />}
-                                 <p className="text-3xl font-black text-white leading-tight">{selectedItem.titulo}</p>
-                                 <div className="pt-6 border-t border-white/5 flex justify-between items-center">
-                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">A Liquidar</span>
-                                    <span className="text-4xl font-black text-yellow-500">{formatAOA(selectedItem.preco)}</span>
-                                 </div>
+                  {/* PAINEL ESQUERDO — RESUMO DO PEDIDO */}
+                  <div className="md:w-2/5 bg-zinc-900 p-12 flex flex-col justify-between border-r border-white/5">
+                     <div className="space-y-10">
+                        <div>
+                           <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-full text-[8px] font-black uppercase tracking-[0.2em]">{selectedItem.tipo === 'jogo' ? 'Reserva de Sessão' : 'Inscrição de Torneio'}</span>
+                           <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.3em] mt-8 mb-4">Seu Pedido</h3>
+                           <div className="space-y-6">
+                              {selectedItem.imagem_url && <img src={selectedItem.imagem_url} className="w-full h-32 object-cover rounded-3xl" />}
+                              <p className="text-3xl font-black text-white leading-tight">{selectedItem.titulo}</p>
+                              <div className="pt-6 border-t border-white/5 flex justify-between items-center">
+                                 <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">A Liquidar</span>
+                                 <span className="text-4xl font-black text-yellow-500">{formatAOA(selectedItem.preco)}</span>
                               </div>
                            </div>
+                        </div>
 
-                           {/* Status do processo */}
-                           <div className="space-y-3">
-                              {[
-                                 { label: 'Identificação', done: ['method', 'processing', 'pending', 'failed'].includes(paymentStep) },
-                                 { label: 'Método de Pagamento', done: ['processing', 'pending', 'failed'].includes(paymentStep) },
-                                 { label: 'Confirmação', done: paymentStep === 'pending' },
-                              ].map((step, i) => (
-                                 <div key={i} className="flex items-center gap-3">
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black ${step.done ? 'bg-green-500 text-white' : 'bg-white/10 text-zinc-500'}`}>
-                                       {step.done ? '✓' : i + 1}
-                                    </div>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest ${step.done ? 'text-zinc-300' : 'text-zinc-600'}`}>{step.label}</span>
+                        {/* Status do processo */}
+                        <div className="space-y-3">
+                           {[
+                              { label: 'Identificação', done: ['method', 'processing', 'pending', 'failed'].includes(paymentStep) },
+                              { label: 'Método de Pagamento', done: ['processing', 'pending', 'failed'].includes(paymentStep) },
+                              { label: 'Confirmação', done: paymentStep === 'pending' },
+                           ].map((step, i) => (
+                              <div key={i} className="flex items-center gap-3">
+                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black ${step.done ? 'bg-green-500 text-white' : 'bg-white/10 text-zinc-500'}`}>
+                                    {step.done ? '✓' : i + 1}
                                  </div>
+                                 <span className={`text-[10px] font-black uppercase tracking-widest ${step.done ? 'text-zinc-300' : 'text-zinc-600'}`}>{step.label}</span>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                     <div className="pt-10 flex items-center gap-3 opacity-30">
+                        <ShieldCheck size={20} />
+                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Amazing Security Protocol</p>
+                     </div>
+                  </div>
+
+                  {/* PAINEL DIREITO — STEPS */}
+                  <div className="md:w-3/5 p-12 relative flex flex-col justify-center overflow-y-auto">
+                     <button onClick={handleCloseModal} className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-all z-10"><X size={28} /></button>
+
+                     {/* STEP 1: IDENTIFICAÇÃO */}
+                     {paymentStep === 'details' && (
+                        <div className="space-y-8 animate-in slide-in-from-right-4">
+                           <div>
+                              <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Passo 1 de 2</p>
+                              <h2 className="text-4xl font-black uppercase tracking-tighter">Identificação</h2>
+                           </div>
+                           <form onSubmit={(e) => { e.preventDefault(); setPaymentStep('method'); }} className="space-y-4">
+                              <Input label="Gamer Tag / Nome Completo" required className="bg-white/5 border-white/10 text-white" value={clientData.nome} onChange={e => setClientData({ ...clientData, nome: e.target.value })} />
+                              <Input label="Telemóvel" required placeholder="+244 9XX XXX XXX" className="bg-white/5 border-white/10 text-white" value={clientData.tel} onChange={e => setClientData({ ...clientData, tel: e.target.value })} />
+                              <button type="submit" className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all">Escolher Pagamento <ArrowRight size={16} /></button>
+                           </form>
+                        </div>
+                     )}
+
+                     {/* STEP 2: MÉTODO DE PAGAMENTO */}
+                     {paymentStep === 'method' && (
+                        <div className="space-y-8 animate-in slide-in-from-right-4">
+                           <div>
+                              <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Passo 2 de 2</p>
+                              <h2 className="text-4xl font-black uppercase tracking-tighter">Pagamento</h2>
+                           </div>
+                           <div className="grid grid-cols-3 gap-4">
+                              {[
+                                 { id: 'Multicaixa', label: 'MCX Express', icon: <Smartphone size={28} /> },
+                                 { id: 'PayPal', label: 'PayPal', icon: <Globe size={28} /> },
+                                 { id: 'Stripe', label: 'Stripe', icon: <CreditCard size={28} /> },
+                              ].map(m => (
+                                 <button key={m.id} onClick={() => setPaymentMethod(m.id as any)} className={`p-6 rounded-3xl border flex flex-col items-center gap-3 transition-all ${paymentMethod === m.id ? 'bg-white text-zinc-900 border-white shadow-xl' : 'bg-white/5 border-white/10 text-zinc-500 hover:bg-white/10'}`}>
+                                    {m.icon} <span className="text-[9px] font-black uppercase tracking-widest">{m.label}</span>
+                                 </button>
                               ))}
                            </div>
+
+                           {/* Instruções de pagamento por método */}
+                           {paymentMethod === 'Multicaixa' && (
+                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-green-500 animate-in fade-in space-y-3">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — Multicaixa Express</p>
+                                 <p className="text-sm text-zinc-300 font-medium">Envie o valor para o número abaixo e use a referência gerada como comprovativo.</p>
+                                 <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
+                                    <div>
+                                       <p className="text-[8px] text-zinc-500 uppercase font-black">Número MCX — Arena</p>
+                                       <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
+                                    </div>
+                                    <Smartphone className="text-green-400" size={24} />
+                                 </div>
+                              </div>
+                           )}
+                           {paymentMethod === 'Stripe' && (
+                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-indigo-500 animate-in fade-in space-y-3">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — Stripe</p>
+                                 <p className="text-sm text-zinc-300 font-medium">Transferência via Stripe. Contacte-nos com a referência para receber o link de pagamento.</p>
+                                 <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
+                                    <div>
+                                       <p className="text-[8px] text-zinc-500 uppercase font-black">Contacto Arena</p>
+                                       <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
+                                    </div>
+                                    <CreditCard className="text-indigo-400" size={24} />
+                                 </div>
+                              </div>
+                           )}
+                           {paymentMethod === 'PayPal' && (
+                              <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-blue-500 animate-in fade-in space-y-3">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — PayPal</p>
+                                 <p className="text-sm text-zinc-300 font-medium">Contacte-nos com a referência gerada para receber o link de pagamento PayPal.</p>
+                                 <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
+                                    <div>
+                                       <p className="text-[8px] text-zinc-500 uppercase font-black">Contacto Arena</p>
+                                       <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
+                                    </div>
+                                    <Globe className="text-blue-400" size={24} />
+                                 </div>
+                              </div>
+                           )}
+
+                           <button
+                              onClick={processPayment}
+                              className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-indigo-500 transition-all flex items-center justify-center gap-3"
+                           >
+                              <ShieldCheck size={16} /> Gerar Referência e Confirmar
+                           </button>
                         </div>
-                        <div className="pt-10 flex items-center gap-3 opacity-30">
-                           <ShieldCheck size={20} />
-                           <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Amazing Security Protocol</p>
+                     )}
+
+                     {/* PROCESSANDO */}
+                     {paymentStep === 'processing' && (
+                        <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 py-20">
+                           <RefreshCw size={80} className="text-indigo-500 animate-spin" />
+                           <div className="text-center space-y-2">
+                              <h2 className="text-2xl font-black uppercase">A registar...</h2>
+                              <p className="text-zinc-500 text-sm font-medium">A gerar referência e registar pedido.</p>
+                           </div>
                         </div>
-                     </div>
+                     )}
 
-                     {/* PAINEL DIREITO — STEPS */}
-                     <div className="md:w-3/5 p-12 relative flex flex-col justify-center overflow-y-auto">
-                        <button onClick={handleCloseModal} className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-all z-10"><X size={28} /></button>
-
-                        {/* STEP 1: IDENTIFICAÇÃO */}
-                        {paymentStep === 'details' && (
-                           <div className="space-y-8 animate-in slide-in-from-right-4">
-                              <div>
-                                 <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Passo 1 de 2</p>
-                                 <h2 className="text-4xl font-black uppercase tracking-tighter">Identificação</h2>
+                     {/* PENDENTE — Sucesso com referência */}
+                     {paymentStep === 'pending' && (
+                        <div className="space-y-8 animate-in zoom-in-95 py-4">
+                           <div className="text-center space-y-3">
+                              <div className="w-20 h-20 bg-yellow-500/10 border-2 border-yellow-500/40 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/10">
+                                 <Clock size={36} className="text-yellow-400" />
                               </div>
-                              <form onSubmit={(e) => { e.preventDefault(); setPaymentStep('method'); }} className="space-y-4">
-                                 <Input label="Gamer Tag / Nome Completo" required className="bg-white/5 border-white/10 text-white" value={clientData.nome} onChange={e => setClientData({ ...clientData, nome: e.target.value })} />
-                                 <Input label="Telemóvel" required placeholder="+244 9XX XXX XXX" className="bg-white/5 border-white/10 text-white" value={clientData.tel} onChange={e => setClientData({ ...clientData, tel: e.target.value })} />
-                                 <button type="submit" className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all">Escolher Pagamento <ArrowRight size={16} /></button>
-                              </form>
+                              <h2 className="text-3xl font-black uppercase tracking-tight">Pedido Registado</h2>
+                              <p className="text-zinc-400 font-medium text-sm max-w-xs mx-auto">O seu pedido foi registado com sucesso. Efectue o pagamento e aguarde confirmação.</p>
                            </div>
-                        )}
 
-                        {/* STEP 2: MÉTODO DE PAGAMENTO */}
-                        {paymentStep === 'method' && (
-                           <div className="space-y-8 animate-in slide-in-from-right-4">
-                              <div>
-                                 <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Passo 2 de 2</p>
-                                 <h2 className="text-4xl font-black uppercase tracking-tighter">Pagamento</h2>
-                              </div>
-                              <div className="grid grid-cols-3 gap-4">
-                                 {[
-                                    { id: 'Multicaixa', label: 'MCX Express', icon: <Smartphone size={28} /> },
-                                    { id: 'PayPal', label: 'PayPal', icon: <Globe size={28} /> },
-                                    { id: 'Stripe', label: 'Stripe', icon: <CreditCard size={28} /> },
-                                 ].map(m => (
-                                    <button key={m.id} onClick={() => setPaymentMethod(m.id as any)} className={`p-6 rounded-3xl border flex flex-col items-center gap-3 transition-all ${paymentMethod === m.id ? 'bg-white text-zinc-900 border-white shadow-xl' : 'bg-white/5 border-white/10 text-zinc-500 hover:bg-white/10'}`}>
-                                       {m.icon} <span className="text-[9px] font-black uppercase tracking-widest">{m.label}</span>
-                                    </button>
-                                 ))}
-                              </div>
-
-                              {/* Instruções de pagamento por método */}
-                              {paymentMethod === 'Multicaixa' && (
-                                 <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-green-500 animate-in fade-in space-y-3">
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — Multicaixa Express</p>
-                                    <p className="text-sm text-zinc-300 font-medium">Envie o valor para o número abaixo e use a referência gerada como comprovativo.</p>
-                                    <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
-                                       <div>
-                                          <p className="text-[8px] text-zinc-500 uppercase font-black">Número MCX — Arena</p>
-                                          <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
-                                       </div>
-                                       <Smartphone className="text-green-400" size={24} />
-                                    </div>
-                                 </div>
-                              )}
-                              {paymentMethod === 'Stripe' && (
-                                 <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-indigo-500 animate-in fade-in space-y-3">
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — Stripe</p>
-                                    <p className="text-sm text-zinc-300 font-medium">Transferência via Stripe. Contacte-nos com a referência para receber o link de pagamento.</p>
-                                    <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
-                                       <div>
-                                          <p className="text-[8px] text-zinc-500 uppercase font-black">Contacto Arena</p>
-                                          <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
-                                       </div>
-                                       <CreditCard className="text-indigo-400" size={24} />
-                                    </div>
-                                 </div>
-                              )}
-                              {paymentMethod === 'PayPal' && (
-                                 <div className="bg-zinc-900 p-6 rounded-3xl border-l-4 border-blue-500 animate-in fade-in space-y-3">
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções — PayPal</p>
-                                    <p className="text-sm text-zinc-300 font-medium">Contacte-nos com a referência gerada para receber o link de pagamento PayPal.</p>
-                                    <div className="flex items-center justify-between bg-zinc-800 p-4 rounded-2xl">
-                                       <div>
-                                          <p className="text-[8px] text-zinc-500 uppercase font-black">Contacto Arena</p>
-                                          <p className="text-xl font-black text-white">{NUMERO_ARENA}</p>
-                                       </div>
-                                       <Globe className="text-blue-400" size={24} />
-                                    </div>
-                                 </div>
-                              )}
-
-                              <button
-                                 onClick={processPayment}
-                                 className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-indigo-500 transition-all flex items-center justify-center gap-3"
-                              >
-                                 <ShieldCheck size={16} /> Gerar Referência e Confirmar
-                              </button>
-                           </div>
-                        )}
-
-                        {/* PROCESSANDO */}
-                        {paymentStep === 'processing' && (
-                           <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 py-20">
-                              <RefreshCw size={80} className="text-indigo-500 animate-spin" />
-                              <div className="text-center space-y-2">
-                                 <h2 className="text-2xl font-black uppercase">A registar...</h2>
-                                 <p className="text-zinc-500 text-sm font-medium">A gerar referência e registar pedido.</p>
-                              </div>
-                           </div>
-                        )}
-
-                        {/* PENDENTE — Sucesso com referência */}
-                        {paymentStep === 'pending' && (
-                           <div className="space-y-8 animate-in zoom-in-95 py-4">
-                              <div className="text-center space-y-3">
-                                 <div className="w-20 h-20 bg-yellow-500/10 border-2 border-yellow-500/40 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/10">
-                                    <Clock size={36} className="text-yellow-400" />
-                                 </div>
-                                 <h2 className="text-3xl font-black uppercase tracking-tight">Pedido Registado</h2>
-                                 <p className="text-zinc-400 font-medium text-sm max-w-xs mx-auto">O seu pedido foi registado com sucesso. Efectue o pagamento e aguarde confirmação.</p>
-                              </div>
-
-                              {/* Caixa de referência */}
-                              <div className="bg-zinc-900 p-6 rounded-3xl border border-yellow-500/30 space-y-4">
-                                 <p className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">Referência do Pagamento</p>
-                                 <div className="flex items-center justify-between bg-black/50 p-4 rounded-2xl border border-white/10">
-                                    <span className="text-2xl font-black text-white tracking-wider font-mono">{referencia}</span>
-                                    <button onClick={copyReferencia} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-all text-zinc-400 hover:text-white">
-                                       {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
-                                    </button>
-                                 </div>
-                                 <p className="text-[10px] text-zinc-500 font-medium">Use este código como referência ao efectuar o pagamento.</p>
-                              </div>
-
-                              {/* Instruções */}
-                              <div className="bg-zinc-900 p-6 rounded-3xl border border-white/5 space-y-4">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções de Pagamento</p>
-                                 <div className="space-y-3">
-                                    <div className="flex items-start gap-3">
-                                       <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">1</span>
-                                       <p className="text-sm text-zinc-300">Efectue o pagamento de <strong className="text-white">{formatAOA(selectedItem.preco)}</strong> via {paymentMethod}</p>
-                                    </div>
-                                    {paymentMethod === 'Multicaixa' && (
-                                       <div className="flex items-start gap-3">
-                                          <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">2</span>
-                                          <p className="text-sm text-zinc-300">Envie para o número MCX <strong className="text-white">{NUMERO_ARENA}</strong></p>
-                                       </div>
-                                    )}
-                                    {(paymentMethod === 'PayPal' || paymentMethod === 'Stripe') && (
-                                       <div className="flex items-start gap-3">
-                                          <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">2</span>
-                                          <p className="text-sm text-zinc-300">Contacte-nos pelo <strong className="text-white">{NUMERO_ARENA}</strong> para receber o link de pagamento</p>
-                                       </div>
-                                    )}
-                                    <div className="flex items-start gap-3">
-                                       <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">3</span>
-                                       <p className="text-sm text-zinc-300">A sua vaga será <strong className="text-white">confirmada em até 30 minutos</strong> após o pagamento</p>
-                                    </div>
-                                 </div>
-                              </div>
-
-                              {/* Status */}
-                              <div className="flex items-center gap-3 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl">
-                                 <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-                                 <p className="text-[11px] font-black text-yellow-400 uppercase tracking-widest">Aguardando Confirmação de Pagamento</p>
-                              </div>
-
-                              <button onClick={handleCloseModal} className="w-full py-5 bg-white text-zinc-900 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-zinc-100 transition-all">
-                                 Fechar — Obrigado!
-                              </button>
-                           </div>
-                        )}
-
-                        {/* FALHADO */}
-                        {paymentStep === 'failed' && (
-                           <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 py-20">
-                              <div className="w-24 h-24 bg-red-500/10 border-2 border-red-500/30 rounded-full flex items-center justify-center">
-                                 <AlertCircle size={48} className="text-red-400" />
-                              </div>
-                              <div className="text-center space-y-2">
-                                 <h2 className="text-3xl font-black uppercase tracking-tight text-red-400">Erro no Pedido</h2>
-                                 <p className="text-zinc-500 font-medium text-sm">Ocorreu um erro ao registar o seu pedido. Por favor tente novamente.</p>
-                              </div>
-                              <div className="flex flex-col gap-3 w-full">
-                                 <button onClick={() => setPaymentStep('method')} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest">
-                                    Tentar Novamente
-                                 </button>
-                                 <button onClick={handleCloseModal} className="w-full py-5 bg-white/5 text-zinc-400 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all">
-                                    Cancelar
+                           {/* Caixa de referência */}
+                           <div className="bg-zinc-900 p-6 rounded-3xl border border-yellow-500/30 space-y-4">
+                              <p className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">Referência do Pagamento</p>
+                              <div className="flex items-center justify-between bg-black/50 p-4 rounded-2xl border border-white/10">
+                                 <span className="text-2xl font-black text-white tracking-wider font-mono">{referencia}</span>
+                                 <button onClick={copyReferencia} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-all text-zinc-400 hover:text-white">
+                                    {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
                                  </button>
                               </div>
+                              <p className="text-[10px] text-zinc-500 font-medium">Use este código como referência ao efectuar o pagamento.</p>
                            </div>
-                        )}
-                     </div>
+
+                           {/* Instruções */}
+                           <div className="bg-zinc-900 p-6 rounded-3xl border border-white/5 space-y-4">
+                              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Instruções de Pagamento</p>
+                              <div className="space-y-3">
+                                 <div className="flex items-start gap-3">
+                                    <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">1</span>
+                                    <p className="text-sm text-zinc-300">Efectue o pagamento de <strong className="text-white">{formatAOA(selectedItem.preco)}</strong> via {paymentMethod}</p>
+                                 </div>
+                                 {paymentMethod === 'Multicaixa' && (
+                                    <div className="flex items-start gap-3">
+                                       <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">2</span>
+                                       <p className="text-sm text-zinc-300">Envie para o número MCX <strong className="text-white">{NUMERO_ARENA}</strong></p>
+                                    </div>
+                                 )}
+                                 {(paymentMethod === 'PayPal' || paymentMethod === 'Stripe') && (
+                                    <div className="flex items-start gap-3">
+                                       <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">2</span>
+                                       <p className="text-sm text-zinc-300">Contacte-nos pelo <strong className="text-white">{NUMERO_ARENA}</strong> para receber o link de pagamento</p>
+                                    </div>
+                                 )}
+                                 <div className="flex items-start gap-3">
+                                    <span className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0">3</span>
+                                    <p className="text-sm text-zinc-300">A sua vaga será <strong className="text-white">confirmada em até 30 minutos</strong> após o pagamento</p>
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* Status */}
+                           <div className="flex items-center gap-3 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl">
+                              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                              <p className="text-[11px] font-black text-yellow-400 uppercase tracking-widest">Aguardando Confirmação de Pagamento</p>
+                           </div>
+
+                           <button onClick={handleCloseModal} className="w-full py-5 bg-white text-zinc-900 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-zinc-100 transition-all">
+                              Fechar — Obrigado!
+                           </button>
+                        </div>
+                     )}
+
+                     {/* FALHADO */}
+                     {paymentStep === 'failed' && (
+                        <div className="h-full flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 py-20">
+                           <div className="w-24 h-24 bg-red-500/10 border-2 border-red-500/30 rounded-full flex items-center justify-center">
+                              <AlertCircle size={48} className="text-red-400" />
+                           </div>
+                           <div className="text-center space-y-2">
+                              <h2 className="text-3xl font-black uppercase tracking-tight text-red-400">Erro no Pedido</h2>
+                              <p className="text-zinc-500 font-medium text-sm">Ocorreu um erro ao registar o seu pedido. Por favor tente novamente.</p>
+                           </div>
+                           <div className="flex flex-col gap-3 w-full">
+                              <button onClick={() => setPaymentStep('method')} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest">
+                                 Tentar Novamente
+                              </button>
+                              <button onClick={handleCloseModal} className="w-full py-5 bg-white/5 text-zinc-400 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all">
+                                 Cancelar
+                              </button>
+                           </div>
+                        </div>
+                     )}
                   </div>
                </div>
-            )}
+            </div>
+         )}
 
-            {/* MODAL PERFIL JOGADOR */}
-            {viewingPlayer && (
-               <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in zoom-in-95">
-                  <div className="bg-[#0c0d10] w-full max-w-2xl rounded-[4rem] border border-white/10 overflow-hidden shadow-3xl text-center p-16 space-y-12">
-                     <div className="relative inline-block">
-                        <div className="w-40 h-40 bg-indigo-600 rounded-full mx-auto flex items-center justify-center text-5xl font-black text-white shadow-3xl">
-                           {viewingPlayer.player_name.charAt(0)}
-                        </div>
-                        <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-yellow-500 rounded-full border-8 border-[#0c0d10] flex items-center justify-center text-zinc-900">
-                           <Trophy size={20} />
-                        </div>
+         {/* MODAL PERFIL JOGADOR */}
+         {viewingPlayer && (
+            <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in zoom-in-95">
+               <div className="bg-[#0c0d10] w-full max-w-2xl rounded-[4rem] border border-white/10 overflow-hidden shadow-3xl text-center p-16 space-y-12">
+                  <div className="relative inline-block">
+                     <div className="w-40 h-40 bg-indigo-600 rounded-full mx-auto flex items-center justify-center text-5xl font-black text-white shadow-3xl">
+                        {viewingPlayer.player_name.charAt(0)}
                      </div>
-
-                     <div className="space-y-4">
-                        <h2 className="text-5xl font-black uppercase tracking-tighter">{viewingPlayer.player_name}</h2>
-                        <p className="text-zinc-500 font-bold uppercase text-xs tracking-[0.4em]">Elite Amazing Arena Gamer</p>
+                     <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-yellow-500 rounded-full border-8 border-[#0c0d10] flex items-center justify-center text-zinc-900">
+                        <Trophy size={20} />
                      </div>
-
-                     <div className="grid grid-cols-2 gap-6 text-left">
-                        <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 space-y-2">
-                           <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Global Rank</p>
-                           <p className="text-3xl font-black text-white">#{viewingPlayer.rank}</p>
-                        </div>
-                        <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 space-y-2">
-                           <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Total Score</p>
-                           <p className="text-3xl font-black text-indigo-400">{viewingPlayer.score.toLocaleString()}</p>
-                        </div>
-                        <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 space-y-2">
-                           <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Jogo Favorito</p>
-                           <p className="text-xl font-black text-zinc-200">{viewingPlayer.last_game}</p>
-                        </div>
-                        <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 space-y-2">
-                           <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Taxa de Vitória</p>
-                           <p className="text-xl font-black text-green-500">{(65 + (viewingPlayer.rank === 1 ? 22 : 10)).toFixed(1)}%</p>
-                        </div>
-                     </div>
-
-                     <button onClick={() => setViewingPlayer(null)} className="w-full py-6 bg-white text-zinc-900 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
-                        Voltar ao Hall da Fama
-                     </button>
                   </div>
+
+                  <div className="space-y-4">
+                     <h2 className="text-5xl font-black uppercase tracking-tighter">{viewingPlayer.player_name}</h2>
+                     <p className="text-zinc-500 font-bold uppercase text-xs tracking-[0.4em]">Elite Amazing Arena Gamer</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6 text-left">
+                     <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 space-y-2">
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Global Rank</p>
+                        <p className="text-3xl font-black text-white">#{viewingPlayer.rank}</p>
+                     </div>
+                     <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 space-y-2">
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Total Score</p>
+                        <p className="text-3xl font-black text-indigo-400">{viewingPlayer.score.toLocaleString()}</p>
+                     </div>
+                     <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 space-y-2">
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Jogo Favorito</p>
+                        <p className="text-xl font-black text-zinc-200">{viewingPlayer.last_game}</p>
+                     </div>
+                     <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 space-y-2">
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Taxa de Vitória</p>
+                        <p className="text-xl font-black text-green-500">{(65 + (viewingPlayer.rank === 1 ? 22 : 10)).toFixed(1)}%</p>
+                     </div>
+                  </div>
+
+                  <button onClick={() => setViewingPlayer(null)} className="w-full py-6 bg-white text-zinc-900 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
+                     Voltar ao Hall da Fama
+                  </button>
                </div>
-            )}
-         </div>
-         );
+            </div>
+         )}
+      </div>
+   );
 };
 
-         export default ArenaGames;
+export default ArenaGames;
