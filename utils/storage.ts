@@ -81,6 +81,9 @@ export const AmazingStorage = {
 
   syncToCloud: async (key: string, data: any) => {
     try {
+      // Guard: only write to cloud if there is an active authenticated session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       await supabase
         .from('erp_data')
         .upsert({
@@ -150,6 +153,9 @@ export const AmazingStorage = {
   logAction: async (action: string, module: string, details: string, type: SystemLog['type'] = 'info') => {
     const user = AmazingStorage.get<any>(STORAGE_KEYS.USER, { nome: 'Sistema' });
     try {
+      // Guard: only log if there is an active authenticated session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       await supabase.from('sys_logs').insert([{
         user_name: user.nome,
         action,
