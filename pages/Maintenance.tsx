@@ -465,74 +465,76 @@ const MaintenancePage: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden print:hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-zinc-50/50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">
-              <th className="px-10 py-8">Serviço & Veículo</th>
-              <th className="px-10 py-8">Estado / Tipo</th>
-              <th className="px-10 py-8 text-center">Data</th>
-              <th className="px-10 py-8 text-right">Custo Total</th>
-              <th className="px-10 py-8 text-right">Acções</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-50">
-            {filteredRecords.length > 0 ? filteredRecords.map((rec) => (
-              <tr key={rec.id} className="hover:bg-zinc-50/30 transition-all group">
-                <td className="px-10 py-6">
-                  <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-yellow-500 group-hover:text-white transition-all shadow-inner">
-                      <Car size={24} />
-                    </div>
-                    <div>
-                      <span className="font-black text-zinc-900 block text-base leading-tight">{rec.descricao}</span>
-                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1 block">
-                        Matrícula: <span className="text-yellow-600">{rec.matricula}</span> • Condutor: {rec.condutor_nome}
-                      </span>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-10 py-6">
-                  <div className="flex flex-col gap-2">
-                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit ${getStatusStyle(rec.status)}`}>
-                      {rec.status}
-                    </span>
-                    <span className="text-[9px] font-bold text-zinc-400 uppercase">{rec.categoria}</span>
-                  </div>
-                </td>
-                <td className="px-10 py-6 text-center">
-                  <div className="flex flex-col items-center">
-                    <Clock size={14} className="text-zinc-400 mb-1" />
-                    <span className="text-xs font-black text-zinc-700">{new Date(rec.data_manutencao).toLocaleDateString()}</span>
-                  </div>
-                </td>
-                <td className="px-10 py-6 text-right">
-                  <span className="text-lg font-black text-zinc-900">{formatAOA(rec.preco_total)}</span>
-                  <p className="text-[9px] font-bold text-zinc-400 uppercase">Itens: {rec.itens ? rec.itens.filter(i => i.descricao).length : rec.quantidade}</p>
-                </td>
-                <td className="px-10 py-6 text-right flex justify-end gap-2">
-                  <button onClick={() => handlePrint(rec)} className="p-3 text-zinc-300 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all" title="Imprimir Ordem de Serviço"><Printer size={18} /></button>
-                  <button onClick={() => handleOpenModal(rec)} className="p-3 text-zinc-300 hover:text-yellow-600 hover:bg-yellow-50 rounded-xl transition-all" title="Editar Registo"><Edit size={18} /></button>
-                  <button onClick={async () => {
-                    if (confirm(`Excluir manutenção de ${rec.matricula}?`)) {
-                      const { error } = await supabase.from('manutencao').delete().eq('id', rec.id);
-                      if (error) {
-                        alert('Erro ao excluir manutenção');
-                      } else {
-                        fetchMaintenanceData();
-                        AmazingStorage.logAction('Eliminação', 'Manutenção', `Ordem ${rec.id} removida.`);
-                      }
-                    }
-                  }} className="p-3 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[800px]">
+            <thead>
+              <tr className="bg-zinc-50/50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">
+                <th className="px-10 py-8">Serviço & Veículo</th>
+                <th className="px-10 py-8">Estado / Tipo</th>
+                <th className="px-10 py-8 text-center">Data</th>
+                <th className="px-10 py-8 text-right">Custo Total</th>
+                <th className="px-10 py-8 text-right">Acções</th>
               </tr>
-            )) : (
-              <tr><td colSpan={5} className="px-10 py-24 text-center">
-                <Wrench size={48} className="mx-auto text-sky-100 mb-4" />
-                <p className="text-zinc-400 font-black italic">Nenhum registo de manutenção encontrado.</p>
-              </td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-zinc-50">
+              {filteredRecords.length > 0 ? filteredRecords.map((rec) => (
+                <tr key={rec.id} className="hover:bg-zinc-50/30 transition-all group">
+                  <td className="px-10 py-6">
+                    <div className="flex items-center gap-5">
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-yellow-500 group-hover:text-white transition-all shadow-inner">
+                        <Car size={24} />
+                      </div>
+                      <div>
+                        <span className="font-black text-zinc-900 block text-base leading-tight">{rec.descricao}</span>
+                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1 block">
+                          Matrícula: <span className="text-yellow-600">{rec.matricula}</span> • Condutor: {rec.condutor_nome}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-10 py-6">
+                    <div className="flex flex-col gap-2">
+                      <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit ${getStatusStyle(rec.status)}`}>
+                        {rec.status}
+                      </span>
+                      <span className="text-[9px] font-bold text-zinc-400 uppercase">{rec.categoria}</span>
+                    </div>
+                  </td>
+                  <td className="px-10 py-6 text-center">
+                    <div className="flex flex-col items-center">
+                      <Clock size={14} className="text-zinc-400 mb-1" />
+                      <span className="text-xs font-black text-zinc-700">{new Date(rec.data_manutencao).toLocaleDateString()}</span>
+                    </div>
+                  </td>
+                  <td className="px-10 py-6 text-right">
+                    <span className="text-lg font-black text-zinc-900">{formatAOA(rec.preco_total)}</span>
+                    <p className="text-[9px] font-bold text-zinc-400 uppercase">Itens: {rec.itens ? rec.itens.filter(i => i.descricao).length : rec.quantidade}</p>
+                  </td>
+                  <td className="px-10 py-6 text-right flex justify-end gap-2">
+                    <button onClick={() => handlePrint(rec)} className="p-3 text-zinc-300 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all" title="Imprimir Ordem de Serviço"><Printer size={18} /></button>
+                    <button onClick={() => handleOpenModal(rec)} className="p-3 text-zinc-300 hover:text-yellow-600 hover:bg-yellow-50 rounded-xl transition-all" title="Editar Registo"><Edit size={18} /></button>
+                    <button onClick={async () => {
+                      if (confirm(`Excluir manutenção de ${rec.matricula}?`)) {
+                        const { error } = await supabase.from('manutencao').delete().eq('id', rec.id);
+                        if (error) {
+                          alert('Erro ao excluir manutenção');
+                        } else {
+                          fetchMaintenanceData();
+                          AmazingStorage.logAction('Eliminação', 'Manutenção', `Ordem ${rec.id} removida.`);
+                        }
+                      }
+                    }} className="p-3 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                  </td>
+                </tr>
+              )) : (
+                <tr><td colSpan={5} className="px-10 py-24 text-center">
+                  <Wrench size={48} className="mx-auto text-sky-100 mb-4" />
+                  <p className="text-zinc-400 font-black italic">Nenhum registo de manutenção encontrado.</p>
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showModal && (

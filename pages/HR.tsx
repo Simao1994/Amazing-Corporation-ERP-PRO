@@ -818,28 +818,30 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   {isHRAdmin && <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>}
                </div>
                <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
-                  <table className="w-full text-left">
-                     <thead>
-                        <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                           <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Função / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Acções</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-zinc-50 text-sm">
-                        {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
-                           <tr key={f.id} className="hover:bg-zinc-50/50">
-                              <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
-                              <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
-                              <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
-                              <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
-                              <td className="px-8 py-5 text-right flex justify-end gap-2">
-                                 <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histórico Completo"><ClipboardList size={18} /></button>
-                                 {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
-                                 {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
-                              </td>
+                  <div className="overflow-x-auto">
+                     <table className="w-full text-left min-w-[600px]">
+                        <thead>
+                           <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                              <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Função / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Acções</th>
                            </tr>
-                        ))}
-                     </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-50 text-sm">
+                           {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
+                              <tr key={f.id} className="hover:bg-zinc-50/50">
+                                 <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
+                                 <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
+                                 <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
+                                 <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
+                                 <td className="px-8 py-5 text-right flex justify-end gap-2">
+                                    <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histórico Completo"><ClipboardList size={18} /></button>
+                                    {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
+                                    {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
+                                 </td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                  </div>
                </div>
             </div>
          )}

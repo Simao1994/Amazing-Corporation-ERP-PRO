@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useMemo, useEffect } from 'react';
 import {
    Calculator, BarChart2, BarChart as LucideBarChart, Receipt, Users, Landmark, Scale,
@@ -1545,1723 +1545,1725 @@ const AccountingPage: React.FC = () => {
                </div>
 
                <div className="bg-white rounded-[3.5rem] shadow-xl border border-sky-100 overflow-hidden">
-                  <table className="w-full text-left">
-                     <thead className="bg-zinc-900 text-white border-b border-zinc-800">
-                        <tr className="text-[10px] font-black uppercase tracking-[0.2em]">
-                           <th className="px-10 py-6">Data</th>
-                           <th className="px-10 py-6">Referência</th>
-                           <th className="px-10 py-6">Histórico / Descrição</th>
-                           <th className="px-10 py-6 text-right">Valor Total</th>
-                           <th className="px-10 py-6 text-center">Status</th>
-                           <th className="px-10 py-6 text-center">Tipo</th>
-                           <th className="px-6 py-6 text-center">Acções</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-zinc-100">
-                        {lancamentos.filter(l => l.empresa_id === selectedEmpresaId && (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)).length > 0 ? (
-                           lancamentos.filter(l => l.empresa_id === selectedEmpresaId && (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)).map((l) => (
-                              <tr key={l.id} className="group hover:bg-zinc-50/50 transition-all cursor-pointer">
-                                 <td className="px-10 py-8 font-mono text-zinc-500 text-xs">
-                                    {l.data ? new Date(l.data).toLocaleDateString() : 'N/D'}
-                                 </td>
-                                 <td className="px-10 py-8">
-                                    <span className="px-4 py-2 bg-zinc-50 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all">#LNC-{l.id.toString().slice(0, 4)}</span>
-                                 </td>
-                                 <td className="px-10 py-8">
-                                    <p className="font-black text-zinc-900 text-lg group-hover:text-yellow-600 transition-colors">{l.descricao}</p>
-                                    <div className="flex gap-4 mt-2">
-                                       {l.itens?.map((it, idx) => (
-                                          <div key={idx} className="flex items-center gap-2">
-                                             <div className={`w-2 h-2 rounded-full ${it.tipo === 'D' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                             <span className="text-[10px] font-black text-zinc-400 uppercase">{it.conta_codigo}</span>
-                                          </div>
-                                       ))}
-                                    </div>
-                                 </td>
-                                 <td className="px-10 py-8 text-right font-black text-xl text-zinc-900">
-                                    {safeFormatAOA(l.itens?.filter(i => i.tipo === 'D').reduce((acc, it) => acc + (Number(it.valor) || 0), 0) || 0)}
-                                 </td>
-                                 <td className="px-10 py-8 text-center">
-                                    <span className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border ${l.estornado ? 'bg-red-50 text-red-600 border-red-100' :
-                                       l.status === 'Postado' ? 'bg-green-50 text-green-600 border-green-100' :
-                                          l.status === 'Rascunho' || l.status === 'PendenteAprovacao' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
-                                             'bg-zinc-50 text-zinc-500 border-zinc-100'
-                                       }`}>{l.estornado ? 'Estornado' : (l.status || 'Postado')}</span>
-                                 </td>
-                                 <td className="px-10 py-8 text-center">
-                                    <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest ${l.tipo_transacao === 'Automático' ? 'bg-blue-50 text-blue-600' :
-                                       l.tipo_transacao === 'Estorno' ? 'bg-red-50 text-red-600' :
-                                          l.tipo_transacao === 'Folha' ? 'bg-purple-50 text-purple-600' :
-                                             'bg-zinc-50 text-zinc-500'
-                                       }`}>{l.tipo_transacao || 'Manual'}</span>
-                                 </td>
-                                 <td className="px-6 py-8 text-center">
-                                    {!l.estornado && l.status === 'Postado' ? (
-                                       <button onClick={() => handleEstornarLancamento(l)} disabled={isEstornandoId === l.id}
-                                          title="Criar Estorno" className="p-2 bg-zinc-50 hover:bg-red-50 hover:text-red-600 text-zinc-400 rounded-xl transition-all disabled:opacity-40">
-                                          {isEstornandoId === l.id ? <RefreshCw size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-                                       </button>
-                                    ) : <span className="text-zinc-200">—</span>}
-                                 </td>
-                              </tr>
-                           ))
-                        ) : (
-                           <tr><td colSpan={7} className="text-center py-20 text-zinc-400 font-bold italic">Nenhum lançamento registado para este período.</td></tr>
-                        )}
-                     </tbody>
-                  </table>
+                  <div className="overflow-x-auto">
+                     <table className="w-full text-left min-w-[1000px]">
+                        <thead className="bg-zinc-900 text-white border-b border-zinc-800">
+                           <tr className="text-[10px] font-black uppercase tracking-[0.2em]">
+                              <th className="px-10 py-6">Data</th>
+                              <th className="px-10 py-6">Referência</th>
+                              <th className="px-10 py-6">Histórico / Descrição</th>
+                              <th className="px-10 py-6 text-right">Valor Total</th>
+                              <th className="px-10 py-6 text-center">Status</th>
+                              <th className="px-10 py-6 text-center">Tipo</th>
+                              <th className="px-6 py-6 text-center">Acções</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                           {lancamentos.filter(l => l.empresa_id === selectedEmpresaId && (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)).length > 0 ? (
+                              lancamentos.filter(l => l.empresa_id === selectedEmpresaId && (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)).map((l) => (
+                                 <tr key={l.id} className="group hover:bg-zinc-50/50 transition-all cursor-pointer">
+                                    <td className="px-10 py-8 font-mono text-zinc-500 text-xs">
+                                       {l.data ? new Date(l.data).toLocaleDateString() : 'N/D'}
+                                    </td>
+                                    <td className="px-10 py-8">
+                                       <span className="px-4 py-2 bg-zinc-50 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all">#LNC-{l.id.toString().slice(0, 4)}</span>
+                                    </td>
+                                    <td className="px-10 py-8">
+                                       <p className="font-black text-zinc-900 text-lg group-hover:text-yellow-600 transition-colors">{l.descricao}</p>
+                                       <div className="flex gap-4 mt-2">
+                                          {l.itens?.map((it, idx) => (
+                                             <div key={idx} className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full ${it.tipo === 'D' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                <span className="text-[10px] font-black text-zinc-400 uppercase">{it.conta_codigo}</span>
+                                             </div>
+                                          ))}
+                                       </div>
+                                    </td>
+                                    <td className="px-10 py-8 text-right font-black text-xl text-zinc-900">
+                                       {safeFormatAOA(l.itens?.filter(i => i.tipo === 'D').reduce((acc, it) => acc + (Number(it.valor) || 0), 0) || 0)}
+                                    </td>
+                                    <td className="px-10 py-8 text-center">
+                                       <span className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border ${l.estornado ? 'bg-red-50 text-red-600 border-red-100' :
+                                          l.status === 'Postado' ? 'bg-green-50 text-green-600 border-green-100' :
+                                             l.status === 'Rascunho' || l.status === 'PendenteAprovacao' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                                                'bg-zinc-50 text-zinc-500 border-zinc-100'
+                                          }`}>{l.estornado ? 'Estornado' : (l.status || 'Postado')}</span>
+                                    </td>
+                                    <td className="px-10 py-8 text-center">
+                                       <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest ${l.tipo_transacao === 'Automático' ? 'bg-blue-50 text-blue-600' :
+                                          l.tipo_transacao === 'Estorno' ? 'bg-red-50 text-red-600' :
+                                             l.tipo_transacao === 'Folha' ? 'bg-purple-50 text-purple-600' :
+                                                'bg-zinc-50 text-zinc-500'
+                                          }`}>{l.tipo_transacao || 'Manual'}</span>
+                                    </td>
+                                    <td className="px-6 py-8 text-center">
+                                       {!l.estornado && l.status === 'Postado' ? (
+                                          <button onClick={() => handleEstornarLancamento(l)} disabled={isEstornandoId === l.id}
+                                             title="Criar Estorno" className="p-2 bg-zinc-50 hover:bg-red-50 hover:text-red-600 text-zinc-400 rounded-xl transition-all disabled:opacity-40">
+                                             {isEstornandoId === l.id ? <RefreshCw size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                                          </button>
+                                       ) : <span className="text-zinc-200">—</span>}
+                                    </td>
+                                 </tr>
+                              ))
+                           ) : (
+                              <tr><td colSpan={7} className="text-center py-20 text-zinc-400 font-bold italic">Nenhum lançamento registado para este período.</td></tr>
+                           )}
+                        </tbody>
+                     </table>
+                  </div>
+                  </div>
                </div>
-            </div>
          )}
 
-         {/* --- DEMONSTRAÇÕES FINANCEIRAS --- */}
-         {
-            activeTab === 'demonstracoes' && (
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4">
-                  {/* Balanço Patrimonial */}
-                  <div className="bg-white p-12 rounded-[4rem] shadow-sm border border-sky-100">
-                     <div className="flex justify-between items-center mb-10">
-                        <h3 className="text-2xl font-black uppercase tracking-tight">Balanço Patrimonial - {currentEmpresa?.nome || ''}</h3>
-                        <button className="p-3 bg-zinc-50 rounded-xl text-zinc-400 hover:text-zinc-900"><Printer size={20} /></button>
-                     </div>
-                     <div className="space-y-8">
-                        <div className="space-y-4">
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Ativo (Devedora)</p>
-                           <div className="flex justify-between text-sm"><span className="font-bold">Total do Ativo Circulante</span><span className="font-black">{safeFormatAOA(financeReports.ativos)}</span></div>
-                        </div>
-                        <div className="space-y-4">
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Passivo (Credora)</p>
-                           <div className="flex justify-between text-sm"><span className="font-bold">Obrigações a Curto Prazo</span><span className="font-black text-red-600">{safeFormatAOA(financeReports.passivos)}</span></div>
-                        </div>
-                        <div className="space-y-4">
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Capital Próprio</p>
-                           <div className="flex justify-between text-sm"><span className="font-bold">Reservas e Capital Social</span><span className="font-black">{safeFormatAOA(financeReports.capital)}</span></div>
-                        </div>
-                        <div className="pt-6 border-t-2 border-zinc-900 flex justify-between">
-                           <span className="text-lg font-black uppercase">Património Líquido</span>
-                           <span className="text-2xl font-black text-zinc-900">{safeFormatAOA(financeReports.ativos - financeReports.passivos)}</span>
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* DRE */}
-                  <div className="bg-zinc-900 p-12 rounded-[4rem] shadow-2xl text-white">
-                     <div className="flex justify-between items-center mb-10">
-                        <h3 className="text-2xl font-black uppercase tracking-tight text-yellow-500">DRE (Resultado)</h3>
-                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Exercício 2024</span>
-                     </div>
-                     <div className="space-y-8">
-                        <div className="flex justify-between border-b border-white/10 pb-4">
-                           <span className="font-bold text-zinc-400 uppercase text-xs">Proveitos Operacionais</span>
-                           <span className="font-black text-xl">{safeFormatAOA(financeReports.receitaTotal)}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-white/10 pb-4">
-                           <span className="font-bold text-zinc-400 uppercase text-xs">Custos com Pessoal</span>
-                           <span className="font-black text-lg text-red-400">({safeFormatAOA(folhas?.reduce((acc, b) => acc + (Number(b.salario_base) || 0), 0) || 0)})</span>
-                        </div>
-                        <div className="flex justify-between border-b border-white/10 pb-4">
-                           <span className="font-bold text-zinc-400 uppercase text-xs">Custos de Manutenção</span>
-                           <span className="font-black text-lg text-red-400">({safeFormatAOA((Number(financeReports.despesaTotal) || 0) * 0.3)})</span>
-                        </div>
-                        <div className="bg-white/5 p-8 rounded-3xl mt-12">
-                           <div className="flex justify-between items-center">
-                              <div>
-                                 <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-1">Resultado Líquido do Período</p>
-                                 <p className="text-3xl font-black">{safeFormatAOA(financeReports.lucroLiquido)}</p>
+               {/* --- DEMONSTRAÇÕES FINANCEIRAS --- */}
+               {
+                  activeTab === 'demonstracoes' && (
+                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4">
+                        {/* Balanço Patrimonial */}
+                        <div className="bg-white p-12 rounded-[4rem] shadow-sm border border-sky-100">
+                           <div className="flex justify-between items-center mb-10">
+                              <h3 className="text-2xl font-black uppercase tracking-tight">Balanço Patrimonial - {currentEmpresa?.nome || ''}</h3>
+                              <button className="p-3 bg-zinc-50 rounded-xl text-zinc-400 hover:text-zinc-900"><Printer size={20} /></button>
+                           </div>
+                           <div className="space-y-8">
+                              <div className="space-y-4">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Ativo (Devedora)</p>
+                                 <div className="flex justify-between text-sm"><span className="font-bold">Total do Ativo Circulante</span><span className="font-black">{safeFormatAOA(financeReports.ativos)}</span></div>
                               </div>
-                              <div className={`p-4 rounded-2xl ${financeReports.lucroLiquido >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                 {financeReports.lucroLiquido >= 0 ? <ArrowUpRight size={32} /> : <ArrowDownLeft size={32} />}
+                              <div className="space-y-4">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Passivo (Credora)</p>
+                                 <div className="flex justify-between text-sm"><span className="font-bold">Obrigações a Curto Prazo</span><span className="font-black text-red-600">{safeFormatAOA(financeReports.passivos)}</span></div>
+                              </div>
+                              <div className="space-y-4">
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Capital Próprio</p>
+                                 <div className="flex justify-between text-sm"><span className="font-bold">Reservas e Capital Social</span><span className="font-black">{safeFormatAOA(financeReports.capital)}</span></div>
+                              </div>
+                              <div className="pt-6 border-t-2 border-zinc-900 flex justify-between">
+                                 <span className="text-lg font-black uppercase">Património Líquido</span>
+                                 <span className="text-2xl font-black text-zinc-900">{safeFormatAOA(financeReports.ativos - financeReports.passivos)}</span>
                               </div>
                            </div>
                         </div>
-                     </div>
-                  </div>
 
-                  {/* BALANCETE DE VERIFICAÇÃO - NOVO */}
-                  <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-sky-100 col-span-1 md:col-span-2">
-                     <div className="flex justify-between items-center mb-10">
-                        <div>
-                           <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-3">
-                              <ListChecks size={24} className="text-yellow-500" /> Balancete de Verificação
-                           </h3>
-                           <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Saldos Acumulados por Conta no Período</p>
-                        </div>
-                        <button
-                           onClick={handleExportBalancete}
-                           className="px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
-                        >
-                           Exportar Balancete
-                        </button>
-                     </div>
-                     <div className="overflow-hidden rounded-2xl border border-zinc-100">
-                        <table className="w-full text-left">
-                           <thead>
-                              <tr className="bg-zinc-900 text-white text-[9px] font-black uppercase tracking-[0.2em]">
-                                 <th className="px-8 py-5">Código</th>
-                                 <th className="px-8 py-5">Nome da Conta</th>
-                                 <th className="px-8 py-5 text-right">Saldo do Período</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-zinc-100">
-                              {planoContas.filter(c => financeReports.saldos[c.codigo] !== 0).map(conta => (
-                                 <tr key={conta.id} className="text-xs hover:bg-zinc-50 transition-all font-bold">
-                                    <td className="px-8 py-4 font-mono text-zinc-500">{conta.codigo}</td>
-                                    <td className="px-8 py-4 uppercase text-zinc-800">{conta.nome}</td>
-                                    <td className={`px-8 py-4 text-right ${financeReports.saldos[conta.codigo] >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                       {safeFormatAOA(financeReports.saldos[conta.codigo])}
-                                    </td>
-                                 </tr>
-                              ))}
-                              {Object.values(financeReports.saldos).every(s => s === 0) && (
-                                 <tr><td colSpan={3} className="px-8 py-10 text-center text-zinc-400 italic">Sem movimentações no período selecionado.</td></tr>
-                              )}
-                           </tbody>
-                        </table>
-                     </div>
-                  </div>
-
-                  {/* RAZÃO (LEDGER) - NOVO COMPONENTE CORPORATIVO */}
-                  <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-sky-100 col-span-1 md:col-span-2">
-                     <div className="flex justify-between items-center mb-10">
-                        <div>
-                           <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-3">
-                              <History size={24} className="text-yellow-500" /> Livro Razão Detalhado
-                           </h3>
-                           <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Movimentações Analíticas por Conta</p>
-                        </div>
-                        <div className="flex gap-2">
-                           <button className="p-3 bg-zinc-50 rounded-xl text-zinc-400 hover:text-zinc-900 transition-all"><Printer size={20} /></button>
-                           <button className="p-3 bg-zinc-50 rounded-xl text-zinc-400 hover:text-zinc-900 transition-all"><Download size={20} /></button>
-                        </div>
-                     </div>
-                     <div className="space-y-6">
-                        {planoContas.filter(c => c.nivel === 1 || c.e_analitica).map(conta => {
-                           const movimentos = lancamentos.filter(l =>
-                              l.empresa_id === selectedEmpresaId &&
-                              (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true) &&
-                              l.itens?.some(it => it.conta_codigo === conta.codigo)
-                           );
-                           if (movimentos.length === 0) return null;
-
-                           return (
-                              <div key={conta.id} className="border border-zinc-100 rounded-[2rem] overflow-hidden">
-                                 <div className="bg-zinc-50 p-6 flex justify-between items-center border-b border-zinc-100">
-                                    <span className="font-black text-xs uppercase tracking-widest text-zinc-900">{conta.codigo} - {conta.nome}</span>
-                                    <span className="px-4 py-1.5 bg-zinc-900 text-white rounded-full text-[9px] font-black uppercase tracking-widest">Saldo: {safeFormatAOA(0)}</span>
+                        {/* DRE */}
+                        <div className="bg-zinc-900 p-12 rounded-[4rem] shadow-2xl text-white">
+                           <div className="flex justify-between items-center mb-10">
+                              <h3 className="text-2xl font-black uppercase tracking-tight text-yellow-500">DRE (Resultado)</h3>
+                              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Exercício 2024</span>
+                           </div>
+                           <div className="space-y-8">
+                              <div className="flex justify-between border-b border-white/10 pb-4">
+                                 <span className="font-bold text-zinc-400 uppercase text-xs">Proveitos Operacionais</span>
+                                 <span className="font-black text-xl">{safeFormatAOA(financeReports.receitaTotal)}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-white/10 pb-4">
+                                 <span className="font-bold text-zinc-400 uppercase text-xs">Custos com Pessoal</span>
+                                 <span className="font-black text-lg text-red-400">({safeFormatAOA(folhas?.reduce((acc, b) => acc + (Number(b.salario_base) || 0), 0) || 0)})</span>
+                              </div>
+                              <div className="flex justify-between border-b border-white/10 pb-4">
+                                 <span className="font-bold text-zinc-400 uppercase text-xs">Custos de Manutenção</span>
+                                 <span className="font-black text-lg text-red-400">({safeFormatAOA((Number(financeReports.despesaTotal) || 0) * 0.3)})</span>
+                              </div>
+                              <div className="bg-white/5 p-8 rounded-3xl mt-12">
+                                 <div className="flex justify-between items-center">
+                                    <div>
+                                       <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-1">Resultado Líquido do Período</p>
+                                       <p className="text-3xl font-black">{safeFormatAOA(financeReports.lucroLiquido)}</p>
+                                    </div>
+                                    <div className={`p-4 rounded-2xl ${financeReports.lucroLiquido >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                       {financeReports.lucroLiquido >= 0 ? <ArrowUpRight size={32} /> : <ArrowDownLeft size={32} />}
+                                    </div>
                                  </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* BALANCETE DE VERIFICAÇÃO - NOVO */}
+                        <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-sky-100 col-span-1 md:col-span-2">
+                           <div className="flex justify-between items-center mb-10">
+                              <div>
+                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-3">
+                                    <ListChecks size={24} className="text-yellow-500" /> Balancete de Verificação
+                                 </h3>
+                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Saldos Acumulados por Conta no Período</p>
+                              </div>
+                              <button
+                                 onClick={handleExportBalancete}
+                                 className="px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+                              >
+                                 Exportar Balancete
+                              </button>
+                           </div>
+                           <div className="overflow-hidden rounded-2xl border border-zinc-100">
+                              <table className="w-full text-left">
+                                 <thead>
+                                    <tr className="bg-zinc-900 text-white text-[9px] font-black uppercase tracking-[0.2em]">
+                                       <th className="px-8 py-5">Código</th>
+                                       <th className="px-8 py-5">Nome da Conta</th>
+                                       <th className="px-8 py-5 text-right">Saldo do Período</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-zinc-100">
+                                    {planoContas.filter(c => financeReports.saldos[c.codigo] !== 0).map(conta => (
+                                       <tr key={conta.id} className="text-xs hover:bg-zinc-50 transition-all font-bold">
+                                          <td className="px-8 py-4 font-mono text-zinc-500">{conta.codigo}</td>
+                                          <td className="px-8 py-4 uppercase text-zinc-800">{conta.nome}</td>
+                                          <td className={`px-8 py-4 text-right ${financeReports.saldos[conta.codigo] >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                             {safeFormatAOA(financeReports.saldos[conta.codigo])}
+                                          </td>
+                                       </tr>
+                                    ))}
+                                    {Object.values(financeReports.saldos).every(s => s === 0) && (
+                                       <tr><td colSpan={3} className="px-8 py-10 text-center text-zinc-400 italic">Sem movimentações no período selecionado.</td></tr>
+                                    )}
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+
+                        {/* RAZÃO (LEDGER) - NOVO COMPONENTE CORPORATIVO */}
+                        <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-sky-100 col-span-1 md:col-span-2">
+                           <div className="flex justify-between items-center mb-10">
+                              <div>
+                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-3">
+                                    <History size={24} className="text-yellow-500" /> Livro Razão Detalhado
+                                 </h3>
+                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Movimentações Analíticas por Conta</p>
+                              </div>
+                              <div className="flex gap-2">
+                                 <button className="p-3 bg-zinc-50 rounded-xl text-zinc-400 hover:text-zinc-900 transition-all"><Printer size={20} /></button>
+                                 <button className="p-3 bg-zinc-50 rounded-xl text-zinc-400 hover:text-zinc-900 transition-all"><Download size={20} /></button>
+                              </div>
+                           </div>
+                           <div className="space-y-6">
+                              {planoContas.filter(c => c.nivel === 1 || c.e_analitica).map(conta => {
+                                 const movimentos = lancamentos.filter(l =>
+                                    l.empresa_id === selectedEmpresaId &&
+                                    (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true) &&
+                                    l.itens?.some(it => it.conta_codigo === conta.codigo)
+                                 );
+                                 if (movimentos.length === 0) return null;
+
+                                 return (
+                                    <div key={conta.id} className="border border-zinc-100 rounded-[2rem] overflow-hidden">
+                                       <div className="bg-zinc-50 p-6 flex justify-between items-center border-b border-zinc-100">
+                                          <span className="font-black text-xs uppercase tracking-widest text-zinc-900">{conta.codigo} - {conta.nome}</span>
+                                          <span className="px-4 py-1.5 bg-zinc-900 text-white rounded-full text-[9px] font-black uppercase tracking-widest">Saldo: {safeFormatAOA(0)}</span>
+                                       </div>
+                                       <table className="w-full text-left">
+                                          <thead>
+                                             <tr className="text-[9px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100">
+                                                <th className="px-8 py-4">Data</th>
+                                                <th className="px-8 py-4">Descrição / Histórico</th>
+                                                <th className="px-8 py-4 text-right">Débito</th>
+                                                <th className="px-8 py-4 text-right">Crédito</th>
+                                             </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-zinc-50">
+                                             {(movimentos || []).map(m => {
+                                                const it = m?.itens?.find(i => i && i.conta_codigo === conta.codigo);
+                                                return (
+                                                   <tr key={m.id} className="text-xs hover:bg-zinc-50 transition-all">
+                                                      <td className="px-8 py-4 font-mono text-zinc-500">{m.data ? new Date(m.data).toLocaleDateString() : 'N/A'}</td>
+                                                      <td className="px-8 py-4 font-bold text-zinc-800 uppercase">{m.descricao || 'Sem Descrição'}</td>
+                                                      <td className="px-8 py-4 text-right font-bold text-green-600">{it?.tipo === 'D' ? safeFormatAOA(it.valor) : '-'}</td>
+                                                      <td className="px-8 py-4 text-right font-bold text-red-600">{it?.tipo === 'C' ? safeFormatAOA(it.valor) : '-'}</td>
+                                                   </tr>
+                                                );
+                                             })}
+                                          </tbody>
+                                       </table>
+                                    </div>
+                                 );
+                              })}
+                           </div>
+                        </div>
+                     </div>
+                  )
+               }
+
+               {/* --- IA CONSULTOR --- */}
+               {
+                  activeTab === 'ia' && (
+                     <div className="space-y-8 animate-in fade-in duration-700">
+                        <div className="bg-gradient-to-br from-indigo-950 via-zinc-900 to-black p-16 rounded-[4.5rem] text-white shadow-2xl relative overflow-hidden border border-indigo-500/30">
+                           <div className="absolute top-0 right-0 p-12 opacity-10 animate-pulse"><BrainCircuit size={240} /></div>
+                           <div className="relative z-10 max-w-4xl space-y-8">
+                              <div className="flex items-center gap-3">
+                                 <div className="px-4 py-1.5 bg-indigo-500/20 border border-indigo-500/50 rounded-full text-indigo-400 text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-2">
+                                    <Sparkles size={14} /> Cognitive Auditor
+                                 </div>
+                              </div>
+                              <h2 className="text-6xl font-black tracking-tighter leading-none">Auditoria <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-white">Inteligente Amazing.</span></h2>
+                              <p className="text-zinc-400 text-xl font-medium leading-relaxed max-w-2xl">Analise anomalias, otimize impostos e tome decisões baseadas em padrões de alto nível processados em tempo real.</p>
+                              <button
+                                 onClick={handleAIAnalysis}
+                                 disabled={isAnalyzing}
+                                 className="px-12 py-6 bg-indigo-600 hover:bg-indigo-500 rounded-3xl font-black uppercase text-sm tracking-widest shadow-2xl transition-all disabled:opacity-50 flex items-center gap-4"
+                              >
+                                 {isAnalyzing ? <RefreshCw className="animate-spin" /> : <ShieldAlert />}
+                                 {isAnalyzing ? 'Processando Balancetes...' : 'Gerar Relatório de Auditoria IA'}
+                              </button>
+                           </div>
+                        </div>
+
+                        {iaResponse && (
+                           <div className="bg-white p-16 rounded-[4rem] border-2 border-indigo-100 shadow-3xl animate-in zoom-in-95">
+                              <h4 className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-8 flex items-center gap-3"><CheckCircle2 /> Insights Gerados</h4>
+                              <div className="text-zinc-700 text-xl font-medium leading-relaxed italic whitespace-pre-wrap">{iaResponse}</div>
+                           </div>
+                        )}
+                     </div>
+                  )
+               }
+
+               {/* --- PLANO DE CONTAS INTELIGENTE (HIERÁRQUICO + CC) --- */}
+               {
+                  activeTab === 'plano' && (
+                     <div className="space-y-6 animate-in slide-in-from-bottom-4">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-8 rounded-[3rem] shadow-sm border border-sky-100">
+                           <div className="flex bg-zinc-100 p-1.5 rounded-2xl w-full md:w-fit">
+                              <button
+                                 onClick={() => setPlanoSubTab('contas')}
+                                 className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${planoSubTab === 'contas' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:text-zinc-600'}`}
+                              >
+                                 Plano de Contas
+                              </button>
+                              <button
+                                 onClick={() => setPlanoSubTab('cc')}
+                                 className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${planoSubTab === 'cc' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:text-zinc-600'}`}
+                              >
+                                 Centros de Custo
+                              </button>
+                           </div>
+
+                           <div className="flex gap-3 w-full md:w-auto">
+                              <button
+                                 onClick={handleImportPlanoPadrao}
+                                 className="flex-1 md:flex-none px-6 py-4 bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
+                              >
+                                 Importar PGC Padrão
+                              </button>
+                              <button
+                                 onClick={() => planoSubTab === 'contas' ? setShowAccountModal(true) : setShowCCModal(true)}
+                                 className="flex-1 md:flex-none px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl flex items-center justify-center gap-2"
+                              >
+                                 <Plus size={16} /> {planoSubTab === 'contas' ? 'Nova Conta' : 'Novo Centro'}
+                              </button>
+                           </div>
+                        </div>
+
+                        {planoSubTab === 'contas' ? (
+                           <div className="bg-white rounded-[3.5rem] shadow-sm border border-sky-100 overflow-hidden">
+                              <div className="p-8 border-b border-zinc-100 bg-zinc-50/30 flex justify-between items-center">
+                                 <div className="flex items-center gap-4">
+                                    <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Estatuto Orgânico de Contas (PGC)</h3>
+                                    <span className="px-3 py-1 bg-zinc-900 text-white text-[9px] font-black rounded-lg uppercase">{planoContas.length} Contas</span>
+                                 </div>
+                                 <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+                                    <input
+                                       type="text"
+                                       placeholder="Filtrar contas..."
+                                       className="pl-9 pr-4 py-2 bg-white border border-zinc-200 rounded-xl text-xs w-64 focus:ring-2 focus:ring-yellow-500/20"
+                                    />
+                                 </div>
+                              </div>
+                              <div className="overflow-x-auto">
                                  <table className="w-full text-left">
-                                    <thead>
-                                       <tr className="text-[9px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100">
-                                          <th className="px-8 py-4">Data</th>
-                                          <th className="px-8 py-4">Descrição / Histórico</th>
-                                          <th className="px-8 py-4 text-right">Débito</th>
-                                          <th className="px-8 py-4 text-right">Crédito</th>
+                                    <thead className="bg-zinc-900 text-white">
+                                       <tr className="text-[10px] font-black uppercase tracking-widest">
+                                          <th className="px-10 py-5">Código</th>
+                                          <th className="px-6 py-5">Descrição</th>
+                                          <th className="px-6 py-5">Tipo</th>
+                                          <th className="px-6 py-5">Natureza</th>
+                                          <th className="px-6 py-5 text-center">Status</th>
+                                          <th className="px-10 py-5 text-right">Ações</th>
                                        </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-zinc-50">
-                                       {(movimentos || []).map(m => {
-                                          const it = m?.itens?.find(i => i && i.conta_codigo === conta.codigo);
+                                    <tbody className="divide-y divide-zinc-100">
+                                       {planoContas.sort((a, b) => a.codigo.localeCompare(b.codigo)).map(c => {
+                                          const isRoot = !c.codigo.includes('.');
+                                          const parts = c.codigo.split('.');
+                                          const parentCode = parts.slice(0, -1).join('.');
+                                          const isVisible = isRoot || expandedAccounts.has(parentCode);
+                                          if (!isVisible) return null;
+
                                           return (
-                                             <tr key={m.id} className="text-xs hover:bg-zinc-50 transition-all">
-                                                <td className="px-8 py-4 font-mono text-zinc-500">{m.data ? new Date(m.data).toLocaleDateString() : 'N/A'}</td>
-                                                <td className="px-8 py-4 font-bold text-zinc-800 uppercase">{m.descricao || 'Sem Descrição'}</td>
-                                                <td className="px-8 py-4 text-right font-bold text-green-600">{it?.tipo === 'D' ? safeFormatAOA(it.valor) : '-'}</td>
-                                                <td className="px-8 py-4 text-right font-bold text-red-600">{it?.tipo === 'C' ? safeFormatAOA(it.valor) : '-'}</td>
+                                             <tr key={c.id} className={`group hover:bg-zinc-50 transition-all ${c.e_sintetica ? 'bg-zinc-50/30' : ''}`}>
+                                                <td className="px-10 py-4 font-mono text-xs font-bold text-zinc-500">
+                                                   <div className="flex items-center gap-2">
+                                                      {c.e_sintetica && (
+                                                         <button onClick={() => toggleAccount(c.codigo)} className="p-1 hover:bg-zinc-200 rounded-lg transition-all">
+                                                            {expandedAccounts.has(c.codigo) ? <ArrowDownLeft size={12} className="rotate-45" /> : <ArrowUpRight size={12} className="rotate-45" />}
+                                                         </button>
+                                                      )}
+                                                      {c.codigo}
+                                                   </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                   <div className="flex items-center gap-2" style={{ paddingLeft: `${(c.nivel || 1 - 1) * 20}px` }}>
+                                                      <span className={`${c.e_sintetica ? 'font-black text-zinc-900' : 'font-bold text-zinc-600'}`}>{c.nome}</span>
+                                                      {!c.aceita_lancamentos && <Lock size={10} className="text-zinc-300" title="Conta Sintética" />}
+                                                   </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                   <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${c.tipo === 'Ativo' ? 'bg-blue-50 text-blue-600' : c.tipo === 'Passivo' ? 'bg-orange-50 text-orange-600' : c.tipo === 'Capital' ? 'bg-purple-50 text-purple-600' : c.tipo === 'Receita' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                                      {c.tipo}
+                                                   </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                   <span className="text-[10px] font-bold text-zinc-400 uppercase">{c.natureza}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                   {c.aceita_lancamentos ? (
+                                                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-md text-[8px] font-black uppercase">Analítica</span>
+                                                   ) : (
+                                                      <span className="px-2 py-0.5 bg-zinc-200 text-zinc-600 rounded-md text-[8px] font-black uppercase">Sintética</span>
+                                                   )}
+                                                </td>
+                                                <td className="px-10 py-4 text-right">
+                                                   <button className="p-2 text-zinc-200 group-hover:text-zinc-900 transition-colors"><MoreVertical size={16} /></button>
+                                                </td>
                                              </tr>
                                           );
                                        })}
                                     </tbody>
                                  </table>
                               </div>
-                           );
-                        })}
-                     </div>
-                  </div>
-               </div>
-            )
-         }
-
-         {/* --- IA CONSULTOR --- */}
-         {
-            activeTab === 'ia' && (
-               <div className="space-y-8 animate-in fade-in duration-700">
-                  <div className="bg-gradient-to-br from-indigo-950 via-zinc-900 to-black p-16 rounded-[4.5rem] text-white shadow-2xl relative overflow-hidden border border-indigo-500/30">
-                     <div className="absolute top-0 right-0 p-12 opacity-10 animate-pulse"><BrainCircuit size={240} /></div>
-                     <div className="relative z-10 max-w-4xl space-y-8">
-                        <div className="flex items-center gap-3">
-                           <div className="px-4 py-1.5 bg-indigo-500/20 border border-indigo-500/50 rounded-full text-indigo-400 text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-2">
-                              <Sparkles size={14} /> Cognitive Auditor
                            </div>
-                        </div>
-                        <h2 className="text-6xl font-black tracking-tighter leading-none">Auditoria <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-white">Inteligente Amazing.</span></h2>
-                        <p className="text-zinc-400 text-xl font-medium leading-relaxed max-w-2xl">Analise anomalias, otimize impostos e tome decisões baseadas em padrões de alto nível processados em tempo real.</p>
-                        <button
-                           onClick={handleAIAnalysis}
-                           disabled={isAnalyzing}
-                           className="px-12 py-6 bg-indigo-600 hover:bg-indigo-500 rounded-3xl font-black uppercase text-sm tracking-widest shadow-2xl transition-all disabled:opacity-50 flex items-center gap-4"
-                        >
-                           {isAnalyzing ? <RefreshCw className="animate-spin" /> : <ShieldAlert />}
-                           {isAnalyzing ? 'Processando Balancetes...' : 'Gerar Relatório de Auditoria IA'}
-                        </button>
-                     </div>
-                  </div>
-
-                  {iaResponse && (
-                     <div className="bg-white p-16 rounded-[4rem] border-2 border-indigo-100 shadow-3xl animate-in zoom-in-95">
-                        <h4 className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-8 flex items-center gap-3"><CheckCircle2 /> Insights Gerados</h4>
-                        <div className="text-zinc-700 text-xl font-medium leading-relaxed italic whitespace-pre-wrap">{iaResponse}</div>
-                     </div>
-                  )}
-               </div>
-            )
-         }
-
-         {/* --- PLANO DE CONTAS INTELIGENTE (HIERÁRQUICO + CC) --- */}
-         {
-            activeTab === 'plano' && (
-               <div className="space-y-6 animate-in slide-in-from-bottom-4">
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-8 rounded-[3rem] shadow-sm border border-sky-100">
-                     <div className="flex bg-zinc-100 p-1.5 rounded-2xl w-full md:w-fit">
-                        <button
-                           onClick={() => setPlanoSubTab('contas')}
-                           className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${planoSubTab === 'contas' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:text-zinc-600'}`}
-                        >
-                           Plano de Contas
-                        </button>
-                        <button
-                           onClick={() => setPlanoSubTab('cc')}
-                           className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${planoSubTab === 'cc' ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:text-zinc-600'}`}
-                        >
-                           Centros de Custo
-                        </button>
-                     </div>
-
-                     <div className="flex gap-3 w-full md:w-auto">
-                        <button
-                           onClick={handleImportPlanoPadrao}
-                           className="flex-1 md:flex-none px-6 py-4 bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
-                        >
-                           Importar PGC Padrão
-                        </button>
-                        <button
-                           onClick={() => planoSubTab === 'contas' ? setShowAccountModal(true) : setShowCCModal(true)}
-                           className="flex-1 md:flex-none px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl flex items-center justify-center gap-2"
-                        >
-                           <Plus size={16} /> {planoSubTab === 'contas' ? 'Nova Conta' : 'Novo Centro'}
-                        </button>
-                     </div>
-                  </div>
-
-                  {planoSubTab === 'contas' ? (
-                     <div className="bg-white rounded-[3.5rem] shadow-sm border border-sky-100 overflow-hidden">
-                        <div className="p-8 border-b border-zinc-100 bg-zinc-50/30 flex justify-between items-center">
-                           <div className="flex items-center gap-4">
-                              <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Estatuto Orgânico de Contas (PGC)</h3>
-                              <span className="px-3 py-1 bg-zinc-900 text-white text-[9px] font-black rounded-lg uppercase">{planoContas.length} Contas</span>
-                           </div>
-                           <div className="relative">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-                              <input
-                                 type="text"
-                                 placeholder="Filtrar contas..."
-                                 className="pl-9 pr-4 py-2 bg-white border border-zinc-200 rounded-xl text-xs w-64 focus:ring-2 focus:ring-yellow-500/20"
-                              />
-                           </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                           <table className="w-full text-left">
-                              <thead className="bg-zinc-900 text-white">
-                                 <tr className="text-[10px] font-black uppercase tracking-widest">
-                                    <th className="px-10 py-5">Código</th>
-                                    <th className="px-6 py-5">Descrição</th>
-                                    <th className="px-6 py-5">Tipo</th>
-                                    <th className="px-6 py-5">Natureza</th>
-                                    <th className="px-6 py-5 text-center">Status</th>
-                                    <th className="px-10 py-5 text-right">Ações</th>
-                                 </tr>
-                              </thead>
-                              <tbody className="divide-y divide-zinc-100">
-                                 {planoContas.sort((a, b) => a.codigo.localeCompare(b.codigo)).map(c => {
-                                    const isRoot = !c.codigo.includes('.');
-                                    const parts = c.codigo.split('.');
-                                    const parentCode = parts.slice(0, -1).join('.');
-                                    const isVisible = isRoot || expandedAccounts.has(parentCode);
-                                    if (!isVisible) return null;
-
-                                    return (
-                                       <tr key={c.id} className={`group hover:bg-zinc-50 transition-all ${c.e_sintetica ? 'bg-zinc-50/30' : ''}`}>
-                                          <td className="px-10 py-4 font-mono text-xs font-bold text-zinc-500">
-                                             <div className="flex items-center gap-2">
-                                                {c.e_sintetica && (
-                                                   <button onClick={() => toggleAccount(c.codigo)} className="p-1 hover:bg-zinc-200 rounded-lg transition-all">
-                                                      {expandedAccounts.has(c.codigo) ? <ArrowDownLeft size={12} className="rotate-45" /> : <ArrowUpRight size={12} className="rotate-45" />}
-                                                   </button>
-                                                )}
-                                                {c.codigo}
-                                             </div>
-                                          </td>
-                                          <td className="px-6 py-4">
-                                             <div className="flex items-center gap-2" style={{ paddingLeft: `${(c.nivel || 1 - 1) * 20}px` }}>
-                                                <span className={`${c.e_sintetica ? 'font-black text-zinc-900' : 'font-bold text-zinc-600'}`}>{c.nome}</span>
-                                                {!c.aceita_lancamentos && <Lock size={10} className="text-zinc-300" title="Conta Sintética" />}
-                                             </div>
-                                          </td>
-                                          <td className="px-6 py-4">
-                                             <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${c.tipo === 'Ativo' ? 'bg-blue-50 text-blue-600' : c.tipo === 'Passivo' ? 'bg-orange-50 text-orange-600' : c.tipo === 'Capital' ? 'bg-purple-50 text-purple-600' : c.tipo === 'Receita' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                                {c.tipo}
+                        ) : (
+                           <div className="bg-white rounded-[3.5rem] shadow-sm border border-sky-100 overflow-hidden p-10">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                 {centrosCusto.length === 0 ? (
+                                    <div className="col-span-3 text-center py-20 bg-zinc-50 rounded-[3rem] border-2 border-dashed border-zinc-200">
+                                       <Landmark className="mx-auto text-zinc-300 mb-4" size={48} />
+                                       <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">Nenhum Centro de Custo configurado.</p>
+                                       <button onClick={() => setShowCCModal(true)} className="mt-4 px-6 py-3 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase">Definir primeiro centro</button>
+                                    </div>
+                                 ) : (
+                                    centrosCusto.map((cc, idx) => (
+                                       <div key={idx} className="p-8 rounded-[2.5rem] bg-zinc-50 border border-zinc-100 hover:border-yellow-200 transition-all group relative overflow-hidden">
+                                          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Landmark size={64} /></div>
+                                          <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">{cc.tipo}</p>
+                                          <h4 className="text-2xl font-black text-zinc-900 tracking-tighter mb-1 uppercase">{cc.nome}</h4>
+                                          <p className="text-[10px] font-mono text-zinc-400 font-bold uppercase mb-4">Código: {cc.codigo}</p>
+                                          <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-200">
+                                             <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase ${cc.ativo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {cc.ativo ? 'Ativo' : 'Inativo'}
                                              </span>
-                                          </td>
-                                          <td className="px-6 py-4">
-                                             <span className="text-[10px] font-bold text-zinc-400 uppercase">{c.natureza}</span>
-                                          </td>
-                                          <td className="px-6 py-4 text-center">
-                                             {c.aceita_lancamentos ? (
-                                                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-md text-[8px] font-black uppercase">Analítica</span>
-                                             ) : (
-                                                <span className="px-2 py-0.5 bg-zinc-200 text-zinc-600 rounded-md text-[8px] font-black uppercase">Sintética</span>
-                                             )}
-                                          </td>
-                                          <td className="px-10 py-4 text-right">
-                                             <button className="p-2 text-zinc-200 group-hover:text-zinc-900 transition-colors"><MoreVertical size={16} /></button>
-                                          </td>
-                                       </tr>
-                                    );
-                                 })}
-                              </tbody>
-                           </table>
-                        </div>
-                     </div>
-                  ) : (
-                     <div className="bg-white rounded-[3.5rem] shadow-sm border border-sky-100 overflow-hidden p-10">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                           {centrosCusto.length === 0 ? (
-                              <div className="col-span-3 text-center py-20 bg-zinc-50 rounded-[3rem] border-2 border-dashed border-zinc-200">
-                                 <Landmark className="mx-auto text-zinc-300 mb-4" size={48} />
-                                 <p className="text-zinc-500 font-bold uppercase text-xs tracking-widest">Nenhum Centro de Custo configurado.</p>
-                                 <button onClick={() => setShowCCModal(true)} className="mt-4 px-6 py-3 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase">Definir primeiro centro</button>
-                              </div>
-                           ) : (
-                              centrosCusto.map((cc, idx) => (
-                                 <div key={idx} className="p-8 rounded-[2.5rem] bg-zinc-50 border border-zinc-100 hover:border-yellow-200 transition-all group relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Landmark size={64} /></div>
-                                    <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">{cc.tipo}</p>
-                                    <h4 className="text-2xl font-black text-zinc-900 tracking-tighter mb-1 uppercase">{cc.nome}</h4>
-                                    <p className="text-[10px] font-mono text-zinc-400 font-bold uppercase mb-4">Código: {cc.codigo}</p>
-                                    <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-200">
-                                       <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase ${cc.ativo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                          {cc.ativo ? 'Ativo' : 'Inativo'}
-                                       </span>
-                                       <button className="text-zinc-400 hover:text-zinc-900"><MoreVertical size={16} /></button>
-                                    </div>
-                                 </div>
-                              ))
-                           )}
-                        </div>
-                     </div>
-                  )}
-               </div>
-            )
-         }
-
-         {/* --- GESTÃO DE PERÍODOS --- */}
-         {
-            activeTab === 'periodos' && (
-               <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                     <div className="bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
-                        <Calendar size={120} className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform" />
-                        <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-6">Controlo de Exercício</h4>
-                        <p className="text-3xl font-black mb-2">Ano 2024</p>
-                        <p className="text-xs text-zinc-500 font-bold uppercase">Exercício Corrente</p>
-                        <button
-                           onClick={handleOpenYear}
-                           className="mt-8 px-6 py-3 bg-white/10 hover:bg-yellow-500 hover:text-zinc-900 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
-                        >
-                           Abrir Novo Ano
-                        </button>
-                     </div>
-
-                     <div className="md:col-span-2 bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
-                        <div className="p-10 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                           <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Meses Contabilísticos</h3>
-                           <button
-                              onClick={handleOpenMonth}
-                              className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
-                           >
-                              <Plus size={18} /> Novo Mês
-                           </button>
-                        </div>
-                        <div className="divide-y divide-zinc-100">
-                           {periodos.filter(p => p.empresa_id === selectedEmpresaId).map(p => (
-                              <div key={p.id} className="p-8 flex items-center justify-between group hover:bg-zinc-50 transition-all">
-                                 <div className="flex items-center gap-6">
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${p.status === 'Aberto' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                       {p.status === 'Aberto' ? <CheckCircle2 size={24} /> : <Lock size={24} />}
-                                    </div>
-                                    <div>
-                                       <h4 className="font-black text-zinc-900 text-lg">{p.mes}/{p.ano}</h4>
-                                       <p className={`text-[10px] font-black uppercase tracking-widest ${p.status === 'Aberto' ? 'text-green-500' : 'text-red-500'}`}>{p.status}</p>
-                                    </div>
-                                 </div>
-                                 <div className="flex gap-4">
-                                    {p.status === 'Aberto' ? (
-                                       <button
-                                          onClick={() => handleClosePeriod(p.id)}
-                                          className="px-6 py-3 bg-zinc-100 text-zinc-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all"
-                                       >
-                                          Fechar Período
-                                       </button>
-                                    ) : (
-                                       <button className="px-6 py-3 bg-red-50 text-red-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center gap-2">
-                                          <ShieldAlert size={14} /> Reabrir (Audit)
-                                       </button>
-                                    )}
-                                    <button className="p-3 text-zinc-300 hover:text-zinc-900 transition-colors"><Search size={20} /></button>
-                                 </div>
-                              </div>
-                           ))}
-                           {periodos.filter(p => p.empresa_id === selectedEmpresaId).length === 0 && (
-                              <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum período contabilístico configurado para esta unidade.</div>
-                           )}
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            )
-         }
-
-         {/* --- CONCILIAÇÃO BANCÁRIA --- */}
-         {
-            activeTab === 'conciliacao' && (
-               <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                  <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
-                     <div className="p-10 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                        <div>
-                           <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Conciliação Bancária Inteligente</h3>
-                           <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Sincronização de extratos com lançamentos contabilísticos</p>
-                        </div>
-                        <div className="flex gap-4">
-                           <label className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer" title="Formato: Data,Descrição,Valor (Ex: 2024-05-15,Pagamento Fornecedor,-50000)">
-                              <RefreshCw size={18} /> Importar Extrato (CSV)
-                              <input type="file" className="hidden" accept=".csv" onChange={async (e) => {
-                                 const file = e.target.files?.[0];
-                                 if (!file) return;
-                                 const text = await file.text();
-                                 const rows = text.split('\n').filter(r => r.trim());
-                                 const batch = rows.slice(1).map(row => {
-                                    const parts = row.split(',');
-                                    return {
-                                       data: parts[0]?.trim(),
-                                       descricao: parts[1]?.trim(),
-                                       valor: parseFloat(parts[2]?.trim()),
-                                       empresa_id: selectedEmpresaId,
-                                       status: 'Pendente'
-                                    };
-                                 });
-                                 const { error } = await supabase.from('acc_extratos_bancarios').insert(batch);
-                                 if (error) alert('Erro ao importar extrato. Verifique o formato CSV (Data,Descrição,Valor).');
-                                 else fetchAccountingData();
-                              }} />
-                           </label>
-                        </div>
-                     </div>
-                     <div className="p-6">
-                        <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-zinc-900 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest mb-4 font-mono">
-                           <div className="col-span-2">Data</div>
-                           <div className="col-span-4">Descrição Bancária</div>
-                           <div className="col-span-2">Valor (Kz)</div>
-                           <div className="col-span-4">Sugestão de Lançamento</div>
-                        </div>
-                        <div className="space-y-3">
-                           {extratos.filter(e => e.empresa_id === selectedEmpresaId).map(ex => {
-                              const match = lancamentos.find(l =>
-                                 Math.abs(Number(l.valor) - Math.abs(ex.valor)) < 0.01 &&
-                                 Math.abs(new Date(l.data).getTime() - new Date(ex.data).getTime()) < 3 * 24 * 60 * 60 * 1000
-                              );
-                              return (
-                                 <div key={ex.id} className="grid grid-cols-12 gap-4 px-8 py-5 rounded-2xl items-center border border-zinc-50 hover:border-sky-100 transition-all">
-                                    <div className="col-span-2 text-xs font-bold text-zinc-500">{ex.data}</div>
-                                    <div className="col-span-4 text-xs font-black uppercase text-zinc-800">{ex.descricao}</div>
-                                    <div className="col-span-2 text-xs font-black text-zinc-900">{safeFormatAOA(ex.valor)}</div>
-                                    <div className="col-span-4 flex items-center justify-between">
-                                       {match ? (
-                                          <div className="flex items-center gap-2 text-[10px] font-black text-green-600 bg-green-50 px-3 py-1.5 rounded-xl border border-green-100 w-full group">
-                                             <div className="flex-1 flex items-center gap-2">
-                                                <CheckCircle2 size={14} /> Similar: {match.descricao}
-                                             </div>
-                                             <button
-                                                onClick={async () => {
-                                                   const { error } = await supabase.from('acc_extratos_bancarios').update({
-                                                      status: 'Conciliado',
-                                                      lancamento_id: match.id
-                                                   }).eq('id', ex.id);
-                                                   if (!error) fetchAccountingData();
-                                                }}
-                                                className="px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                             >
-                                                Confirmar
-                                             </button>
-                                          </div>
-                                       ) : (
-                                          <div className="flex items-center gap-2">
-                                             <div className="text-[10px] font-bold text-zinc-400 p-2 italic">Sem correspondência exacta</div>
-                                             <button
-                                                onClick={() => {
-                                                   setNewEntry({
-                                                      ...newEntry,
-                                                      descricao: ex.descricao,
-                                                      valor: Math.abs(ex.valor),
-                                                      data: ex.data
-                                                   });
-                                                   setShowEntryModal(true);
-                                                }}
-                                                className="px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all shadow-sm"
-                                             >
-                                                Novo Lançamento
-                                             </button>
-                                          </div>
-                                       )}
-                                    </div>
-                                 </div>
-                              );
-                           })}
-                           {extratos.filter(e => e.empresa_id === selectedEmpresaId).length === 0 && (
-                              <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum extrato importado. Carregue um ficheiro CSV para iniciar a conciliação.</div>
-                           )}
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            )
-         }
-
-         {/* --- AUDITORIA --- */}
-         {
-            activeTab === 'auditoria' && (
-               <div className="space-y-6 animate-in slide-in-from-bottom-4">
-
-                  {/* Painel de Status de Integridade */}
-                  <div className="bg-zinc-900 rounded-[3rem] p-10 flex flex-col md:flex-row gap-8 items-center justify-between">
-                     <div className="flex items-center gap-6">
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${!integrityResult ? 'bg-zinc-700' :
-                           integrityResult.status === 'OK' ? 'bg-green-500/20' : 'bg-red-500/20'
-                           }`}>
-                           {!integrityResult ? <ShieldCheck size={32} className="text-zinc-400" /> :
-                              integrityResult.status === 'OK'
-                                 ? <ShieldCheck size={32} className="text-green-400" />
-                                 : <ShieldAlert size={32} className="text-red-400" />}
-                        </div>
-                        <div>
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Ledger Imutável — Verificação de Integridade</p>
-                           {integrityResult ? (
-                              <>
-                                 <p className={`text-2xl font-black mt-1 ${integrityResult.status === 'OK' ? 'text-green-400' : 'text-red-400'}`}>
-                                    {integrityResult.status === 'OK' ? '✓ Integridade Verificada' : '⚠ Anomalias Detectadas'}
-                                 </p>
-                                 <p className="text-xs text-zinc-500 font-bold mt-1">
-                                    {integrityResult.unbalanced_entries === 0
-                                       ? 'Todos os lançamentos estão em equilíbrio (D=C).'
-                                       : `${integrityResult.unbalanced_entries} lançamento(s) com D≠C encontrado(s).`
-                                    } · {new Date(integrityResult.check_date).toLocaleString('pt-PT')}
-                                 </p>
-                              </>
-                           ) : (
-                              <p className="text-lg font-black text-zinc-300 mt-1">Clique para verificar a cadeia de blocos contábeis</p>
-                           )}
-                        </div>
-                     </div>
-                     <button
-                        onClick={() => { handleCheckLedgerIntegrity(); fetchLedgerEntries(); }}
-                        disabled={isCheckingIntegrity}
-                        className="flex items-center gap-3 px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50 shadow-lg shadow-yellow-500/20 flex-shrink-0"
-                     >
-                        {isCheckingIntegrity ? <RefreshCw size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                        {isCheckingIntegrity ? 'A verificar...' : 'Verificar Integridade'}
-                     </button>
-                  </div>
-
-                  {/* Blockchain Contábil */}
-                  {ledgerEntries.length > 0 && (
-                     <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
-                        <div className="p-8 border-b border-zinc-100 bg-zinc-50/50">
-                           <h4 className="text-sm font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
-                              <Lock size={16} className="text-yellow-500" /> Blockchain Contábil — Últimos {ledgerEntries.length} Blocos
-                           </h4>
-                        </div>
-                        <div className="divide-y divide-zinc-50">
-                           {ledgerEntries.map((entry, idx) => (
-                              <div key={entry.id} className="flex items-center gap-6 px-8 py-5 hover:bg-zinc-50/50 transition-colors">
-                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[10px] flex-shrink-0 ${idx === 0 ? 'bg-yellow-500 text-zinc-900' : 'bg-zinc-100 text-zinc-500'
-                                    }`}>{ledgerEntries.length - idx}</div>
-                                 <div className="flex-1 min-w-0">
-                                    <p className="font-mono text-[9px] text-zinc-400 truncate">HASH: {entry.hash}</p>
-                                    {entry.prev_hash && <p className="font-mono text-[9px] text-zinc-300 truncate">PREV: {entry.prev_hash}</p>}
-                                 </div>
-                                 <p className="text-[9px] font-mono text-zinc-300 flex-shrink-0">{new Date(entry.created_at).toLocaleString('pt-PT')}</p>
-                              </div>
-                           ))}
-                        </div>
-                     </div>
-                  )}
-
-                  {/* Logs do Sistema */}
-                  <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
-                     <div className="p-10 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
-                        <div>
-                           <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Rasto de Auditoria Imutável</h3>
-                           <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Registo completo de alterações e acessos fiscais</p>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-green-100">
-                           <ShieldCheck size={16} /> Sistema Protegido
-                        </div>
-                     </div>
-                     <div className="overflow-hidden">
-                        <div className="p-10 bg-zinc-50/30 border-b border-zinc-100">
-                           <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-6">Logs de Operação do Sistema</h4>
-                           <div className="space-y-4">
-                              {systemLogs.map(s => {
-                                 const safeDate = s?.created_at ? new Date(s.created_at) : null;
-                                 return (
-                                    <div key={s?.id || Math.random()} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-zinc-100 shadow-sm transition-all hover:shadow-md">
-                                       <div className="flex items-center gap-4">
-                                          <div className={`w-2 h-2 rounded-full ${s?.nivel === 'ERROR' ? 'bg-red-500 animate-pulse' : s?.nivel === 'WARN' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
-                                          <div>
-                                             <p className="text-xs font-black text-zinc-900 uppercase">{s?.evento || 'Evento'}</p>
-                                             <p className="text-[10px] text-zinc-400 font-bold">{s?.descricao || 'Sem descrição'}</p>
+                                             <button className="text-zinc-400 hover:text-zinc-900"><MoreVertical size={16} /></button>
                                           </div>
                                        </div>
-                                       <p className="text-[9px] font-mono text-zinc-300 font-black">
-                                          {safeDate && !isNaN(safeDate.getTime()) ? safeDate.toLocaleTimeString() : '--:--'}
-                                       </p>
-                                    </div>
-                                 );
-                              })}
-                              {systemLogs.length === 0 && <p className="text-[10px] font-bold text-zinc-300 italic text-center py-4">Nenhum evento operacional registado hoje.</p>}
+                                    ))
+                                 )}
+                              </div>
                            </div>
-                        </div>
-
-                        <table className="w-full text-left border-collapse">
-                           <thead>
-                              <tr className="bg-zinc-900 text-white text-[9px] font-black uppercase tracking-[0.2em]">
-                                 <th className="px-8 py-5">Data/Hora</th>
-                                 <th className="px-8 py-5">Ação</th>
-                                 <th className="px-8 py-5">Tabela</th>
-                                 <th className="px-8 py-5">Chave Registro</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-zinc-100">
-                              {auditLogs.map((log) => {
-                                 const safeDate = log?.created_at ? new Date(log.created_at) : null;
-                                 return (
-                                    <tr key={log?.id || Math.random()} className="text-xs hover:bg-zinc-50 transition-all font-bold group">
-                                       <td className="px-8 py-5 font-mono text-zinc-400 text-[10px]">
-                                          {safeDate && !isNaN(safeDate.getTime()) ? safeDate.toLocaleString('pt-PT') : 'Data Inválida'}
-                                       </td>
-                                       <td className="px-8 py-5">
-                                          <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${log?.acao === 'INSERT' ? 'bg-green-50 text-green-600' :
-                                             log?.acao === 'UPDATE' ? 'bg-sky-50 text-sky-600' :
-                                                'bg-red-50 text-red-600'
-                                             }`}>
-                                             {log?.acao || 'Ação'}
-                                          </span>
-                                       </td>
-                                       <td className="px-8 py-5">
-                                          <span className="text-zinc-900 uppercase tracking-tighter">{log?.tabela_nome || 'N/A'}</span>
-                                       </td>
-                                       <td className="px-8 py-5 font-mono text-zinc-300 text-[10px] group-hover:text-zinc-600 transition-colors">
-                                          {log?.registro_id || '---'}
-                                       </td>
-                                    </tr>
-                                 );
-                              })}
-                              {auditLogs.length === 0 && (
-                                 <tr>
-                                    <td colSpan={4} className="p-20 text-center text-zinc-400 font-bold italic">
-                                       Nenhum log de auditoria encontrado. As alterações serão registadas automaticamente.
-                                    </td>
-                                 </tr>
-                              )}
-                           </tbody>
-                        </table>
+                        )}
                      </div>
-                  </div>
-               </div>
-            )
-         }
+                  )
+               }
 
-         {/* --- PAYROLL --- */}
-         {
-            activeTab === 'folha' && (
-               <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                  <div className="flex flex-col md:flex-row justify-between items-center bg-zinc-900 p-12 rounded-[4rem] text-white shadow-3xl">
-                     <div>
-                        <h2 className="text-3xl font-black uppercase tracking-tight">Processamento de Salários</h2>
-                        <p className="text-zinc-400 text-lg font-medium">Ciclo: {periodos.find(p => p.id === selectedPeriodoId)?.mes || '00'}/{periodos.find(p => p.id === selectedPeriodoId)?.ano || '2024'}</p>
-                        <p className="text-yellow-500 text-xs font-bold uppercase tracking-widest mt-2">Empresa: {currentEmpresa?.nome || ''}</p>
-                     </div>
-                     <button
-                        onClick={runPayroll}
-                        disabled={isProcessingPayroll || periodos.find(p => p.id === selectedPeriodoId)?.status === 'Fechado'}
-                        className="px-10 py-5 bg-yellow-500 text-zinc-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-400 transition-all flex items-center gap-3 shadow-xl shadow-yellow-500/20 disabled:opacity-50"
-                     >
-                        {isProcessingPayroll ? <RefreshCw className="animate-spin" /> : <RefreshCw size={20} />}
-                        {isProcessingPayroll ? 'Processando Lote...' : 'Executar Lote Completo'}
-                     </button>
-                  </div>
+               {/* --- GESTÃO DE PERÍODOS --- */}
+               {
+                  activeTab === 'periodos' && (
+                     <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                           <div className="bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
+                              <Calendar size={120} className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform" />
+                              <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-6">Controlo de Exercício</h4>
+                              <p className="text-3xl font-black mb-2">Ano 2024</p>
+                              <p className="text-xs text-zinc-500 font-bold uppercase">Exercício Corrente</p>
+                              <button
+                                 onClick={handleOpenYear}
+                                 className="mt-8 px-6 py-3 bg-white/10 hover:bg-yellow-500 hover:text-zinc-900 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                              >
+                                 Abrir Novo Ano
+                              </button>
+                           </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                     {folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).map(f => (
-                        <div key={f.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm flex items-center justify-between group hover:shadow-xl transition-all">
-                           <div className="flex items-center gap-6">
-                              <div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 border border-zinc-100 group-hover:bg-zinc-900 group-hover:text-white transition-all">
-                                 <Users size={28} />
-                              </div>
-                              <div>
-                                 <h4 className="font-black text-zinc-900 text-lg leading-none mb-1">{f?.funcionario_nome || 'Funcionário'}</h4>
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Base: {safeFormatAOA(Number(f?.salario_base) || 0)}</p>
-                              </div>
-                           </div>
-                           <div className="hidden lg:grid grid-cols-3 gap-12 text-center border-x border-zinc-50 px-12 mx-8">
-                              <div>
-                                 <p className="text-[9px] font-black text-zinc-300 uppercase mb-1">INSS (3%)</p>
-                                 <p className="text-sm font-bold text-red-400">-{safeFormatAOA(Number(f?.inss_trabalhador) || 0)}</p>
-                              </div>
-                              <div>
-                                 <p className="text-[9px] font-black text-zinc-300 uppercase mb-1">IRT / Tax</p>
-                                 <p className="text-sm font-bold text-red-400">-{safeFormatAOA(Number(f?.irt) || 0)}</p>
-                              </div>
-                              <div>
-                                 <p className="text-[9px] font-black text-zinc-300 uppercase mb-1">Empresa (8%)</p>
-                                 <p className="text-sm font-bold text-zinc-400">{safeFormatAOA(Number(f?.inss_empresa) || 0)}</p>
-                              </div>
-                           </div>
-                           <div className="text-right">
-                              <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Líquido a Receber</p>
-                              <p className="text-2xl font-black text-zinc-900">{safeFormatAOA(Number(f?.salario_liquido) || 0)}</p>
-                           </div>
-                           <div className="flex gap-2">
-                              <button className="p-3 text-zinc-300 hover:text-zinc-600 transition-colors"><Printer size={20} /></button>
-                              <button className="p-3 text-zinc-300 hover:text-sky-600 transition-colors"><FileCheck size={20} /></button>
-                           </div>
-                        </div>
-                     ))}
-                  </div>
-               </div>
-            )
-         }
-
-         {/* --- FISCAL --- */}
-         {
-            activeTab === 'fiscal' && (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4">
-                  <div className="bg-white p-12 rounded-[4rem] shadow-sm border border-sky-100">
-                     <h3 className="text-xl font-black text-zinc-900 mb-10 uppercase tracking-tight flex items-center gap-3">
-                        <Calendar className="text-yellow-500" /> Agenda Fiscal {periodos.find(p => p.id === selectedPeriodoId)?.mes || ''}
-                     </h3>
-                     <div className="space-y-4">
-                        {[
-                           { t: 'IVA - Declaração Periódica', d: '2024-03-25', v: (Number(financeReports.receitaTotal) || 0) * ((currentEmpresa?.regime_agt === 'Simplificado' ? 0.07 : (currentEmpresa?.taxa_iva || 14) / 100)) },
-                           { t: 'INSS - Guia de Pagamento', d: '2024-03-10', v: folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.inss_trabalhador) || 0) + (Number(b.inss_empresa) || 0), 0) || 0 },
-                           { t: 'IRT - Retenções na Fonte', d: '2024-03-30', v: (currentEmpresa?.incidencia_irt !== false) ? (folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.irt) || 0), 0) || 0) : 0 },
-                           { t: 'II - Imposto Industrial (Estimativa)', d: '2024-05-31', v: (Number(financeReports.lucroLiquido) > 0 ? (Number(financeReports.lucroLiquido) * (currentEmpresa?.taxa_ii || 25) / 100) : 0) },
-                        ].map((o, i) => (
-                           <div key={i} className="flex items-center justify-between p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
-                              <div className="flex items-center gap-4">
-                                 <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center"><Landmark size={20} /></div>
-                                 <div><p className="font-black text-sm text-zinc-900">{o.t}</p><p className="text-[10px] font-black text-zinc-400 uppercase">Vence: {new Date(o.d).toLocaleDateString()}</p></div>
-                              </div>
-                              <p className="font-black text-zinc-900">{safeFormatAOA(o.v)}</p>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-
-                  <div className="bg-zinc-900 p-12 rounded-[4rem] text-white shadow-2xl flex flex-col justify-between overflow-hidden relative print-hidden">
-                     <FileText size={180} className="absolute -right-4 -bottom-4 opacity-5" />
-                     <div className="space-y-6">
-                        <h3 className="text-xl font-black uppercase tracking-tight">Carga Tributária Estimada</h3>
-                        <div className="space-y-8">
-                           <div className="space-y-2">
-                              <div className="flex justify-between text-[10px] font-black uppercase"><span>IVA Estimado</span><span>{safeFormatAOA(financeReports.receitaTotal * ((currentEmpresa?.taxa_iva || 14) / 100))}</span></div>
-                              <div className="h-2 bg-white/10 rounded-full"><div className="h-full bg-yellow-500" style={{ width: `${Math.min(100, (currentEmpresa?.taxa_iva || 14) * 5)}%` }}></div></div>
-                           </div>
-                           <div className="space-y-2">
-                              <div className="flex justify-between text-[10px] font-black uppercase"><span>Imp. Industrial ({currentEmpresa?.taxa_ii || 25}%)</span><span>{safeFormatAOA(financeReports.lucroLiquido > 0 ? financeReports.lucroLiquido * ((currentEmpresa?.taxa_ii || 25) / 100) : 0)}</span></div>
-                              <div className="h-2 bg-white/10 rounded-full"><div className="h-full bg-sky-400" style={{ width: '45%' }}></div></div>
-                           </div>
-                        </div>
-                     </div>
-                     <button
-                        onClick={handleExportFiscal}
-                        disabled={isExportingFiscal}
-                        className="w-full mt-10 py-5 bg-white/5 border border-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                     >
-                        {isExportingFiscal ? <RefreshCw className="animate-spin" /> : <Download size={20} />}
-                        {isExportingFiscal ? 'Gerando Mapas...' : 'Exportar Mapas Fiscais (PDF)'}
-                     </button>
-                  </div>
-               </div>
-            )
-         }
-
-         {/* --- MODAL RELATÓRIO COMPLETO --- */}
-         {
-            showReportModal && (
-               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                  <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                        <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                           <FileText className="text-yellow-500" /> Relatório Financeiro Detalhado
-                        </h2>
-                        <button onClick={() => setShowReportModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
-                     </div>
-                     <div className="p-10 space-y-8">
-                        <div className="grid grid-cols-2 gap-8">
-                           <div className="bg-green-50 p-6 rounded-3xl border border-green-100">
-                              <p className="text-[10px] font-black text-green-700 uppercase tracking-widest">Activo Total</p>
-                              <p className="text-2xl font-black text-green-900">{safeFormatAOA(financeReports.ativos)}</p>
-                           </div>
-                           <div className="bg-red-50 p-6 rounded-3xl border border-red-100">
-                              <p className="text-[10px] font-black text-red-700 uppercase tracking-widest">Passivo Total</p>
-                              <p className="text-2xl font-black text-red-900">{safeFormatAOA(financeReports.passivos)}</p>
-                           </div>
-                        </div>
-
-                        <div className="space-y-4">
-                           <h3 className="text-sm font-black text-zinc-900 uppercase">Indicadores de Liquidez</h3>
-                           <div className="space-y-2">
-                              <div className="flex justify-between text-sm">
-                                 <span className="text-zinc-500 font-bold">Liquidez Geral</span>
-                                 <span className="font-black text-zinc-900">1.45</span>
-                              </div>
-                              <div className="w-full bg-zinc-100 rounded-full h-2">
-                                 <div className="bg-sky-500 h-2 rounded-full w-[60%]"></div>
-                              </div>
-                           </div>
-                           <div className="space-y-2">
-                              <div className="flex justify-between text-sm">
-                                 <span className="text-zinc-500 font-bold">Solvência</span>
-                                 <span className="font-black text-zinc-900">2.10</span>
-                              </div>
-                              <div className="w-full bg-zinc-100 rounded-full h-2">
-                                 <div className="bg-green-500 h-2 rounded-full w-[80%]"></div>
-                              </div>
-                           </div>
-                        </div>
-
-                        <div className="bg-zinc-900 text-white p-6 rounded-3xl flex justify-between items-center">
-                           <div>
-                              <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Capital Próprio</p>
-                              <p className="text-xl font-bold mt-1">Reservas: {safeFormatAOA(financeReports.capital)}</p>
-                           </div>
-                           <div className="text-right">
-                              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Resultado Líquido</p>
-                              <p className={`text-2xl font-black ${financeReports.lucroLiquido >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                 {safeFormatAOA(financeReports.lucroLiquido)}
-                              </p>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            )
-         }
-
-         {/* --- MODAL NOVO LANÇAMENTO (DIÁRIO) --- */}
-         {
-            showEntryModal && (
-               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                  <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                        <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                           <BookOpen className="text-yellow-500" /> Novo Lançamento Contábil
-                        </h2>
-                        <button onClick={() => setShowEntryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
-                     </div>
-
-                     {/* Modelos Pré-definidos */}
-                     {regrasAutomaticas.length > 0 && (
-                        <div className="px-8 pt-6 pb-2">
-                           <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Modelos Pré-definidos</p>
-                           <div className="flex flex-wrap gap-2">
-                              {[
-                                 { label: 'Venda', debito: '3.1', credito: '6.1' },
-                                 { label: 'Compra Stock', debito: '2.1', credito: '3.2' },
-                                 { label: 'Salários', debito: '7.2', credito: '1.1' },
-                                 { label: 'Pagamento Fornecedor', debito: '4.1', credito: '1.1' },
-                                 { label: 'Recibo de Cliente', debito: '1.1', credito: '3.1' },
-                                 ...regrasAutomaticas.map(r => ({ label: r.nome, debito: r.conta_debito_codigo, credito: r.conta_credito_codigo }))
-                              ].filter((v, i, a) => a.findIndex(x => x.label === v.label) === i).map((modelo, i) => (
-                                 <button key={i} type="button"
-                                    onClick={() => setNewEntry(prev => ({ ...prev, contaDebito: modelo.debito, contaCredito: modelo.credito, descricao: prev.descricao || modelo.label }))}
-                                    className="px-3 py-1.5 bg-zinc-50 border border-zinc-200 hover:bg-yellow-50 hover:border-yellow-300 text-zinc-600 hover:text-yellow-700 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">
-                                    {modelo.label}
+                           <div className="md:col-span-2 bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
+                              <div className="p-10 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Meses Contabilísticos</h3>
+                                 <button
+                                    onClick={handleOpenMonth}
+                                    className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
+                                 >
+                                    <Plus size={18} /> Novo Mês
                                  </button>
-                              ))}
+                              </div>
+                              <div className="divide-y divide-zinc-100">
+                                 {periodos.filter(p => p.empresa_id === selectedEmpresaId).map(p => (
+                                    <div key={p.id} className="p-8 flex items-center justify-between group hover:bg-zinc-50 transition-all">
+                                       <div className="flex items-center gap-6">
+                                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${p.status === 'Aberto' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                             {p.status === 'Aberto' ? <CheckCircle2 size={24} /> : <Lock size={24} />}
+                                          </div>
+                                          <div>
+                                             <h4 className="font-black text-zinc-900 text-lg">{p.mes}/{p.ano}</h4>
+                                             <p className={`text-[10px] font-black uppercase tracking-widest ${p.status === 'Aberto' ? 'text-green-500' : 'text-red-500'}`}>{p.status}</p>
+                                          </div>
+                                       </div>
+                                       <div className="flex gap-4">
+                                          {p.status === 'Aberto' ? (
+                                             <button
+                                                onClick={() => handleClosePeriod(p.id)}
+                                                className="px-6 py-3 bg-zinc-100 text-zinc-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all"
+                                             >
+                                                Fechar Período
+                                             </button>
+                                          ) : (
+                                             <button className="px-6 py-3 bg-red-50 text-red-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center gap-2">
+                                                <ShieldAlert size={14} /> Reabrir (Audit)
+                                             </button>
+                                          )}
+                                          <button className="p-3 text-zinc-300 hover:text-zinc-900 transition-colors"><Search size={20} /></button>
+                                       </div>
+                                    </div>
+                                 ))}
+                                 {periodos.filter(p => p.empresa_id === selectedEmpresaId).length === 0 && (
+                                    <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum período contabilístico configurado para esta unidade.</div>
+                                 )}
+                              </div>
                            </div>
                         </div>
-                     )}
+                     </div>
+                  )
+               }
 
-                     <div className="px-8 pt-4 pb-2">
-                        <div
-                           onClick={async () => {
-                              alert("Funcionalidade de Scanner de Documentos Activa. Seleccione um PDF para análise via Amazing IA.");
-                              setTimeout(() => {
-                                 setNewEntry({
-                                    ...newEntry,
-                                    descricao: 'Factura 2024/042 - Serviços de Consultoria',
-                                    valor: 150000,
-                                    data: '2024-03-22'
-                                 });
-                                 handleAISuggestAccounts('Factura 2024/042 - Serviços de Consultoria');
-                              }, 2000);
-                           }}
-                           className="bg-yellow-50 border-2 border-dashed border-yellow-200 rounded-2xl p-4 flex items-center justify-center gap-3 cursor-pointer hover:bg-yellow-100 transition-all group"
-                        >
-                           <Sparkles className="text-yellow-600 group-hover:scale-125 transition-transform" />
-                           <span className="text-[10px] font-black uppercase text-yellow-700">Digitalizar Documento (PDF/IA)</span>
+               {/* --- CONCILIAÇÃO BANCÁRIA --- */}
+               {
+                  activeTab === 'conciliacao' && (
+                     <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                        <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
+                           <div className="p-10 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                              <div>
+                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Conciliação Bancária Inteligente</h3>
+                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Sincronização de extratos com lançamentos contabilísticos</p>
+                              </div>
+                              <div className="flex gap-4">
+                                 <label className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer" title="Formato: Data,Descrição,Valor (Ex: 2024-05-15,Pagamento Fornecedor,-50000)">
+                                    <RefreshCw size={18} /> Importar Extrato (CSV)
+                                    <input type="file" className="hidden" accept=".csv" onChange={async (e) => {
+                                       const file = e.target.files?.[0];
+                                       if (!file) return;
+                                       const text = await file.text();
+                                       const rows = text.split('\n').filter(r => r.trim());
+                                       const batch = rows.slice(1).map(row => {
+                                          const parts = row.split(',');
+                                          return {
+                                             data: parts[0]?.trim(),
+                                             descricao: parts[1]?.trim(),
+                                             valor: parseFloat(parts[2]?.trim()),
+                                             empresa_id: selectedEmpresaId,
+                                             status: 'Pendente'
+                                          };
+                                       });
+                                       const { error } = await supabase.from('acc_extratos_bancarios').insert(batch);
+                                       if (error) alert('Erro ao importar extrato. Verifique o formato CSV (Data,Descrição,Valor).');
+                                       else fetchAccountingData();
+                                    }} />
+                                 </label>
+                              </div>
+                           </div>
+                           <div className="p-6">
+                              <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-zinc-900 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest mb-4 font-mono">
+                                 <div className="col-span-2">Data</div>
+                                 <div className="col-span-4">Descrição Bancária</div>
+                                 <div className="col-span-2">Valor (Kz)</div>
+                                 <div className="col-span-4">Sugestão de Lançamento</div>
+                              </div>
+                              <div className="space-y-3">
+                                 {extratos.filter(e => e.empresa_id === selectedEmpresaId).map(ex => {
+                                    const match = lancamentos.find(l =>
+                                       Math.abs(Number(l.valor) - Math.abs(ex.valor)) < 0.01 &&
+                                       Math.abs(new Date(l.data).getTime() - new Date(ex.data).getTime()) < 3 * 24 * 60 * 60 * 1000
+                                    );
+                                    return (
+                                       <div key={ex.id} className="grid grid-cols-12 gap-4 px-8 py-5 rounded-2xl items-center border border-zinc-50 hover:border-sky-100 transition-all">
+                                          <div className="col-span-2 text-xs font-bold text-zinc-500">{ex.data}</div>
+                                          <div className="col-span-4 text-xs font-black uppercase text-zinc-800">{ex.descricao}</div>
+                                          <div className="col-span-2 text-xs font-black text-zinc-900">{safeFormatAOA(ex.valor)}</div>
+                                          <div className="col-span-4 flex items-center justify-between">
+                                             {match ? (
+                                                <div className="flex items-center gap-2 text-[10px] font-black text-green-600 bg-green-50 px-3 py-1.5 rounded-xl border border-green-100 w-full group">
+                                                   <div className="flex-1 flex items-center gap-2">
+                                                      <CheckCircle2 size={14} /> Similar: {match.descricao}
+                                                   </div>
+                                                   <button
+                                                      onClick={async () => {
+                                                         const { error } = await supabase.from('acc_extratos_bancarios').update({
+                                                            status: 'Conciliado',
+                                                            lancamento_id: match.id
+                                                         }).eq('id', ex.id);
+                                                         if (!error) fetchAccountingData();
+                                                      }}
+                                                      className="px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                                   >
+                                                      Confirmar
+                                                   </button>
+                                                </div>
+                                             ) : (
+                                                <div className="flex items-center gap-2">
+                                                   <div className="text-[10px] font-bold text-zinc-400 p-2 italic">Sem correspondência exacta</div>
+                                                   <button
+                                                      onClick={() => {
+                                                         setNewEntry({
+                                                            ...newEntry,
+                                                            descricao: ex.descricao,
+                                                            valor: Math.abs(ex.valor),
+                                                            data: ex.data
+                                                         });
+                                                         setShowEntryModal(true);
+                                                      }}
+                                                      className="px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all shadow-sm"
+                                                   >
+                                                      Novo Lançamento
+                                                   </button>
+                                                </div>
+                                             )}
+                                          </div>
+                                       </div>
+                                    );
+                                 })}
+                                 {extratos.filter(e => e.empresa_id === selectedEmpresaId).length === 0 && (
+                                    <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum extrato importado. Carregue um ficheiro CSV para iniciar a conciliação.</div>
+                                 )}
+                              </div>
+                           </div>
                         </div>
                      </div>
-                     <form onSubmit={handleNewEntry} className="p-8 space-y-6">
-                        <div className="relative group">
-                           <Input name="descricao" label="Histórico / Descrição" required
-                              value={newEntry.descricao} onChange={e => setNewEntry({ ...newEntry, descricao: e.target.value })}
-                              placeholder="Ex: Pagamento de Fornecedor X"
-                           />
+                  )
+               }
+
+               {/* --- AUDITORIA --- */}
+               {
+                  activeTab === 'auditoria' && (
+                     <div className="space-y-6 animate-in slide-in-from-bottom-4">
+
+                        {/* Painel de Status de Integridade */}
+                        <div className="bg-zinc-900 rounded-[3rem] p-10 flex flex-col md:flex-row gap-8 items-center justify-between">
+                           <div className="flex items-center gap-6">
+                              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${!integrityResult ? 'bg-zinc-700' :
+                                 integrityResult.status === 'OK' ? 'bg-green-500/20' : 'bg-red-500/20'
+                                 }`}>
+                                 {!integrityResult ? <ShieldCheck size={32} className="text-zinc-400" /> :
+                                    integrityResult.status === 'OK'
+                                       ? <ShieldCheck size={32} className="text-green-400" />
+                                       : <ShieldAlert size={32} className="text-red-400" />}
+                              </div>
+                              <div>
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Ledger Imutável — Verificação de Integridade</p>
+                                 {integrityResult ? (
+                                    <>
+                                       <p className={`text-2xl font-black mt-1 ${integrityResult.status === 'OK' ? 'text-green-400' : 'text-red-400'}`}>
+                                          {integrityResult.status === 'OK' ? '✓ Integridade Verificada' : '⚠ Anomalias Detectadas'}
+                                       </p>
+                                       <p className="text-xs text-zinc-500 font-bold mt-1">
+                                          {integrityResult.unbalanced_entries === 0
+                                             ? 'Todos os lançamentos estão em equilíbrio (D=C).'
+                                             : `${integrityResult.unbalanced_entries} lançamento(s) com D≠C encontrado(s).`
+                                          } · {new Date(integrityResult.check_date).toLocaleString('pt-PT')}
+                                       </p>
+                                    </>
+                                 ) : (
+                                    <p className="text-lg font-black text-zinc-300 mt-1">Clique para verificar a cadeia de blocos contábeis</p>
+                                 )}
+                              </div>
+                           </div>
                            <button
-                              type="button"
-                              onClick={() => handleAISuggestAccounts(newEntry.descricao)}
-                              disabled={isSuggestingAccounts || !newEntry.descricao}
-                              className="absolute right-3 top-9 p-2 bg-zinc-900 text-yellow-500 rounded-lg hover:bg-yellow-500 hover:text-zinc-900 transition-all disabled:opacity-50"
-                              title="Sugerir Contas (IA)"
+                              onClick={() => { handleCheckLedgerIntegrity(); fetchLedgerEntries(); }}
+                              disabled={isCheckingIntegrity}
+                              className="flex items-center gap-3 px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50 shadow-lg shadow-yellow-500/20 flex-shrink-0"
                            >
-                              {isSuggestingAccounts ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                              {isCheckingIntegrity ? <RefreshCw size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                              {isCheckingIntegrity ? 'A verificar...' : 'Verificar Integridade'}
                            </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
-                           <Select name="contaDebito" label="Conta a Debitar"
-                              value={newEntry.contaDebito} onChange={e => setNewEntry({ ...newEntry, contaDebito: e.target.value })}
-                              options={planoContas.filter(c => c.natureza === 'Devedora' || c.tipo === 'Despesa').map(c => ({ value: c.codigo, label: `${c.codigo} - ${c.nome}` }))}
-                           />
-                           <Select
-                              label="Conta de Crédito"
-                              value={newEntry.contaCredito}
-                              onChange={(e) => setNewEntry({ ...newEntry, contaCredito: e.target.value })}
-                              options={planoContas.filter(c => c.natureza === 'Credora' || c.codigo === '1.1').map(c => ({ value: c.codigo, label: `${c.codigo} - ${c.nome}` }))}
-                           />
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                           <Input name="valor" label="Valor (AOA)" type="number" required
-                              value={newEntry.valor} onChange={e => setNewEntry({ ...newEntry, valor: Number(e.target.value) })}
-                           />
-                           <Input name="data" label="Data" type="date" required
-                              value={newEntry.data} onChange={e => setNewEntry({ ...newEntry, data: e.target.value })}
-                           />
-                        </div>
-                        {/* Indicador de validação D = C em tempo real */}
-                        {(() => {
-                           const debitoConta = planoContas.find(c => c.codigo === newEntry.contaDebito);
-                           const creditoConta = planoContas.find(c => c.codigo === newEntry.contaCredito);
-                           const valOk = newEntry.valor > 0 && debitoConta && creditoConta && newEntry.contaDebito !== newEntry.contaCredito;
-                           return (
-                              <div className={`flex items-center justify-between p-4 rounded-2xl border-2 ${valOk ? 'bg-green-50 border-green-200' : 'bg-zinc-50 border-zinc-200'}`}>
-                                 <div className="flex items-center gap-2">
-                                    <div className={`w-2.5 h-2.5 rounded-full ${valOk ? 'bg-green-500' : 'bg-zinc-300'}`} />
-                                    <span className={`text-[9px] font-black uppercase tracking-widest ${valOk ? 'text-green-700' : 'text-zinc-400'}`}>
-                                       {valOk ? 'Débito = Crédito — Lançamento equilibrado' : 'Selecione contas e valor para validar'}
-                                    </span>
-                                 </div>
-                                 {valOk && <span className="text-[9px] font-black text-green-700 bg-green-100 px-2 py-1 rounded-lg">D = C = {safeFormatAOA(newEntry.valor)}</span>}
+                        {/* Blockchain Contábil */}
+                        {ledgerEntries.length > 0 && (
+                           <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
+                              <div className="p-8 border-b border-zinc-100 bg-zinc-50/50">
+                                 <h4 className="text-sm font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
+                                    <Lock size={16} className="text-yellow-500" /> Blockchain Contábil — Últimos {ledgerEntries.length} Blocos
+                                 </h4>
                               </div>
-                           );
-                        })()}
-                        <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
-                           <Save size={18} /> Confirmar Lançamento
-                        </button>
-                     </form>
-                  </div>
-               </div>
-            )
-         }
-         {/* ===== MODAL DE COMPRAS ===== */}
-         {showCompraModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-               <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-orange-50">
-                     <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                        <ShoppingCart className="text-orange-500" size={24} /> Registar Compra
-                     </h2>
-                     <button onClick={() => setShowCompraModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
-                  </div>
-                  <form onSubmit={handleSaveCompra} className="p-8 space-y-5">
-                     <div className="grid grid-cols-2 gap-4">
-                        <Input name="numero_compra" label="N.º Compra" value={newCompra.numero_compra}
-                           onChange={e => setNewCompra({ ...newCompra, numero_compra: e.target.value })} placeholder="COMP-001" />
-                        <Input name="data_compra" label="Data" type="date" required value={newCompra.data_compra}
-                           onChange={e => setNewCompra({ ...newCompra, data_compra: e.target.value })} />
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <Input name="fornecedor_nome" label="Fornecedor" required value={newCompra.fornecedor_nome}
-                           onChange={e => setNewCompra({ ...newCompra, fornecedor_nome: e.target.value })} placeholder="Nome do fornecedor" />
-                        <Input name="fornecedor_nif" label="NIF Fornecedor" value={newCompra.fornecedor_nif}
-                           onChange={e => setNewCompra({ ...newCompra, fornecedor_nif: e.target.value })} placeholder="000000000" />
-                     </div>
-                     <Input name="descricao" label="Descrição / Artigos" value={newCompra.descricao}
-                        onChange={e => setNewCompra({ ...newCompra, descricao: e.target.value })} placeholder="Ex: Aquisição de materiais de escritório" />
-                     <div className="grid grid-cols-3 gap-4">
-                        <Input name="valor_total" label="Valor Total (AOA)" type="number" required value={newCompra.valor_total}
-                           onChange={e => setNewCompra({ ...newCompra, valor_total: Number(e.target.value) })} />
-                        <Input name="iva" label="IVA (AOA)" type="number" value={newCompra.iva}
-                           onChange={e => setNewCompra({ ...newCompra, iva: Number(e.target.value) })} />
-                        <div>
-                           <label className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Categoria</label>
-                           <select value={newCompra.categoria} onChange={e => setNewCompra({ ...newCompra, categoria: e.target.value })}
-                              className="w-full border border-zinc-200 rounded-xl p-2.5 text-xs font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                              {['Mercadorias', 'Serviços', 'Imobilizado', 'Matérias-Primas', 'Outros'].map(c => (
-                                 <option key={c} value={c}>{c}</option>
-                              ))}
-                           </select>
-                        </div>
-                     </div>
-                     {/* Preview lançamento automático */}
-                     {newCompra.valor_total > 0 && (
-                        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
-                           <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2">Lançamento Automático Gerado</p>
-                           <div className="flex justify-between text-xs font-bold text-zinc-700">
-                              <span>D: 2.1 Inventário / Activos</span>
-                              <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
+                              <div className="divide-y divide-zinc-50">
+                                 {ledgerEntries.map((entry, idx) => (
+                                    <div key={entry.id} className="flex items-center gap-6 px-8 py-5 hover:bg-zinc-50/50 transition-colors">
+                                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[10px] flex-shrink-0 ${idx === 0 ? 'bg-yellow-500 text-zinc-900' : 'bg-zinc-100 text-zinc-500'
+                                          }`}>{ledgerEntries.length - idx}</div>
+                                       <div className="flex-1 min-w-0">
+                                          <p className="font-mono text-[9px] text-zinc-400 truncate">HASH: {entry.hash}</p>
+                                          {entry.prev_hash && <p className="font-mono text-[9px] text-zinc-300 truncate">PREV: {entry.prev_hash}</p>}
+                                       </div>
+                                       <p className="text-[9px] font-mono text-zinc-300 flex-shrink-0">{new Date(entry.created_at).toLocaleString('pt-PT')}</p>
+                                    </div>
+                                 ))}
+                              </div>
                            </div>
-                           <div className="flex justify-between text-xs font-bold text-zinc-700">
-                              <span>C: 3.2 Fornecedores / Contas a Pagar</span>
-                              <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
+                        )}
+
+                        {/* Logs do Sistema */}
+                        <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
+                           <div className="p-10 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+                              <div>
+                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Rasto de Auditoria Imutável</h3>
+                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Registo completo de alterações e acessos fiscais</p>
+                              </div>
+                              <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-green-100">
+                                 <ShieldCheck size={16} /> Sistema Protegido
+                              </div>
+                           </div>
+                           <div className="overflow-hidden">
+                              <div className="p-10 bg-zinc-50/30 border-b border-zinc-100">
+                                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-6">Logs de Operação do Sistema</h4>
+                                 <div className="space-y-4">
+                                    {systemLogs.map(s => {
+                                       const safeDate = s?.created_at ? new Date(s.created_at) : null;
+                                       return (
+                                          <div key={s?.id || Math.random()} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-zinc-100 shadow-sm transition-all hover:shadow-md">
+                                             <div className="flex items-center gap-4">
+                                                <div className={`w-2 h-2 rounded-full ${s?.nivel === 'ERROR' ? 'bg-red-500 animate-pulse' : s?.nivel === 'WARN' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                                                <div>
+                                                   <p className="text-xs font-black text-zinc-900 uppercase">{s?.evento || 'Evento'}</p>
+                                                   <p className="text-[10px] text-zinc-400 font-bold">{s?.descricao || 'Sem descrição'}</p>
+                                                </div>
+                                             </div>
+                                             <p className="text-[9px] font-mono text-zinc-300 font-black">
+                                                {safeDate && !isNaN(safeDate.getTime()) ? safeDate.toLocaleTimeString() : '--:--'}
+                                             </p>
+                                          </div>
+                                       );
+                                    })}
+                                    {systemLogs.length === 0 && <p className="text-[10px] font-bold text-zinc-300 italic text-center py-4">Nenhum evento operacional registado hoje.</p>}
+                                 </div>
+                              </div>
+
+                              <table className="w-full text-left border-collapse">
+                                 <thead>
+                                    <tr className="bg-zinc-900 text-white text-[9px] font-black uppercase tracking-[0.2em]">
+                                       <th className="px-8 py-5">Data/Hora</th>
+                                       <th className="px-8 py-5">Ação</th>
+                                       <th className="px-8 py-5">Tabela</th>
+                                       <th className="px-8 py-5">Chave Registro</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-zinc-100">
+                                    {auditLogs.map((log) => {
+                                       const safeDate = log?.created_at ? new Date(log.created_at) : null;
+                                       return (
+                                          <tr key={log?.id || Math.random()} className="text-xs hover:bg-zinc-50 transition-all font-bold group">
+                                             <td className="px-8 py-5 font-mono text-zinc-400 text-[10px]">
+                                                {safeDate && !isNaN(safeDate.getTime()) ? safeDate.toLocaleString('pt-PT') : 'Data Inválida'}
+                                             </td>
+                                             <td className="px-8 py-5">
+                                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${log?.acao === 'INSERT' ? 'bg-green-50 text-green-600' :
+                                                   log?.acao === 'UPDATE' ? 'bg-sky-50 text-sky-600' :
+                                                      'bg-red-50 text-red-600'
+                                                   }`}>
+                                                   {log?.acao || 'Ação'}
+                                                </span>
+                                             </td>
+                                             <td className="px-8 py-5">
+                                                <span className="text-zinc-900 uppercase tracking-tighter">{log?.tabela_nome || 'N/A'}</span>
+                                             </td>
+                                             <td className="px-8 py-5 font-mono text-zinc-300 text-[10px] group-hover:text-zinc-600 transition-colors">
+                                                {log?.registro_id || '---'}
+                                             </td>
+                                          </tr>
+                                       );
+                                    })}
+                                    {auditLogs.length === 0 && (
+                                       <tr>
+                                          <td colSpan={4} className="p-20 text-center text-zinc-400 font-bold italic">
+                                             Nenhum log de auditoria encontrado. As alterações serão registadas automaticamente.
+                                          </td>
+                                       </tr>
+                                    )}
+                                 </tbody>
+                              </table>
                            </div>
                         </div>
-                     )}
-                     <button type="submit" disabled={isSavingCompra}
-                        className="w-full py-5 bg-orange-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-orange-600 transition-all disabled:opacity-50">
-                        {isSavingCompra ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-                        {isSavingCompra ? 'A Guardar...' : 'Registar Compra + Contabilizar'}
-                     </button>
-                  </form>
-               </div>
-            </div>
-         )}
+                     </div>
+                  )
+               }
 
-         {/* ===== PAINEL DE APROVAÇÃO PENDENTE (badge flutuante) ===== */}
-         {pendingApproval.length > 0 && (
-            <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
-               <button onClick={() => setShowApprovalModal(true)}
-                  className="flex items-center gap-3 bg-yellow-500 text-zinc-900 px-5 py-4 rounded-2xl shadow-2xl font-black text-sm hover:bg-yellow-400 transition-all">
-                  <div className="relative">
-                     <CheckCircle2 size={22} />
-                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
-                        {pendingApproval.length}
-                     </span>
-                  </div>
-                  {pendingApproval.length} Lançamento{pendingApproval.length > 1 ? 's' : ''} Aguarda{pendingApproval.length === 1 ? '' : 'm'} Aprovação
-               </button>
-            </div>
-         )}
-
-         {/* ===== MODAL DE APROVAÇÃO ===== */}
-         {showApprovalModal && (
-            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-               <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-yellow-50">
-                     <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                        <CheckCircle2 className="text-yellow-500" size={24} /> Aprovação de Lançamentos
-                     </h2>
-                     <button onClick={() => { setShowApprovalModal(false); setApprovalTarget(null); setApprovalObs(''); }} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
-                  </div>
-                  {approvalTarget ? (
-                     // Detalhe do lançamento a aprovar
-                     <div className="p-8 space-y-5">
-                        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4">
-                           <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">Lançamento</p>
-                           <p className="font-black text-zinc-900">{approvalTarget.descricao}</p>
-                           <p className="text-xs text-zinc-500 mt-1">{approvalTarget.data ? new Date(approvalTarget.data).toLocaleDateString('pt-PT') : ''} · {approvalTarget.tipo_transacao}</p>
+               {/* --- PAYROLL --- */}
+               {
+                  activeTab === 'folha' && (
+                     <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                        <div className="flex flex-col md:flex-row justify-between items-center bg-zinc-900 p-12 rounded-[4rem] text-white shadow-3xl">
+                           <div>
+                              <h2 className="text-3xl font-black uppercase tracking-tight">Processamento de Salários</h2>
+                              <p className="text-zinc-400 text-lg font-medium">Ciclo: {periodos.find(p => p.id === selectedPeriodoId)?.mes || '00'}/{periodos.find(p => p.id === selectedPeriodoId)?.ano || '2024'}</p>
+                              <p className="text-yellow-500 text-xs font-bold uppercase tracking-widest mt-2">Empresa: {currentEmpresa?.nome || ''}</p>
+                           </div>
+                           <button
+                              onClick={runPayroll}
+                              disabled={isProcessingPayroll || periodos.find(p => p.id === selectedPeriodoId)?.status === 'Fechado'}
+                              className="px-10 py-5 bg-yellow-500 text-zinc-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-400 transition-all flex items-center gap-3 shadow-xl shadow-yellow-500/20 disabled:opacity-50"
+                           >
+                              {isProcessingPayroll ? <RefreshCw className="animate-spin" /> : <RefreshCw size={20} />}
+                              {isProcessingPayroll ? 'Processando Lote...' : 'Executar Lote Completo'}
+                           </button>
                         </div>
-                        <div className="space-y-2">
-                           <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens do Lançamento</p>
-                           {(approvalTarget.itens || []).map((it: any, i: number) => (
-                              <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-50 text-xs">
-                                 <span className="font-bold text-zinc-700">{it.conta_codigo} — {it.conta_nome}</span>
-                                 <span className={`font-black px-2 py-0.5 rounded-lg ${it.tipo === 'D' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
-                                    {it.tipo} {safeFormatAOA(it.valor)}
-                                 </span>
+
+                        <div className="grid grid-cols-1 gap-4">
+                           {folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).map(f => (
+                              <div key={f.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm flex items-center justify-between group hover:shadow-xl transition-all">
+                                 <div className="flex items-center gap-6">
+                                    <div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 border border-zinc-100 group-hover:bg-zinc-900 group-hover:text-white transition-all">
+                                       <Users size={28} />
+                                    </div>
+                                    <div>
+                                       <h4 className="font-black text-zinc-900 text-lg leading-none mb-1">{f?.funcionario_nome || 'Funcionário'}</h4>
+                                       <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Base: {safeFormatAOA(Number(f?.salario_base) || 0)}</p>
+                                    </div>
+                                 </div>
+                                 <div className="hidden lg:grid grid-cols-3 gap-12 text-center border-x border-zinc-50 px-12 mx-8">
+                                    <div>
+                                       <p className="text-[9px] font-black text-zinc-300 uppercase mb-1">INSS (3%)</p>
+                                       <p className="text-sm font-bold text-red-400">-{safeFormatAOA(Number(f?.inss_trabalhador) || 0)}</p>
+                                    </div>
+                                    <div>
+                                       <p className="text-[9px] font-black text-zinc-300 uppercase mb-1">IRT / Tax</p>
+                                       <p className="text-sm font-bold text-red-400">-{safeFormatAOA(Number(f?.irt) || 0)}</p>
+                                    </div>
+                                    <div>
+                                       <p className="text-[9px] font-black text-zinc-300 uppercase mb-1">Empresa (8%)</p>
+                                       <p className="text-sm font-bold text-zinc-400">{safeFormatAOA(Number(f?.inss_empresa) || 0)}</p>
+                                    </div>
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Líquido a Receber</p>
+                                    <p className="text-2xl font-black text-zinc-900">{safeFormatAOA(Number(f?.salario_liquido) || 0)}</p>
+                                 </div>
+                                 <div className="flex gap-2">
+                                    <button className="p-3 text-zinc-300 hover:text-zinc-600 transition-colors"><Printer size={20} /></button>
+                                    <button className="p-3 text-zinc-300 hover:text-sky-600 transition-colors"><FileCheck size={20} /></button>
+                                 </div>
                               </div>
                            ))}
                         </div>
-                        <div>
-                           <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Observações (Opcional)</label>
-                           <textarea value={approvalObs} onChange={e => setApprovalObs(e.target.value)}
-                              className="w-full border border-zinc-200 rounded-2xl p-4 text-xs text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400" rows={3}
-                              placeholder="Notas de aprovação..." />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                           <button onClick={() => handleRejeitarLancamento(approvalTarget)}
-                              className="py-4 bg-red-50 text-red-700 border border-red-200 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-red-100 transition-all flex items-center justify-center gap-2">
-                              <X size={14} /> Rejeitar
-                           </button>
-                           <button onClick={() => handleAprovarLancamento(approvalTarget, approvalObs)} disabled={isApprovingId === approvalTarget.id}
-                              className="py-4 bg-green-500 text-white font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                              {isApprovingId ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Aprovar e Postar
-                           </button>
-                        </div>
-                        <button onClick={() => { setApprovalTarget(null); setApprovalObs(''); }} className="w-full text-xs text-zinc-400 hover:text-zinc-600 transition-colors">← Voltar à lista</button>
                      </div>
-                  ) : (
-                     // Lista de lançamentos pendentes
-                     <div className="p-8 space-y-3">
-                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-4">{pendingApproval.length} lançamento(s) aguardam revisão</p>
-                        {pendingApproval.map(l => (
-                           <div key={l.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-yellow-50 hover:border-yellow-200 transition-all cursor-pointer" onClick={() => setApprovalTarget(l)}>
-                              <div>
-                                 <p className="text-sm font-black text-zinc-800">{l.descricao}</p>
-                                 <p className="text-[9px] text-zinc-400 font-bold uppercase">{l.tipo_transacao} · {l.data ? new Date(l.data).toLocaleDateString('pt-PT') : ''}</p>
-                              </div>
-                              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-[9px] font-black rounded-lg uppercase tracking-widest">Pendente</span>
+                  )
+               }
+
+               {/* --- FISCAL --- */}
+               {
+                  activeTab === 'fiscal' && (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4">
+                        <div className="bg-white p-12 rounded-[4rem] shadow-sm border border-sky-100">
+                           <h3 className="text-xl font-black text-zinc-900 mb-10 uppercase tracking-tight flex items-center gap-3">
+                              <Calendar className="text-yellow-500" /> Agenda Fiscal {periodos.find(p => p.id === selectedPeriodoId)?.mes || ''}
+                           </h3>
+                           <div className="space-y-4">
+                              {[
+                                 { t: 'IVA - Declaração Periódica', d: '2024-03-25', v: (Number(financeReports.receitaTotal) || 0) * ((currentEmpresa?.regime_agt === 'Simplificado' ? 0.07 : (currentEmpresa?.taxa_iva || 14) / 100)) },
+                                 { t: 'INSS - Guia de Pagamento', d: '2024-03-10', v: folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.inss_trabalhador) || 0) + (Number(b.inss_empresa) || 0), 0) || 0 },
+                                 { t: 'IRT - Retenções na Fonte', d: '2024-03-30', v: (currentEmpresa?.incidencia_irt !== false) ? (folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.irt) || 0), 0) || 0) : 0 },
+                                 { t: 'II - Imposto Industrial (Estimativa)', d: '2024-05-31', v: (Number(financeReports.lucroLiquido) > 0 ? (Number(financeReports.lucroLiquido) * (currentEmpresa?.taxa_ii || 25) / 100) : 0) },
+                              ].map((o, i) => (
+                                 <div key={i} className="flex items-center justify-between p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
+                                    <div className="flex items-center gap-4">
+                                       <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center"><Landmark size={20} /></div>
+                                       <div><p className="font-black text-sm text-zinc-900">{o.t}</p><p className="text-[10px] font-black text-zinc-400 uppercase">Vence: {new Date(o.d).toLocaleDateString()}</p></div>
+                                    </div>
+                                    <p className="font-black text-zinc-900">{safeFormatAOA(o.v)}</p>
+                                 </div>
+                              ))}
                            </div>
-                        ))}
+                        </div>
+
+                        <div className="bg-zinc-900 p-12 rounded-[4rem] text-white shadow-2xl flex flex-col justify-between overflow-hidden relative print-hidden">
+                           <FileText size={180} className="absolute -right-4 -bottom-4 opacity-5" />
+                           <div className="space-y-6">
+                              <h3 className="text-xl font-black uppercase tracking-tight">Carga Tributária Estimada</h3>
+                              <div className="space-y-8">
+                                 <div className="space-y-2">
+                                    <div className="flex justify-between text-[10px] font-black uppercase"><span>IVA Estimado</span><span>{safeFormatAOA(financeReports.receitaTotal * ((currentEmpresa?.taxa_iva || 14) / 100))}</span></div>
+                                    <div className="h-2 bg-white/10 rounded-full"><div className="h-full bg-yellow-500" style={{ width: `${Math.min(100, (currentEmpresa?.taxa_iva || 14) * 5)}%` }}></div></div>
+                                 </div>
+                                 <div className="space-y-2">
+                                    <div className="flex justify-between text-[10px] font-black uppercase"><span>Imp. Industrial ({currentEmpresa?.taxa_ii || 25}%)</span><span>{safeFormatAOA(financeReports.lucroLiquido > 0 ? financeReports.lucroLiquido * ((currentEmpresa?.taxa_ii || 25) / 100) : 0)}</span></div>
+                                    <div className="h-2 bg-white/10 rounded-full"><div className="h-full bg-sky-400" style={{ width: '45%' }}></div></div>
+                                 </div>
+                              </div>
+                           </div>
+                           <button
+                              onClick={handleExportFiscal}
+                              disabled={isExportingFiscal}
+                              className="w-full mt-10 py-5 bg-white/5 border border-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                           >
+                              {isExportingFiscal ? <RefreshCw className="animate-spin" /> : <Download size={20} />}
+                              {isExportingFiscal ? 'Gerando Mapas...' : 'Exportar Mapas Fiscais (PDF)'}
+                           </button>
+                        </div>
                      </div>
-                  )}
-               </div>
-            </div>
-         )}
+                  )
+               }
 
-         {/* --- ABA: FONTES DE DADOS (INTEGRAÇÃO AUTOMÁTICA) --- */}
-         {activeTab === 'fontes' && (() => {
-
-            // ─── Métricas por Módulo ───
-            const totalFaturas = extFaturas.reduce((s, f) => s + (Number(f.valor_total) || 0), 0);
-            const faturasPagas = extFaturas.filter(f => f.status === 'pago' || f.status === 'Paga').length;
-            const totalTesouraria = extTesouraria.reduce((s, t) => s + (Number(t.valor) || 0), 0);
-            const entradas = extTesouraria.filter(t => t.tipo === 'Entrada' || t.tipo === 'entrada' || t.tipo === 'receita').reduce((s, t) => s + (Number(t.valor) || 0), 0);
-            const saidas = extTesouraria.filter(t => t.tipo === 'Saída' || t.tipo === 'saida' || t.tipo === 'despesa').reduce((s, t) => s + (Number(t.valor) || 0), 0);
-            const totalSalarios = extRhRecibos.reduce((s, r) => s + (Number(r.liquido) || 0), 0);
-            const totalBruto = extRhRecibos.reduce((s, r) => s + (Number(r.bruto) || 0), 0);
-            const totalInventarioValor = extInventario.reduce((s, i) => s + (Number(i.quantidade_atual) || 0) * (Number(i.preco_unitario) || 0), 0);
-            const itensCriticos = extInventario.filter(i => Number(i.quantidade_atual) <= Number(i.quantidade_minima)).length;
-
-            const syncNow = async () => {
-               setIsSyncingModules(true);
-               const fq = async (q: any) => { try { const { data } = await q; return data || []; } catch { return []; } };
-               const [fat, tes, rh, inv, smov] = await Promise.all([
-                  fq(supabase.from('contabil_faturas').select('*').order('data_emissao', { ascending: false }).limit(100)),
-                  fq(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }).limit(100)),
-                  fq(supabase.from('hr_recibos').select('*').order('created_at', { ascending: false }).limit(100)),
-                  fq(supabase.from('inventario').select('*').order('nome')),
-                  fq(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100))
-               ]);
-               setExtFaturas(fat); setExtTesouraria(tes); setExtRhRecibos(rh); setExtInventario(inv); setExtStockMov(smov);
-               setLastSyncAt(new Date());
-               setIsSyncingModules(false);
-            };
-
-            const modulos = [
+               {/* --- MODAL RELATÓRIO COMPLETO --- */}
                {
-                  nome: 'Faturação', icon: <FileText size={22} className="text-blue-500" />, bg: 'bg-blue-50 border-blue-100',
-                  badge: `${extFaturas.length} faturas`,
-                  stats: [
-                     { label: 'Total Faturado', value: safeFormatAOA(totalFaturas), color: 'text-blue-600' },
-                     { label: 'Pagas', value: `${faturasPagas}/${extFaturas.length}`, color: 'text-green-600' },
-                     { label: 'Pendentes', value: `${extFaturas.length - faturasPagas}`, color: 'text-yellow-500' },
-                  ],
-                  items: extFaturas.slice(0, 5).map(f => ({
-                     label: f.numero_fatura || f.cliente_nome || '—',
-                     value: safeFormatAOA(f.valor_total),
-                     sub: f.status || '',
-                     date: f.data_emissao || '',
-                     onAutoLaunch: () => handleAutoLaunchFromFatura(f)
-                  }))
-               },
-               {
-                  nome: 'Tesouraria', icon: <DollarSign size={22} className="text-green-500" />, bg: 'bg-green-50 border-green-100',
-                  badge: `${extTesouraria.length} movimentos`,
-                  stats: [
-                     { label: 'Total Movimentos', value: safeFormatAOA(totalTesouraria), color: 'text-green-600' },
-                     { label: 'Entradas', value: safeFormatAOA(entradas), color: 'text-green-600' },
-                     { label: 'Saídas', value: safeFormatAOA(saidas), color: 'text-red-500' },
-                  ],
-                  items: extTesouraria.slice(0, 5).map(t => ({
-                     label: t.descricao || t.categoria || '—',
-                     value: safeFormatAOA(t.valor),
-                     sub: t.tipo || '',
-                     date: t.data || '',
-                     onAutoLaunch: () => handleAutoLaunchFromTesouraria(t)
-                  }))
-               },
-               {
-                  nome: 'RH / Salários', icon: <Users size={22} className="text-purple-500" />, bg: 'bg-purple-50 border-purple-100',
-                  badge: `${extRhRecibos.length} recibos`,
-                  stats: [
-                     { label: 'Total Líquido', value: safeFormatAOA(totalSalarios), color: 'text-purple-600' },
-                     { label: 'Total Bruto', value: safeFormatAOA(totalBruto), color: 'text-zinc-600' },
-                     { label: 'Recibos', value: `${extRhRecibos.length}`, color: 'text-purple-600' },
-                  ],
-                  items: extRhRecibos.slice(0, 5).map(r => ({
-                     label: `${r.mes || ''}/${r.ano || ''}`,
-                     value: safeFormatAOA(r.liquido),
-                     sub: `Bruto: ${safeFormatAOA(r.bruto)}`,
-                     date: '',
-                     onAutoLaunch: undefined
-                  }))
-               },
-               {
-                  nome: 'Inventário', icon: <FileCheck size={22} className="text-orange-500" />, bg: 'bg-orange-50 border-orange-100',
-                  badge: `${extInventario.length} itens`,
-                  stats: [
-                     { label: 'Valor Stock', value: safeFormatAOA(totalInventarioValor), color: 'text-orange-600' },
-                     { label: 'SKUs', value: `${extInventario.length}`, color: 'text-zinc-600' },
-                     { label: 'Críticos (Stock Mín.)', value: `${itensCriticos}`, color: itensCriticos > 0 ? 'text-red-500' : 'text-green-600' },
-                  ],
-                  items: extInventario.slice(0, 5).map(i => ({
-                     label: i.nome || '—',
-                     value: `${Number(i.quantidade_atual) || 0} ${i.unidade || 'un'}`,
-                     sub: safeFormatAOA((Number(i.quantidade_atual) || 0) * (Number(i.preco_unitario) || 0)),
-                     date: '',
-                     onAutoLaunch: undefined
-                  }))
-               },
-            ];
+                  showReportModal && (
+                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                              <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                                 <FileText className="text-yellow-500" /> Relatório Financeiro Detalhado
+                              </h2>
+                              <button onClick={() => setShowReportModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                           </div>
+                           <div className="p-10 space-y-8">
+                              <div className="grid grid-cols-2 gap-8">
+                                 <div className="bg-green-50 p-6 rounded-3xl border border-green-100">
+                                    <p className="text-[10px] font-black text-green-700 uppercase tracking-widest">Activo Total</p>
+                                    <p className="text-2xl font-black text-green-900">{safeFormatAOA(financeReports.ativos)}</p>
+                                 </div>
+                                 <div className="bg-red-50 p-6 rounded-3xl border border-red-100">
+                                    <p className="text-[10px] font-black text-red-700 uppercase tracking-widest">Passivo Total</p>
+                                    <p className="text-2xl font-black text-red-900">{safeFormatAOA(financeReports.passivos)}</p>
+                                 </div>
+                              </div>
 
-            return (
-               <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                  {/* Header com botão de sincronização */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
-                     <div>
-                        <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-                           <Share2 className="text-yellow-500" size={26} /> Fontes de Dados Integradas
-                        </h2>
-                        <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
-                           Dados recebidos automaticamente dos módulos activos do ERP
-                        </p>
+                              <div className="space-y-4">
+                                 <h3 className="text-sm font-black text-zinc-900 uppercase">Indicadores de Liquidez</h3>
+                                 <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                       <span className="text-zinc-500 font-bold">Liquidez Geral</span>
+                                       <span className="font-black text-zinc-900">1.45</span>
+                                    </div>
+                                    <div className="w-full bg-zinc-100 rounded-full h-2">
+                                       <div className="bg-sky-500 h-2 rounded-full w-[60%]"></div>
+                                    </div>
+                                 </div>
+                                 <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                       <span className="text-zinc-500 font-bold">Solvência</span>
+                                       <span className="font-black text-zinc-900">2.10</span>
+                                    </div>
+                                    <div className="w-full bg-zinc-100 rounded-full h-2">
+                                       <div className="bg-green-500 h-2 rounded-full w-[80%]"></div>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div className="bg-zinc-900 text-white p-6 rounded-3xl flex justify-between items-center">
+                                 <div>
+                                    <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Capital Próprio</p>
+                                    <p className="text-xl font-bold mt-1">Reservas: {safeFormatAOA(financeReports.capital)}</p>
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Resultado Líquido</p>
+                                    <p className={`text-2xl font-black ${financeReports.lucroLiquido >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                       {safeFormatAOA(financeReports.lucroLiquido)}
+                                    </p>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
                      </div>
-                     <div className="flex flex-col items-end gap-2">
-                        <button onClick={syncNow} disabled={isSyncingModules}
-                           className="flex items-center gap-2 px-5 py-3 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[9px] uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50">
-                           <RefreshCw size={14} className={isSyncingModules ? 'animate-spin' : ''} />
-                           {isSyncingModules ? 'Sincronizando...' : 'Sincronizar Agora'}
-                        </button>
-                        {lastSyncAt && (
-                           <p className="text-[9px] text-zinc-500 font-bold">
-                              Última sync: {lastSyncAt.toLocaleTimeString('pt-PT')}
-                           </p>
+                  )
+               }
+
+               {/* --- MODAL NOVO LANÇAMENTO (DIÁRIO) --- */}
+               {
+                  showEntryModal && (
+                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                              <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                                 <BookOpen className="text-yellow-500" /> Novo Lançamento Contábil
+                              </h2>
+                              <button onClick={() => setShowEntryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                           </div>
+
+                           {/* Modelos Pré-definidos */}
+                           {regrasAutomaticas.length > 0 && (
+                              <div className="px-8 pt-6 pb-2">
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Modelos Pré-definidos</p>
+                                 <div className="flex flex-wrap gap-2">
+                                    {[
+                                       { label: 'Venda', debito: '3.1', credito: '6.1' },
+                                       { label: 'Compra Stock', debito: '2.1', credito: '3.2' },
+                                       { label: 'Salários', debito: '7.2', credito: '1.1' },
+                                       { label: 'Pagamento Fornecedor', debito: '4.1', credito: '1.1' },
+                                       { label: 'Recibo de Cliente', debito: '1.1', credito: '3.1' },
+                                       ...regrasAutomaticas.map(r => ({ label: r.nome, debito: r.conta_debito_codigo, credito: r.conta_credito_codigo }))
+                                    ].filter((v, i, a) => a.findIndex(x => x.label === v.label) === i).map((modelo, i) => (
+                                       <button key={i} type="button"
+                                          onClick={() => setNewEntry(prev => ({ ...prev, contaDebito: modelo.debito, contaCredito: modelo.credito, descricao: prev.descricao || modelo.label }))}
+                                          className="px-3 py-1.5 bg-zinc-50 border border-zinc-200 hover:bg-yellow-50 hover:border-yellow-300 text-zinc-600 hover:text-yellow-700 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">
+                                          {modelo.label}
+                                       </button>
+                                    ))}
+                                 </div>
+                              </div>
+                           )}
+
+                           <div className="px-8 pt-4 pb-2">
+                              <div
+                                 onClick={async () => {
+                                    alert("Funcionalidade de Scanner de Documentos Activa. Seleccione um PDF para análise via Amazing IA.");
+                                    setTimeout(() => {
+                                       setNewEntry({
+                                          ...newEntry,
+                                          descricao: 'Factura 2024/042 - Serviços de Consultoria',
+                                          valor: 150000,
+                                          data: '2024-03-22'
+                                       });
+                                       handleAISuggestAccounts('Factura 2024/042 - Serviços de Consultoria');
+                                    }, 2000);
+                                 }}
+                                 className="bg-yellow-50 border-2 border-dashed border-yellow-200 rounded-2xl p-4 flex items-center justify-center gap-3 cursor-pointer hover:bg-yellow-100 transition-all group"
+                              >
+                                 <Sparkles className="text-yellow-600 group-hover:scale-125 transition-transform" />
+                                 <span className="text-[10px] font-black uppercase text-yellow-700">Digitalizar Documento (PDF/IA)</span>
+                              </div>
+                           </div>
+                           <form onSubmit={handleNewEntry} className="p-8 space-y-6">
+                              <div className="relative group">
+                                 <Input name="descricao" label="Histórico / Descrição" required
+                                    value={newEntry.descricao} onChange={e => setNewEntry({ ...newEntry, descricao: e.target.value })}
+                                    placeholder="Ex: Pagamento de Fornecedor X"
+                                 />
+                                 <button
+                                    type="button"
+                                    onClick={() => handleAISuggestAccounts(newEntry.descricao)}
+                                    disabled={isSuggestingAccounts || !newEntry.descricao}
+                                    className="absolute right-3 top-9 p-2 bg-zinc-900 text-yellow-500 rounded-lg hover:bg-yellow-500 hover:text-zinc-900 transition-all disabled:opacity-50"
+                                    title="Sugerir Contas (IA)"
+                                 >
+                                    {isSuggestingAccounts ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                 </button>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-6">
+                                 <Select name="contaDebito" label="Conta a Debitar"
+                                    value={newEntry.contaDebito} onChange={e => setNewEntry({ ...newEntry, contaDebito: e.target.value })}
+                                    options={planoContas.filter(c => c.natureza === 'Devedora' || c.tipo === 'Despesa').map(c => ({ value: c.codigo, label: `${c.codigo} - ${c.nome}` }))}
+                                 />
+                                 <Select
+                                    label="Conta de Crédito"
+                                    value={newEntry.contaCredito}
+                                    onChange={(e) => setNewEntry({ ...newEntry, contaCredito: e.target.value })}
+                                    options={planoContas.filter(c => c.natureza === 'Credora' || c.codigo === '1.1').map(c => ({ value: c.codigo, label: `${c.codigo} - ${c.nome}` }))}
+                                 />
+                              </div>
+                              <div className="grid grid-cols-2 gap-6">
+                                 <Input name="valor" label="Valor (AOA)" type="number" required
+                                    value={newEntry.valor} onChange={e => setNewEntry({ ...newEntry, valor: Number(e.target.value) })}
+                                 />
+                                 <Input name="data" label="Data" type="date" required
+                                    value={newEntry.data} onChange={e => setNewEntry({ ...newEntry, data: e.target.value })}
+                                 />
+                              </div>
+                              {/* Indicador de validação D = C em tempo real */}
+                              {(() => {
+                                 const debitoConta = planoContas.find(c => c.codigo === newEntry.contaDebito);
+                                 const creditoConta = planoContas.find(c => c.codigo === newEntry.contaCredito);
+                                 const valOk = newEntry.valor > 0 && debitoConta && creditoConta && newEntry.contaDebito !== newEntry.contaCredito;
+                                 return (
+                                    <div className={`flex items-center justify-between p-4 rounded-2xl border-2 ${valOk ? 'bg-green-50 border-green-200' : 'bg-zinc-50 border-zinc-200'}`}>
+                                       <div className="flex items-center gap-2">
+                                          <div className={`w-2.5 h-2.5 rounded-full ${valOk ? 'bg-green-500' : 'bg-zinc-300'}`} />
+                                          <span className={`text-[9px] font-black uppercase tracking-widest ${valOk ? 'text-green-700' : 'text-zinc-400'}`}>
+                                             {valOk ? 'Débito = Crédito — Lançamento equilibrado' : 'Selecione contas e valor para validar'}
+                                          </span>
+                                       </div>
+                                       {valOk && <span className="text-[9px] font-black text-green-700 bg-green-100 px-2 py-1 rounded-lg">D = C = {safeFormatAOA(newEntry.valor)}</span>}
+                                    </div>
+                                 );
+                              })()}
+                              <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
+                                 <Save size={18} /> Confirmar Lançamento
+                              </button>
+                           </form>
+                        </div>
+                     </div>
+                  )
+               }
+               {/* ===== MODAL DE COMPRAS ===== */}
+               {showCompraModal && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                     <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-orange-50">
+                           <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                              <ShoppingCart className="text-orange-500" size={24} /> Registar Compra
+                           </h2>
+                           <button onClick={() => setShowCompraModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
+                        </div>
+                        <form onSubmit={handleSaveCompra} className="p-8 space-y-5">
+                           <div className="grid grid-cols-2 gap-4">
+                              <Input name="numero_compra" label="N.º Compra" value={newCompra.numero_compra}
+                                 onChange={e => setNewCompra({ ...newCompra, numero_compra: e.target.value })} placeholder="COMP-001" />
+                              <Input name="data_compra" label="Data" type="date" required value={newCompra.data_compra}
+                                 onChange={e => setNewCompra({ ...newCompra, data_compra: e.target.value })} />
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                              <Input name="fornecedor_nome" label="Fornecedor" required value={newCompra.fornecedor_nome}
+                                 onChange={e => setNewCompra({ ...newCompra, fornecedor_nome: e.target.value })} placeholder="Nome do fornecedor" />
+                              <Input name="fornecedor_nif" label="NIF Fornecedor" value={newCompra.fornecedor_nif}
+                                 onChange={e => setNewCompra({ ...newCompra, fornecedor_nif: e.target.value })} placeholder="000000000" />
+                           </div>
+                           <Input name="descricao" label="Descrição / Artigos" value={newCompra.descricao}
+                              onChange={e => setNewCompra({ ...newCompra, descricao: e.target.value })} placeholder="Ex: Aquisição de materiais de escritório" />
+                           <div className="grid grid-cols-3 gap-4">
+                              <Input name="valor_total" label="Valor Total (AOA)" type="number" required value={newCompra.valor_total}
+                                 onChange={e => setNewCompra({ ...newCompra, valor_total: Number(e.target.value) })} />
+                              <Input name="iva" label="IVA (AOA)" type="number" value={newCompra.iva}
+                                 onChange={e => setNewCompra({ ...newCompra, iva: Number(e.target.value) })} />
+                              <div>
+                                 <label className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Categoria</label>
+                                 <select value={newCompra.categoria} onChange={e => setNewCompra({ ...newCompra, categoria: e.target.value })}
+                                    className="w-full border border-zinc-200 rounded-xl p-2.5 text-xs font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                                    {['Mercadorias', 'Serviços', 'Imobilizado', 'Matérias-Primas', 'Outros'].map(c => (
+                                       <option key={c} value={c}>{c}</option>
+                                    ))}
+                                 </select>
+                              </div>
+                           </div>
+                           {/* Preview lançamento automático */}
+                           {newCompra.valor_total > 0 && (
+                              <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
+                                 <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2">Lançamento Automático Gerado</p>
+                                 <div className="flex justify-between text-xs font-bold text-zinc-700">
+                                    <span>D: 2.1 Inventário / Activos</span>
+                                    <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
+                                 </div>
+                                 <div className="flex justify-between text-xs font-bold text-zinc-700">
+                                    <span>C: 3.2 Fornecedores / Contas a Pagar</span>
+                                    <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
+                                 </div>
+                              </div>
+                           )}
+                           <button type="submit" disabled={isSavingCompra}
+                              className="w-full py-5 bg-orange-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-orange-600 transition-all disabled:opacity-50">
+                              {isSavingCompra ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                              {isSavingCompra ? 'A Guardar...' : 'Registar Compra + Contabilizar'}
+                           </button>
+                        </form>
+                     </div>
+                  </div>
+               )}
+
+               {/* ===== PAINEL DE APROVAÇÃO PENDENTE (badge flutuante) ===== */}
+               {pendingApproval.length > 0 && (
+                  <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
+                     <button onClick={() => setShowApprovalModal(true)}
+                        className="flex items-center gap-3 bg-yellow-500 text-zinc-900 px-5 py-4 rounded-2xl shadow-2xl font-black text-sm hover:bg-yellow-400 transition-all">
+                        <div className="relative">
+                           <CheckCircle2 size={22} />
+                           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+                              {pendingApproval.length}
+                           </span>
+                        </div>
+                        {pendingApproval.length} Lançamento{pendingApproval.length > 1 ? 's' : ''} Aguarda{pendingApproval.length === 1 ? '' : 'm'} Aprovação
+                     </button>
+                  </div>
+               )}
+
+               {/* ===== MODAL DE APROVAÇÃO ===== */}
+               {showApprovalModal && (
+                  <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                     <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
+                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-yellow-50">
+                           <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                              <CheckCircle2 className="text-yellow-500" size={24} /> Aprovação de Lançamentos
+                           </h2>
+                           <button onClick={() => { setShowApprovalModal(false); setApprovalTarget(null); setApprovalObs(''); }} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
+                        </div>
+                        {approvalTarget ? (
+                           // Detalhe do lançamento a aprovar
+                           <div className="p-8 space-y-5">
+                              <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4">
+                                 <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">Lançamento</p>
+                                 <p className="font-black text-zinc-900">{approvalTarget.descricao}</p>
+                                 <p className="text-xs text-zinc-500 mt-1">{approvalTarget.data ? new Date(approvalTarget.data).toLocaleDateString('pt-PT') : ''} · {approvalTarget.tipo_transacao}</p>
+                              </div>
+                              <div className="space-y-2">
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens do Lançamento</p>
+                                 {(approvalTarget.itens || []).map((it: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-50 text-xs">
+                                       <span className="font-bold text-zinc-700">{it.conta_codigo} — {it.conta_nome}</span>
+                                       <span className={`font-black px-2 py-0.5 rounded-lg ${it.tipo === 'D' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
+                                          {it.tipo} {safeFormatAOA(it.valor)}
+                                       </span>
+                                    </div>
+                                 ))}
+                              </div>
+                              <div>
+                                 <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Observações (Opcional)</label>
+                                 <textarea value={approvalObs} onChange={e => setApprovalObs(e.target.value)}
+                                    className="w-full border border-zinc-200 rounded-2xl p-4 text-xs text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400" rows={3}
+                                    placeholder="Notas de aprovação..." />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <button onClick={() => handleRejeitarLancamento(approvalTarget)}
+                                    className="py-4 bg-red-50 text-red-700 border border-red-200 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                                    <X size={14} /> Rejeitar
+                                 </button>
+                                 <button onClick={() => handleAprovarLancamento(approvalTarget, approvalObs)} disabled={isApprovingId === approvalTarget.id}
+                                    className="py-4 bg-green-500 text-white font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                                    {isApprovingId ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Aprovar e Postar
+                                 </button>
+                              </div>
+                              <button onClick={() => { setApprovalTarget(null); setApprovalObs(''); }} className="w-full text-xs text-zinc-400 hover:text-zinc-600 transition-colors">← Voltar à lista</button>
+                           </div>
+                        ) : (
+                           // Lista de lançamentos pendentes
+                           <div className="p-8 space-y-3">
+                              <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-4">{pendingApproval.length} lançamento(s) aguardam revisão</p>
+                              {pendingApproval.map(l => (
+                                 <div key={l.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-yellow-50 hover:border-yellow-200 transition-all cursor-pointer" onClick={() => setApprovalTarget(l)}>
+                                    <div>
+                                       <p className="text-sm font-black text-zinc-800">{l.descricao}</p>
+                                       <p className="text-[9px] text-zinc-400 font-bold uppercase">{l.tipo_transacao} · {l.data ? new Date(l.data).toLocaleDateString('pt-PT') : ''}</p>
+                                    </div>
+                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-[9px] font-black rounded-lg uppercase tracking-widest">Pendente</span>
+                                 </div>
+                              ))}
+                           </div>
                         )}
                      </div>
                   </div>
+               )}
 
-                  {/* Cards de módulos */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     {modulos.map((mod, i) => (
-                        <div key={i} className={`bg-white rounded-[2.5rem] border shadow-sm overflow-hidden`}>
-                           {/* Header do card */}
-                           <div className={`p-6 border-b ${mod.bg} flex items-center justify-between`}>
-                              <div className="flex items-center gap-3">
-                                 <div className="p-3 bg-white rounded-2xl shadow-sm">{mod.icon}</div>
-                                 <div>
-                                    <p className="font-black text-zinc-900 text-sm uppercase tracking-tight">{mod.nome}</p>
-                                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{mod.badge}</p>
-                                 </div>
-                              </div>
-                              <CheckCircle2 size={18} className="text-green-500" />
+               {/* --- ABA: FONTES DE DADOS (INTEGRAÇÃO AUTOMÁTICA) --- */}
+               {activeTab === 'fontes' && (() => {
+
+                  // ─── Métricas por Módulo ───
+                  const totalFaturas = extFaturas.reduce((s, f) => s + (Number(f.valor_total) || 0), 0);
+                  const faturasPagas = extFaturas.filter(f => f.status === 'pago' || f.status === 'Paga').length;
+                  const totalTesouraria = extTesouraria.reduce((s, t) => s + (Number(t.valor) || 0), 0);
+                  const entradas = extTesouraria.filter(t => t.tipo === 'Entrada' || t.tipo === 'entrada' || t.tipo === 'receita').reduce((s, t) => s + (Number(t.valor) || 0), 0);
+                  const saidas = extTesouraria.filter(t => t.tipo === 'Saída' || t.tipo === 'saida' || t.tipo === 'despesa').reduce((s, t) => s + (Number(t.valor) || 0), 0);
+                  const totalSalarios = extRhRecibos.reduce((s, r) => s + (Number(r.liquido) || 0), 0);
+                  const totalBruto = extRhRecibos.reduce((s, r) => s + (Number(r.bruto) || 0), 0);
+                  const totalInventarioValor = extInventario.reduce((s, i) => s + (Number(i.quantidade_atual) || 0) * (Number(i.preco_unitario) || 0), 0);
+                  const itensCriticos = extInventario.filter(i => Number(i.quantidade_atual) <= Number(i.quantidade_minima)).length;
+
+                  const syncNow = async () => {
+                     setIsSyncingModules(true);
+                     const fq = async (q: any) => { try { const { data } = await q; return data || []; } catch { return []; } };
+                     const [fat, tes, rh, inv, smov] = await Promise.all([
+                        fq(supabase.from('contabil_faturas').select('*').order('data_emissao', { ascending: false }).limit(100)),
+                        fq(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }).limit(100)),
+                        fq(supabase.from('hr_recibos').select('*').order('created_at', { ascending: false }).limit(100)),
+                        fq(supabase.from('inventario').select('*').order('nome')),
+                        fq(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100))
+                     ]);
+                     setExtFaturas(fat); setExtTesouraria(tes); setExtRhRecibos(rh); setExtInventario(inv); setExtStockMov(smov);
+                     setLastSyncAt(new Date());
+                     setIsSyncingModules(false);
+                  };
+
+                  const modulos = [
+                     {
+                        nome: 'Faturação', icon: <FileText size={22} className="text-blue-500" />, bg: 'bg-blue-50 border-blue-100',
+                        badge: `${extFaturas.length} faturas`,
+                        stats: [
+                           { label: 'Total Faturado', value: safeFormatAOA(totalFaturas), color: 'text-blue-600' },
+                           { label: 'Pagas', value: `${faturasPagas}/${extFaturas.length}`, color: 'text-green-600' },
+                           { label: 'Pendentes', value: `${extFaturas.length - faturasPagas}`, color: 'text-yellow-500' },
+                        ],
+                        items: extFaturas.slice(0, 5).map(f => ({
+                           label: f.numero_fatura || f.cliente_nome || '—',
+                           value: safeFormatAOA(f.valor_total),
+                           sub: f.status || '',
+                           date: f.data_emissao || '',
+                           onAutoLaunch: () => handleAutoLaunchFromFatura(f)
+                        }))
+                     },
+                     {
+                        nome: 'Tesouraria', icon: <DollarSign size={22} className="text-green-500" />, bg: 'bg-green-50 border-green-100',
+                        badge: `${extTesouraria.length} movimentos`,
+                        stats: [
+                           { label: 'Total Movimentos', value: safeFormatAOA(totalTesouraria), color: 'text-green-600' },
+                           { label: 'Entradas', value: safeFormatAOA(entradas), color: 'text-green-600' },
+                           { label: 'Saídas', value: safeFormatAOA(saidas), color: 'text-red-500' },
+                        ],
+                        items: extTesouraria.slice(0, 5).map(t => ({
+                           label: t.descricao || t.categoria || '—',
+                           value: safeFormatAOA(t.valor),
+                           sub: t.tipo || '',
+                           date: t.data || '',
+                           onAutoLaunch: () => handleAutoLaunchFromTesouraria(t)
+                        }))
+                     },
+                     {
+                        nome: 'RH / Salários', icon: <Users size={22} className="text-purple-500" />, bg: 'bg-purple-50 border-purple-100',
+                        badge: `${extRhRecibos.length} recibos`,
+                        stats: [
+                           { label: 'Total Líquido', value: safeFormatAOA(totalSalarios), color: 'text-purple-600' },
+                           { label: 'Total Bruto', value: safeFormatAOA(totalBruto), color: 'text-zinc-600' },
+                           { label: 'Recibos', value: `${extRhRecibos.length}`, color: 'text-purple-600' },
+                        ],
+                        items: extRhRecibos.slice(0, 5).map(r => ({
+                           label: `${r.mes || ''}/${r.ano || ''}`,
+                           value: safeFormatAOA(r.liquido),
+                           sub: `Bruto: ${safeFormatAOA(r.bruto)}`,
+                           date: '',
+                           onAutoLaunch: undefined
+                        }))
+                     },
+                     {
+                        nome: 'Inventário', icon: <FileCheck size={22} className="text-orange-500" />, bg: 'bg-orange-50 border-orange-100',
+                        badge: `${extInventario.length} itens`,
+                        stats: [
+                           { label: 'Valor Stock', value: safeFormatAOA(totalInventarioValor), color: 'text-orange-600' },
+                           { label: 'SKUs', value: `${extInventario.length}`, color: 'text-zinc-600' },
+                           { label: 'Críticos (Stock Mín.)', value: `${itensCriticos}`, color: itensCriticos > 0 ? 'text-red-500' : 'text-green-600' },
+                        ],
+                        items: extInventario.slice(0, 5).map(i => ({
+                           label: i.nome || '—',
+                           value: `${Number(i.quantidade_atual) || 0} ${i.unidade || 'un'}`,
+                           sub: safeFormatAOA((Number(i.quantidade_atual) || 0) * (Number(i.preco_unitario) || 0)),
+                           date: '',
+                           onAutoLaunch: undefined
+                        }))
+                     },
+                  ];
+
+                  return (
+                     <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                        {/* Header com botão de sincronização */}
+                        <div className="flex flex-wrap items-center justify-between gap-4 bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
+                           <div>
+                              <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
+                                 <Share2 className="text-yellow-500" size={26} /> Fontes de Dados Integradas
+                              </h2>
+                              <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
+                                 Dados recebidos automaticamente dos módulos activos do ERP
+                              </p>
                            </div>
-
-                           {/* Estatísticas */}
-                           <div className="grid grid-cols-3 divide-x divide-zinc-100 border-b border-zinc-100">
-                              {mod.stats.map((s, j) => (
-                                 <div key={j} className="p-4 text-center">
-                                    <p className="text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">{s.label}</p>
-                                    <p className={`text-sm font-black ${s.color}`}>{s.value}</p>
-                                 </div>
-                              ))}
-                           </div>
-
-                           {/* Últimos registos */}
-                           <div className="p-5">
-                              <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Últimos Registos</p>
-                              {mod.items.length === 0 ? (
-                                 <p className="text-center text-[10px] text-zinc-400 py-4 font-bold">Nenhum registo encontrado</p>
-                              ) : (
-                                 <div className="space-y-2">
-                                    {mod.items.map((item, k) => (
-                                       <div key={k} className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0">
-                                          <div>
-                                             <p className="text-xs font-bold text-zinc-700 truncate max-w-[140px]">{item.label}</p>
-                                             <p className="text-[9px] text-zinc-400 font-bold">{item.sub}</p>
-                                          </div>
-                                          <div className="text-right flex items-center gap-2">
-                                             <div>
-                                                <p className="text-xs font-black text-zinc-900">{item.value}</p>
-                                                {item.date && <p className="text-[8px] text-zinc-400">{item.date}</p>}
-                                             </div>
-                                             {item.onAutoLaunch && (
-                                                <button onClick={item.onAutoLaunch} disabled={isAutoLaunching}
-                                                   title="Contabilizar automaticamente"
-                                                   className="p-1.5 bg-zinc-900 text-yellow-400 rounded-lg hover:bg-yellow-500 hover:text-zinc-900 transition-all disabled:opacity-40 text-[8px]">
-                                                   <BookOpen size={10} />
-                                                </button>
-                                             )}
-                                          </div>
-                                       </div>
-                                    ))}
-                                 </div>
+                           <div className="flex flex-col items-end gap-2">
+                              <button onClick={syncNow} disabled={isSyncingModules}
+                                 className="flex items-center gap-2 px-5 py-3 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[9px] uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50">
+                                 <RefreshCw size={14} className={isSyncingModules ? 'animate-spin' : ''} />
+                                 {isSyncingModules ? 'Sincronizando...' : 'Sincronizar Agora'}
+                              </button>
+                              {lastSyncAt && (
+                                 <p className="text-[9px] text-zinc-500 font-bold">
+                                    Última sync: {lastSyncAt.toLocaleTimeString('pt-PT')}
+                                 </p>
                               )}
                            </div>
                         </div>
-                     ))}
-                  </div>
 
-                  {/* Movimentos de Stock */}
-                  <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-8">
-                     <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2 mb-5">
-                        <ArrowUpRight size={18} className="text-yellow-500" /> Últimos Movimentos de Stock
-                     </h3>
-                     {extStockMov.length === 0 ? (
-                        <p className="text-center text-xs text-zinc-400 font-bold py-6">Sem movimentos de stock registados</p>
-                     ) : (
-                        <div className="overflow-x-auto">
-                           <table className="w-full text-left">
-                              <thead>
-                                 <tr className="border-b border-zinc-100">
-                                    {['Tipo', 'Qtd.', 'Motivo', 'Referência', 'Data'].map(h => (
-                                       <th key={h} className="pb-3 px-3 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
-                                    ))}
-                                 </tr>
-                              </thead>
-                              <tbody>
-                                 {extStockMov.slice(0, 8).map((m, idx) => (
-                                    <tr key={idx} className="border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
-                                       <td className="py-2 px-3">
-                                          <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${m.tipo === 'Entrada' || m.tipo === 'entrada' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{m.tipo}</span>
-                                       </td>
-                                       <td className="py-2 px-3 text-sm font-black text-zinc-900">{m.quantidade}</td>
-                                       <td className="py-2 px-3 text-xs text-zinc-600">{m.motivo || '—'}</td>
-                                       <td className="py-2 px-3 text-xs text-zinc-500">{m.referencia || '—'}</td>
-                                       <td className="py-2 px-3 text-xs text-zinc-400">{m.created_at ? new Date(m.created_at).toLocaleDateString('pt-PT') : '—'}</td>
-                                    </tr>
-                                 ))}
-                              </tbody>
-                           </table>
-                        </div>
-                     )}
-                  </div>
-               </div>
-            );
-         })()}
-         {/* --- CONSOLIDAÇÃO MULTIEMPRESA --- */}
-         {activeTab === 'consolidacao' && (() => {
-
-            // Calcular financeiros por empresa a partir dos lançamentos locais
-            const consolidadoPorEmpresa = empresas.map(emp => {
-               const empLancs = (lancamentos || []).filter(l => l.empresa_id === emp.id);
-               let receita = 0, despesa = 0, ativo = 0, passivo = 0;
-               empLancs.forEach(l => {
-                  (l.itens || []).forEach(it => {
-                     if (!it) return;
-                     const val = Number(it.valor) || 0;
-                     if (it.conta_codigo?.startsWith('6') && it.tipo === 'C') receita += val;
-                     if (it.conta_codigo?.startsWith('7') && it.tipo === 'D') despesa += val;
-                     if ((it.conta_codigo?.startsWith('1') || it.conta_codigo?.startsWith('2') || it.conta_codigo?.startsWith('3')) && it.tipo === 'D') ativo += val;
-                     if (it.conta_codigo?.startsWith('4') && it.tipo === 'C') passivo += val;
-                  });
-               });
-               const lucro = receita - despesa;
-               const margem = receita > 0 ? (lucro / receita) * 100 : 0;
-               return { id: emp.id, nome: emp.nome, receita, despesa, lucro, ativo, passivo, margem, lancamentos: empLancs.length };
-            });
-
-            const totalGrupo = {
-               receita: consolidadoPorEmpresa.reduce((a, e) => a + e.receita, 0),
-               despesa: consolidadoPorEmpresa.reduce((a, e) => a + e.despesa, 0),
-               lucro: consolidadoPorEmpresa.reduce((a, e) => a + e.lucro, 0),
-               ativo: consolidadoPorEmpresa.reduce((a, e) => a + e.ativo, 0),
-               passivo: consolidadoPorEmpresa.reduce((a, e) => a + e.passivo, 0),
-            };
-            const maxReceita = Math.max(...consolidadoPorEmpresa.map(e => e.receita), 1);
-
-            // Estado local de eliminações mock (até o form ser implementado)
-            const eliminacoesExemplo = [
-               { id: '1', tipo: 'Receita Interna', valor: 50000, descricao: 'Prestação de serviços interna', origem: empresas[0]?.nome || '—', destino: empresas[1]?.nome || '—' },
-               { id: '2', tipo: 'Empréstimo', valor: 200000, descricao: 'Financiamento entre afiliadas', origem: empresas[1]?.nome || '—', destino: empresas[0]?.nome || '—' },
-            ].filter(e => empresas.length >= 2);
-
-            const totalEliminacoes = eliminacoesExemplo.reduce((a, e) => a + e.valor, 0);
-            const lucroConsolidado = totalGrupo.lucro - totalEliminacoes;
-
-            return (
-               <div className="space-y-8 animate-in slide-in-from-bottom-4">
-
-                  {/* Header */}
-                  <div className="flex items-center justify-between bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
-                     <div>
-                        <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-                           <Building2 className="text-yellow-500" size={28} /> Consolidação do Grupo
-                        </h2>
-                        <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
-                           {empresas.length} Entidade{empresas.length !== 1 ? 's' : ''} · Dados calculados automaticamente
-                        </p>
-                     </div>
-                     <div className="text-right">
-                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Lucro Líquido Consolidado</p>
-                        <p className={`text-4xl font-black ${lucroConsolidado >= 0 ? 'text-yellow-400' : 'text-red-400'}`}>
-                           {safeFormatAOA(lucroConsolidado)}
-                        </p>
-                        <p className="text-[9px] text-zinc-500 font-bold mt-1">Após eliminações de {safeFormatAOA(totalEliminacoes)}</p>
-                     </div>
-                  </div>
-
-                  {/* KPIs do Grupo Consolidado */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                     {[
-                        { label: 'Receita Consolidada', value: totalGrupo.receita, color: 'text-green-600', bg: 'bg-green-50 border-green-100' },
-                        { label: 'Despesa Consolidada', value: totalGrupo.despesa, color: 'text-red-500', bg: 'bg-red-50 border-red-100' },
-                        { label: 'Activo Total Grupo', value: totalGrupo.ativo, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' },
-                        { label: 'Passivo Total Grupo', value: totalGrupo.passivo, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-100' },
-                     ].map((kpi, i) => (
-                        <div key={i} className={`p-7 rounded-[2.5rem] border ${kpi.bg}`}>
-                           <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-2">{kpi.label}</p>
-                           <p className={`text-2xl font-black ${kpi.color}`}>{safeFormatAOA(kpi.value)}</p>
-                        </div>
-                     ))}
-                  </div>
-
-                  {/* Comparação Financeira entre Empresas */}
-                  <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
-                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                           <BarChart2 size={18} className="text-yellow-500" /> Comparação Financeira entre Entidades
-                        </h3>
-                        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 rounded-xl text-[9px] font-black uppercase tracking-widest border border-zinc-100 transition-all">
-                           <Printer size={14} /> Relatório
-                        </button>
-                     </div>
-
-                     {consolidadoPorEmpresa.length === 0 ? (
-                        <div className="text-center py-16 text-zinc-400">
-                           <Building2 size={40} className="mx-auto mb-4 opacity-30" />
-                           <p className="font-black uppercase text-xs">Nenhuma empresa com dados para consolidar</p>
-                        </div>
-                     ) : (
-                        <div className="space-y-4">
-                           {consolidadoPorEmpresa.map((emp, i) => (
-                              <div key={emp.id} className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50/50 hover:bg-white hover:shadow-sm transition-all">
-                                 <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                        {/* Cards de módulos */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           {modulos.map((mod, i) => (
+                              <div key={i} className={`bg-white rounded-[2.5rem] border shadow-sm overflow-hidden`}>
+                                 {/* Header do card */}
+                                 <div className={`p-6 border-b ${mod.bg} flex items-center justify-between`}>
                                     <div className="flex items-center gap-3">
-                                       <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black text-white"
-                                          style={{ background: COLORS_PIE[i % COLORS_PIE.length] }}>
-                                          {emp.nome?.charAt(0)?.toUpperCase() || '?'}
-                                       </div>
+                                       <div className="p-3 bg-white rounded-2xl shadow-sm">{mod.icon}</div>
                                        <div>
-                                          <p className="font-black text-sm text-zinc-900">{emp.nome}</p>
-                                          <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{emp.lancamentos} lançamento{emp.lancamentos !== 1 ? 's' : ''}</p>
+                                          <p className="font-black text-zinc-900 text-sm uppercase tracking-tight">{mod.nome}</p>
+                                          <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{mod.badge}</p>
                                        </div>
                                     </div>
-                                    <div className="flex gap-6 text-right">
-                                       <div>
-                                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Receita</p>
-                                          <p className="text-sm font-black text-green-600">{safeFormatAOA(emp.receita)}</p>
-                                       </div>
-                                       <div>
-                                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Despesa</p>
-                                          <p className="text-sm font-black text-red-500">{safeFormatAOA(emp.despesa)}</p>
-                                       </div>
-                                       <div>
-                                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Lucro</p>
-                                          <p className={`text-sm font-black ${emp.lucro >= 0 ? 'text-zinc-900' : 'text-red-500'}`}>{safeFormatAOA(emp.lucro)}</p>
-                                       </div>
-                                       <div>
-                                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Margem</p>
-                                          <p className={`text-sm font-black ${emp.margem >= 10 ? 'text-green-600' : emp.margem > 0 ? 'text-yellow-500' : 'text-red-500'}`}>{emp.margem.toFixed(1)}%</p>
-                                       </div>
-                                    </div>
+                                    <CheckCircle2 size={18} className="text-green-500" />
                                  </div>
-                                 {/* Barra de participação na receita do grupo */}
-                                 <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                       <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Contribuição para Receita do Grupo</p>
-                                       <p className="text-[9px] font-black text-zinc-600">{maxReceita > 0 ? ((emp.receita / Math.max(totalGrupo.receita, 1)) * 100).toFixed(1) : 0}%</p>
-                                    </div>
-                                    <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
-                                       <div className="h-full rounded-full transition-all duration-700"
-                                          style={{ width: `${(emp.receita / maxReceita) * 100}%`, background: COLORS_PIE[i % COLORS_PIE.length] }} />
-                                    </div>
+
+                                 {/* Estatísticas */}
+                                 <div className="grid grid-cols-3 divide-x divide-zinc-100 border-b border-zinc-100">
+                                    {mod.stats.map((s, j) => (
+                                       <div key={j} className="p-4 text-center">
+                                          <p className="text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">{s.label}</p>
+                                          <p className={`text-sm font-black ${s.color}`}>{s.value}</p>
+                                       </div>
+                                    ))}
+                                 </div>
+
+                                 {/* Últimos registos */}
+                                 <div className="p-5">
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Últimos Registos</p>
+                                    {mod.items.length === 0 ? (
+                                       <p className="text-center text-[10px] text-zinc-400 py-4 font-bold">Nenhum registo encontrado</p>
+                                    ) : (
+                                       <div className="space-y-2">
+                                          {mod.items.map((item, k) => (
+                                             <div key={k} className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0">
+                                                <div>
+                                                   <p className="text-xs font-bold text-zinc-700 truncate max-w-[140px]">{item.label}</p>
+                                                   <p className="text-[9px] text-zinc-400 font-bold">{item.sub}</p>
+                                                </div>
+                                                <div className="text-right flex items-center gap-2">
+                                                   <div>
+                                                      <p className="text-xs font-black text-zinc-900">{item.value}</p>
+                                                      {item.date && <p className="text-[8px] text-zinc-400">{item.date}</p>}
+                                                   </div>
+                                                   {item.onAutoLaunch && (
+                                                      <button onClick={item.onAutoLaunch} disabled={isAutoLaunching}
+                                                         title="Contabilizar automaticamente"
+                                                         className="p-1.5 bg-zinc-900 text-yellow-400 rounded-lg hover:bg-yellow-500 hover:text-zinc-900 transition-all disabled:opacity-40 text-[8px]">
+                                                         <BookOpen size={10} />
+                                                      </button>
+                                                   )}
+                                                </div>
+                                             </div>
+                                          ))}
+                                       </div>
+                                    )}
                                  </div>
                               </div>
                            ))}
                         </div>
-                     )}
-                  </div>
 
-                  {/* Eliminações Intercompany */}
-                  <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
-                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                           <ArrowDownLeft size={18} className="text-yellow-500" /> Eliminações Intercompany
-                        </h3>
-                        <span className="text-[9px] font-black text-zinc-400 px-3 py-1.5 bg-zinc-50 rounded-xl border border-zinc-100 uppercase tracking-widest">
-                           Total: {safeFormatAOA(totalEliminacoes)}
-                        </span>
+                        {/* Movimentos de Stock */}
+                        <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-8">
+                           <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2 mb-5">
+                              <ArrowUpRight size={18} className="text-yellow-500" /> Últimos Movimentos de Stock
+                           </h3>
+                           {extStockMov.length === 0 ? (
+                              <p className="text-center text-xs text-zinc-400 font-bold py-6">Sem movimentos de stock registados</p>
+                           ) : (
+                              <div className="overflow-x-auto">
+                                 <table className="w-full text-left">
+                                    <thead>
+                                       <tr className="border-b border-zinc-100">
+                                          {['Tipo', 'Qtd.', 'Motivo', 'Referência', 'Data'].map(h => (
+                                             <th key={h} className="pb-3 px-3 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
+                                          ))}
+                                       </tr>
+                                    </thead>
+                                    <tbody>
+                                       {extStockMov.slice(0, 8).map((m, idx) => (
+                                          <tr key={idx} className="border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
+                                             <td className="py-2 px-3">
+                                                <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${m.tipo === 'Entrada' || m.tipo === 'entrada' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{m.tipo}</span>
+                                             </td>
+                                             <td className="py-2 px-3 text-sm font-black text-zinc-900">{m.quantidade}</td>
+                                             <td className="py-2 px-3 text-xs text-zinc-600">{m.motivo || '—'}</td>
+                                             <td className="py-2 px-3 text-xs text-zinc-500">{m.referencia || '—'}</td>
+                                             <td className="py-2 px-3 text-xs text-zinc-400">{m.created_at ? new Date(m.created_at).toLocaleDateString('pt-PT') : '—'}</td>
+                                          </tr>
+                                       ))}
+                                    </tbody>
+                                 </table>
+                              </div>
+                           )}
+                        </div>
                      </div>
+                  );
+               })()}
+               {/* --- CONSOLIDAÇÃO MULTIEMPRESA --- */}
+               {activeTab === 'consolidacao' && (() => {
 
-                     {empresas.length < 2 ? (
-                        <div className="text-center py-10 bg-zinc-50 rounded-2xl">
-                           <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">São necessárias pelo menos 2 empresas no grupo para registar eliminações.</p>
+                  // Calcular financeiros por empresa a partir dos lançamentos locais
+                  const consolidadoPorEmpresa = empresas.map(emp => {
+                     const empLancs = (lancamentos || []).filter(l => l.empresa_id === emp.id);
+                     let receita = 0, despesa = 0, ativo = 0, passivo = 0;
+                     empLancs.forEach(l => {
+                        (l.itens || []).forEach(it => {
+                           if (!it) return;
+                           const val = Number(it.valor) || 0;
+                           if (it.conta_codigo?.startsWith('6') && it.tipo === 'C') receita += val;
+                           if (it.conta_codigo?.startsWith('7') && it.tipo === 'D') despesa += val;
+                           if ((it.conta_codigo?.startsWith('1') || it.conta_codigo?.startsWith('2') || it.conta_codigo?.startsWith('3')) && it.tipo === 'D') ativo += val;
+                           if (it.conta_codigo?.startsWith('4') && it.tipo === 'C') passivo += val;
+                        });
+                     });
+                     const lucro = receita - despesa;
+                     const margem = receita > 0 ? (lucro / receita) * 100 : 0;
+                     return { id: emp.id, nome: emp.nome, receita, despesa, lucro, ativo, passivo, margem, lancamentos: empLancs.length };
+                  });
+
+                  const totalGrupo = {
+                     receita: consolidadoPorEmpresa.reduce((a, e) => a + e.receita, 0),
+                     despesa: consolidadoPorEmpresa.reduce((a, e) => a + e.despesa, 0),
+                     lucro: consolidadoPorEmpresa.reduce((a, e) => a + e.lucro, 0),
+                     ativo: consolidadoPorEmpresa.reduce((a, e) => a + e.ativo, 0),
+                     passivo: consolidadoPorEmpresa.reduce((a, e) => a + e.passivo, 0),
+                  };
+                  const maxReceita = Math.max(...consolidadoPorEmpresa.map(e => e.receita), 1);
+
+                  // Estado local de eliminações mock (até o form ser implementado)
+                  const eliminacoesExemplo = [
+                     { id: '1', tipo: 'Receita Interna', valor: 50000, descricao: 'Prestação de serviços interna', origem: empresas[0]?.nome || '—', destino: empresas[1]?.nome || '—' },
+                     { id: '2', tipo: 'Empréstimo', valor: 200000, descricao: 'Financiamento entre afiliadas', origem: empresas[1]?.nome || '—', destino: empresas[0]?.nome || '—' },
+                  ].filter(e => empresas.length >= 2);
+
+                  const totalEliminacoes = eliminacoesExemplo.reduce((a, e) => a + e.valor, 0);
+                  const lucroConsolidado = totalGrupo.lucro - totalEliminacoes;
+
+                  return (
+                     <div className="space-y-8 animate-in slide-in-from-bottom-4">
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
+                           <div>
+                              <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
+                                 <Building2 className="text-yellow-500" size={28} /> Consolidação do Grupo
+                              </h2>
+                              <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
+                                 {empresas.length} Entidade{empresas.length !== 1 ? 's' : ''} · Dados calculados automaticamente
+                              </p>
+                           </div>
+                           <div className="text-right">
+                              <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Lucro Líquido Consolidado</p>
+                              <p className={`text-4xl font-black ${lucroConsolidado >= 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                 {safeFormatAOA(lucroConsolidado)}
+                              </p>
+                              <p className="text-[9px] text-zinc-500 font-bold mt-1">Após eliminações de {safeFormatAOA(totalEliminacoes)}</p>
+                           </div>
                         </div>
-                     ) : eliminacoesExemplo.length === 0 ? (
-                        <div className="text-center py-10 bg-zinc-50 rounded-2xl">
-                           <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Nenhuma eliminação intercompany registada.</p>
+
+                        {/* KPIs do Grupo Consolidado */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                           {[
+                              { label: 'Receita Consolidada', value: totalGrupo.receita, color: 'text-green-600', bg: 'bg-green-50 border-green-100' },
+                              { label: 'Despesa Consolidada', value: totalGrupo.despesa, color: 'text-red-500', bg: 'bg-red-50 border-red-100' },
+                              { label: 'Activo Total Grupo', value: totalGrupo.ativo, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' },
+                              { label: 'Passivo Total Grupo', value: totalGrupo.passivo, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-100' },
+                           ].map((kpi, i) => (
+                              <div key={i} className={`p-7 rounded-[2.5rem] border ${kpi.bg}`}>
+                                 <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-2">{kpi.label}</p>
+                                 <p className={`text-2xl font-black ${kpi.color}`}>{safeFormatAOA(kpi.value)}</p>
+                              </div>
+                           ))}
                         </div>
-                     ) : (
-                        <div className="overflow-x-auto">
-                           <table className="w-full text-left">
-                              <thead>
-                                 <tr className="border-b border-zinc-100">
-                                    {['Tipo', 'Descrição', 'Origem', 'Destino', 'Valor'].map(h => (
-                                       <th key={h} className="pb-3 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
-                                    ))}
-                                 </tr>
-                              </thead>
-                              <tbody>
-                                 {eliminacoesExemplo.map(el => (
-                                    <tr key={el.id} className="border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
-                                       <td className="py-3 px-4">
-                                          <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-yellow-50 text-yellow-700 border border-yellow-100">{el.tipo}</span>
-                                       </td>
-                                       <td className="py-3 px-4 text-sm font-bold text-zinc-700">{el.descricao}</td>
-                                       <td className="py-3 px-4 text-xs font-bold text-zinc-500">{el.origem}</td>
-                                       <td className="py-3 px-4 text-xs font-bold text-zinc-500">{el.destino}</td>
-                                       <td className="py-3 px-4 text-sm font-black text-red-500 text-right">({safeFormatAOA(el.valor)})</td>
-                                    </tr>
+
+                        {/* Comparação Financeira entre Empresas */}
+                        <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
+                           <div className="flex items-center justify-between mb-6">
+                              <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
+                                 <BarChart2 size={18} className="text-yellow-500" /> Comparação Financeira entre Entidades
+                              </h3>
+                              <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 rounded-xl text-[9px] font-black uppercase tracking-widest border border-zinc-100 transition-all">
+                                 <Printer size={14} /> Relatório
+                              </button>
+                           </div>
+
+                           {consolidadoPorEmpresa.length === 0 ? (
+                              <div className="text-center py-16 text-zinc-400">
+                                 <Building2 size={40} className="mx-auto mb-4 opacity-30" />
+                                 <p className="font-black uppercase text-xs">Nenhuma empresa com dados para consolidar</p>
+                              </div>
+                           ) : (
+                              <div className="space-y-4">
+                                 {consolidadoPorEmpresa.map((emp, i) => (
+                                    <div key={emp.id} className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50/50 hover:bg-white hover:shadow-sm transition-all">
+                                       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                                          <div className="flex items-center gap-3">
+                                             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black text-white"
+                                                style={{ background: COLORS_PIE[i % COLORS_PIE.length] }}>
+                                                {emp.nome?.charAt(0)?.toUpperCase() || '?'}
+                                             </div>
+                                             <div>
+                                                <p className="font-black text-sm text-zinc-900">{emp.nome}</p>
+                                                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{emp.lancamentos} lançamento{emp.lancamentos !== 1 ? 's' : ''}</p>
+                                             </div>
+                                          </div>
+                                          <div className="flex gap-6 text-right">
+                                             <div>
+                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Receita</p>
+                                                <p className="text-sm font-black text-green-600">{safeFormatAOA(emp.receita)}</p>
+                                             </div>
+                                             <div>
+                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Despesa</p>
+                                                <p className="text-sm font-black text-red-500">{safeFormatAOA(emp.despesa)}</p>
+                                             </div>
+                                             <div>
+                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Lucro</p>
+                                                <p className={`text-sm font-black ${emp.lucro >= 0 ? 'text-zinc-900' : 'text-red-500'}`}>{safeFormatAOA(emp.lucro)}</p>
+                                             </div>
+                                             <div>
+                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Margem</p>
+                                                <p className={`text-sm font-black ${emp.margem >= 10 ? 'text-green-600' : emp.margem > 0 ? 'text-yellow-500' : 'text-red-500'}`}>{emp.margem.toFixed(1)}%</p>
+                                             </div>
+                                          </div>
+                                       </div>
+                                       {/* Barra de participação na receita do grupo */}
+                                       <div>
+                                          <div className="flex justify-between items-center mb-1">
+                                             <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Contribuição para Receita do Grupo</p>
+                                             <p className="text-[9px] font-black text-zinc-600">{maxReceita > 0 ? ((emp.receita / Math.max(totalGrupo.receita, 1)) * 100).toFixed(1) : 0}%</p>
+                                          </div>
+                                          <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
+                                             <div className="h-full rounded-full transition-all duration-700"
+                                                style={{ width: `${(emp.receita / maxReceita) * 100}%`, background: COLORS_PIE[i % COLORS_PIE.length] }} />
+                                          </div>
+                                       </div>
+                                    </div>
                                  ))}
-                              </tbody>
-                              <tfoot>
-                                 <tr className="border-t-2 border-zinc-200">
-                                    <td colSpan={4} className="pt-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">Total a Eliminar</td>
-                                    <td className="pt-4 px-4 text-base font-black text-red-600 text-right">({safeFormatAOA(totalEliminacoes)})</td>
-                                 </tr>
-                                 <tr>
-                                    <td colSpan={4} className="pt-2 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-900">Lucro Consolidado Ajustado</td>
-                                    <td className={`pt-2 px-4 text-base font-black text-right ${lucroConsolidado >= 0 ? 'text-green-600' : 'text-red-600'}`}>{safeFormatAOA(lucroConsolidado)}</td>
-                                 </tr>
-                              </tfoot>
-                           </table>
+                              </div>
+                           )}
                         </div>
-                     )}
-                  </div>
-               </div>
-            );
-         })()}
-         {/* --- MODAL NOVA CONTA (PLANO DE CONTAS) --- */}
-         {
-            showAccountModal && (
-               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                  <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                        <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                           <ListFilter className="text-yellow-500" /> Configurar Nova Conta (PGN)
-                        </h2>
-                        <button onClick={() => setShowAccountModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
-                     </div>
-                     <form onSubmit={handleCreateAccount} className="p-8 space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                           <Input name="codigo" label="Código PGC (Ex: 1.1.2)" required
-                              value={newAccount.codigo} onChange={e => setNewAccount({ ...newAccount, codigo: e.target.value })}
-                           />
-                           <Input name="nome" label="Descrição da Conta" required
-                              value={newAccount.nome} onChange={e => setNewAccount({ ...newAccount, nome: e.target.value })}
-                           />
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                           <Select name="tipo" label="Tipo de Conta"
-                              value={newAccount.tipo} onChange={e => setNewAccount({ ...newAccount, tipo: e.target.value as any })}
-                              options={[
-                                 { value: 'Ativo', label: 'Ativo' },
-                                 { value: 'Passivo', label: 'Passivo' },
-                                 { value: 'Capital', label: 'Capital Próprio' },
-                                 { value: 'Receita', label: 'Receita' },
-                                 { value: 'Despesa', label: 'Despesa' }
-                              ]}
-                           />
-                           <Select name="natureza" label="Natureza"
-                              value={newAccount.natureza} onChange={e => setNewAccount({ ...newAccount, natureza: e.target.value as any })}
-                              options={[
-                                 { value: 'Devedora', label: 'Devedora' },
-                                 { value: 'Credora', label: 'Credora' }
-                              ]}
-                           />
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                           <Select name="aceita_lancamentos" label="Tipo de Lançamento"
-                              value={newAccount.aceita_lancamentos ? 'true' : 'false'}
-                              onChange={e => setNewAccount({ ...newAccount, aceita_lancamentos: e.target.value === 'true' })}
-                              options={[
-                                 { value: 'true', label: 'Analítica (Aceita Movimentos)' },
-                                 { value: 'false', label: 'Sintética (Apenas Grupos)' }
-                              ]}
-                           />
-                           <Select name="centro_custo_id" label="Centro de Custo Associado"
-                              value={newAccount.centro_custo_id} onChange={e => setNewAccount({ ...newAccount, centro_custo_id: e.target.value })}
-                              options={[
-                                 { value: '', label: 'Nenhum' },
-                                 ...centrosCusto.map(cc => ({ value: cc.id, label: cc.nome }))
-                              ]}
-                           />
-                        </div>
-                        <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                           <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1 font-mono">Hierarchy Preview</p>
-                           <p className="text-xs font-bold text-zinc-600">Nível detectado automaticamente: <span className="text-zinc-900">{newAccount.codigo.split('.').length}</span></p>
-                        </div>
-                        <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl">
-                           <Save size={18} /> Registrar no Estatuto
-                        </button>
-                     </form>
-                  </div>
-               </div>
-            )
-         }
 
-         {/* --- MODAL NOVO CENTRO DE CUSTO --- */}
-         {showCCModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-               <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                     <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                        <Landmark className="text-yellow-500" /> Novo Centro de Custo/Lucro
-                     </h2>
-                     <button onClick={() => setShowCCModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
-                  </div>
-                  <form onSubmit={handleCreateCentro} className="p-8 space-y-6">
-                     <div className="grid grid-cols-2 gap-6">
-                        <Input name="cc_codigo" label="Código do Centro" required
-                           value={newCentroCusto.codigo} onChange={e => setNewCentroCusto({ ...newCentroCusto, codigo: e.target.value })}
-                           placeholder="Ex: ADM, PRD"
-                        />
-                        <Input name="cc_nome" label="Nome / Identificador" required
-                           value={newCentroCusto.nome} onChange={e => setNewCentroCusto({ ...newCentroCusto, nome: e.target.value })}
-                        />
+                        {/* Eliminações Intercompany */}
+                        <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
+                           <div className="flex items-center justify-between mb-6">
+                              <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
+                                 <ArrowDownLeft size={18} className="text-yellow-500" /> Eliminações Intercompany
+                              </h3>
+                              <span className="text-[9px] font-black text-zinc-400 px-3 py-1.5 bg-zinc-50 rounded-xl border border-zinc-100 uppercase tracking-widest">
+                                 Total: {safeFormatAOA(totalEliminacoes)}
+                              </span>
+                           </div>
+
+                           {empresas.length < 2 ? (
+                              <div className="text-center py-10 bg-zinc-50 rounded-2xl">
+                                 <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">São necessárias pelo menos 2 empresas no grupo para registar eliminações.</p>
+                              </div>
+                           ) : eliminacoesExemplo.length === 0 ? (
+                              <div className="text-center py-10 bg-zinc-50 rounded-2xl">
+                                 <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Nenhuma eliminação intercompany registada.</p>
+                              </div>
+                           ) : (
+                              <div className="overflow-x-auto">
+                                 <table className="w-full text-left">
+                                    <thead>
+                                       <tr className="border-b border-zinc-100">
+                                          {['Tipo', 'Descrição', 'Origem', 'Destino', 'Valor'].map(h => (
+                                             <th key={h} className="pb-3 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
+                                          ))}
+                                       </tr>
+                                    </thead>
+                                    <tbody>
+                                       {eliminacoesExemplo.map(el => (
+                                          <tr key={el.id} className="border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
+                                             <td className="py-3 px-4">
+                                                <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-yellow-50 text-yellow-700 border border-yellow-100">{el.tipo}</span>
+                                             </td>
+                                             <td className="py-3 px-4 text-sm font-bold text-zinc-700">{el.descricao}</td>
+                                             <td className="py-3 px-4 text-xs font-bold text-zinc-500">{el.origem}</td>
+                                             <td className="py-3 px-4 text-xs font-bold text-zinc-500">{el.destino}</td>
+                                             <td className="py-3 px-4 text-sm font-black text-red-500 text-right">({safeFormatAOA(el.valor)})</td>
+                                          </tr>
+                                       ))}
+                                    </tbody>
+                                    <tfoot>
+                                       <tr className="border-t-2 border-zinc-200">
+                                          <td colSpan={4} className="pt-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">Total a Eliminar</td>
+                                          <td className="pt-4 px-4 text-base font-black text-red-600 text-right">({safeFormatAOA(totalEliminacoes)})</td>
+                                       </tr>
+                                       <tr>
+                                          <td colSpan={4} className="pt-2 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-900">Lucro Consolidado Ajustado</td>
+                                          <td className={`pt-2 px-4 text-base font-black text-right ${lucroConsolidado >= 0 ? 'text-green-600' : 'text-red-600'}`}>{safeFormatAOA(lucroConsolidado)}</td>
+                                       </tr>
+                                    </tfoot>
+                                 </table>
+                              </div>
+                           )}
+                        </div>
                      </div>
-                     <Select name="cc_tipo" label="Tipo de Centro"
-                        value={newCentroCusto.tipo} onChange={e => setNewCentroCusto({ ...newCentroCusto, tipo: e.target.value })}
-                        options={[
-                           { value: 'Custo', label: 'Centro de Custo (Gasto)' },
-                           { value: 'Lucro', label: 'Centro de Lucro (Receita)' },
-                           { value: 'Misto', label: 'Misto / Operacional' }
-                        ]}
-                     />
-                     <Input name="cc_desc" label="Breve Descrição"
-                        value={newCentroCusto.descricao} onChange={e => setNewCentroCusto({ ...newCentroCusto, descricao: e.target.value })}
-                     />
-                     <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
-                        <Save size={18} /> Confirmar Estrutura
-                     </button>
-                  </form>
-               </div>
-            </div>
-         )}
-      </div >
-   );
+                  );
+               })()}
+               {/* --- MODAL NOVA CONTA (PLANO DE CONTAS) --- */}
+               {
+                  showAccountModal && (
+                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                              <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                                 <ListFilter className="text-yellow-500" /> Configurar Nova Conta (PGN)
+                              </h2>
+                              <button onClick={() => setShowAccountModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                           </div>
+                           <form onSubmit={handleCreateAccount} className="p-8 space-y-6">
+                              <div className="grid grid-cols-2 gap-6">
+                                 <Input name="codigo" label="Código PGC (Ex: 1.1.2)" required
+                                    value={newAccount.codigo} onChange={e => setNewAccount({ ...newAccount, codigo: e.target.value })}
+                                 />
+                                 <Input name="nome" label="Descrição da Conta" required
+                                    value={newAccount.nome} onChange={e => setNewAccount({ ...newAccount, nome: e.target.value })}
+                                 />
+                              </div>
+                              <div className="grid grid-cols-2 gap-6">
+                                 <Select name="tipo" label="Tipo de Conta"
+                                    value={newAccount.tipo} onChange={e => setNewAccount({ ...newAccount, tipo: e.target.value as any })}
+                                    options={[
+                                       { value: 'Ativo', label: 'Ativo' },
+                                       { value: 'Passivo', label: 'Passivo' },
+                                       { value: 'Capital', label: 'Capital Próprio' },
+                                       { value: 'Receita', label: 'Receita' },
+                                       { value: 'Despesa', label: 'Despesa' }
+                                    ]}
+                                 />
+                                 <Select name="natureza" label="Natureza"
+                                    value={newAccount.natureza} onChange={e => setNewAccount({ ...newAccount, natureza: e.target.value as any })}
+                                    options={[
+                                       { value: 'Devedora', label: 'Devedora' },
+                                       { value: 'Credora', label: 'Credora' }
+                                    ]}
+                                 />
+                              </div>
+                              <div className="grid grid-cols-2 gap-6">
+                                 <Select name="aceita_lancamentos" label="Tipo de Lançamento"
+                                    value={newAccount.aceita_lancamentos ? 'true' : 'false'}
+                                    onChange={e => setNewAccount({ ...newAccount, aceita_lancamentos: e.target.value === 'true' })}
+                                    options={[
+                                       { value: 'true', label: 'Analítica (Aceita Movimentos)' },
+                                       { value: 'false', label: 'Sintética (Apenas Grupos)' }
+                                    ]}
+                                 />
+                                 <Select name="centro_custo_id" label="Centro de Custo Associado"
+                                    value={newAccount.centro_custo_id} onChange={e => setNewAccount({ ...newAccount, centro_custo_id: e.target.value })}
+                                    options={[
+                                       { value: '', label: 'Nenhum' },
+                                       ...centrosCusto.map(cc => ({ value: cc.id, label: cc.nome }))
+                                    ]}
+                                 />
+                              </div>
+                              <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1 font-mono">Hierarchy Preview</p>
+                                 <p className="text-xs font-bold text-zinc-600">Nível detectado automaticamente: <span className="text-zinc-900">{newAccount.codigo.split('.').length}</span></p>
+                              </div>
+                              <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl">
+                                 <Save size={18} /> Registrar no Estatuto
+                              </button>
+                           </form>
+                        </div>
+                     </div>
+                  )
+               }
+
+               {/* --- MODAL NOVO CENTRO DE CUSTO --- */}
+               {showCCModal && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                     <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                           <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                              <Landmark className="text-yellow-500" /> Novo Centro de Custo/Lucro
+                           </h2>
+                           <button onClick={() => setShowCCModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleCreateCentro} className="p-8 space-y-6">
+                           <div className="grid grid-cols-2 gap-6">
+                              <Input name="cc_codigo" label="Código do Centro" required
+                                 value={newCentroCusto.codigo} onChange={e => setNewCentroCusto({ ...newCentroCusto, codigo: e.target.value })}
+                                 placeholder="Ex: ADM, PRD"
+                              />
+                              <Input name="cc_nome" label="Nome / Identificador" required
+                                 value={newCentroCusto.nome} onChange={e => setNewCentroCusto({ ...newCentroCusto, nome: e.target.value })}
+                              />
+                           </div>
+                           <Select name="cc_tipo" label="Tipo de Centro"
+                              value={newCentroCusto.tipo} onChange={e => setNewCentroCusto({ ...newCentroCusto, tipo: e.target.value })}
+                              options={[
+                                 { value: 'Custo', label: 'Centro de Custo (Gasto)' },
+                                 { value: 'Lucro', label: 'Centro de Lucro (Receita)' },
+                                 { value: 'Misto', label: 'Misto / Operacional' }
+                              ]}
+                           />
+                           <Input name="cc_desc" label="Breve Descrição"
+                              value={newCentroCusto.descricao} onChange={e => setNewCentroCusto({ ...newCentroCusto, descricao: e.target.value })}
+                           />
+                           <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
+                              <Save size={18} /> Confirmar Estrutura
+                           </button>
+                        </form>
+                     </div>
+                  </div>
+               )}
+            </div >
+         );
 };
 
-export default AccountingPage;
+         export default AccountingPage;

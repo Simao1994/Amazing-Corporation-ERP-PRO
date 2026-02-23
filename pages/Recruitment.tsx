@@ -422,7 +422,7 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                   </div>
                </div>
 
-               <div className="grid grid-cols-2 gap-10 mb-10">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
                   <div className="space-y-4">
                      <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest border-b pb-1">Identificação</h3>
                      <p className="text-xl font-black">{printingCandidato.nome} {printingCandidato.sobrenome}</p>
@@ -446,7 +446,7 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                   <p className="text-sm leading-relaxed text-zinc-700 italic">"{printingCandidato.experiencia}"</p>
                </div>
 
-               <div className="grid grid-cols-2 gap-20 pt-20 border-t border-zinc-200">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-20 pt-10 md:pt-20 border-t border-zinc-200">
                   <div className="text-center border-t border-zinc-900 pt-2">
                      <p className="text-xs font-black uppercase">Assinatura Candidato</p>
                   </div>

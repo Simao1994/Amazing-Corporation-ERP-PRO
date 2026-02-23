@@ -7,6 +7,7 @@ import {
   LogOut,
   Search
 } from '../constants';
+import { Menu } from 'lucide-react';
 import {
   MessageCircle,
   X,
@@ -45,7 +46,13 @@ interface Notification {
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const isHomePage = location.pathname === '/';
 
@@ -196,7 +203,22 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
   return (
     <div className="flex h-screen bg-[#e0f2fe] overflow-hidden text-zinc-900 font-sans">
-      <aside className={`${isSidebarOpen ? 'w-72' : 'w-20'} transition-all duration-300 bg-[#0f172a] text-white flex flex-col z-20 shadow-2xl border-r border-white/5`}>
+      {/* Mobile backdrop overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      {/* Sidebar — fixed drawer on mobile, static flex item on desktop */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 flex flex-col bg-[#0f172a] text-white shadow-2xl border-r border-white/5
+        transition-all duration-300
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        w-72
+        lg:relative lg:inset-auto lg:translate-x-0 lg:z-20
+        ${isSidebarOpen ? 'lg:w-72' : 'lg:w-20'}
+      `}>
         <div className="p-8 flex flex-col items-center overflow-hidden">
           {isSidebarOpen ? <Logo className="w-full" light showTagline /> : <div className="bg-yellow-500 text-zinc-900 w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-lg text-lg">A</div>}
         </div>
@@ -226,9 +248,18 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <header className="h-20 bg-white/70 backdrop-blur-md border-b border-sky-200 px-8 flex items-center justify-between z-10 relative">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-sky-100 rounded-lg text-slate-600"><Search size={20} /></button>
+        <header className="h-16 lg:h-20 bg-white/70 backdrop-blur-md border-b border-sky-200 px-4 lg:px-8 flex items-center justify-between z-10 relative">
+          <div className="flex items-center gap-3">
+            {/* Hamburger — mobile only */}
+            <button
+              onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 hover:bg-sky-100 rounded-lg text-slate-600"
+              aria-label="Abrir menu"
+            >
+              <Menu size={22} />
+            </button>
+            {/* Desktop sidebar toggle */}
+            <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="hidden lg:flex p-2 hover:bg-sky-100 rounded-lg text-slate-600"><Search size={20} /></button>
             <div className="hidden md:flex flex-col"><span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Amazing Corp ERP</span></div>
           </div>
           <div className="flex items-center gap-6">
@@ -284,12 +315,12 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           </div>
         </header>
 
-        <main className={`flex-1 overflow-y-auto ${isHomePage ? 'p-0' : 'p-8'} bg-[#e0f2fe] relative`}>
+        <main className={`flex-1 overflow-y-auto ${isHomePage ? 'p-0' : 'p-4 lg:p-8'} bg-[#e0f2fe] relative`}>
           <div className={`${isHomePage ? 'w-full' : 'max-w-7xl mx-auto pb-12'}`}>{children}</div>
         </main>
 
         {/* CHAT WIDGET */}
-        <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 ${isChatOpen ? 'w-80 sm:w-96' : 'w-auto'}`}>
+        <div className={`fixed bottom-4 right-4 lg:bottom-6 lg:right-6 z-50 flex flex-col items-end transition-all duration-300 ${isChatOpen ? 'w-[calc(100vw-2rem)] sm:w-96' : 'w-auto'}`}>
           {isChatOpen && (
             <div className="bg-white rounded-t-2xl shadow-2xl border border-sky-100 w-full overflow-hidden flex flex-col transition-all duration-300 animate-in slide-in-from-bottom-10" style={{ height: '500px' }}>
               <div className="bg-zinc-900 p-4 text-white flex justify-between items-center">

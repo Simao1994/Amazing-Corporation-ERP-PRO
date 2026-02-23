@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
    Building2, Key, Hammer, BrainCircuit, BarChart3, Search, Plus,
    MapPin, DollarSign, Calendar, CheckCircle2, XCircle, Home,
@@ -736,229 +736,238 @@ const RealEstatePage: React.FC = () => {
                   </table>
                </div>
             </div>
-         )}
+   )
+}
 
-         {/* --- OBRAS E REABILITAÇÃO --- */}
-         {activeTab === 'obras' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               <div className="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-[2.5rem] border border-orange-100 shadow-sm gap-4">
-                  <div>
-                     <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
-                        <Hammer className="text-orange-500" /> Gestão de Reabilitação
-                     </h2>
-                     <p className="text-zinc-500 text-sm mt-1">Projectos de remodelação e valorização de ativos.</p>
-                  </div>
-                  <button
-                     onClick={() => { setEditingObra(null); setShowObraModal(true); }}
-                     className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center gap-2 shadow-xl"
-                  >
-                     <PaintBucket size={16} /> Novo Projecto
-                  </button>
-               </div>
+{/* --- OBRAS E REABILITAÇÃO --- */ }
+{
+   activeTab === 'obras' && (
+      <div className="space-y-6 animate-in slide-in-from-bottom-4">
+         <div className="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-[2.5rem] border border-orange-100 shadow-sm gap-4">
+            <div>
+               <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
+                  <Hammer className="text-orange-500" /> Gestão de Reabilitação
+               </h2>
+               <p className="text-zinc-500 text-sm mt-1">Projectos de remodelação e valorização de ativos.</p>
+            </div>
+            <button
+               onClick={() => { setEditingObra(null); setShowObraModal(true); }}
+               className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center gap-2 shadow-xl"
+            >
+               <PaintBucket size={16} /> Novo Projecto
+            </button>
+         </div>
 
-               <div className="bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100">
-                  <Input
-                     placeholder="Pesquisar por descrição da obra ou estado..."
-                     icon={<Search size={20} className="text-zinc-400" />}
-                     value={searchTerm}
-                     onChange={(e) => setSearchTerm(e.target.value)}
-                     className="bg-transparent border-none py-4 text-lg font-semibold"
-                  />
-               </div>
+         <div className="bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100">
+            <Input
+               placeholder="Pesquisar por descrição da obra ou estado..."
+               icon={<Search size={20} className="text-zinc-400" />}
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+               className="bg-transparent border-none py-4 text-lg font-semibold"
+            />
+         </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {obras.length > 0 ? obras.filter(o =>
-                     o.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                     o.status.toLowerCase().includes(searchTerm.toLowerCase())
-                  ).map(obra => {
-                     const imovel = imoveis.find(i => i.id === obra.imovel_id);
-                     return (
-                        <div key={obra.id} className="bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {obras.length > 0 ? obras.filter(o =>
+               o.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               o.status.toLowerCase().includes(searchTerm.toLowerCase())
+            ).map(obra => {
+               const imovel = imoveis.find(i => i.id === obra.imovel_id);
+               return (
+                  <div key={obra.id} className="bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
+                     <div>
+                        <div className="flex justify-between items-start mb-4">
+                           <div className="flex items-center gap-3">
+                              <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
+                                 <HardHat size={20} />
+                              </div>
+                              <div>
+                                 <h4 className="font-black text-zinc-900 text-lg">{imovel?.titulo || 'Imóvel'}</h4>
+                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{obra.descricao}</p>
+                              </div>
+                           </div>
+                           <span className={`px - 3 py - 1 rounded - lg text - [9px] font - black uppercase tracking - widest ${obra.status === 'Em Execução' ? 'bg-blue-100 text-blue-700' :
+                              obra.status === 'Concluída' ? 'bg-green-100 text-green-700' :
+                                 'bg-yellow-100 text-yellow-700'
+                              } `}>{obra.status}</span>
+                        </div>
+
+                        <div className="space-y-4 my-6">
                            <div>
-                              <div className="flex justify-between items-start mb-4">
-                                 <div className="flex items-center gap-3">
-                                    <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
-                                       <HardHat size={20} />
-                                    </div>
-                                    <div>
-                                       <h4 className="font-black text-zinc-900 text-lg">{imovel?.titulo || 'Imóvel'}</h4>
-                                       <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{obra.descricao}</p>
-                                    </div>
-                                 </div>
-                                 <span className={`px - 3 py - 1 rounded - lg text - [9px] font - black uppercase tracking - widest ${obra.status === 'Em Execução' ? 'bg-blue-100 text-blue-700' :
-                                    obra.status === 'Concluída' ? 'bg-green-100 text-green-700' :
-                                       'bg-yellow-100 text-yellow-700'
-                                    } `}>{obra.status}</span>
+                              <div className="flex justify-between text-[10px] font-black uppercase text-zinc-400 mb-1">
+                                 <span>Progresso</span>
+                                 <span>{obra.progresso}%</span>
                               </div>
-
-                              <div className="space-y-4 my-6">
-                                 <div>
-                                    <div className="flex justify-between text-[10px] font-black uppercase text-zinc-400 mb-1">
-                                       <span>Progresso</span>
-                                       <span>{obra.progresso}%</span>
-                                    </div>
-                                    <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden">
-                                       <div className={`h - full ${obra.progresso === 100 ? 'bg-green-500' : 'bg-orange-500'} `} style={{ width: `${obra.progresso}% ` }}></div>
-                                    </div>
-                                 </div>
-
-                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-zinc-50 p-3 rounded-xl">
-                                       <p className="text-[9px] font-bold text-zinc-400 uppercase">Orçamento</p>
-                                       <p className="text-sm font-black text-zinc-900">{formatAOA(obra.orcamento_previsto)}</p>
-                                    </div>
-                                    <div className="bg-zinc-50 p-3 rounded-xl">
-                                       <p className="text-[9px] font-bold text-zinc-400 uppercase">Executado</p>
-                                       <p className={`text - sm font - black ${obra.custo_atual > obra.orcamento_previsto ? 'text-red-500' : 'text-green-600'} `}>{formatAOA(obra.custo_atual)}</p>
-                                    </div>
-                                 </div>
+                              <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden">
+                                 <div className={`h - full ${obra.progresso === 100 ? 'bg-green-500' : 'bg-orange-500'} `} style={{ width: `${obra.progresso}% ` }}></div>
                               </div>
                            </div>
 
-                           <div className="flex justify-between items-center pt-4 border-t border-zinc-100">
-                              <div className="text-[10px] font-bold text-zinc-400 uppercase flex items-center gap-1">
-                                 <Calendar size={12} /> Fim Previsto: {new Date(obra.previsao_fim).toLocaleDateString()}
+                           <div className="grid grid-cols-2 gap-4">
+                              <div className="bg-zinc-50 p-3 rounded-xl">
+                                 <p className="text-[9px] font-bold text-zinc-400 uppercase">Orçamento</p>
+                                 <p className="text-sm font-black text-zinc-900">{formatAOA(obra.orcamento_previsto)}</p>
                               </div>
-                              <button onClick={() => { setEditingObra(obra); setShowObraModal(true); }} className="text-zinc-900 font-bold text-xs hover:text-orange-600 underline">Gerir Obra</button>
+                              <div className="bg-zinc-50 p-3 rounded-xl">
+                                 <p className="text-[9px] font-bold text-zinc-400 uppercase">Executado</p>
+                                 <p className={`text - sm font - black ${obra.custo_atual > obra.orcamento_previsto ? 'text-red-500' : 'text-green-600'} `}>{formatAOA(obra.custo_atual)}</p>
+                              </div>
                            </div>
                         </div>
-                     );
-                  }) : (
-                     <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-zinc-200">
-                        <Wrench size={48} className="mx-auto text-zinc-200 mb-4" />
-                        <p className="text-zinc-400 font-bold italic">Nenhuma obra de reabilitação registada.</p>
-                     </div>
-                  )}
-               </div>
-            </div>
-         )}
-
-         {/* MODAL IMÓVEL */}
-         {showImovelModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-               <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                     <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                        <Home className="text-yellow-500" /> {editingImovel ? 'Editar Imóvel' : 'Cadastrar Propriedade'}
-                     </h2>
-                     <button onClick={() => setShowImovelModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><XCircle size={24} /></button>
-                  </div>
-                  <form onSubmit={handleSaveImovel} className="p-10 space-y-6 max-h-[80vh] overflow-y-auto">
-                     <Input name="titulo" label="Título do Anúncio" defaultValue={editingImovel?.titulo} required />
-                     <div className="grid grid-cols-2 gap-6">
-                        <Select name="tipo" label="Tipo" defaultValue={editingImovel?.tipo} options={[
-                           { value: 'Residencial', label: 'Residencial' }, { value: 'Comercial', label: 'Comercial' },
-                           { value: 'Industrial', label: 'Industrial' }, { value: 'Terreno', label: 'Terreno' }
-                        ]} />
-                        <Select name="status" label="Estado" defaultValue={editingImovel?.status} options={[
-                           { value: 'Disponível', label: 'Disponível' }, { value: 'Ocupado', label: 'Ocupado' },
-                           { value: 'Manutenção', label: 'Manutenção' }, { value: 'Vendido', label: 'Vendido' }
-                        ]} />
-                     </div>
-                     <Input name="localizacao" label="Localização / Endereço" defaultValue={editingImovel?.localizacao} required />
-                     <div className="grid grid-cols-2 gap-6">
-                        <Input name="area" label="Area (m²)" type="number" defaultValue={editingImovel?.area_m2} required />
-                        <Input name="quartos" label="Quartos" type="number" defaultValue={editingImovel?.quartos} />
-                     </div>
-                     <div className="grid grid-cols-2 gap-6 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
-                        <Input name="preco_venda" label="Valor de Venda (AOA)" type="number" defaultValue={editingImovel?.preco_venda} />
-                        <Input name="preco_renda" label="Valor de Renda (AOA)" type="number" defaultValue={editingImovel?.preco_renda} />
-                     </div>
-                     <Input name="proprietario" label="Proprietário" defaultValue={editingImovel?.proprietario} required />
-                     <div className="grid grid-cols-2 gap-6">
-                        <Input name="rentabilidade" label="Rentabilidade Est. (%)" type="number" step="0.1" defaultValue={editingImovel?.rentabilidade_estimada} />
-                        <Input name="custo_manutencao" label="Custo Manutenção Mensal" type="number" defaultValue={editingImovel?.custo_manutencao_mensal} />
-                     </div>
-                     <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-yellow-500 hover:text-zinc-900 transition-all">
-                        <CheckCircle2 size={18} /> Salvar Imóvel
-                     </button>
-                  </form>
-               </div>
-            </div>
-         )}
-
-         {/* MODAL CONTRATO */}
-         {showContratoModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-               <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                     <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                        <Briefcase className="text-yellow-500" /> {editingContrato ? 'Editar Contrato' : 'Novo Contrato'}
-                     </h2>
-                     <button onClick={() => setShowContratoModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><XCircle size={24} /></button>
-                  </div>
-                  <form onSubmit={handleSaveContrato} className="p-10 space-y-6">
-                     <Select name="imovel_id" label="Imóvel" defaultValue={editingContrato?.imovel_id}
-                        options={imoveis.filter(i => i.status === 'Disponível' || i.id === editingContrato?.imovel_id).map(i => ({ value: i.id, label: i.titulo }))} required />
-                     <div className="grid grid-cols-2 gap-6">
-                        <Input name="inquilino" label="Nome do Inquilino" defaultValue={editingContrato?.inquilino_nome} required />
-                        <Input name="nif" label="NIF / BI" defaultValue={editingContrato?.inquilino_nif} required />
-                     </div>
-                     <div className="grid grid-cols-2 gap-6">
-                        <Input name="inicio" label="Data Início" type="date" defaultValue={editingContrato?.data_inicio} required />
-                        <Input name="fim" label="Data Fim" type="date" defaultValue={editingContrato?.data_fim} required />
-                     </div>
-                     <div className="grid grid-cols-2 gap-6">
-                        <Select name="tipo" label="Modalidade" defaultValue={editingContrato?.tipo} options={[{ value: 'Arrendamento', label: 'Residencial (Longo Prazo)' }, { value: 'Aluguer Diário', label: 'Aluguer Diário (Curta Duração)' }]} />
-                        <Input name="valor" label="Valor (AOA)" type="number" defaultValue={editingContrato?.valor_mensal} required />
-                     </div>
-                     <Select name="status" label="Estado" defaultValue={editingContrato?.status || 'Activo'} options={[{ value: 'Activo', label: 'Activo' }, { value: 'Terminado', label: 'Terminado' }, { value: 'Inadimplente', label: 'Inadimplente' }]} />
-                     <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-green-600 transition-all">
-                        <CheckCircle2 size={18} /> Validar Contrato
-                     </button>
-                  </form>
-               </div>
-            </div>
-         )}
-
-         {/* MODAL OBRA (REABILITAÇÃO) */}
-         {showObraModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-               <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                     <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                        <Hammer className="text-orange-500" /> {editingObra ? 'Gerir Obra' : 'Nova Reabilitação'}
-                     </h2>
-                     <button onClick={() => setShowObraModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><XCircle size={24} /></button>
-                  </div>
-                  <form onSubmit={handleSaveObra} className="p-10 space-y-6">
-                     <Select name="imovel_id" label="Imóvel para Reabilitar" defaultValue={editingObra?.imovel_id}
-                        options={imoveis.map(i => ({ value: i.id, label: i.titulo }))} required />
-                     <Input name="descricao" label="Descrição da Intervenção" defaultValue={editingObra?.descricao} required placeholder="Ex: Remodelação total da cozinha e pintura" />
-
-                     <div className="grid grid-cols-2 gap-6">
-                        <Input name="orcamento" label="Orçamento Previsto (AOA)" type="number" defaultValue={editingObra?.orcamento_previsto} required />
-                        <Input name="custo_atual" label="Custo Executado (AOA)" type="number" defaultValue={editingObra?.custo_atual || 0} />
                      </div>
 
-                     <div className="grid grid-cols-2 gap-6">
-                        <Input name="inicio" label="Data Início" type="date" defaultValue={editingObra?.data_inicio} required />
-                        <Input name="fim" label="Previsão de Conclusão" type="date" defaultValue={editingObra?.previsao_fim} required />
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-6">
-                        <Select name="status" label="Fase da Obra" defaultValue={editingObra?.status || 'Planejamento'} options={[
-                           { value: 'Planejamento', label: 'Planejamento' },
-                           { value: 'Em Execução', label: 'Em Execução' },
-                           { value: 'Pausada', label: 'Pausada' },
-                           { value: 'Concluída', label: 'Concluída' }
-                        ]} />
-                        <div className="space-y-1">
-                           <label className="text-sm font-medium text-zinc-700">Progresso (%)</label>
-                           {/* Fixed: Cast EventTarget to HTMLInputElement before accessing nextElementSibling */}
-                           <input name="progresso" type="range" min="0" max="100" defaultValue={editingObra?.progresso || 0} className="w-full accent-orange-500 cursor-pointer" onInput={(e) => ((e.target as HTMLInputElement).nextElementSibling as HTMLElement).innerText = (e.target as HTMLInputElement).value + '%'} />
-                           <span className="text-xs font-bold text-orange-600 block text-right">{editingObra?.progresso || 0}%</span>
+                     <div className="flex justify-between items-center pt-4 border-t border-zinc-100">
+                        <div className="text-[10px] font-bold text-zinc-400 uppercase flex items-center gap-1">
+                           <Calendar size={12} /> Fim Previsto: {new Date(obra.previsao_fim).toLocaleDateString()}
                         </div>
+                        <button onClick={() => { setEditingObra(obra); setShowObraModal(true); }} className="text-zinc-900 font-bold text-xs hover:text-orange-600 underline">Gerir Obra</button>
                      </div>
-
-                     <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-orange-600 transition-all">
-                        <CheckCircle2 size={18} /> Salvar Projecto
-                     </button>
-                  </form>
+                  </div>
+               );
+            }) : (
+               <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-zinc-200">
+                  <Wrench size={48} className="mx-auto text-zinc-200 mb-4" />
+                  <p className="text-zinc-400 font-bold italic">Nenhuma obra de reabilitação registada.</p>
                </div>
-            </div>
-         )}
+            )}
+         </div>
       </div>
+   )
+}
+
+{/* MODAL IMÓVEL */ }
+{
+   showImovelModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+         <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+               <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                  <Home className="text-yellow-500" /> {editingImovel ? 'Editar Imóvel' : 'Cadastrar Propriedade'}
+               </h2>
+               <button onClick={() => setShowImovelModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><XCircle size={24} /></button>
+            </div>
+            <form onSubmit={handleSaveImovel} className="p-10 space-y-6 max-h-[80vh] overflow-y-auto">
+               <Input name="titulo" label="Título do Anúncio" defaultValue={editingImovel?.titulo} required />
+               <div className="grid grid-cols-2 gap-6">
+                  <Select name="tipo" label="Tipo" defaultValue={editingImovel?.tipo} options={[
+                     { value: 'Residencial', label: 'Residencial' }, { value: 'Comercial', label: 'Comercial' },
+                     { value: 'Industrial', label: 'Industrial' }, { value: 'Terreno', label: 'Terreno' }
+                  ]} />
+                  <Select name="status" label="Estado" defaultValue={editingImovel?.status} options={[
+                     { value: 'Disponível', label: 'Disponível' }, { value: 'Ocupado', label: 'Ocupado' },
+                     { value: 'Manutenção', label: 'Manutenção' }, { value: 'Vendido', label: 'Vendido' }
+                  ]} />
+               </div>
+               <Input name="localizacao" label="Localização / Endereço" defaultValue={editingImovel?.localizacao} required />
+               <div className="grid grid-cols-2 gap-6">
+                  <Input name="area" label="Area (m²)" type="number" defaultValue={editingImovel?.area_m2} required />
+                  <Input name="quartos" label="Quartos" type="number" defaultValue={editingImovel?.quartos} />
+               </div>
+               <div className="grid grid-cols-2 gap-6 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                  <Input name="preco_venda" label="Valor de Venda (AOA)" type="number" defaultValue={editingImovel?.preco_venda} />
+                  <Input name="preco_renda" label="Valor de Renda (AOA)" type="number" defaultValue={editingImovel?.preco_renda} />
+               </div>
+               <Input name="proprietario" label="Proprietário" defaultValue={editingImovel?.proprietario} required />
+               <div className="grid grid-cols-2 gap-6">
+                  <Input name="rentabilidade" label="Rentabilidade Est. (%)" type="number" step="0.1" defaultValue={editingImovel?.rentabilidade_estimada} />
+                  <Input name="custo_manutencao" label="Custo Manutenção Mensal" type="number" defaultValue={editingImovel?.custo_manutencao_mensal} />
+               </div>
+               <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-yellow-500 hover:text-zinc-900 transition-all">
+                  <CheckCircle2 size={18} /> Salvar Imóvel
+               </button>
+            </form>
+         </div>
+      </div>
+   )
+}
+
+{/* MODAL CONTRATO */ }
+{
+   showContratoModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+         <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+               <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                  <Briefcase className="text-yellow-500" /> {editingContrato ? 'Editar Contrato' : 'Novo Contrato'}
+               </h2>
+               <button onClick={() => setShowContratoModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><XCircle size={24} /></button>
+            </div>
+            <form onSubmit={handleSaveContrato} className="p-10 space-y-6">
+               <Select name="imovel_id" label="Imóvel" defaultValue={editingContrato?.imovel_id}
+                  options={imoveis.filter(i => i.status === 'Disponível' || i.id === editingContrato?.imovel_id).map(i => ({ value: i.id, label: i.titulo }))} required />
+               <div className="grid grid-cols-2 gap-6">
+                  <Input name="inquilino" label="Nome do Inquilino" defaultValue={editingContrato?.inquilino_nome} required />
+                  <Input name="nif" label="NIF / BI" defaultValue={editingContrato?.inquilino_nif} required />
+               </div>
+               <div className="grid grid-cols-2 gap-6">
+                  <Input name="inicio" label="Data Início" type="date" defaultValue={editingContrato?.data_inicio} required />
+                  <Input name="fim" label="Data Fim" type="date" defaultValue={editingContrato?.data_fim} required />
+               </div>
+               <div className="grid grid-cols-2 gap-6">
+                  <Select name="tipo" label="Modalidade" defaultValue={editingContrato?.tipo} options={[{ value: 'Arrendamento', label: 'Residencial (Longo Prazo)' }, { value: 'Aluguer Diário', label: 'Aluguer Diário (Curta Duração)' }]} />
+                  <Input name="valor" label="Valor (AOA)" type="number" defaultValue={editingContrato?.valor_mensal} required />
+               </div>
+               <Select name="status" label="Estado" defaultValue={editingContrato?.status || 'Activo'} options={[{ value: 'Activo', label: 'Activo' }, { value: 'Terminado', label: 'Terminado' }, { value: 'Inadimplente', label: 'Inadimplente' }]} />
+               <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-green-600 transition-all">
+                  <CheckCircle2 size={18} /> Validar Contrato
+               </button>
+            </form>
+         </div>
+      </div>
+   )
+}
+
+{/* MODAL OBRA (REABILITAÇÃO) */ }
+{
+   showObraModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+         <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+               <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                  <Hammer className="text-orange-500" /> {editingObra ? 'Gerir Obra' : 'Nova Reabilitação'}
+               </h2>
+               <button onClick={() => setShowObraModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><XCircle size={24} /></button>
+            </div>
+            <form onSubmit={handleSaveObra} className="p-10 space-y-6">
+               <Select name="imovel_id" label="Imóvel para Reabilitar" defaultValue={editingObra?.imovel_id}
+                  options={imoveis.map(i => ({ value: i.id, label: i.titulo }))} required />
+               <Input name="descricao" label="Descrição da Intervenção" defaultValue={editingObra?.descricao} required placeholder="Ex: Remodelação total da cozinha e pintura" />
+
+               <div className="grid grid-cols-2 gap-6">
+                  <Input name="orcamento" label="Orçamento Previsto (AOA)" type="number" defaultValue={editingObra?.orcamento_previsto} required />
+                  <Input name="custo_atual" label="Custo Executado (AOA)" type="number" defaultValue={editingObra?.custo_atual || 0} />
+               </div>
+
+               <div className="grid grid-cols-2 gap-6">
+                  <Input name="inicio" label="Data Início" type="date" defaultValue={editingObra?.data_inicio} required />
+                  <Input name="fim" label="Previsão de Conclusão" type="date" defaultValue={editingObra?.previsao_fim} required />
+               </div>
+
+               <div className="grid grid-cols-2 gap-6">
+                  <Select name="status" label="Fase da Obra" defaultValue={editingObra?.status || 'Planejamento'} options={[
+                     { value: 'Planejamento', label: 'Planejamento' },
+                     { value: 'Em Execução', label: 'Em Execução' },
+                     { value: 'Pausada', label: 'Pausada' },
+                     { value: 'Concluída', label: 'Concluída' }
+                  ]} />
+                  <div className="space-y-1">
+                     <label className="text-sm font-medium text-zinc-700">Progresso (%)</label>
+                     {/* Fixed: Cast EventTarget to HTMLInputElement before accessing nextElementSibling */}
+                     <input name="progresso" type="range" min="0" max="100" defaultValue={editingObra?.progresso || 0} className="w-full accent-orange-500 cursor-pointer" onInput={(e) => ((e.target as HTMLInputElement).nextElementSibling as HTMLElement).innerText = (e.target as HTMLInputElement).value + '%'} />
+                     <span className="text-xs font-bold text-orange-600 block text-right">{editingObra?.progresso || 0}%</span>
+                  </div>
+               </div>
+
+               <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-orange-600 transition-all">
+                  <CheckCircle2 size={18} /> Salvar Projecto
+               </button>
+            </form>
+         </div>
+      </div>
+   )
+}
+      </div >
    );
 };
 

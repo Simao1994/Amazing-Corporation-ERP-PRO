@@ -427,7 +427,7 @@ const Dashboard: React.FC = () => {
                 <Input name="image" label="URL da Imagem (Banner)" defaultValue={editingAd?.imageUrl} placeholder="https://..." icon={<ImageIcon size={16} />} />
                 <Input name="link" label="Link Externo (Opcional)" defaultValue={editingAd?.link} placeholder="https://..." icon={<ExternalLink size={16} />} />
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <Input name="start" label="Data Início" type="date" defaultValue={editingAd?.startDate} required />
                   <Input name="end" label="Data Fim" type="date" defaultValue={editingAd?.endDate} required />
                 </div>

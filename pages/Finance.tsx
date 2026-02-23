@@ -285,51 +285,53 @@ const FinancePage: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-[2.5rem] shadow-sm border border-sky-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-zinc-50/50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-              <th className="px-8 py-6">Nº Documento / Fornecedor</th>
-              <th className="px-8 py-6">Categoria</th>
-              <th className="px-8 py-6 text-center">Data Emissão</th>
-              <th className="px-8 py-6 text-right">Valor Bruto</th>
-              <th className="px-8 py-6 text-right print:hidden">Gestão</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-50">
-            {filteredNotas.length > 0 ? filteredNotas.map((n) => (
-              <tr key={n.id} className="hover:bg-zinc-50/30 transition-all group">
-                <td className="px-8 py-5">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black text-zinc-900">{n.numero}</span>
-                    <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{n.fornecedor}</span>
-                  </div>
-                </td>
-                <td className="px-8 py-5">
-                  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit ${getCategoryColor(n.categoria)}`}>
-                    <Tag size={12} />
-                    {n.categoria}
-                  </span>
-                </td>
-                <td className="px-8 py-5 text-sm font-bold text-zinc-600 text-center">{n.data_emissao}</td>
-                <td className="px-8 py-5 text-sm font-black text-zinc-900 text-right">{formatAOA(n.valor_total)}</td>
-                <td className="px-8 py-5 text-right flex justify-end gap-2 print:hidden">
-                  <button onClick={() => handleOpenModal(n)} className="p-3 text-zinc-300 hover:text-yellow-600 hover:bg-yellow-50 rounded-xl transition-all"><Edit size={16} /></button>
-                  <button onClick={() => handleDelete(n.id, n.numero)} className="p-3 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[600px]">
+            <thead>
+              <tr className="bg-zinc-50/50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                <th className="px-8 py-6">Nº Documento / Fornecedor</th>
+                <th className="px-8 py-6">Categoria</th>
+                <th className="px-8 py-6 text-center">Data Emissão</th>
+                <th className="px-8 py-6 text-right">Valor Bruto</th>
+                <th className="px-8 py-6 text-right print:hidden">Gestão</th>
               </tr>
-            )) : (
-              <tr><td colSpan={5} className="px-8 py-20 text-center">
-                <FileText size={48} className="mx-auto text-sky-100 mb-4" />
-                <p className="text-zinc-400 font-bold italic">Nenhum lançamento fiscal encontrado nos filtros atuais.</p>
-              </td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-zinc-50">
+              {filteredNotas.length > 0 ? filteredNotas.map((n) => (
+                <tr key={n.id} className="hover:bg-zinc-50/30 transition-all group">
+                  <td className="px-8 py-5">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-zinc-900">{n.numero}</span>
+                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{n.fornecedor}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5">
+                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit ${getCategoryColor(n.categoria)}`}>
+                      <Tag size={12} />
+                      {n.categoria}
+                    </span>
+                  </td>
+                  <td className="px-8 py-5 text-sm font-bold text-zinc-600 text-center">{n.data_emissao}</td>
+                  <td className="px-8 py-5 text-sm font-black text-zinc-900 text-right">{formatAOA(n.valor_total)}</td>
+                  <td className="px-8 py-5 text-right flex justify-end gap-2 print:hidden">
+                    <button onClick={() => handleOpenModal(n)} className="p-3 text-zinc-300 hover:text-yellow-600 hover:bg-yellow-50 rounded-xl transition-all"><Edit size={16} /></button>
+                    <button onClick={() => handleDelete(n.id, n.numero)} className="p-3 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                  </td>
+                </tr>
+              )) : (
+                <tr><td colSpan={5} className="px-8 py-20 text-center">
+                  <FileText size={48} className="mx-auto text-sky-100 mb-4" />
+                  <p className="text-zinc-400 font-bold italic">Nenhum lançamento fiscal encontrado nos filtros atuais.</p>
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto animate-in zoom-in-95">
             <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
               <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
                 {editingItem ? <Edit className="text-yellow-500" /> : <FileText className="text-yellow-500" />}
@@ -338,14 +340,14 @@ const FinancePage: React.FC = () => {
               <button onClick={() => setShowModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all"><X size={24} className="text-zinc-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-10 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <Input name="numero" label="Número da Nota" defaultValue={editingItem?.numero} required placeholder="Ex: NF-2024-001" />
                 <Select name="categoria" label="Classificação de Gasto" defaultValue={editingItem?.categoria || 'Outros'} options={CATEGORIAS_FINANCEIRAS} />
               </div>
 
               <Input name="fornecedor" label="Fornecedor / Entidade" defaultValue={editingItem?.fornecedor} required placeholder="Ex: Sonangol EP" />
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <Input name="data" label="Data de Emissão" type="date" defaultValue={editingItem?.data_emissao || new Date().toISOString().split('T')[0]} required />
                 <Input
                   name="valor"

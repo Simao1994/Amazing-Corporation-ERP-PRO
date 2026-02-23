@@ -254,66 +254,69 @@ const InventoryPage: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
-            <table className="w-full text-left">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[500px]">
+                <thead>
+                  <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    <th className="px-8 py-6">Artigo</th>
+                    <th className="px-8 py-6 text-center">Stock</th>
+                    <th className="px-8 py-6 text-right">Preço</th>
+                    <th className="px-8 py-6 text-right">Total</th>
+                    <th className="px-8 py-6 text-right">Acções</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-50">
+                  {filteredItems.map(item => (
+                    <tr key={item.id} className="hover:bg-zinc-50/50">
+                      <td className="px-8 py-4">
+                        <p className="font-black text-zinc-900 text-sm">{item.nome}</p>
+                        <p className="text-[9px] font-bold text-zinc-400 uppercase">{item.categoria}</p>
+                      </td>
+                      <td className="px-8 py-4 text-center font-black text-lg">{item.qtd}</td>
+                      <td className="px-8 py-4 text-right font-bold text-zinc-600">{formatAOA(item.preco)}</td>
+                      <td className="px-8 py-4 text-right font-black text-zinc-900">{formatAOA(item.total)}</td>
+                      <td className="px-8 py-4 text-right flex justify-end gap-2">
+                        <button onClick={() => { setSelectedItemForMovement(item); setShowMovementModal(true); }} className="p-3 bg-zinc-900 text-white rounded-xl"><ArrowRightLeft size={16} /></button>
+                        <button onClick={() => openItemModal(item)} className="p-3 text-zinc-300"><Edit size={16} /></button>
+                        <button onClick={() => handleDeleteItem(item.id, item.nome)} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={16} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white p-8 rounded-[3rem] shadow-sm">
+          <h2 className="text-xl font-black mb-6 uppercase">Histórico de Movimentações</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[400px]">
               <thead>
-                <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                  <th className="px-8 py-6">Artigo</th>
-                  <th className="px-8 py-6 text-center">Stock</th>
-                  <th className="px-8 py-6 text-right">Preço</th>
-                  <th className="px-8 py-6 text-right">Total</th>
-                  <th className="px-8 py-6 text-right">Acções</th>
+                <tr className="text-[10px] font-black text-zinc-400 uppercase border-b">
+                  <th className="py-4">Data</th>
+                  <th className="py-4">Item</th>
+                  <th className="py-4">Tipo</th>
+                  <th className="py-4">Qtd</th>
+                  <th className="py-4">Entidade</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-50">
-                {filteredItems.map(item => (
-                  <tr key={item.id} className="hover:bg-zinc-50/50">
-                    <td className="px-8 py-4">
-                      <p className="font-black text-zinc-900 text-sm">{item.nome}</p>
-                      <p className="text-[9px] font-bold text-zinc-400 uppercase">{item.categoria}</p>
-                    </td>
-                    <td className="px-8 py-4 text-center font-black text-lg">{item.qtd}</td>
-                    <td className="px-8 py-4 text-right font-bold text-zinc-600">{formatAOA(item.preco)}</td>
-                    <td className="px-8 py-4 text-right font-black text-zinc-900">{formatAOA(item.total)}</td>
-                    <td className="px-8 py-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setSelectedItemForMovement(item); setShowMovementModal(true); }} className="p-3 bg-zinc-900 text-white rounded-xl"><ArrowRightLeft size={16} /></button>
-                      <button onClick={() => openItemModal(item)} className="p-3 text-zinc-300"><Edit size={16} /></button>
-                      <button onClick={() => handleDeleteItem(item.id, item.nome)} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={16} /></button>
-                    </td>
+              <tbody>
+                {reportMovements.map(m => (
+                  <tr key={m.id} className="border-b border-zinc-50 text-sm">
+                    <td className="py-4">{new Date(m.data).toLocaleDateString()}</td>
+                    <td className="py-4 font-bold">{m.item_nome}</td>
+                    <td className={`py-4 font-black uppercase text-[10px] ${m.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>{m.tipo}</td>
+                    <td className="py-4 font-black">{m.quantidade}</td>
+                    <td className="py-4">{m.entidade}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-      ) : (
-        <div className="bg-white p-8 rounded-[3rem] shadow-sm">
-          <h2 className="text-xl font-black mb-6 uppercase">Histórico de Movimentações</h2>
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[10px] font-black text-zinc-400 uppercase border-b">
-                <th className="py-4">Data</th>
-                <th className="py-4">Item</th>
-                <th className="py-4">Tipo</th>
-                <th className="py-4">Qtd</th>
-                <th className="py-4">Entidade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportMovements.map(m => (
-                <tr key={m.id} className="border-b border-zinc-50 text-sm">
-                  <td className="py-4">{new Date(m.data).toLocaleDateString()}</td>
-                  <td className="py-4 font-bold">{m.item_nome}</td>
-                  <td className={`py-4 font-black uppercase text-[10px] ${m.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>{m.tipo}</td>
-                  <td className="py-4 font-black">{m.quantidade}</td>
-                  <td className="py-4">{m.entidade}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
 
-      {/* MODALS */}
       {showItemModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden p-10 space-y-6">
@@ -321,7 +324,7 @@ const InventoryPage: React.FC = () => {
             <form onSubmit={handleItemSubmit} className="space-y-4">
               <Input label="Nome" value={itemForm.nome} onChange={e => setItemForm({ ...itemForm, nome: e.target.value })} required />
               <Select label="Categoria" value={itemForm.categoria} onChange={e => setItemForm({ ...itemForm, categoria: e.target.value })} options={categorias.map(c => ({ value: c, label: c }))} />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Preço" type="number" value={itemForm.preco} onChange={e => setItemForm({ ...itemForm, preco: Number(e.target.value) })} required />
                 <Input label="Stock Inicial" type="number" value={itemForm.qtd} onChange={e => setItemForm({ ...itemForm, qtd: Number(e.target.value) })} required />
               </div>
@@ -330,23 +333,26 @@ const InventoryPage: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+      )
+      }
 
-      {showMovementModal && selectedItemForMovement && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden p-10 space-y-6">
-            <h2 className="text-2xl font-black">Movimentar: {selectedItemForMovement.nome}</h2>
-            <form onSubmit={handleMovementSubmit} className="space-y-4">
-              <Select label="Tipo" value={movementForm.tipo} onChange={e => setMovementForm({ ...movementForm, tipo: e.target.value as any })} options={[{ value: 'entrada', label: 'Entrada' }, { value: 'saida', label: 'Saída' }]} />
-              <Input label="Quantidade" type="number" value={movementForm.quantidade} onChange={e => setMovementForm({ ...movementForm, quantidade: Number(e.target.value) })} required />
-              <Input label="Entidade/Origem" value={movementForm.entidade} onChange={e => setMovementForm({ ...movementForm, entidade: e.target.value })} required />
-              <button type="submit" className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black uppercase text-xs">Confirmar</button>
-              <button type="button" onClick={() => setShowMovementModal(false)} className="w-full text-zinc-400 font-bold text-xs">Voltar</button>
-            </form>
+      {
+        showMovementModal && selectedItemForMovement && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4">
+            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden p-10 space-y-6">
+              <h2 className="text-2xl font-black">Movimentar: {selectedItemForMovement.nome}</h2>
+              <form onSubmit={handleMovementSubmit} className="space-y-4">
+                <Select label="Tipo" value={movementForm.tipo} onChange={e => setMovementForm({ ...movementForm, tipo: e.target.value as any })} options={[{ value: 'entrada', label: 'Entrada' }, { value: 'saida', label: 'Saída' }]} />
+                <Input label="Quantidade" type="number" value={movementForm.quantidade} onChange={e => setMovementForm({ ...movementForm, quantidade: Number(e.target.value) })} required />
+                <Input label="Entidade/Origem" value={movementForm.entidade} onChange={e => setMovementForm({ ...movementForm, entidade: e.target.value })} required />
+                <button type="submit" className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black uppercase text-xs">Confirmar</button>
+                <button type="button" onClick={() => setShowMovementModal(false)} className="w-full text-zinc-400 font-bold text-xs">Voltar</button>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
