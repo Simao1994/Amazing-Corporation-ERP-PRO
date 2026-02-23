@@ -187,24 +187,81 @@ const BlogPage: React.FC = () => {
         {filtered.length > 0 ? (
           filtered.map(post => (
             <div key={post.id} className="bg-white rounded-[3rem] overflow-hidden border border-sky-100 shadow-sm hover:shadow-2xl transition-all group flex flex-col md:flex-row">
-              <div className="md:w-1/3 aspect-video md:aspect-auto overflow-hidden relative">
-                <img src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={post.titulo} />
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
-                    {post.categoria}
-                  </span>
-                  {!post.is_publico && (
-                    <span className="px-3 py-1 bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg flex items-center gap-1">
-                      <Lock size={10} /> Interno
+              <div className="md:w-1/3 aspect-video md:aspect-auto overflow-hidden relative bg-zinc-900">
+                {post.video_url ? (() => {
+                  const url = post.video_url;
+                  // Detectar YouTube
+                  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                  // Detectar Vimeo
+                  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+
+                  if (ytMatch) {
+                    return (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${ytMatch[1]}?rel=0`}
+                        className="w-full h-full min-h-[180px]"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={post.titulo}
+                      />
+                    );
+                  } else if (vimeoMatch) {
+                    return (
+                      <iframe
+                        src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
+                        className="w-full h-full min-h-[180px]"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        title={post.titulo}
+                      />
+                    );
+                  } else {
+                    // Vídeo directo (ficheiro mp4, webm, etc. do Supabase)
+                    return (
+                      <video
+                        src={url}
+                        controls
+                        className="w-full h-full object-cover"
+                        preload="metadata"
+                        poster={post.imagem_url || undefined}
+                      />
+                    );
+                  }
+                })() : (
+                  <>
+                    <img src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={post.titulo} />
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                        {post.categoria}
+                      </span>
+                      {!post.is_publico && (
+                        <span className="px-3 py-1 bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg flex items-center gap-1">
+                          <Lock size={10} /> Interno
+                        </span>
+                      )}
+                    </div>
+                    <div className="absolute bottom-4 right-4">
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-xl text-zinc-900">
+                        {post.tipo === 'video' ? <Play size={18} fill="currentColor" /> : post.tipo === 'galeria' ? <ImageIcon size={18} /> : <Newspaper size={18} />}
+                      </div>
+                    </div>
+                  </>
+                )}
+                {/* Badges para posts com vídeo */}
+                {post.video_url && (
+                  <div className="absolute top-4 left-4 flex gap-2 pointer-events-none">
+                    <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                      {post.categoria}
                     </span>
-                  )}
-                </div>
-                <div className="absolute bottom-4 right-4">
-                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-xl text-zinc-900">
-                    {post.tipo === 'video' ? <Play size={18} fill="currentColor" /> : post.tipo === 'galeria' ? <ImageIcon size={18} /> : <Newspaper size={18} />}
+                    {!post.is_publico && (
+                      <span className="px-3 py-1 bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg flex items-center gap-1">
+                        <Lock size={10} /> Interno
+                      </span>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
+
               <div className="md:w-2/3 p-8 flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-4">
