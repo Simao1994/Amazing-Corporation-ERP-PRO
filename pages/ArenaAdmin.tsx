@@ -34,6 +34,14 @@ interface ArenaPagamento {
    confirmado_em?: string;
 }
 
+interface ArenaDespesa {
+   id: string;
+   descricao: string;
+   valor: number;
+   categoria: 'Manutenção' | 'Pessoal' | 'Marketing' | 'Outros';
+   data: string;
+}
+
 const FUNCTIONS_URL = 'https://jgktemwegesmmomlftgt.supabase.co/functions/v1';
 const ADMIN_KEY = 'amazing-arena-admin-2026';
 import { supabase } from '../src/lib/supabase';
@@ -41,6 +49,7 @@ import { formatAOA } from '../constants';
 
 const ArenaAdmin: React.FC = () => {
    const [activeTab, setActiveTab] = useState<'analytics' | 'catalog' | 'tournaments' | 'payments' | 'ranking'>('analytics');
+   const [financeView, setFinanceView] = useState<'payments' | 'expenses'>('payments');
    const [searchTerm, setSearchTerm] = useState('');
    const [loading, setLoading] = useState(true);
 
@@ -49,6 +58,7 @@ const ArenaAdmin: React.FC = () => {
    const [payments, setPayments] = useState<ArenaPagamento[]>([]);
    const [tournaments, setTournaments] = useState<ArenaTournament[]>([]);
    const [rankings, setRankings] = useState<ArenaRanking[]>([]);
+   const [expenses, setExpenses] = useState<ArenaDespesa[]>([]);
 
    // Pagamentos — filtros, recibo e loading
    const [pagamentoFilter, setPagamentoFilter] = useState<'Todos' | 'Pendente' | 'Confirmado' | 'Falhado'>('Todos');
@@ -67,6 +77,8 @@ const ArenaAdmin: React.FC = () => {
    const [showRankingModal, setShowRankingModal] = useState(false);
    const [editingRanking, setEditingRanking] = useState<ArenaRanking | null>(null);
 
+   const [showExpenseModal, setShowExpenseModal] = useState(false);
+
    const fetchData = async () => {
       setLoading(true);
       try {
@@ -74,18 +86,21 @@ const ArenaAdmin: React.FC = () => {
             { data: gms },
             { data: pays },
             { data: trns },
-            { data: rnks }
+            { data: rnks },
+            { data: exps }
          ] = await Promise.all([
             supabase.from('arena_games').select('*').order('titulo'),
             supabase.from('arena_pagamentos').select('*').order('criado_em', { ascending: false }),
             supabase.from('arena_tournaments').select('*').order('data_inicio', { ascending: false }),
-            supabase.from('arena_ranking').select('*').order('rank', { ascending: true })
+            supabase.from('arena_ranking').select('*').order('rank', { ascending: true }),
+            supabase.from('arena_expenses').select('*').order('data', { ascending: false })
          ]);
 
          if (gms) setGames(gms as unknown as Game[]);
-         if (pays) setPayments(pays as unknown as GamePayment[]);
+         if (pays) setPayments(pays as unknown as ArenaPagamento[]);
          if (trns) setTournaments(trns as unknown as ArenaTournament[]);
          if (rnks) setRankings(rnks as unknown as ArenaRanking[]);
+         if (exps) setExpenses(exps as unknown as ArenaDespesa[]);
       } catch (error) {
          console.error('Error fetching admin arena data:', error);
       } finally {
@@ -100,23 +115,37 @@ const ArenaAdmin: React.FC = () => {
    // --- MOTOR DE ANALYTICS (DADOS REAIS) ---
    const bizStats = useMemo(() => {
       const revenue = payments.filter(p => p.status === 'Confirmado').reduce((a, b) => a + Number(b.valor), 0);
+      const totalExpenses = expenses.reduce((a, b) => a + Number(b.valor), 0);
+      const profit = revenue - totalExpenses;
       const pendentes = payments.filter(p => p.status === 'Pendente').length;
       const activePlayers = [...new Set(payments.map(p => p.cliente_nome))].length;
 
       const gameSales: Record<string, number> = {};
-      payments.forEach(p => {
-         gameSales[p.game_titulo] = (gameSales[p.game_titulo] || 0) + 1;
+      const categorySales: Record<string, number> = {};
+
+      payments.filter(p => p.status === 'Confirmado').forEach(p => {
+         gameSales[p.game_titulo] = (gameSales[p.game_titulo] || 0) + Number(p.valor);
+         // Encontrar categoria do jogo
+         const game = games.find(g => g.titulo === p.game_titulo);
+         if (game) {
+            categorySales[game.categoria] = (categorySales[game.categoria] || 0) + Number(p.valor);
+         }
       });
+
       const pieData = Object.entries(gameSales)
          .map(([name, value]) => ({ name, value }))
          .sort((a, b) => b.value - a.value)
          .slice(0, 5);
 
+      const categoryData = Object.entries(categorySales)
+         .map(([name, value]) => ({ name, value }))
+         .sort((a, b) => b.value - a.value);
+
       const totalEstacoes = games.reduce((acc, g) => acc + (g.vagas_disponiveis || 0), 0);
       const taxaOcupacao = totalEstacoes > 0 ? 75 : 0;
 
-      return { revenue, activePlayers, pieData, taxaOcupacao, pendentes };
-   }, [payments, games]);
+      return { revenue, totalExpenses, profit, activePlayers, pieData, categoryData, taxaOcupacao, pendentes };
+   }, [payments, games, expenses]);
 
    // --- ACÇÕES DE PAGAMENTO (via Edge Function) ---
    const handleConfirmarPagamento = async (p: ArenaPagamento) => {
@@ -291,6 +320,36 @@ const ArenaAdmin: React.FC = () => {
       }
    };
 
+   const handleSaveExpense = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const fd = new FormData(e.currentTarget);
+      const payload = {
+         descricao: fd.get('descricao') as string,
+         valor: Number(fd.get('valor')),
+         categoria: fd.get('categoria') as any,
+         data: fd.get('data') as string
+      };
+
+      try {
+         await supabase.from('arena_expenses').insert([payload]);
+         setShowExpenseModal(false);
+         fetchData();
+      } catch (error) {
+         alert('Erro ao salvar despesa');
+      }
+   };
+
+   const handleDeleteExpense = async (id: string) => {
+      if (confirm('Remover registo de despesa?')) {
+         try {
+            await supabase.from('arena_expenses').delete().eq('id', id);
+            fetchData();
+         } catch (error) {
+            alert('Erro ao remover despesa');
+         }
+      }
+   };
+
    const COLORS = ['#6366f1', '#eab308', '#22c55e', '#ef4444', '#a855f7'];
 
    if (loading) {
@@ -336,24 +395,25 @@ const ArenaAdmin: React.FC = () => {
             <div className="space-y-8 animate-in slide-in-from-bottom-4">
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Receita Acumulada</p>
+                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Faturamento (Bruto)</p>
                      <p className="text-3xl font-black text-zinc-900">{formatAOA(bizStats.revenue)}</p>
                      <div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit"><ArrowUpRight size={12} /> Confirmados</div>
                   </div>
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
+                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Despesas Totais</p>
+                     <p className="text-3xl font-black text-red-500">{formatAOA(bizStats.totalExpenses)}</p>
+                     <div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg w-fit"><ArrowDownRight size={12} /> Operacional</div>
+                  </div>
                   <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
                      <Zap className="absolute -right-4 -bottom-4 opacity-10" size={100} />
-                     <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-2">Jogadores Únicos</p>
-                     <p className="text-4xl font-black">{bizStats.activePlayers}</p>
-                     <p className="text-[9px] font-bold text-zinc-500 mt-2 uppercase">Histórico Geral</p>
+                     <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-2">Lucro Líquido</p>
+                     <p className="text-4xl font-black">{formatAOA(bizStats.profit)}</p>
+                     <p className="text-[9px] font-bold text-zinc-500 mt-2 uppercase">Margem de Operação</p>
                   </div>
                   <div className={`p-8 rounded-[2.5rem] shadow-sm flex flex-col justify-center items-center text-center border ${bizStats.pendentes > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-sky-100'}`}>
                      <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${bizStats.pendentes > 0 ? 'text-yellow-600' : 'text-zinc-400'}`}>Pendentes</p>
                      <p className={`text-4xl font-black ${bizStats.pendentes > 0 ? 'text-yellow-600' : 'text-zinc-900'}`}>{bizStats.pendentes}</p>
                      <p className="text-[9px] font-bold text-zinc-400 uppercase mt-1">Aguardam confirmação</p>
-                  </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-center items-center text-center">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Jogos no Catálogo</p>
-                     <p className="text-4xl font-black text-zinc-900">{games.length}</p>
                   </div>
                </div>
 
@@ -384,21 +444,15 @@ const ArenaAdmin: React.FC = () => {
                   </div>
 
                   <div className="bg-white p-10 rounded-[3.5rem] border border-sky-100 shadow-sm h-[450px]">
-                     <h3 className="text-xl font-black uppercase tracking-tight mb-8 flex items-center gap-2"><TrendingUp className="text-indigo-500" size={20} /> Evolução de Faturamento</h3>
+                     <h3 className="text-xl font-black uppercase tracking-tight mb-8 flex items-center gap-2"><BarChart3 className="text-indigo-500" size={20} /> Receita por Categoria</h3>
                      <ResponsiveContainer width="100%" height="80%">
-                        <AreaChart data={[
-                           { name: 'Sem 1', v: bizStats.revenue * 0.2 },
-                           { name: 'Sem 2', v: bizStats.revenue * 0.4 },
-                           { name: 'Sem 3', v: bizStats.revenue * 0.3 },
-                           { name: 'Sem 4', v: bizStats.revenue * 0.1 },
-                        ]}>
-                           <defs><linearGradient id="colorV" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs>
+                        <BarChart data={bizStats.categoryData}>
                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} dy={10} />
+                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'black' }} />
                            <YAxis hide />
-                           <Tooltip formatter={(v: number) => formatAOA(v)} />
-                           <Area type="monotone" dataKey="v" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorV)" />
-                        </AreaChart>
+                           <Tooltip formatter={(v: number) => formatAOA(v)} cursor={{ fill: '#f3f4f6' }} />
+                           <Bar dataKey="value" fill="#6366f1" radius={[10, 10, 0, 0]} barSize={40} />
+                        </BarChart>
                      </ResponsiveContainer>
                   </div>
                </div>
@@ -475,18 +529,24 @@ const ArenaAdmin: React.FC = () => {
             <div className="space-y-6 animate-in slide-in-from-bottom-4">
                {/* Header com filtros */}
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                     <h2 className="text-2xl font-black text-zinc-900 uppercase flex items-center gap-3"><DollarSign className="text-green-600" /> Pagamentos Arena</h2>
-                     <p className="text-zinc-400 text-sm font-medium mt-1">{payments.length} transacções no total · {bizStats.pendentes} pendentes</p>
+                  <div className="flex bg-zinc-100 p-1 rounded-2xl w-fit">
+                     <button onClick={() => setFinanceView('payments')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${financeView === 'payments' ? 'bg-white text-zinc-900 shadow-md' : 'text-zinc-400 hover:text-zinc-600'}`}>Receitas / Pagamentos</button>
+                     <button onClick={() => setFinanceView('expenses')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${financeView === 'expenses' ? 'bg-white text-red-600 shadow-md' : 'text-zinc-400 hover:text-red-400'}`}>Despesas / Custos</button>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                     {(['Todos', 'Pendente', 'Confirmado', 'Falhado'] as const).map(f => (
+                     <button
+                        onClick={() => setShowExpenseModal(true)}
+                        className="px-6 py-2.5 bg-red-500 text-white rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-red-600 transition-all shadow-lg"
+                     >
+                        <Plus size={14} /> Registar Gasto
+                     </button>
+                     {financeView === 'payments' && (['Todos', 'Pendente', 'Confirmado', 'Falhado'] as const).map(f => (
                         <button key={f} onClick={() => setPagamentoFilter(f)} className={`px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${pagamentoFilter === f
-                              ? f === 'Pendente' ? 'bg-yellow-500 text-white shadow-xl' :
-                                 f === 'Confirmado' ? 'bg-green-600 text-white shadow-xl' :
-                                    f === 'Falhado' ? 'bg-red-500 text-white shadow-xl' :
-                                       'bg-zinc-900 text-white shadow-xl'
-                              : 'bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50'
+                           ? f === 'Pendente' ? 'bg-yellow-500 text-white shadow-xl' :
+                              f === 'Confirmado' ? 'bg-green-600 text-white shadow-xl' :
+                                 f === 'Falhado' ? 'bg-red-500 text-white shadow-xl' :
+                                    'bg-zinc-900 text-white shadow-xl'
+                           : 'bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50'
                            }`}>
                            {f === 'Pendente' && <span className="inline-block w-1.5 h-1.5 bg-current rounded-full mr-1.5 animate-pulse" />}
                            {f}
@@ -497,80 +557,111 @@ const ArenaAdmin: React.FC = () => {
                </div>
 
                {/* Tabela */}
-               <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
-                  <table className="w-full text-left">
-                     <thead>
-                        <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                           <th className="px-8 py-6">Referência / Data</th>
-                           <th className="px-8 py-6">Cliente</th>
-                           <th className="px-8 py-6">Jogo / Método</th>
-                           <th className="px-8 py-6 text-right">Valor</th>
-                           <th className="px-8 py-6 text-center">Estado</th>
-                           <th className="px-8 py-6 text-center">Acções</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-zinc-50">
-                        {pagamentosFiltrados.length === 0 ? (
-                           <tr><td colSpan={6} className="text-center py-16 text-zinc-400 text-sm font-medium">Nenhum pagamento encontrado</td></tr>
-                        ) : pagamentosFiltrados.map(p => {
-                           const isPendente = p.status === 'Pendente';
-                           const isProcessing = confirmandoId === p.id;
-                           return (
-                              <tr key={p.id} className={`hover:bg-zinc-50/50 transition-all ${isPendente ? 'bg-yellow-50/30' : ''}`}>
-                                 <td className="px-8 py-5">
-                                    <p className="text-[10px] font-black text-indigo-600 mb-1 font-mono">{p.referencia_transacao || '—'}</p>
-                                    <p className="text-xs font-bold text-zinc-500">{new Date(p.criado_em).toLocaleString('pt-AO')}</p>
-                                 </td>
-                                 <td className="px-8 py-5">
-                                    <p className="font-black text-zinc-900 text-sm">{p.cliente_nome}</p>
-                                    <p className="text-[10px] text-zinc-400 font-bold">{p.cliente_telefone}</p>
-                                 </td>
-                                 <td className="px-8 py-5">
-                                    <p className="text-sm font-bold text-indigo-600">{p.game_titulo}</p>
-                                    <p className="text-[10px] text-zinc-400 font-black uppercase">{p.metodo_pagamento}</p>
-                                 </td>
-                                 <td className="px-8 py-5 text-right font-black text-zinc-900 text-sm">{formatAOA(p.valor)}</td>
-                                 <td className="px-8 py-5 text-center">
-                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${p.status === 'Confirmado' ? 'bg-green-100 text-green-700' :
+               {financeView === 'payments' ? (
+                  <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden animate-in slide-in-from-right-4">
+                     <table className="w-full text-left">
+                        <thead>
+                           <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                              <th className="px-8 py-6">Referência / Data</th>
+                              <th className="px-8 py-6">Cliente</th>
+                              <th className="px-8 py-6">Jogo / Método</th>
+                              <th className="px-8 py-6 text-right">Valor</th>
+                              <th className="px-8 py-6 text-center">Estado</th>
+                              <th className="px-8 py-6 text-center">Acções</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-50">
+                           {pagamentosFiltrados.length === 0 ? (
+                              <tr><td colSpan={6} className="text-center py-16 text-zinc-400 text-sm font-medium">Nenhum pagamento encontrado</td></tr>
+                           ) : pagamentosFiltrados.map(p => {
+                              const isPendente = p.status === 'Pendente';
+                              const isProcessing = confirmandoId === p.id;
+                              return (
+                                 <tr key={p.id} className={`hover:bg-zinc-50/50 transition-all ${isPendente ? 'bg-yellow-50/30' : ''}`}>
+                                    <td className="px-8 py-5">
+                                       <p className="text-[10px] font-black text-indigo-600 mb-1 font-mono">{p.referencia_transacao || '—'}</p>
+                                       <p className="text-xs font-bold text-zinc-500">{new Date(p.criado_em).toLocaleString('pt-AO')}</p>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                       <p className="font-black text-zinc-900 text-sm">{p.cliente_nome}</p>
+                                       <p className="text-[10px] text-zinc-400 font-bold">{p.cliente_telefone}</p>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                       <p className="text-sm font-bold text-indigo-600">{p.game_titulo}</p>
+                                       <p className="text-[10px] text-zinc-400 font-black uppercase">{p.metodo_pagamento}</p>
+                                    </td>
+                                    <td className="px-8 py-5 text-right font-black text-zinc-900 text-sm">{formatAOA(p.valor)}</td>
+                                    <td className="px-8 py-5 text-center">
+                                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${p.status === 'Confirmado' ? 'bg-green-100 text-green-700' :
                                           p.status === 'Pendente' ? 'bg-yellow-100 text-yellow-700' :
                                              p.status === 'Falhado' ? 'bg-red-100 text-red-700' :
                                                 'bg-zinc-100 text-zinc-500'
-                                       }`}>
-                                       {isPendente && <span className="inline-block w-1.5 h-1.5 bg-yellow-500 rounded-full mr-1 animate-pulse" />}
-                                       {p.status}
-                                    </span>
-                                 </td>
-                                 <td className="px-8 py-5">
-                                    <div className="flex items-center justify-center gap-2">
-                                       <button onClick={() => setSelectedPagamento(p)} className="p-2 text-zinc-400 hover:text-indigo-600 bg-zinc-50 hover:bg-indigo-50 rounded-xl transition-all" title="Ver Recibo">
-                                          <FileText size={16} />
-                                       </button>
-                                       {isPendente && (
-                                          <>
-                                             <button
-                                                onClick={() => handleConfirmarPagamento(p)}
-                                                disabled={isProcessing}
-                                                className="p-2 text-green-600 hover:text-white bg-green-50 hover:bg-green-600 rounded-xl transition-all disabled:opacity-50" title="Confirmar Pagamento"
-                                             >
-                                                {isProcessing ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                                             </button>
-                                             <button
-                                                onClick={() => handleRejeitarPagamento(p)}
-                                                disabled={isProcessing}
-                                                className="p-2 text-red-500 hover:text-white bg-red-50 hover:bg-red-500 rounded-xl transition-all disabled:opacity-50" title="Rejeitar Pagamento"
-                                             >
-                                                <X size={16} />
-                                             </button>
-                                          </>
-                                       )}
-                                    </div>
+                                          }`}>
+                                          {isPendente && <span className="inline-block w-1.5 h-1.5 bg-yellow-500 rounded-full mr-1 animate-pulse" />}
+                                          {p.status}
+                                       </span>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                       <div className="flex items-center justify-center gap-2">
+                                          <button onClick={() => setSelectedPagamento(p)} className="p-2 text-zinc-400 hover:text-indigo-600 bg-zinc-50 hover:bg-indigo-50 rounded-xl transition-all" title="Ver Recibo">
+                                             <FileText size={16} />
+                                          </button>
+                                          {isPendente && (
+                                             <>
+                                                <button
+                                                   onClick={() => handleConfirmarPagamento(p)}
+                                                   disabled={isProcessing}
+                                                   className="p-2 text-green-600 hover:text-white bg-green-50 hover:bg-green-600 rounded-xl transition-all disabled:opacity-50" title="Confirmar Pagamento"
+                                                >
+                                                   {isProcessing ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                                                </button>
+                                                <button
+                                                   onClick={() => handleRejeitarPagamento(p)}
+                                                   disabled={isProcessing}
+                                                   className="p-2 text-red-500 hover:text-white bg-red-50 hover:bg-red-500 rounded-xl transition-all disabled:opacity-50" title="Rejeitar Pagamento"
+                                                >
+                                                   <X size={16} />
+                                                </button>
+                                             </>
+                                          )}
+                                       </div>
+                                    </td>
+                                 </tr>
+                              );
+                           })}
+                        </tbody>
+                     </table>
+                  </div>
+               ) : (
+                  <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden animate-in slide-in-from-left-4">
+                     <table className="w-full text-left">
+                        <thead>
+                           <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                              <th className="px-8 py-6">Data</th>
+                              <th className="px-8 py-6">Descrição</th>
+                              <th className="px-8 py-6">Categoria</th>
+                              <th className="px-8 py-6 text-right">Valor</th>
+                              <th className="px-8 py-6 text-center">Acções</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-50">
+                           {expenses.length === 0 ? (
+                              <tr><td colSpan={5} className="text-center py-16 text-zinc-400 text-sm font-medium">Nenhuma despesa registada</td></tr>
+                           ) : expenses.map(e => (
+                              <tr key={e.id} className="hover:bg-zinc-50/50 transition-all">
+                                 <td className="px-8 py-5 text-xs font-bold text-zinc-500">{new Date(e.data).toLocaleDateString('pt-AO')}</td>
+                                 <td className="px-8 py-5 font-black text-zinc-900 text-sm">{e.descricao}</td>
+                                 <td className="px-8 py-5 text-[10px] font-black text-indigo-600 uppercase tracking-widest">{e.categoria}</td>
+                                 <td className="px-8 py-5 text-right font-black text-red-500 text-sm">{formatAOA(e.valor)}</td>
+                                 <td className="px-8 py-5 text-center">
+                                    <button onClick={() => handleDeleteExpense(e.id)} className="p-2 text-zinc-300 hover:text-red-500 transition-all"><Trash2 size={16} /></button>
                                  </td>
                               </tr>
-                           );
-                        })}
-                     </tbody>
-                  </table>
-               </div>
+                           ))}
+                        </tbody>
+                     </table>
+                  </div>
+               )}
             </div>
          )}
 
@@ -579,7 +670,7 @@ const ArenaAdmin: React.FC = () => {
             <div className="fixed inset-0 z-[130] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
                <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-3xl overflow-hidden border border-zinc-100">
                   <div className={`p-8 flex justify-between items-center ${selectedPagamento.status === 'Confirmado' ? 'bg-green-600' :
-                        selectedPagamento.status === 'Pendente' ? 'bg-yellow-500' : 'bg-red-500'
+                     selectedPagamento.status === 'Pendente' ? 'bg-yellow-500' : 'bg-red-500'
                      } text-white`}>
                      <div className="flex items-center gap-3">
                         <FileText size={24} />
@@ -888,6 +979,42 @@ const ArenaAdmin: React.FC = () => {
                      </div>
                      <Select name="status" label="Estado" defaultValue={editingTournament?.status} options={[{ value: 'Inscrições', label: 'Inscrições' }, { value: 'A decorrer', label: 'A decorrer' }, { value: 'Finalizado', label: 'Finalizado' }]} />
                      <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"><Save size={18} /> Efectivar Torneio</button>
+                  </form>
+               </div>
+            </div>
+         )}
+
+         {/* MODAL DESPESA */}
+         {showExpenseModal && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-3xl overflow-hidden border border-red-100">
+                  <div className="p-8 border-b border-red-50 flex justify-between items-center bg-red-500 text-white">
+                     <h2 className="text-xl font-black flex items-center gap-3 uppercase tracking-tighter">
+                        <ArrowDownRight /> Registar Nova Despesa
+                     </h2>
+                     <button onClick={() => setShowExpenseModal(false)} className="p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"><X size={24} /></button>
+                  </div>
+                  <form onSubmit={handleSaveExpense} className="p-10 space-y-6">
+                     <Input name="descricao" label="Descrição do Gasto" required placeholder="Ex: Reposição de Teclado Mecânico" />
+                     <div className="grid grid-cols-2 gap-4">
+                        <Input name="valor" label="Valor (AOA)" type="number" required />
+                        <Input name="data" label="Data do Gasto" type="date" defaultValue={new Date().toISOString().split('T')[0]} required />
+                     </div>
+                     <Select name="categoria" label="Categoria" options={[
+                        { value: 'Manutenção', label: 'Hardware / Manutenção' },
+                        { value: 'Pessoal', label: 'Staff / Freelancers' },
+                        { value: 'Marketing', label: 'Publicidade / Marketing' },
+                        { value: 'Outros', label: 'Outros Custos' }
+                     ]} />
+
+                     <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100">
+                        <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Atenção</p>
+                        <p className="text-xs text-red-600 font-medium font-bold">Esta acção afectará directamente o Lucro Líquido no dashboard.</p>
+                     </div>
+
+                     <button type="submit" className="w-full py-5 bg-red-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-red-600 transition-all flex items-center justify-center gap-3">
+                        <Save size={18} /> Confirmar Saída de Caixa
+                     </button>
                   </form>
                </div>
             </div>
