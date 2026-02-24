@@ -207,6 +207,47 @@ const AccountingPage: React.FC = () => {
       }
    };
 
+   const handleAnularFatura = async (fatura: any) => {
+      if (!confirm(`Tem a certeza que deseja ANULAR o documento ${fatura.numero_fatura}? Esta acção é irreversível e o stock será restaurado.`)) return;
+
+      try {
+         const { error } = await supabase.from('contabil_faturas')
+            .update({ status: 'Anulado' })
+            .eq('id', fatura.id);
+
+         if (error) throw error;
+
+         // Restaurar stock se houver metadados de itens
+         if (fatura.metadata?.itens) {
+            for (const item of fatura.metadata.itens) {
+               const { data: currentStock } = await supabase.from('inventario').select('quantidade_atual').eq('id', item.id).single();
+               if (currentStock) {
+                  const novaQtd = (Number(currentStock.quantidade_atual) || 0) + item.qtd;
+                  await supabase.from('inventario').update({ quantidade_atual: novaQtd }).eq('id', item.id);
+
+                  await supabase.from('stock_movimentos').insert({
+                     produto_id: item.id,
+                     tipo: 'entrada',
+                     quantidade: item.qtd,
+                     referencia: fatura.numero_fatura,
+                     motivo: `Restauro Automático (Anulação de ${fatura.tipo || 'Venda'})`
+                  });
+               }
+            }
+         }
+
+         alert("Documento anulado e stock restaurado com sucesso.");
+         fetchAccountingData();
+      } catch (error: any) {
+         console.error("Anular Error:", error);
+         alert(`Erro ao anular documento: ${error.message}`);
+      }
+   };
+
+   const handlePrintFatura = (fatura: any) => {
+      alert(`O motor de visualização A4 está a processar o documento ${fatura.numero_fatura}. [Factura Digital]`);
+   };
+
    // --- LÓGICA DE PERÍODOS ---
    const handleOpenYear = async () => {
       if (!selectedEmpresaId) return alert("Selecione uma empresa primeiro.");
@@ -3148,26 +3189,45 @@ const AccountingPage: React.FC = () => {
                            <table className="w-full text-left">
                               <thead>
                                  <tr className="border-b border-zinc-100">
-                                    {['Nº Documento', 'Entidade', 'Valor Total', 'Data', 'Status'].map(h => (
+                                    {['Nº Documento', 'Entidade', 'Valor Total', 'Data', 'Status', ''].map(h => (
                                        <th key={h} className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
                                     ))}
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-zinc-50">
                                  {filtered.map((n, i) => (
-                                    <tr key={i} className="hover:bg-zinc-50 transition-colors">
-                                       <td className="py-5 px-4 text-xs font-black text-zinc-900 uppercase">{n.numero || `DOC-${i + 100}`}</td>
-                                       <td className="py-5 px-4 text-xs font-bold text-zinc-600 uppercase">{n.entidade}</td>
-                                       <td className="py-5 px-4 text-xs font-black text-zinc-900">{safeFormatAOA(n.valor)}</td>
-                                       <td className="py-5 px-4 text-[10px] font-bold text-zinc-400 uppercase">{n.data}</td>
+                                    <tr key={i} className="hover:bg-zinc-50 transition-colors group">
                                        <td className="py-5 px-4">
-                                          <span className="px-2 py-1 bg-green-50 text-green-600 rounded-lg text-[8px] font-black uppercase">Confirmada</span>
+                                          <div className="flex items-center gap-3">
+                                             <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-500">
+                                                <Receipt size={14} />
+                                             </div>
+                                             <span className="text-xs font-black text-zinc-900 uppercase">
+                                                {n.numero_fatura || n.numero || `DOC-${i + 100}`}
+                                             </span>
+                                          </div>
+                                       </td>
+                                       <td className="py-5 px-4 text-xs font-bold text-zinc-600 uppercase">{n.cliente_nome || n.entidade}</td>
+                                       <td className="py-5 px-4 text-xs font-black text-zinc-900">{safeFormatAOA(n.valor_total || n.valor)}</td>
+                                       <td className="py-5 px-4 text-[10px] font-bold text-zinc-400 uppercase">{n.data_emissao || n.data}</td>
+                                       <td className="py-5 px-4">
+                                          <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${n.status === 'Pago' ? 'bg-green-50 text-green-700' : (n.status === 'Anulado' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700')}`}>
+                                             {n.status || 'Pendente'}
+                                          </span>
+                                       </td>
+                                       <td className="py-5 px-4 text-right">
+                                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                             <button onClick={() => handlePrintFatura(n)} className="p-2 hover:bg-zinc-100 rounded-lg transition-all text-zinc-600" title="Imprimir"><Printer size={14} /></button>
+                                             {n.status !== 'Anulado' && (
+                                                <button onClick={() => handleAnularFatura(n)} className="p-2 hover:bg-zinc-100 rounded-lg transition-all text-red-500" title="Anular"><X size={14} /></button>
+                                             )}
+                                          </div>
                                        </td>
                                     </tr>
                                  ))}
                                  {filtered.length === 0 && (
                                     <tr>
-                                       <td colSpan={5} className="py-20 text-center text-zinc-400 font-bold uppercase text-[10px]">Nenhum documento encontrado</td>
+                                       <td colSpan={6} className="py-20 text-center text-zinc-400 font-bold uppercase text-[10px]">Nenhum documento encontrado</td>
                                     </tr>
                                  )}
                               </tbody>
