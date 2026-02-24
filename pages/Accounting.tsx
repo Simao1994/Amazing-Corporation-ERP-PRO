@@ -134,9 +134,12 @@ const AccountingPage: React.FC = () => {
       observacoes: ''
    });
 
+   const [customItem, setCustomItem] = useState({ nome: '', preco: 0, qtd: 1 });
+
    const handleAddInvoiceItem = (item: any) => {
       setInvoiceForm(prev => {
          const exists = prev.itens.find(i => i.id === item.id);
+         const preco = item.preco_unitario || item.preco || 0;
          if (exists) {
             return {
                ...prev,
@@ -145,9 +148,35 @@ const AccountingPage: React.FC = () => {
          }
          return {
             ...prev,
-            itens: [...prev.itens, { id: item.id, nome: item.nome, qtd: 1, preco_unitario: item.preco_unitario || item.preco || 0, total: item.preco_unitario || item.preco || 0 }]
+            itens: [...prev.itens, { id: item.id || `I-${Date.now()}`, nome: item.nome, qtd: 1, preco_unitario: preco, total: preco }]
          };
       });
+   };
+
+   const handleAddCustomItem = () => {
+      if (!customItem.nome || customItem.preco <= 0) return alert("Preencha o nome e o preço do item.");
+      handleAddInvoiceItem({
+         id: `C${Date.now()}`,
+         nome: customItem.nome,
+         preco_unitario: customItem.preco,
+         qtd: customItem.qtd
+      });
+      setCustomItem({ nome: '', preco: 0, qtd: 1 });
+   };
+
+   const handleUpdateInvoiceItem = (id: string, field: 'qtd' | 'preco_unitario', value: any) => {
+      setInvoiceForm(prev => ({
+         ...prev,
+         itens: prev.itens.map(i => {
+            if (i.id === id) {
+               const newVal = Number(value) || 0;
+               const updated = { ...i, [field]: newVal };
+               updated.total = updated.qtd * updated.preco_unitario;
+               return updated;
+            }
+            return i;
+         })
+      }));
    };
 
    const handleRemoveInvoiceItem = (id: string) => {
@@ -3006,6 +3035,23 @@ const AccountingPage: React.FC = () => {
                                  <Input placeholder="Ou digite o nome do cliente..." value={invoiceForm.cliente_nome} onChange={e => setInvoiceForm({ ...invoiceForm, cliente_nome: e.target.value })} />
                               </div>
 
+                              <div className="space-y-4 bg-zinc-50 p-6 rounded-3xl border border-zinc-200">
+                                 <h4 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Adicionar Serviço / Item Manual</h4>
+                                 <div className="grid grid-cols-12 gap-4">
+                                    <div className="col-span-6">
+                                       <Input placeholder="Nome do Serviço ou Item" value={customItem.nome} onChange={e => setCustomItem({ ...customItem, nome: e.target.value })} />
+                                    </div>
+                                    <div className="col-span-3">
+                                       <Input placeholder="Preço" type="number" value={customItem.preco} onChange={e => setCustomItem({ ...customItem, preco: Number(e.target.value) })} />
+                                    </div>
+                                    <div className="col-span-3">
+                                       <button onClick={handleAddCustomItem} className="w-full h-[54px] bg-yellow-500 text-zinc-900 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-yellow-400 transition-all flex items-center justify-center gap-2">
+                                          <Plus size={16} /> Add
+                                       </button>
+                                    </div>
+                                 </div>
+                              </div>
+
                               <div className="space-y-4">
                                  <div className="flex justify-between items-center">
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Catálogo de Itens</label>
@@ -3042,16 +3088,25 @@ const AccountingPage: React.FC = () => {
                                        </div>
                                     ) : (
                                        invoiceForm.itens.map(it => (
-                                          <div key={it.id} className="bg-white p-4 rounded-2xl shadow-sm space-y-2 relative group animate-in slide-in-from-right-4">
-                                             <button onClick={() => handleRemoveInvoiceItem(it.id)} className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                                                <X size={12} />
+                                          <div key={it.id} className="bg-white p-5 rounded-2xl shadow-sm space-y-4 relative group animate-in slide-in-from-right-4 border border-transparent hover:border-zinc-200">
+                                             <button onClick={() => handleRemoveInvoiceItem(it.id)} className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10">
+                                                <X size={14} />
                                              </button>
                                              <div className="flex justify-between items-start">
-                                                <p className="text-[10px] font-black text-zinc-900 uppercase truncate max-w-[150px]">{it.nome}</p>
-                                                <p className="text-[10px] font-black text-zinc-900">{safeFormatAOA(it.total)}</p>
+                                                <p className="text-[10px] font-black text-zinc-900 uppercase truncate max-w-[200px]">{it.nome}</p>
+                                                <p className="text-xs font-black text-zinc-900">{safeFormatAOA(it.total)}</p>
                                              </div>
-                                             <div className="flex items-center gap-3 text-[9px] font-bold text-zinc-400 uppercase">
-                                                <span>{it.qtd} Un x {safeFormatAOA(it.preco_unitario)}</span>
+                                             <div className="grid grid-cols-2 gap-3 items-center">
+                                                <div className="flex items-center gap-2">
+                                                   <span className="text-[9px] font-black text-zinc-400 uppercase">Qtd:</span>
+                                                   <input type="number" value={it.qtd} onChange={e => handleUpdateInvoiceItem(it.id, 'qtd', e.target.value)}
+                                                      className="w-16 bg-zinc-50 border border-zinc-100 rounded-lg p-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                   <span className="text-[9px] font-black text-zinc-400 uppercase">Preço:</span>
+                                                   <input type="number" value={it.preco_unitario} onChange={e => handleUpdateInvoiceItem(it.id, 'preco_unitario', e.target.value)}
+                                                      className="w-full bg-zinc-50 border border-zinc-100 rounded-lg p-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
+                                                </div>
                                              </div>
                                           </div>
                                        ))
