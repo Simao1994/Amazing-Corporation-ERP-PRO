@@ -704,30 +704,28 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             }
          };
 
-         // 1. Carregar Dados Estruturais em PARALELO para Velocidade Máxima
+         // 1. Carregar Dados Estruturais
          setLoadingStatus('Sincronizando Estrutura...');
 
-         const fetchEmps = async () => {
-            const e1 = await fetchQuery(supabase.from('empresas').select('*').order('nome'), 'Entidades (Geral)');
-            const e2 = await fetchQuery(supabase.from('acc_empresas').select('*').order('nome'), 'Entidades (Contábil)');
-            // Priorizar dados da tabela 'empresas' mas incluir fallback
-            const combined = [...(e1 || [])];
-            (e2 || []).forEach((e: any) => {
-               if (!combined.find(x => x.id === e.id || x.nif === e.nif)) {
-                  combined.push(e);
-               }
-            });
-            return combined;
-         };
+         const e1 = await fetchQuery(supabase.from('empresas').select('*').order('nome'), 'Entidades (Geral)');
+         const e2 = await fetchQuery(supabase.from('acc_empresas').select('*').order('nome'), 'Entidades (Contábil)');
 
-         const [emps, funcs, dataContas, dataPeriodos] = await Promise.all([
-            fetchEmps(),
+         const emps = [...(e1 || [])];
+         (e2 || []).forEach((e: any) => {
+            if (!emps.find(x => x.id === e.id || x.nif === e.nif)) {
+               emps.push(e);
+            }
+         });
+
+         setEmpresas(emps as any);
+         const effEmpId = selectedEmpresaId || emps[0]?.id;
+
+         const [funcs, dataContas, dataPeriodos] = await Promise.all([
             fetchQuery(supabase.from('funcionarios').select('*').eq('empresa_id', effEmpId).order('nome'), 'Equipa'),
             fetchQuery(supabase.from('acc_contas').select('*').order('codigo'), 'Plano de Contas'),
             fetchQuery(supabase.from('acc_periodos').select('*').order('ano', { ascending: false }).order('mes', { ascending: false }), 'Ciclos Fiscais')
          ]);
 
-         setEmpresas(emps as any);
          setFuncionarios(funcs as any);
 
          if (dataContas && dataContas.length > 0) {
@@ -740,8 +738,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             setPeriodos(dataPeriodos as any);
             if (!selectedPeriodoId) {
                // Inicialização inteligente: primeiro período da primeira empresa
-               const firstEmpId = emps[0]?.id;
-               const initialPeriod = (dataPeriodos as any[]).find(p => p.empresa_id === firstEmpId) || dataPeriodos[0];
+               const initialPeriod = (dataPeriodos as any[]).find(p => p.empresa_id === effEmpId) || dataPeriodos[0];
                setSelectedPeriodoId(initialPeriod.id);
             }
          }
@@ -756,7 +753,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          console.log('TRACE: UI Unlocked.');
 
          // 2. Carregar Dados Transacionais em PARALELO (Background)
-         const effEmpId = selectedEmpresaId || emps[0]?.id;
+
 
          const [lnc, lncItens, flh, obl, logs, centros, configs, sLogs, extratosData,
             faturas, tesouraria, rhRecibos, inventarioItems, stockMov, regras, comprasData, contactosData, categoriasData] = await Promise.all([
