@@ -4539,7 +4539,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                {/* --- MODAL NOVO FUNCIONÁRIO --- */}
                {showEmployeeModal && (
                   <div className="fixed inset-0 z-[130] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-                     <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                     <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
                         <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-900 text-white">
                            <div className="flex items-center gap-4">
                               <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
@@ -4552,29 +4552,47 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                            <button onClick={() => setShowEmployeeModal(false)} className="p-3 text-white/50 hover:bg-white/10 rounded-full transition-all"><X size={24} /></button>
                         </div>
-                        <form onSubmit={handleSaveEmployee} className="p-10 space-y-8">
-                           <div className="grid grid-cols-2 gap-6">
-                              <div className="col-span-2">
-                                 <Input label="Nome Completo" required value={newEmployee.nome} onChange={e => setNewEmployee({ ...newEmployee, nome: e.target.value })} placeholder="Ex: João Manuel dos Santos" />
+                        <form onSubmit={handleSaveEmployee} className="p-10 space-y-10">
+                           {/* Bloco 1: Identificação e Base */}
+                           <div className="space-y-4">
+                              <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">Informação Base e Identificação</h4>
+                              <div className="grid grid-cols-3 gap-6">
+                                 <div className="col-span-1">
+                                    <Input label="Nome Completo" required value={newEmployee.nome} onChange={e => setNewEmployee({ ...newEmployee, nome: e.target.value })} placeholder="Ex: João Manuel dos Santos" />
+                                 </div>
+                                 <Input label="Função / Cargo" required value={newEmployee.funcao} onChange={e => setNewEmployee({ ...newEmployee, funcao: e.target.value })} placeholder="Ex: Contabilista Sénior" />
+                                 <Input label="NIF" value={newEmployee.nif} onChange={e => setNewEmployee({ ...newEmployee, nif: e.target.value })} placeholder="000000000LA000" />
+
+                                 <Input label="Salário Base (AOA)" type="number" required value={newEmployee.salario_base} onChange={e => setNewEmployee({ ...newEmployee, salario_base: Number(e.target.value) })} />
+                                 <Input label="N.º Segurança Social" value={newEmployee.numero_ss} onChange={e => setNewEmployee({ ...newEmployee, numero_ss: e.target.value })} placeholder="00000000000" />
+                                 <div className="flex items-end pb-1">
+                                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 w-full">
+                                       <p className="text-[9px] font-bold text-zinc-400 uppercase">Cálculo Estimado</p>
+                                       <p className="text-xs font-black text-zinc-900">IRT/INSS Automático</p>
+                                    </div>
+                                 </div>
                               </div>
-                              <Input label="Função / Cargo" required value={newEmployee.funcao} onChange={e => setNewEmployee({ ...newEmployee, funcao: e.target.value })} placeholder="Ex: Contabilista Sénior" />
-                              <Input label="NIF" value={newEmployee.nif} onChange={e => setNewEmployee({ ...newEmployee, nif: e.target.value })} placeholder="000000000LA000" />
-                              <Input label="Salário Base (AOA)" type="number" required value={newEmployee.salario_base} onChange={e => setNewEmployee({ ...newEmployee, salario_base: Number(e.target.value) })} />
-                              <Input label="N.º Segurança Social" value={newEmployee.numero_ss} onChange={e => setNewEmployee({ ...newEmployee, numero_ss: e.target.value })} />
                            </div>
 
-                           <div className="grid grid-cols-2 gap-6 p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
-                              <h4 className="col-span-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">Subsídios Reais</h4>
-                              <Input label="Subsídio Alimentação" type="number" value={newEmployee.subsidio_alimentacao} onChange={e => setNewEmployee({ ...newEmployee, subsidio_alimentacao: Number(e.target.value) })} />
-                              <Input label="Subsídio Transporte" type="number" value={newEmployee.subsidio_transporte} onChange={e => setNewEmployee({ ...newEmployee, subsidio_transporte: Number(e.target.value) })} />
-                           </div>
+                           {/* Bloco 2: Subsídios Mensais e Anuais (Lado a Lado) */}
+                           <div className="grid grid-cols-2 gap-8">
+                              <div className="p-6 bg-zinc-50/50 rounded-3xl border border-zinc-100 space-y-6">
+                                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">Subsídios Mensais Fixos</h4>
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <Input label="Alimentação" type="number" value={newEmployee.subsidio_alimentacao} onChange={e => setNewEmployee({ ...newEmployee, subsidio_alimentacao: Number(e.target.value) })} />
+                                    <Input label="Transporte" type="number" value={newEmployee.subsidio_transporte} onChange={e => setNewEmployee({ ...newEmployee, subsidio_transporte: Number(e.target.value) })} />
+                                 </div>
+                              </div>
 
-                           <div className="grid grid-cols-2 gap-6 p-6 bg-yellow-50/50 rounded-3xl border border-yellow-100">
-                              <h4 className="col-span-2 text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">Subsídios Anuais e Bónus (Bases)</h4>
-                              <Input label="Base Subsídio Férias" type="number" value={newEmployee.subsidio_ferias_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_ferias_base: Number(e.target.value) })} />
-                              <Input label="Base Subsídio Natal" type="number" value={newEmployee.subsidio_natal_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_natal_base: Number(e.target.value) })} />
-                              <div className="col-span-2">
-                                 <Input label="Bónus / Gratificações Mensais" type="number" value={newEmployee.outras_bonificacoes_base} onChange={e => setNewEmployee({ ...newEmployee, outras_bonificacoes_base: Number(e.target.value) })} />
+                              <div className="p-6 bg-yellow-50/30 rounded-3xl border border-yellow-100 space-y-6">
+                                 <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">Bónus e Bases Anuais</h4>
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <Input label="Base Férias" type="number" value={newEmployee.subsidio_ferias_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_ferias_base: Number(e.target.value) })} />
+                                    <Input label="Base Natal" type="number" value={newEmployee.subsidio_natal_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_natal_base: Number(e.target.value) })} />
+                                    <div className="col-span-2">
+                                       <Input label="Gratificações / Outras Bonificações" type="number" value={newEmployee.outras_bonificacoes_base} onChange={e => setNewEmployee({ ...newEmployee, outras_bonificacoes_base: Number(e.target.value) })} />
+                                    </div>
+                                 </div>
                               </div>
                            </div>
 
