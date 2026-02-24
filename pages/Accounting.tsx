@@ -112,6 +112,101 @@ const AccountingPage: React.FC = () => {
       centro_custo_id: ''
    });
 
+   // --- ESTADO DE FATURAÇÃO ---
+   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+   const [isSavingInvoice, setIsSavingInvoice] = useState(false);
+   const [invoiceForm, setInvoiceForm] = useState({
+      cliente_id: '',
+      cliente_nome: '',
+      tipo: 'Factura' as 'Factura' | 'Pró-forma' | 'Guia' | 'Encomenda',
+      data_emissao: new Date().toISOString().split('T')[0],
+      itens: [] as { id: string; nome: string; qtd: number; preco_unitario: number; total: number }[],
+      observacoes: ''
+   });
+
+   const handleAddInvoiceItem = (item: any) => {
+      setInvoiceForm(prev => {
+         const exists = prev.itens.find(i => i.id === item.id);
+         if (exists) {
+            return {
+               ...prev,
+               itens: prev.itens.map(i => i.id === item.id ? { ...i, qtd: i.qtd + 1, total: (i.qtd + 1) * i.preco_unitario } : i)
+            };
+         }
+         return {
+            ...prev,
+            itens: [...prev.itens, { id: item.id, nome: item.nome, qtd: 1, preco_unitario: item.preco_unitario || item.preco || 0, total: item.preco_unitario || item.preco || 0 }]
+         };
+      });
+   };
+
+   const handleRemoveInvoiceItem = (id: string) => {
+      setInvoiceForm(prev => ({ ...prev, itens: prev.itens.filter(i => i.id !== id) }));
+   };
+
+   const handleCreateInvoice = async () => {
+      if (!invoiceForm.cliente_nome) return alert("Seleccione um cliente.");
+      if (invoiceForm.itens.length === 0) return alert("Adicione pelo menos um item.");
+      if (!selectedEmpresaId) return alert("Seleccione uma entidade emitente.");
+
+      setIsSavingInvoice(true);
+      try {
+         const totalLiquido = invoiceForm.itens.reduce((acc, i) => acc + i.total, 0);
+         const iva = totalLiquido * 0.14;
+         const totalGeral = totalLiquido + iva;
+         const numDoc = `${invoiceForm.tipo.substring(0, 2).toUpperCase()} ${new Date().getFullYear()}/${Math.floor(Math.random() * 9000) + 1000}`;
+
+         const { data: invData, error: invError } = await supabase.from('contabil_faturas').insert({
+            numero_fatura: numDoc,
+            cliente_nome: invoiceForm.cliente_nome,
+            data_emissao: invoiceForm.data_emissao,
+            valor_total: totalGeral,
+            status: 'Pendente',
+            empresa_id: selectedEmpresaId,
+            tipo: invoiceForm.tipo,
+            metadata: { itens: invoiceForm.itens, subtotal: totalLiquido, iva: iva, observacoes: invoiceForm.observacoes }
+         }).select().single();
+
+         if (invError) throw invError;
+
+         // Actualizar Stock (Simulação de Movimento)
+         for (const item of invoiceForm.itens) {
+            // Decrementar no Inventário
+            const target = extInventario.find(i => i.id === item.id);
+            if (target) {
+               const novaQtd = (Number(target.quantidade_atual) || 0) - item.qtd;
+               await supabase.from('inventario').update({ quantidade_atual: novaQtd }).eq('id', item.id);
+
+               // Registar Movimento
+               await supabase.from('stock_movimentos').insert({
+                  produto_id: item.id,
+                  tipo: 'saida',
+                  quantidade: item.qtd,
+                  referencia: numDoc,
+                  motivo: `Venda via ${invoiceForm.tipo}`
+               });
+            }
+         }
+
+         alert(`${invoiceForm.tipo} emitida com sucesso: ${numDoc}`);
+         setShowInvoiceModal(false);
+         setInvoiceForm({
+            cliente_id: '',
+            cliente_nome: '',
+            tipo: 'Factura',
+            data_emissao: new Date().toISOString().split('T')[0],
+            itens: [],
+            observacoes: ''
+         });
+         fetchAccountingData();
+      } catch (error: any) {
+         console.error("Invoice Error:", error);
+         alert(`Erro ao emitir documento: ${error.message}`);
+      } finally {
+         setIsSavingInvoice(false);
+      }
+   };
+
    // --- LÓGICA DE PERÍODOS ---
    const handleOpenYear = async () => {
       if (!selectedEmpresaId) return alert("Selecione uma empresa primeiro.");
@@ -2813,6 +2908,139 @@ const AccountingPage: React.FC = () => {
                   </div>
                )}
 
+               {/* ===== MODAL DE FATURAÇÃO ===== */}
+               {showInvoiceModal && (
+                  <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                     <div className="bg-white w-full max-w-5xl rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] flex flex-col">
+                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-900 text-white">
+                           <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                 <FileText size={24} />
+                              </div>
+                              <div>
+                                 <h2 className="text-xl font-black uppercase tracking-tight">Emitir {invoiceForm.tipo}</h2>
+                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{currentEmpresa?.nome || 'Entidade Seleccionada'}</p>
+                              </div>
+                           </div>
+                           <button onClick={() => setShowInvoiceModal(false)} className="p-3 text-white/50 hover:bg-white/10 rounded-full transition-all"><X size={24} /></button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+                           {/* Coluna Esquerda: Dados do Cliente e Selecção de Itens */}
+                           <div className="lg:col-span-7 space-y-8">
+                              <div className="grid grid-cols-2 gap-6">
+                                 <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo de Documento</label>
+                                    <select value={invoiceForm.tipo} onChange={e => setInvoiceForm({ ...invoiceForm, tipo: e.target.value as any })}
+                                       className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                                       <option value="Factura">Factura</option>
+                                       <option value="Pró-forma">Pró-forma</option>
+                                       <option value="Guia">Guia de Remessa</option>
+                                       <option value="Encomenda">Nota de Encomenda</option>
+                                    </select>
+                                 </div>
+                                 <Input label="Data de Emissão" type="date" value={invoiceForm.data_emissao} onChange={e => setInvoiceForm({ ...invoiceForm, data_emissao: e.target.value })} />
+                              </div>
+
+                              <div className="space-y-4">
+                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">Seleccionar Cliente</label>
+                                 <div className="grid grid-cols-3 gap-2">
+                                    {empresas.slice(0, 6).map(e => (
+                                       <button key={e.id} onClick={() => setInvoiceForm({ ...invoiceForm, cliente_id: e.id, cliente_nome: e.nome })}
+                                          className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-tighter transition-all ${invoiceForm.cliente_id === e.id ? 'bg-zinc-900 text-yellow-500 border-zinc-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-yellow-400'}`}>
+                                          {e.nome}
+                                       </button>
+                                    ))}
+                                 </div>
+                                 <Input placeholder="Ou digite o nome do cliente..." value={invoiceForm.cliente_nome} onChange={e => setInvoiceForm({ ...invoiceForm, cliente_nome: e.target.value })} />
+                              </div>
+
+                              <div className="space-y-4">
+                                 <div className="flex justify-between items-center">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Catálogo de Itens</label>
+                                    <span className="text-[10px] font-bold text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full uppercase">{extInventario.length} Disponíveis</span>
+                                 </div>
+                                 <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {extInventario.map(item => (
+                                       <div key={item.id} onClick={() => handleAddInvoiceItem(item)}
+                                          className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-white hover:border-yellow-400 hover:shadow-lg transition-all cursor-pointer group flex items-center gap-4">
+                                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-zinc-300 group-hover:text-yellow-600 transition-colors">
+                                             <ShoppingCart size={20} />
+                                          </div>
+                                          <div className="flex-1">
+                                             <p className="text-[10px] font-black text-zinc-900 uppercase truncate max-w-[150px]">{item.nome}</p>
+                                             <p className="text-[9px] font-bold text-zinc-400">{safeFormatAOA(item.preco_unitario || item.preco)}</p>
+                                          </div>
+                                          <Plus size={16} className="text-zinc-300 group-hover:text-yellow-600" />
+                                       </div>
+                                    ))}
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* Coluna Direita: Resumo e Totais */}
+                           <div className="lg:col-span-5 bg-zinc-50 rounded-[2.5rem] p-8 flex flex-col h-full border border-zinc-200 shadow-inner">
+                              <div className="flex-1 space-y-6">
+                                 <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest pb-4 border-b border-zinc-200">Itens do Documento</h3>
+
+                                 <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {invoiceForm.itens.length === 0 ? (
+                                       <div className="py-10 text-center space-y-3">
+                                          <Package className="mx-auto text-zinc-300" size={32} />
+                                          <p className="text-[10px] font-bold text-zinc-400 uppercase italic">Nenhum item adicionado</p>
+                                       </div>
+                                    ) : (
+                                       invoiceForm.itens.map(it => (
+                                          <div key={it.id} className="bg-white p-4 rounded-2xl shadow-sm space-y-2 relative group animate-in slide-in-from-right-4">
+                                             <button onClick={() => handleRemoveInvoiceItem(it.id)} className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                                <X size={12} />
+                                             </button>
+                                             <div className="flex justify-between items-start">
+                                                <p className="text-[10px] font-black text-zinc-900 uppercase truncate max-w-[150px]">{it.nome}</p>
+                                                <p className="text-[10px] font-black text-zinc-900">{safeFormatAOA(it.total)}</p>
+                                             </div>
+                                             <div className="flex items-center gap-3 text-[9px] font-bold text-zinc-400 uppercase">
+                                                <span>{it.qtd} Un x {safeFormatAOA(it.preco_unitario)}</span>
+                                             </div>
+                                          </div>
+                                       ))
+                                    )}
+                                 </div>
+
+                                 <div className="pt-6 space-y-3 border-t border-zinc-200">
+                                    <div className="flex justify-between text-[11px] font-bold text-zinc-500 uppercase">
+                                       <span>Subtotal</span>
+                                       <span>{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0))}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[11px] font-bold text-zinc-500 uppercase">
+                                       <span>IVA (14%)</span>
+                                       <span>{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0) * 0.14)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xl font-black text-zinc-900 pt-2 border-t border-zinc-200">
+                                       <span className="uppercase tracking-tighter">Total Geral</span>
+                                       <span className="text-yellow-600">{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0) * 1.14)}</span>
+                                    </div>
+                                 </div>
+
+                                 <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Observações</label>
+                                    <textarea value={invoiceForm.observacoes} onChange={e => setInvoiceForm({ ...invoiceForm, observacoes: e.target.value })}
+                                       className="w-full bg-white border border-zinc-200 rounded-2xl p-4 text-[10px] font-bold text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                       rows={2} placeholder="Condições de pagamento, notas..." />
+                                 </div>
+                              </div>
+
+                              <button onClick={handleCreateInvoice} disabled={isSavingInvoice || invoiceForm.itens.length === 0}
+                                 className="mt-8 w-full py-6 bg-zinc-900 text-white font-black rounded-[2rem] uppercase text-xs tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-4 disabled:opacity-50 shadow-xl group">
+                                 {isSavingInvoice ? <RefreshCw className="animate-spin" size={20} /> : <FileCheck size={20} className="group-hover:scale-125 transition-transform" />}
+                                 {isSavingInvoice ? 'A Processar...' : `Finalizar e Emitir ${invoiceForm.tipo}`}
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               )}
+
                {/* ===== PAINEL DE APROVAÇÃO PENDENTE (badge flutuante) ===== */}
                {pendingApproval.length > 0 && (
                   <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
@@ -2895,6 +3123,7 @@ const AccountingPage: React.FC = () => {
                   </div>
                )}
 
+
                {/* --- TABELAS DE DOCUMENTOS (FACTURAS, PROFORMAS, GUIAS, ENCOMENDAS) --- */}
                {['facturas', 'proformas', 'guias', 'encomendas'].includes(activeTab) && (() => {
                   const typeMap: any = { 'facturas': 'Factura', 'proformas': 'Pró-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
@@ -2904,7 +3133,16 @@ const AccountingPage: React.FC = () => {
                      <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-bottom-4">
                         <div className="flex items-center justify-between">
                            <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Gestão de {sidebarItems.find(i => i.id === activeTab)?.label}</h2>
-                           <button className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all">Nova Emissão</button>
+                           <button
+                              onClick={() => {
+                                 const mapping: any = { 'facturas': 'Factura', 'proformas': 'Pró-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
+                                 setInvoiceForm(f => ({ ...f, tipo: mapping[activeTab] || 'Factura' }));
+                                 setShowInvoiceModal(true);
+                              }}
+                              className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
+                           >
+                              Nova Emissão
+                           </button>
                         </div>
                         <div className="overflow-x-auto">
                            <table className="w-full text-left">
