@@ -166,6 +166,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       outras_bonificacoes_base: 0,
       valor_hora_extra_base: 0,
       adiantamento_padrao: 0,
+      desconto_inss: true,
+      desconto_irt: true,
+      outros_descontos_base: 0,
       nif: '',
       numero_ss: ''
    });
@@ -1146,6 +1149,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             outras_bonificacoes_base: newEmployee.outras_bonificacoes_base,
             valor_hora_extra_base: newEmployee.valor_hora_extra_base,
             adiantamento_padrao: newEmployee.adiantamento_padrao,
+            desconto_inss: newEmployee.desconto_inss,
+            desconto_irt: newEmployee.desconto_irt,
+            outros_descontos_base: newEmployee.outros_descontos_base,
             nif: newEmployee.nif,
             numero_ss: newEmployee.numero_ss,
             empresa_id: selectedEmpresaId,
@@ -1160,6 +1166,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             subsidio_alimentacao: 0, subsidio_transporte: 0,
             subsidio_ferias_base: 0, subsidio_natal_base: 0, outras_bonificacoes_base: 0,
             valor_hora_extra_base: 0, adiantamento_padrao: 0,
+            desconto_inss: true, desconto_irt: true, outros_descontos_base: 0,
             nif: '', numero_ss: ''
          });
          fetchAccountingData();
@@ -4876,8 +4883,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     </div>
                                     <Input label="Função / Cargo" required value={newEmployee.funcao} onChange={e => setNewEmployee({ ...newEmployee, funcao: e.target.value })} placeholder="Ex: Contabilista Sénior" />
                                     <Input label="NIF" value={newEmployee.nif} onChange={e => setNewEmployee({ ...newEmployee, nif: e.target.value })} placeholder="000000000LA000" />
-                                     <Input label="Bilhete de Identidade" value={newEmployee.bilhete} onChange={e => setNewEmployee({ ...newEmployee, bilhete: e.target.value })} placeholder="000000000" />
-                                     <Input label="Telefone" value={newEmployee.telefone} onChange={e => setNewEmployee({ ...newEmployee, telefone: e.target.value })} placeholder="900 000 000" />
+                                    <Input label="Bilhete de Identidade" value={newEmployee.bilhete} onChange={e => setNewEmployee({ ...newEmployee, bilhete: e.target.value })} placeholder="000000000" />
+                                    <Input label="Telefone" value={newEmployee.telefone} onChange={e => setNewEmployee({ ...newEmployee, telefone: e.target.value })} placeholder="900 000 000" />
 
                                     <Input label="Salário Base (AOA)" type="number" required value={newEmployee.salario_base} onChange={e => setNewEmployee({ ...newEmployee, salario_base: Number(e.target.value) })} />
                                     <Input label="N.º Segurança Social" value={newEmployee.numero_ss} onChange={e => setNewEmployee({ ...newEmployee, numero_ss: e.target.value })} placeholder="00000000000" />
