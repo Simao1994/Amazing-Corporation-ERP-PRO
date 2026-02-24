@@ -1299,10 +1299,21 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          'auditoria': 'Trilhas de Auditoria'
       }[reportId] || 'Relatório';
 
+      if (!selectedEmpresaId) {
+         alert("Por favor, selecione uma empresa primeiro.");
+         setIsGeneratingReport(false);
+         return;
+      }
+
       try {
          let data: any[] = [];
 
          if (reportId === 'diario') {
+            if (!selectedPeriodoId) {
+               alert("Selecione um período (Ano/Mês) para visualizar o diário.");
+               setIsGeneratingReport(false);
+               return;
+            }
             data = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.periodo_id === selectedPeriodoId);
          } else if (reportId === 'balancete') {
             const saldos: any = {};
@@ -2196,7 +2207,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     ))}
                                  </div>
                               </div>
-                              <button onClick={() => setShowReportModal(true)}
+                              <button onClick={() => openReport('balanco')}
                                  className="w-full mt-8 py-4 bg-yellow-500 text-zinc-900 font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all shadow-xl">
                                  Ver Relatório Detalhado
                               </button>
@@ -3266,6 +3277,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                              <td className="py-4 px-2 text-xs text-green-600 font-bold">{safeFormatAOA((l.itens || []).filter((x: any) => x.tipo === 'C').reduce((acc: any, x: any) => acc + x.valor, 0))}</td>
                                           </tr>
                                        ))}
+                                       {activeReport.data.length === 0 && (
+                                          <tr>
+                                             <td colSpan={4} className="py-20 text-center text-zinc-400 font-bold uppercase text-[10px]">Nenhum lançamento encontrado para este período</td>
+                                          </tr>
+                                       )}
                                     </tbody>
                                  </table>
                               )}
@@ -3308,6 +3324,56 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
                               )}
 
+                              {activeReport.id === 'razão' && (
+                                 <div className="space-y-12">
+                                    {(activeReport.data || []).map((cuenta: any, i: number) => (
+                                       <div key={i} className="space-y-4">
+                                          <div className="flex items-center gap-3 border-b-2 border-zinc-900 pb-2">
+                                             <span className="bg-zinc-900 text-white px-3 py-1 rounded-lg font-mono text-xs">{cuenta.codigo}</span>
+                                             <h4 className="text-sm font-black uppercase">{cuenta.nome}</h4>
+                                          </div>
+                                          <table className="w-full text-left">
+                                             <thead className="bg-zinc-50">
+                                                <tr>
+                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400">Data</th>
+                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400">Descrição</th>
+                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400 text-right">Débito</th>
+                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400 text-right">Crédito</th>
+                                                </tr>
+                                             </thead>
+                                             <tbody className="divide-y divide-zinc-50">
+                                                {(cuenta.movimentos || []).map((mov: any, j: number) => (
+                                                   <tr key={j}>
+                                                      <td className="py-2 px-2 text-[10px]">{new Date(mov.data).toLocaleDateString()}</td>
+                                                      <td className="py-2 px-2 text-[10px] font-bold">{mov.descricao}</td>
+                                                      <td className="py-2 px-2 text-[10px] text-right text-blue-600">{mov.debito > 0 ? safeFormatAOA(mov.debito) : '-'}</td>
+                                                      <td className="py-2 px-2 text-[10px] text-right text-green-600">{mov.credito > 0 ? safeFormatAOA(mov.credito) : '-'}</td>
+                                                   </tr>
+                                                ))}
+                                             </tbody>
+                                          </table>
+                                       </div>
+                                    ))}
+                                 </div>
+                              )}
+
+                              {activeReport.id === 'cashflow' && (
+                                 <div className="space-y-8">
+                                    <div className="bg-zinc-900 p-8 rounded-[2rem] text-white">
+                                       <h3 className="text-lg font-black uppercase tracking-tight mb-2">Fluxo de Caixa Líquido</h3>
+                                       <p className="text-3xl font-black text-yellow-500">{safeFormatAOA(activeReport.data?.find(r => r.tipo === 'T')?.valor || 0)}</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4">
+                                       {(activeReport.data || []).map((row: any, i: number) => (
+                                          <div key={i} className={`flex justify-between items-center p-6 rounded-2xl border ${row.tipo === 'R' ? 'bg-green-50 border-green-100' : (row.tipo === 'D' ? 'bg-red-50 border-red-100' : 'bg-zinc-50 border-zinc-100')}`}>
+                                             <span className="text-xs font-black uppercase">{row.desc}</span>
+                                             <span className={`text-sm font-black ${row.tipo === 'R' ? 'text-green-600' : row.tipo === 'D' ? 'text-red-600' : 'text-zinc-900'}`}>{safeFormatAOA(row.valor)}</span>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </div>
+                              )}
+
                               {activeReport.id === 'auditoria' && (
                                  <table className="w-full text-left">
                                     <thead>
@@ -3319,7 +3385,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
-                                       {activeReport.data.map((log: any, i: number) => (
+                                       {(activeReport.data || []).map((log: any, i: number) => (
                                           <tr key={i}>
                                              <td className="py-4 px-2 text-[10px]">{new Date(log.created_at).toLocaleString()}</td>
                                              <td className="py-4 px-2 text-xs font-bold">{log.utilizador_id?.split('-')[0]}</td>
