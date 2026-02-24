@@ -18,7 +18,7 @@ import { GoogleGenAI } from "@google/genai";
 import {
    LancamentoContabil, FolhaPagamento, ObrigacaoFiscal,
    EmpresaAfiliada, Funcionario, DocumentoDigital, MovimentoBancario, PlanoConta, LancamentoItem,
-   PeriodoContabil
+   PeriodoContabil, User
 } from '../types';
 import { supabase } from '../src/lib/supabase';
 import { formatAOA } from '../constants';
@@ -88,7 +88,7 @@ const Input = ({ label, ...props }: any) => (
    </div>
 );
 
-const AccountingPage: React.FC = () => {
+const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [activeTab, setActiveTab] = useState<'dashboard' | 'facturas' | 'proformas' | 'guias' | 'encomendas' | 'contactos' | 'itens' | 'relatorios' | 'diario' | 'plano' | 'folha' | 'fiscal' | 'periodos' | 'auditoria' | 'ia' | 'conciliacao' | 'consolidacao' | 'fontes'>('dashboard');
    const [selectedEmpresaId, setSelectedEmpresaId] = useState<string>('');
    const [selectedPeriodoId, setSelectedPeriodoId] = useState<string>('');
@@ -1564,8 +1564,8 @@ const AccountingPage: React.FC = () => {
                   <div className="flex items-center gap-3">
                      <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center font-black text-zinc-900 shadow-lg">AC</div>
                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-[11px] font-black uppercase truncate">Simao Neto</p>
-                        <p className="text-white/40 text-[9px] font-bold truncate">Premium Manager</p>
+                        <p className="text-white text-[11px] font-black uppercase truncate">{user?.nome || 'Utilizador'}</p>
+                        <p className="text-white/40 text-[9px] font-bold truncate">{user?.role === 'admin' ? 'Premium Manager' : (user?.role || 'Utilizador')}</p>
                      </div>
                   </div>
                </div>
