@@ -8,7 +8,7 @@ import {
    Plus, Download, FileText, BookOpen, Briefcase,
    Save, X, Printer, FileCheck, ShieldCheck, RefreshCw, ShieldAlert as AuditIcon,
    ListFilter, Share2, PieChart as PieChartIcon, ShoppingCart, RotateCcw,
-   LayoutList, TrendingUp
+   LayoutList, TrendingUp, Package
 } from 'lucide-react';
 import {
    ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
@@ -22,7 +22,6 @@ import {
 } from '../types';
 import { supabase } from '../src/lib/supabase';
 import { formatAOA } from '../constants';
-import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Logo from '../components/Logo';
 
@@ -77,6 +76,17 @@ const PGN_PADRAO_ANGOLANO: PlanoConta[] = [
    { id: '8', codigo: '8', nome: 'Resultados', tipo: 'Capital', natureza: 'Credora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
    { id: '8.8', codigo: '8.8', nome: 'Resultados líquidos', tipo: 'Capital', natureza: 'Credora', nivel: 2, pai_id: '8', e_analitica: true, aceita_lancamentos: true },
 ];
+
+// --- COMPONENTES AUXILIARES ---
+const Input = ({ label, ...props }: any) => (
+   <div className="space-y-2">
+      {label && <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{label}</label>}
+      <input
+         {...props}
+         className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all placeholder:text-zinc-300"
+      />
+   </div>
+);
 
 const AccountingPage: React.FC = () => {
    const [activeTab, setActiveTab] = useState<'dashboard' | 'facturas' | 'proformas' | 'guias' | 'encomendas' | 'contactos' | 'itens' | 'relatorios' | 'diario' | 'plano' | 'folha' | 'fiscal' | 'periodos' | 'auditoria' | 'ia' | 'conciliacao' | 'consolidacao' | 'fontes'>('dashboard');
