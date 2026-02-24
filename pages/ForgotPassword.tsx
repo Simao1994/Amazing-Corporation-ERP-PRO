@@ -86,7 +86,7 @@ const ForgotPasswordPage: React.FC = () => {
 
                     <button
                         onClick={() => navigate(-1)}
-                        className="w-full py-4 text-slate-500 font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:text-yellow-600 transition-all"
+                        className="w-full py-3 text-slate-500 font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:text-yellow-600 transition-all"
                     >
                         <ArrowLeft size={16} /> Voltar para o Login
                     </button>

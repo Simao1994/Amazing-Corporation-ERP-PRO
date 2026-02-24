@@ -142,7 +142,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
             </Button>
           </form>
 
-          <div className="relative py-4">
+          <div className="relative py-2">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-100"></div></div>
             <div className="relative flex justify-center text-[10px] uppercase font-black text-zinc-400">
               <span className="bg-white px-4 tracking-widest">OU</span>
@@ -151,7 +151,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
 
           <button
             onClick={() => navigate('/')}
-            className="w-full py-4 bg-zinc-50 border-2 border-dashed border-zinc-200 text-zinc-500 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:border-yellow-500 hover:text-yellow-600 transition-all"
+            className="w-full py-3 bg-zinc-50 border-2 border-dashed border-zinc-200 text-zinc-500 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:border-yellow-500 hover:text-yellow-600 transition-all"
           >
             <Home size={18} /> Voltar para Página Inicial
           </button>
