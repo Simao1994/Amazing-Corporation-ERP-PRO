@@ -156,12 +156,16 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [newEmployee, setNewEmployee] = useState({
       nome: '',
       funcao: '',
+      bilhete: '',
+      telefone: '',
       salario_base: 0,
       subsidio_alimentacao: 0,
       subsidio_transporte: 0,
       subsidio_ferias_base: 0,
       subsidio_natal_base: 0,
       outras_bonificacoes_base: 0,
+      valor_hora_extra_base: 0,
+      adiantamento_padrao: 0,
       nif: '',
       numero_ss: ''
    });
@@ -1132,6 +1136,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          const { error } = await supabase.from('funcionarios').insert({
             nome: newEmployee.nome,
             cargo: newEmployee.funcao,
+            bilhete: newEmployee.bilhete,
+            telefone: newEmployee.telefone,
             salario_base: newEmployee.salario_base,
             subsidio_alimentacao: newEmployee.subsidio_alimentacao,
             subsidio_transporte: newEmployee.subsidio_transporte,
@@ -1150,7 +1156,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          alert("Funcionário registado com sucesso!");
          setShowEmployeeModal(false);
          setNewEmployee({
-            nome: '', funcao: '', salario_base: 0,
+            nome: '', funcao: '', bilhete: '', telefone: '', salario_base: 0,
             subsidio_alimentacao: 0, subsidio_transporte: 0,
             subsidio_ferias_base: 0, subsidio_natal_base: 0, outras_bonificacoes_base: 0,
             valor_hora_extra_base: 0, adiantamento_padrao: 0,
