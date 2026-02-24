@@ -68,9 +68,9 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-sky-400/20 blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-yellow-500/10 blur-[120px] rounded-full"></div>
 
-      <div className="mb-8 flex flex-col items-center relative z-10 text-center">
-        <Logo className="items-center" showTagline />
-        <p className="text-slate-500 text-[10px] mt-4 uppercase tracking-[0.5em] font-black">Sistema Empresarial ERP</p>
+      <div className="mb-10 flex flex-col items-center relative z-10 text-center">
+        <Logo className="h-12 w-auto items-center" />
+        <p className="text-slate-500 text-[9px] mt-4 uppercase tracking-[0.5em] font-black">Sistema Empresarial ERP</p>
       </div>
 
       <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 space-y-6 border border-sky-100 relative z-10 animate-in zoom-in-95 duration-500">
