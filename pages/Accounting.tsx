@@ -4908,10 +4908,21 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
 
                                  <div className="p-6 bg-yellow-50/30 rounded-3xl border border-yellow-100 space-y-6">
-                                    <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">Bónus, Horas e Adiantamentos</h4>
+                                     <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">Bónus e Descontos</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                        <Input label="Horas Extras (Valor)" type="number" value={newEmployee.valor_hora_extra_base} onChange={e => setNewEmployee({ ...newEmployee, valor_hora_extra_base: Number(e.target.value) })} />
                                        <Input label="Adiantamento Padrão" type="number" value={newEmployee.adiantamento_padrao} onChange={e => setNewEmployee({ ...newEmployee, adiantamento_padrao: Number(e.target.value) })} />
+                                        <Input label="Outros Descontos" type="number" value={newEmployee.outros_descontos_base} onChange={e => setNewEmployee({ ...newEmployee, outros_descontos_base: Number(e.target.value) })} />
+                                        <div className="flex flex-col gap-2 pt-2">
+                                           <label className="flex items-center gap-2 cursor-pointer">
+                                              <input type="checkbox" checked={newEmployee.desconto_inss} onChange={e => setNewEmployee({ ...newEmployee, desconto_inss: e.target.checked })} className="w-4 h-4 accent-yellow-500" />
+                                              <span className="text-[10px] font-bold text-zinc-600 uppercase">Aplicar INSS</span>
+                                           </label>
+                                           <label className="flex items-center gap-2 cursor-pointer">
+                                              <input type="checkbox" checked={newEmployee.desconto_irt} onChange={e => setNewEmployee({ ...newEmployee, desconto_irt: e.target.checked })} className="w-4 h-4 accent-yellow-500" />
+                                              <span className="text-[10px] font-bold text-zinc-600 uppercase">Aplicar IRT</span>
+                                           </label>
+                                        </div>
                                        <Input label="Base Férias" type="number" value={newEmployee.subsidio_ferias_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_ferias_base: Number(e.target.value) })} />
                                        <Input label="Base Natal" type="number" value={newEmployee.subsidio_natal_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_natal_base: Number(e.target.value) })} />
                                        <div className="col-span-2">
