@@ -117,31 +117,35 @@ const AccountingPage: React.FC = () => {
       if (!selectedEmpresaId) return alert("Selecione uma empresa primeiro.");
 
       const companyPeriods = (periodos || []).filter(p => p.empresa_id === selectedEmpresaId);
-      const lastYear = companyPeriods.length > 0 ? Math.max(...companyPeriods.map(p => Number(p.ano))) : new Date().getFullYear();
-      const nextYear = lastYear + 1;
+      let targetYear = new Date().getFullYear();
 
-      if (!confirm(`Deseja abrir o exercício fiscal de ${nextYear}?`)) return;
+      if (companyPeriods.length > 0) {
+         const lastYear = Math.max(...companyPeriods.map(p => Number(p.ano)));
+         targetYear = lastYear + 1;
+      }
+
+      if (!confirm(`Deseja abrir o exercício fiscal de ${targetYear}?`)) return;
 
       try {
-         // Verificar duplicado
+         // Verificar se já existe QUALQUER mês aberto para este ano
          const { data: exists } = await supabase.from('acc_periodos')
             .select('id')
             .eq('empresa_id', selectedEmpresaId)
-            .eq('ano', nextYear)
-            .eq('mes', 1)
+            .eq('ano', targetYear)
+            .limit(1)
             .maybeSingle();
 
-         if (exists) return alert(`O exercício de ${nextYear} já se encontra aberto.`);
+         if (exists) return alert(`O exercício de ${targetYear} já possui períodos abertos.`);
 
          const { error } = await supabase.from('acc_periodos').insert({
-            ano: nextYear,
+            ano: targetYear,
             mes: 1,
             status: 'Aberto',
             empresa_id: selectedEmpresaId
          });
 
          if (error) throw error;
-         alert(`Exercício ${nextYear} aberto com sucesso.`);
+         alert(`Exercício ${targetYear} (Mês 1) aberto com sucesso.`);
          await fetchAccountingData();
       } catch (error: any) {
          console.error("Open Year Error:", error);
@@ -157,7 +161,10 @@ const AccountingPage: React.FC = () => {
       let nextAno = new Date().getFullYear();
 
       if (currentPeriods.length > 0) {
-         const sorted = [...currentPeriods].sort((a, b) => b.ano - a.ano || b.mes - a.mes);
+         const sorted = [...currentPeriods].sort((a, b) => {
+            if (b.ano !== a.ano) return b.ano - a.ano;
+            return b.mes - a.mes;
+         });
          const last = sorted[0];
          nextMes = last.mes === 12 ? 1 : last.mes + 1;
          nextAno = last.mes === 12 ? last.ano + 1 : last.ano;
@@ -554,7 +561,10 @@ const AccountingPage: React.FC = () => {
       const facturado = notas.filter(n => n.tipo === 'Venda').reduce((acc, n) => acc + n.valor, 0);
       const pendente = extFaturas.filter(f => f.status === 'Pendente').reduce((acc, f) => acc + (Number(f.valor_total) || 0), 0);
 
-      const caixa = extTesouraria.reduce((acc, t) => acc + (t.tipo?.toLowerCase().includes('entrada') ? Number(t.valor) : -Number(t.valor)), 0);
+      const caixa = extTesouraria.reduce((acc, t) => {
+         const v = Number(t.valor) || 0;
+         return acc + (t.tipo?.toLowerCase().includes('entrada') ? v : -v);
+      }, 0);
       const entradas = extTesouraria.filter(t => t.tipo?.toLowerCase().includes('entrada')).reduce((acc, t) => acc + Number(t.valor), 0);
       const saidas = extTesouraria.filter(t => t.tipo?.toLowerCase().includes('saida')).reduce((acc, t) => acc + Number(t.valor), 0);
 
@@ -2122,7 +2132,11 @@ const AccountingPage: React.FC = () => {
                            <div className="bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
                               <Calendar size={120} className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform" />
                               <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-6">Controlo de Exercício</h4>
-                              <p className="text-3xl font-black mb-2">Ano 2024</p>
+                              <p className="text-3xl font-black mb-2">Ano {
+                                 periodos.filter(p => p.empresa_id === selectedEmpresaId).length > 0
+                                    ? Math.max(...periodos.filter(p => p.empresa_id === selectedEmpresaId).map(p => Number(p.ano)))
+                                    : new Date().getFullYear()
+                              }</p>
                               <p className="text-xs text-zinc-500 font-bold uppercase">Exercício Corrente</p>
                               <button
                                  onClick={handleOpenYear}
