@@ -71,12 +71,12 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
 
       {/* Center Content Block */}
       <div className="w-full max-w-md flex flex-col items-center relative z-10 animate-in fade-in zoom-in-95 duration-700">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <Logo className="h-16 md:h-20 w-auto" />
-          <p className="text-white text-sm mt-4 uppercase tracking-[0.6em] font-black">Sistema Empresarial ERP</p>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <Logo className="h-16 md:h-18 w-auto" />
+          <p className="text-white text-xs mt-3 uppercase tracking-[0.6em] font-black">Sistema Empresarial ERP</p>
         </div>
 
-        <div className="bg-white w-full rounded-[3rem] shadow-2xl p-10 space-y-6 border border-sky-100 relative">
+        <div className="bg-white w-full rounded-[2.5rem] shadow-2xl p-8 space-y-5 border border-sky-100 relative">
           <div className="text-center">
             <h2 className="text-2xl font-black text-slate-900">Acesso Seguro</h2>
             <p className="text-slate-500 text-sm mt-2 font-medium">
@@ -158,9 +158,9 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {/* Footer info - Part of the centered block for stability */}
-        <div className="mt-8 text-center space-y-2">
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 Amazing Corporation.</p>
-          <p className="text-slate-300 text-[9px] font-medium italic">Sistema protegido por criptografia ponta-a-ponta.</p>
+        <div className="mt-6 text-center space-y-1">
+          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">© 2026 Amazing Corporation.</p>
+          <p className="text-slate-300 text-[8px] font-medium italic">Sistema protegido por criptografia ponta-a-ponta.</p>
         </div>
       </div>
     </div>
