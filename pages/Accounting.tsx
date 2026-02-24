@@ -719,7 +719,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
          const [emps, funcs, dataContas, dataPeriodos] = await Promise.all([
             fetchEmps(),
-            fetchQuery(supabase.from('funcionarios').select('*').order('nome'), 'Equipa'),
+            fetchQuery(supabase.from('funcionarios').select('*').eq('empresa_id', effEmpId).order('nome'), 'Equipa'),
             fetchQuery(supabase.from('acc_contas').select('*').order('codigo'), 'Plano de Contas'),
             fetchQuery(supabase.from('acc_periodos').select('*').order('ano', { ascending: false }).order('mes', { ascending: false }), 'Ciclos Fiscais')
          ]);
