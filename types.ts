@@ -397,6 +397,8 @@ export interface PlanoConta {
   nivel?: number;
   pai_id?: string;
   e_analitica?: boolean;
+  e_sintetica?: boolean;
+  aceita_lancamentos?: boolean;
 }
 
 export interface PeriodoContabil {
@@ -405,6 +407,7 @@ export interface PeriodoContabil {
   mes: number;
   status: 'Aberto' | 'Fechado';
   data_fecho?: string;
+  empresa_id?: string;
 }
 
 // --- INVENTÁRIO ---
