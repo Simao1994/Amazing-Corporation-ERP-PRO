@@ -1603,7 +1603,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             <div className="p-6 border-t border-white/5 mt-auto">
                <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
                   <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center font-black text-zinc-900 shadow-lg">AC</div>
+                     <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 shadow-lg border border-yellow-500/20">
+                        <Users size={18} className="font-black" />
+                     </div>
                      <div className="flex-1 min-w-0">
                         <p className="text-white text-[11px] font-black uppercase truncate">{user?.nome || 'Utilizador'}</p>
                         <p className="text-white/40 text-[9px] font-bold truncate">{user?.role === 'admin' ? 'Premium Manager' : (user?.role || 'Utilizador')}</p>
