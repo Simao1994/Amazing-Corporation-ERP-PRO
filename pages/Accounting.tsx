@@ -4876,6 +4876,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     </div>
                                     <Input label="Função / Cargo" required value={newEmployee.funcao} onChange={e => setNewEmployee({ ...newEmployee, funcao: e.target.value })} placeholder="Ex: Contabilista Sénior" />
                                     <Input label="NIF" value={newEmployee.nif} onChange={e => setNewEmployee({ ...newEmployee, nif: e.target.value })} placeholder="000000000LA000" />
+                                     <Input label="Bilhete de Identidade" value={newEmployee.bilhete} onChange={e => setNewEmployee({ ...newEmployee, bilhete: e.target.value })} placeholder="000000000" />
+                                     <Input label="Telefone" value={newEmployee.telefone} onChange={e => setNewEmployee({ ...newEmployee, telefone: e.target.value })} placeholder="900 000 000" />
 
                                     <Input label="Salário Base (AOA)" type="number" required value={newEmployee.salario_base} onChange={e => setNewEmployee({ ...newEmployee, salario_base: Number(e.target.value) })} />
                                     <Input label="N.º Segurança Social" value={newEmployee.numero_ss} onChange={e => setNewEmployee({ ...newEmployee, numero_ss: e.target.value })} placeholder="00000000000" />
