@@ -113,6 +113,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [showReceiptModal, setShowReceiptModal] = useState(false);
    const [selectedFolha, setSelectedFolha] = useState<FolhaPagamento | null>(null);
 
+   // --- ESTADO DE RELATÓRIOS ---
+   const [activeReport, setActiveReport] = useState<{ id: string; title: string; data: any[] } | null>(null);
+   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
    // New Account Form
    const [newAccount, setNewAccount] = useState({
       codigo: '',
@@ -356,9 +360,6 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       }
    };
 
-   const handlePrintFatura = (fatura: any) => {
-      alert(`O motor de visualização A4 está a processar o documento ${fatura.numero_fatura}. [Factura Digital]`);
-   };
 
    // --- LÓGICA DE PERÍODOS ---
    const handleOpenYear = async () => {
@@ -1256,7 +1257,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             empresa_id: selectedEmpresaId,
             debito: totalBrutoBatch,
             credito: totalDescontosBatch + totalLiquidoBatch, // Equilíbrio contábil
-            descricao: `Processamento de Folha de Pagamento - Ciclo ${activePeriodo.mes}/${activePeriodo.ano}`,
+            descricao: `Processamento de Folha de Pagamento - Ciclo ${periodos.find(p => p.id === selectedPeriodoId)?.mes}/${periodos.find(p => p.id === selectedPeriodoId)?.ano}`,
             data: new Date().toISOString().split('T')[0],
             status: 'concluido'
          }]).select().single();
@@ -1277,6 +1278,151 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          alert(`Erro ao processar folha: ${error.message}`);
       } finally {
          setIsProcessingPayroll(false);
+      }
+   };
+
+   const handlePrintFatura = (fatura: any) => {
+      alert(`Imprimindo documento ${fatura.numero_fatura || fatura.numero}...`);
+   };
+
+   // --- LÓGICA DE RELATÓRIOS ---
+   const openReport = async (reportId: string) => {
+      setIsGeneratingReport(true);
+      const reportTitle = {
+         'balanco': 'Balanço Patrimonial',
+         'dre': 'Demonstração de Resultados (DRE)',
+         'balancete': 'Balancete de Verificação',
+         'diario': 'Diário de Lançamentos',
+         'razão': 'Livro Razão',
+         'cashflow': 'Fluxo de Caixa',
+         'fiscal': 'Relatório Fiscal (IVA/IRT)',
+         'auditoria': 'Trilhas de Auditoria'
+      }[reportId] || 'Relatório';
+
+      try {
+         let data: any[] = [];
+
+         if (reportId === 'diario') {
+            data = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.periodo_id === selectedPeriodoId);
+         } else if (reportId === 'balancete') {
+            const saldos: any = {};
+            (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado').forEach(l => {
+               (l.itens || []).forEach((it: any) => {
+                  if (!saldos[it.conta_codigo]) {
+                     saldos[it.conta_codigo] = { codigo: it.conta_codigo, nome: it.conta_nome, debito: 0, credito: 0 };
+                  }
+                  if (it.tipo === 'D') saldos[it.conta_codigo].debito += Number(it.valor) || 0;
+                  else saldos[it.conta_codigo].credito += Number(it.valor) || 0;
+               });
+            });
+            data = Object.values(saldos).sort((a: any, b: any) => a.codigo.localeCompare(b.codigo));
+         } else if (reportId === 'dre') {
+            const proveitos = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => it?.conta_codigo?.startsWith('6') && it?.tipo === 'C')
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            const custos = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => it?.conta_codigo?.startsWith('7') && it?.tipo === 'D')
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            data = [
+               { desc: 'PROVEITOS E GANHOS', valor: proveitos, tipo: 'R' },
+               { desc: 'CUSTOS E PERDAS', valor: custos, tipo: 'D' },
+               { desc: 'RESULTADO LÍQUIDO', valor: proveitos - custos, tipo: 'T' }
+            ];
+         } else if (reportId === 'balanco') {
+            const ativo = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => (it?.conta_codigo?.startsWith('1') || it?.conta_codigo?.startsWith('2') || it?.conta_codigo?.startsWith('3')) && it?.tipo === 'D')
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0) -
+               (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+                  .flatMap(l => (l.itens || []))
+                  .filter(it => (it?.conta_codigo?.startsWith('1') || it?.conta_codigo?.startsWith('2') || it?.conta_codigo?.startsWith('3')) && it?.tipo === 'C')
+                  .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            const passivo = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => it?.conta_codigo?.startsWith('4') && it?.tipo === 'C')
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0) -
+               (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+                  .flatMap(l => (l.itens || []))
+                  .filter(it => it?.conta_codigo?.startsWith('4') && it?.tipo === 'D')
+                  .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            const capital = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => it?.conta_codigo?.startsWith('5') && it?.tipo === 'C')
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            data = [
+               { desc: 'ACTIVO TOTAL', valor: ativo },
+               { desc: 'PASSIVO TOTAL', valor: passivo },
+               { desc: 'CAPITAL PRÓPRIO', valor: capital },
+               { desc: 'TOTAL PASSIVO + CP', valor: passivo + capital }
+            ];
+         } else if (reportId === 'auditoria') {
+            data = auditLogs;
+         } else if (reportId === 'fiscal') {
+            const ivaLiquidado = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => it?.conta_codigo === '3.4.5' && it?.tipo === 'C')
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            const ivaDedutivel = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => it?.conta_codigo === '3.4.5' && it?.tipo === 'D')
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            data = [
+               { desc: 'IVA Liquidado (Vendas)', valor: ivaLiquidado },
+               { desc: 'IVA Dedutível (Compras)', valor: ivaDedutivel },
+               { desc: 'IVA a Pagar / Recuperar', valor: ivaLiquidado - ivaDedutivel }
+            ];
+         } else if (reportId === 'razão') {
+            // Agrupar movimentos detalhados por conta
+            const razao: any = {};
+            (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado').forEach(l => {
+               (l.itens || []).forEach((it: any) => {
+                  if (!razao[it.conta_codigo]) {
+                     razao[it.conta_codigo] = { codigo: it.conta_codigo, nome: it.conta_nome, movimentos: [] };
+                  }
+                  razao[it.conta_codigo].movimentos.push({
+                     data: l.data,
+                     descricao: l.descricao,
+                     debito: it.tipo === 'D' ? Number(it.valor) : 0,
+                     credito: it.tipo === 'C' ? Number(it.valor) : 0
+                  });
+               });
+            });
+            // Converter para array plano para exibição
+            data = Object.values(razao).sort((a: any, b: any) => a.codigo.localeCompare(b.codigo));
+         } else if (reportId === 'cashflow') {
+            // Fluxo de Caixa Simplicado (Entradas vs Saídas na Classe 1)
+            const entradas = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => it?.conta_codigo?.startsWith('1.1') && it?.tipo === 'D') // Caixa/Bancos como destino (entrada)
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            const saidas = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               .flatMap(l => (l.itens || []))
+               .filter(it => it?.conta_codigo?.startsWith('1.1') && it?.tipo === 'C') // Caixa/Bancos como origem (saída)
+               .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
+
+            data = [
+               { desc: 'ENTRADAS DE CAIXA', valor: entradas, tipo: 'R' },
+               { desc: 'SAÍDAS DE CAIXA', valor: saidas, tipo: 'D' },
+               { desc: 'FLUXO LÍQUIDO DO PERÍODO', valor: entradas - saidas, tipo: 'T' }
+            ];
+         }
+
+         setActiveReport({ id: reportId, title: reportTitle, data });
+         setShowReportModal(true);
+      } catch (e) {
+         console.error("Erro ao gerar relatório:", e);
+      } finally {
+         setIsGeneratingReport(false);
       }
    };
 
@@ -3074,64 +3220,119 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
                {/* --- MODAL RELATÓRIO COMPLETO --- */}
                {
-                  showReportModal && (
-                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                        <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                              <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                                 <FileText className="text-yellow-500" /> Relatório Financeiro Detalhado
-                              </h2>
-                              <button onClick={() => setShowReportModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
-                           </div>
-                           <div className="p-10 space-y-8">
-                              <div className="grid grid-cols-2 gap-8">
-                                 <div className="bg-green-50 p-6 rounded-3xl border border-green-100">
-                                    <p className="text-[10px] font-black text-green-700 uppercase tracking-widest">Activo Total</p>
-                                    <p className="text-2xl font-black text-green-900">{safeFormatAOA(financeReports.ativos)}</p>
+                  showReportModal && activeReport && (
+                     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-5xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-900 text-white print:hidden">
+                              <div className="flex items-center gap-4">
+                                 <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                    <FileText size={24} />
                                  </div>
-                                 <div className="bg-red-50 p-6 rounded-3xl border border-red-100">
-                                    <p className="text-[10px] font-black text-red-700 uppercase tracking-widest">Passivo Total</p>
-                                    <p className="text-2xl font-black text-red-900">{safeFormatAOA(financeReports.passivos)}</p>
-                                 </div>
-                              </div>
-
-                              <div className="space-y-4">
-                                 <h3 className="text-sm font-black text-zinc-900 uppercase">Indicadores de Liquidez</h3>
-                                 <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                       <span className="text-zinc-500 font-bold">Liquidez Geral</span>
-                                       <span className="font-black text-zinc-900">1.45</span>
-                                    </div>
-                                    <div className="w-full bg-zinc-100 rounded-full h-2">
-                                       <div className="bg-sky-500 h-2 rounded-full w-[60%]"></div>
-                                    </div>
-                                 </div>
-                                 <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                       <span className="text-zinc-500 font-bold">Solvência</span>
-                                       <span className="font-black text-zinc-900">2.10</span>
-                                    </div>
-                                    <div className="w-full bg-zinc-100 rounded-full h-2">
-                                       <div className="bg-green-500 h-2 rounded-full w-[80%]"></div>
-                                    </div>
-                                 </div>
-                              </div>
-
-                              <div className="bg-zinc-900 text-white p-6 rounded-3xl flex justify-between items-center">
                                  <div>
-                                    <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Capital Próprio</p>
-                                    <p className="text-xl font-bold mt-1">Reservas: {safeFormatAOA(financeReports.capital)}</p>
-                                 </div>
-                                 <div className="text-right">
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Resultado Líquido</p>
-                                    <p className={`text-2xl font-black ${financeReports.lucroLiquido >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                       {safeFormatAOA(financeReports.lucroLiquido)}
-                                    </p>
+                                    <h2 className="text-xl font-black uppercase tracking-tight">{activeReport.title}</h2>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{currentEmpresa?.nome} / {periodos.find(p => p.id === selectedPeriodoId)?.mes}/{periodos.find(p => p.id === selectedPeriodoId)?.ano}</p>
                                  </div>
                               </div>
+                              <div className="flex gap-3">
+                                 <button onClick={() => window.print()} className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"><Printer size={20} /></button>
+                                 <button onClick={() => setShowReportModal(false)} className="p-3 bg-white/10 hover:bg-red-500 text-white rounded-full transition-all"><X size={20} /></button>
+                              </div>
                            </div>
-                        </div>
-                     </div>
+
+                           <div className="p-16 overflow-y-auto flex-1 print:p-0">
+                              <div className="hidden print:flex flex-col mb-10 items-center text-center">
+                                 <h1 className="text-3xl font-black uppercase">{activeReport.title}</h1>
+                                 <p className="text-sm font-bold text-zinc-500 mt-2">{currentEmpresa?.nome}</p>
+                                 <p className="text-xs text-zinc-400">NIF: {currentEmpresa?.nif} | Período: {periodos.find(p => p.id === selectedPeriodoId)?.mes}/{periodos.find(p => p.id === selectedPeriodoId)?.ano}</p>
+                                 <div className="w-full h-1 bg-zinc-900 my-6" />
+                              </div>
+
+                              {activeReport.id === 'diario' && (
+                                 <table className="w-full text-left">
+                                    <thead>
+                                       <tr className="border-b-2 border-zinc-900">
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Data</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Descrição</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Débito</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Crédito</th>
+                                       </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-100">
+                                       {activeReport.data.map((l: any, i: number) => (
+                                          <tr key={i} className="hover:bg-zinc-50">
+                                             <td className="py-4 px-2 text-xs">{new Date(l.data).toLocaleDateString()}</td>
+                                             <td className="py-4 px-2 text-xs font-bold">{l.descricao}</td>
+                                             <td className="py-4 px-2 text-xs text-blue-600 font-bold">{safeFormatAOA((l.itens || []).filter((x: any) => x.tipo === 'D').reduce((acc: any, x: any) => acc + x.valor, 0))}</td>
+                                             <td className="py-4 px-2 text-xs text-green-600 font-bold">{safeFormatAOA((l.itens || []).filter((x: any) => x.tipo === 'C').reduce((acc: any, x: any) => acc + x.valor, 0))}</td>
+                                          </tr>
+                                       ))}
+                                    </tbody>
+                                 </table>
+                              )}
+
+                              {activeReport.id === 'balancete' && (
+                                 <table className="w-full text-left">
+                                    <thead>
+                                       <tr className="border-b-2 border-zinc-900">
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Conta</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Designação</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase text-right">Somatório Débito</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase text-right">Somatório Crédito</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase text-right">Saldo</th>
+                                       </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-100">
+                                       {activeReport.data.map((r: any, i: number) => (
+                                          <tr key={i}>
+                                             <td className="py-4 px-2 text-xs font-mono">{r.codigo}</td>
+                                             <td className="py-4 px-2 text-xs font-bold">{r.nome}</td>
+                                             <td className="py-4 px-2 text-xs text-right">{safeFormatAOA(r.debito)}</td>
+                                             <td className="py-4 px-2 text-xs text-right">{safeFormatAOA(r.credito)}</td>
+                                             <td className="py-4 px-2 text-xs font-black text-right">{safeFormatAOA(r.debito - r.credito)}</td>
+                                          </tr>
+                                       ))}
+                                    </tbody>
+                                 </table>
+                              )}
+
+                              {['dre', 'balanco', 'fiscal'].includes(activeReport.id) && (
+                                 <div className="space-y-6">
+                                    {activeReport.data.map((row: any, i: number) => (
+                                       <div key={i} className={`flex justify-between items-center p-6 rounded-2xl ${row.tipo === 'T' ? 'bg-zinc-900 text-white' : 'bg-zinc-50 border border-zinc-100'}`}>
+                                          <span className="text-xs font-black uppercase tracking-tight">{row.desc}</span>
+                                          <span className={`text-lg font-black ${row.tipo === 'T' ? 'text-yellow-500' : (row.valor < 0 ? 'text-red-500' : 'text-zinc-900')}`}>
+                                             {safeFormatAOA(row.valor)}
+                                          </span>
+                                       </div>
+                                    ))}
+                                 </div>
+                              )}
+
+                              {activeReport.id === 'auditoria' && (
+                                 <table className="w-full text-left">
+                                    <thead>
+                                       <tr className="border-b-2 border-zinc-900">
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Data</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Utilizador</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Ação</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Tabela</th>
+                                       </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-100">
+                                       {activeReport.data.map((log: any, i: number) => (
+                                          <tr key={i}>
+                                             <td className="py-4 px-2 text-[10px]">{new Date(log.created_at).toLocaleString()}</td>
+                                             <td className="py-4 px-2 text-xs font-bold">{log.utilizador_id?.split('-')[0]}</td>
+                                             <td className="py-4 px-2 text-xs uppercase">{log.acao}</td>
+                                             <td className="py-4 px-2 text-xs font-mono">{log.tabela_nome}</td>
+                                          </tr>
+                                       ))}
+                                    </tbody>
+                                 </table>
+                              )}
+                           </div>
+                        </div >
+                     </div >
                   )
                }
 
@@ -3253,997 +3454,1022 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
                {/* ===== MODAL DE COMPRAS ===== */}
-               {showCompraModal && (
-                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-                     <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-orange-50">
-                           <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                              <ShoppingCart className="text-orange-500" size={24} /> Registar Compra
-                           </h2>
-                           <button onClick={() => setShowCompraModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
-                        </div>
-                        <form onSubmit={handleSaveCompra} className="p-8 space-y-5">
-                           <div className="grid grid-cols-2 gap-4">
-                              <Input name="numero_compra" label="N.º Compra" value={newCompra.numero_compra}
-                                 onChange={e => setNewCompra({ ...newCompra, numero_compra: e.target.value })} placeholder="COMP-001" />
-                              <Input name="data_compra" label="Data" type="date" required value={newCompra.data_compra}
-                                 onChange={e => setNewCompra({ ...newCompra, data_compra: e.target.value })} />
+               {
+                  showCompraModal && (
+                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                        <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-orange-50">
+                              <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                                 <ShoppingCart className="text-orange-500" size={24} /> Registar Compra
+                              </h2>
+                              <button onClick={() => setShowCompraModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
                            </div>
-                           <div className="grid grid-cols-2 gap-4">
-                              <Input name="fornecedor_nome" label="Fornecedor" required value={newCompra.fornecedor_nome}
-                                 onChange={e => setNewCompra({ ...newCompra, fornecedor_nome: e.target.value })} placeholder="Nome do fornecedor" />
-                              <Input name="fornecedor_nif" label="NIF Fornecedor" value={newCompra.fornecedor_nif}
-                                 onChange={e => setNewCompra({ ...newCompra, fornecedor_nif: e.target.value })} placeholder="000000000" />
-                           </div>
-                           <Input name="descricao" label="Descrição / Artigos" value={newCompra.descricao}
-                              onChange={e => setNewCompra({ ...newCompra, descricao: e.target.value })} placeholder="Ex: Aquisição de materiais de escritório" />
-                           <div className="grid grid-cols-3 gap-4">
-                              <Input name="valor_total" label="Valor Total (AOA)" type="number" required value={newCompra.valor_total}
-                                 onChange={e => setNewCompra({ ...newCompra, valor_total: Number(e.target.value) })} />
-                              <Input name="iva" label="IVA (AOA)" type="number" value={newCompra.iva}
-                                 onChange={e => setNewCompra({ ...newCompra, iva: Number(e.target.value) })} />
-                              <div>
-                                 <label className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Categoria</label>
-                                 <select value={newCompra.categoria} onChange={e => setNewCompra({ ...newCompra, categoria: e.target.value })}
-                                    className="w-full border border-zinc-200 rounded-xl p-2.5 text-xs font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                                    {['Mercadorias', 'Serviços', 'Imobilizado', 'Matérias-Primas', 'Outros'].map(c => (
-                                       <option key={c} value={c}>{c}</option>
-                                    ))}
-                                 </select>
+                           <form onSubmit={handleSaveCompra} className="p-8 space-y-5">
+                              <div className="grid grid-cols-2 gap-4">
+                                 <Input name="numero_compra" label="N.º Compra" value={newCompra.numero_compra}
+                                    onChange={e => setNewCompra({ ...newCompra, numero_compra: e.target.value })} placeholder="COMP-001" />
+                                 <Input name="data_compra" label="Data" type="date" required value={newCompra.data_compra}
+                                    onChange={e => setNewCompra({ ...newCompra, data_compra: e.target.value })} />
                               </div>
-                           </div>
-                           {/* Preview lançamento automático */}
-                           {newCompra.valor_total > 0 && (
-                              <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
-                                 <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2">Lançamento Automático Gerado</p>
-                                 <div className="flex justify-between text-xs font-bold text-zinc-700">
-                                    <span>D: 2.1 Inventário / Activos</span>
-                                    <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
-                                 </div>
-                                 <div className="flex justify-between text-xs font-bold text-zinc-700">
-                                    <span>C: 3.2 Fornecedores / Contas a Pagar</span>
-                                    <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
-                                 </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <Input name="fornecedor_nome" label="Fornecedor" required value={newCompra.fornecedor_nome}
+                                    onChange={e => setNewCompra({ ...newCompra, fornecedor_nome: e.target.value })} placeholder="Nome do fornecedor" />
+                                 <Input name="fornecedor_nif" label="NIF Fornecedor" value={newCompra.fornecedor_nif}
+                                    onChange={e => setNewCompra({ ...newCompra, fornecedor_nif: e.target.value })} placeholder="000000000" />
                               </div>
-                           )}
-                           <button type="submit" disabled={isSavingCompra}
-                              className="w-full py-5 bg-orange-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-orange-600 transition-all disabled:opacity-50">
-                              {isSavingCompra ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-                              {isSavingCompra ? 'A Guardar...' : 'Registar Compra + Contabilizar'}
-                           </button>
-                        </form>
-                     </div>
-                  </div>
-               )}
-
-               {/* ===== MODAL DE FATURAÇÃO ===== */}
-               {showInvoiceModal && (
-                  <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-                     <div className="bg-white w-full max-w-5xl rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] flex flex-col">
-                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-900 text-white">
-                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
-                                 <FileText size={24} />
-                              </div>
-                              <div>
-                                 <h2 className="text-xl font-black uppercase tracking-tight">Emitir {invoiceForm.tipo}</h2>
-                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{currentEmpresa?.nome || 'Entidade Seleccionada'}</p>
-                              </div>
-                           </div>
-                           <button onClick={() => setShowInvoiceModal(false)} className="p-3 text-white/50 hover:bg-white/10 rounded-full transition-all"><X size={24} /></button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
-                           {/* Coluna Esquerda: Dados do Cliente e Selecção de Itens */}
-                           <div className="lg:col-span-7 space-y-8">
-                              <div className="grid grid-cols-2 gap-6">
-                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo de Documento</label>
-                                    <select value={invoiceForm.tipo} onChange={e => setInvoiceForm({ ...invoiceForm, tipo: e.target.value as any })}
-                                       className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
-                                       <option value="Factura">Factura</option>
-                                       <option value="Pró-forma">Pró-forma</option>
-                                       <option value="Guia">Guia de Remessa</option>
-                                       <option value="Encomenda">Nota de Encomenda</option>
+                              <Input name="descricao" label="Descrição / Artigos" value={newCompra.descricao}
+                                 onChange={e => setNewCompra({ ...newCompra, descricao: e.target.value })} placeholder="Ex: Aquisição de materiais de escritório" />
+                              <div className="grid grid-cols-3 gap-4">
+                                 <Input name="valor_total" label="Valor Total (AOA)" type="number" required value={newCompra.valor_total}
+                                    onChange={e => setNewCompra({ ...newCompra, valor_total: Number(e.target.value) })} />
+                                 <Input name="iva" label="IVA (AOA)" type="number" value={newCompra.iva}
+                                    onChange={e => setNewCompra({ ...newCompra, iva: Number(e.target.value) })} />
+                                 <div>
+                                    <label className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Categoria</label>
+                                    <select value={newCompra.categoria} onChange={e => setNewCompra({ ...newCompra, categoria: e.target.value })}
+                                       className="w-full border border-zinc-200 rounded-xl p-2.5 text-xs font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                                       {['Mercadorias', 'Serviços', 'Imobilizado', 'Matérias-Primas', 'Outros'].map(c => (
+                                          <option key={c} value={c}>{c}</option>
+                                       ))}
                                     </select>
                                  </div>
-                                 <Input label="Data de Emissão" type="date" value={invoiceForm.data_emissao} onChange={e => setInvoiceForm({ ...invoiceForm, data_emissao: e.target.value })} />
                               </div>
-
-                              <div className="space-y-4">
-                                 <div className="flex justify-between items-center">
-                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">Seleccionar Cliente Registado</label>
-                                    <button
-                                       onClick={() => setShowContactModal(true)}
-                                       className="text-[9px] font-black text-yellow-600 uppercase hover:underline flex items-center gap-1"
-                                    >
-                                       <Plus size={12} /> Novo Cliente
-                                    </button>
-                                 </div>
-                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                    {contactos.filter(c => c.empresa_id === selectedEmpresaId && c.tipo !== 'Fornecedor').slice(0, 6).map(c => (
-                                       <button key={c.id} onClick={() => setInvoiceForm({ ...invoiceForm, cliente_id: c.id, cliente_nome: c.nome })}
-                                          className={`p-4 rounded-2xl border text-[10px] font-black uppercase tracking-tighter transition-all text-left ${invoiceForm.cliente_id === c.id ? 'bg-zinc-900 text-yellow-500 border-zinc-900 shadow-lg' : 'bg-white text-zinc-500 border-zinc-200 hover:border-yellow-400 hover:bg-zinc-50'}`}>
-                                          <div className="truncate">{c.nome}</div>
-                                          <div className={`text-[8px] font-bold ${invoiceForm.cliente_id === c.id ? 'text-zinc-400' : 'text-zinc-300'}`}>{c.nif || 'S/ NIF'}</div>
-                                       </button>
-                                    ))}
-                                 </div>
-                                 <Input placeholder="Ou digite o nome do cliente manualmente..." value={invoiceForm.cliente_nome} onChange={(e: any) => setInvoiceForm({ ...invoiceForm, cliente_nome: e.target.value, cliente_id: '' })} />
-                              </div>
-
-                              <div className="space-y-4 bg-zinc-50 p-6 rounded-3xl border border-zinc-200">
-                                 <h4 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Adicionar Serviço / Item Manual</h4>
-                                 <div className="grid grid-cols-12 gap-4">
-                                    <div className="col-span-6">
-                                       <Input placeholder="Nome do Serviço ou Item" value={customItem.nome} onChange={e => setCustomItem({ ...customItem, nome: e.target.value })} />
+                              {/* Preview lançamento automático */}
+                              {newCompra.valor_total > 0 && (
+                                 <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
+                                    <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2">Lançamento Automático Gerado</p>
+                                    <div className="flex justify-between text-xs font-bold text-zinc-700">
+                                       <span>D: 2.1 Inventário / Activos</span>
+                                       <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
                                     </div>
-                                    <div className="col-span-3">
-                                       <Input placeholder="Preço" type="number" value={customItem.preco} onChange={e => setCustomItem({ ...customItem, preco: Number(e.target.value) })} />
-                                    </div>
-                                    <div className="col-span-3">
-                                       <button onClick={handleAddCustomItem} className="w-full h-[54px] bg-yellow-500 text-zinc-900 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-yellow-400 transition-all flex items-center justify-center gap-2">
-                                          <Plus size={16} /> Add
-                                       </button>
+                                    <div className="flex justify-between text-xs font-bold text-zinc-700">
+                                       <span>C: 3.2 Fornecedores / Contas a Pagar</span>
+                                       <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
                                     </div>
                                  </div>
-                              </div>
+                              )}
+                              <button type="submit" disabled={isSavingCompra}
+                                 className="w-full py-5 bg-orange-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-orange-600 transition-all disabled:opacity-50">
+                                 {isSavingCompra ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                                 {isSavingCompra ? 'A Guardar...' : 'Registar Compra + Contabilizar'}
+                              </button>
+                           </form>
+                        </div>
+                     </div>
+                  )
+               }
 
-                              <div className="space-y-4">
-                                 <div className="flex justify-between items-center">
-                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Catálogo de Itens</label>
-                                    <span className="text-[10px] font-bold text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full uppercase">{extInventario.length} Disponíveis</span>
+               {/* ===== MODAL DE FATURAÇÃO ===== */}
+               {
+                  showInvoiceModal && (
+                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                        <div className="bg-white w-full max-w-5xl rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] flex flex-col">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-900 text-white">
+                              <div className="flex items-center gap-4">
+                                 <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                    <FileText size={24} />
                                  </div>
-                                 <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {extInventario.map(item => (
-                                       <div key={item.id} onClick={() => handleAddInvoiceItem(item)}
-                                          className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-white hover:border-yellow-400 hover:shadow-lg transition-all cursor-pointer group flex items-center gap-4">
-                                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-zinc-300 group-hover:text-yellow-600 transition-colors">
-                                             <ShoppingCart size={20} />
-                                          </div>
-                                          <div className="flex-1">
-                                             <p className="text-[10px] font-black text-zinc-900 uppercase truncate max-w-[150px]">{item.nome}</p>
-                                             <p className="text-[9px] font-bold text-zinc-400">{safeFormatAOA(item.preco_unitario || item.preco)}</p>
-                                          </div>
-                                          <Plus size={16} className="text-zinc-300 group-hover:text-yellow-600" />
-                                       </div>
-                                    ))}
+                                 <div>
+                                    <h2 className="text-xl font-black uppercase tracking-tight">Emitir {invoiceForm.tipo}</h2>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{currentEmpresa?.nome || 'Entidade Seleccionada'}</p>
                                  </div>
                               </div>
+                              <button onClick={() => setShowInvoiceModal(false)} className="p-3 text-white/50 hover:bg-white/10 rounded-full transition-all"><X size={24} /></button>
                            </div>
 
-                           {/* Coluna Direita: Resumo e Totais */}
-                           <div className="lg:col-span-5 bg-zinc-50 rounded-[2.5rem] p-8 flex flex-col h-full border border-zinc-200 shadow-inner">
-                              <div className="flex-1 space-y-6">
-                                 <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest pb-4 border-b border-zinc-200">Itens do Documento</h3>
+                           <div className="flex-1 overflow-y-auto p-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+                              {/* Coluna Esquerda: Dados do Cliente e Selecção de Itens */}
+                              <div className="lg:col-span-7 space-y-8">
+                                 <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo de Documento</label>
+                                       <select value={invoiceForm.tipo} onChange={e => setInvoiceForm({ ...invoiceForm, tipo: e.target.value as any })}
+                                          className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
+                                          <option value="Factura">Factura</option>
+                                          <option value="Pró-forma">Pró-forma</option>
+                                          <option value="Guia">Guia de Remessa</option>
+                                          <option value="Encomenda">Nota de Encomenda</option>
+                                       </select>
+                                    </div>
+                                    <Input label="Data de Emissão" type="date" value={invoiceForm.data_emissao} onChange={e => setInvoiceForm({ ...invoiceForm, data_emissao: e.target.value })} />
+                                 </div>
 
-                                 <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {invoiceForm.itens.length === 0 ? (
-                                       <div className="py-10 text-center space-y-3">
-                                          <Package className="mx-auto text-zinc-300" size={32} />
-                                          <p className="text-[10px] font-bold text-zinc-400 uppercase italic">Nenhum item adicionado</p>
+                                 <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">Seleccionar Cliente Registado</label>
+                                       <button
+                                          onClick={() => setShowContactModal(true)}
+                                          className="text-[9px] font-black text-yellow-600 uppercase hover:underline flex items-center gap-1"
+                                       >
+                                          <Plus size={12} /> Novo Cliente
+                                       </button>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                       {contactos.filter(c => c.empresa_id === selectedEmpresaId && c.tipo !== 'Fornecedor').slice(0, 6).map(c => (
+                                          <button key={c.id} onClick={() => setInvoiceForm({ ...invoiceForm, cliente_id: c.id, cliente_nome: c.nome })}
+                                             className={`p-4 rounded-2xl border text-[10px] font-black uppercase tracking-tighter transition-all text-left ${invoiceForm.cliente_id === c.id ? 'bg-zinc-900 text-yellow-500 border-zinc-900 shadow-lg' : 'bg-white text-zinc-500 border-zinc-200 hover:border-yellow-400 hover:bg-zinc-50'}`}>
+                                             <div className="truncate">{c.nome}</div>
+                                             <div className={`text-[8px] font-bold ${invoiceForm.cliente_id === c.id ? 'text-zinc-400' : 'text-zinc-300'}`}>{c.nif || 'S/ NIF'}</div>
+                                          </button>
+                                       ))}
+                                    </div>
+                                    <Input placeholder="Ou digite o nome do cliente manualmente..." value={invoiceForm.cliente_nome} onChange={(e: any) => setInvoiceForm({ ...invoiceForm, cliente_nome: e.target.value, cliente_id: '' })} />
+                                 </div>
+
+                                 <div className="space-y-4 bg-zinc-50 p-6 rounded-3xl border border-zinc-200">
+                                    <h4 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Adicionar Serviço / Item Manual</h4>
+                                    <div className="grid grid-cols-12 gap-4">
+                                       <div className="col-span-6">
+                                          <Input placeholder="Nome do Serviço ou Item" value={customItem.nome} onChange={e => setCustomItem({ ...customItem, nome: e.target.value })} />
                                        </div>
-                                    ) : (
-                                       invoiceForm.itens.map(it => (
-                                          <div key={it.id} className="bg-white p-5 rounded-2xl shadow-sm space-y-4 relative group animate-in slide-in-from-right-4 border border-transparent hover:border-zinc-200">
-                                             <button onClick={() => handleRemoveInvoiceItem(it.id)} className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10">
-                                                <X size={14} />
-                                             </button>
-                                             <div className="flex justify-between items-start">
-                                                <p className="text-[10px] font-black text-zinc-900 uppercase truncate max-w-[200px]">{it.nome}</p>
-                                                <p className="text-xs font-black text-zinc-900">{safeFormatAOA(it.total)}</p>
+                                       <div className="col-span-3">
+                                          <Input placeholder="Preço" type="number" value={customItem.preco} onChange={e => setCustomItem({ ...customItem, preco: Number(e.target.value) })} />
+                                       </div>
+                                       <div className="col-span-3">
+                                          <button onClick={handleAddCustomItem} className="w-full h-[54px] bg-yellow-500 text-zinc-900 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-yellow-400 transition-all flex items-center justify-center gap-2">
+                                             <Plus size={16} /> Add
+                                          </button>
+                                       </div>
+                                    </div>
+                                 </div>
+
+                                 <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Catálogo de Itens</label>
+                                       <span className="text-[10px] font-bold text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full uppercase">{extInventario.length} Disponíveis</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                       {extInventario.map(item => (
+                                          <div key={item.id} onClick={() => handleAddInvoiceItem(item)}
+                                             className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-white hover:border-yellow-400 hover:shadow-lg transition-all cursor-pointer group flex items-center gap-4">
+                                             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-zinc-300 group-hover:text-yellow-600 transition-colors">
+                                                <ShoppingCart size={20} />
                                              </div>
-                                             <div className="grid grid-cols-2 gap-3 items-center">
-                                                <div className="flex items-center gap-2">
-                                                   <span className="text-[9px] font-black text-zinc-400 uppercase">Qtd:</span>
-                                                   <input type="number" value={it.qtd} onChange={e => handleUpdateInvoiceItem(it.id, 'qtd', e.target.value)}
-                                                      className="w-16 bg-zinc-50 border border-zinc-100 rounded-lg p-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                   <span className="text-[9px] font-black text-zinc-400 uppercase">Preço:</span>
-                                                   <input type="number" value={it.preco_unitario} onChange={e => handleUpdateInvoiceItem(it.id, 'preco_unitario', e.target.value)}
-                                                      className="w-full bg-zinc-50 border border-zinc-100 rounded-lg p-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
-                                                </div>
+                                             <div className="flex-1">
+                                                <p className="text-[10px] font-black text-zinc-900 uppercase truncate max-w-[150px]">{item.nome}</p>
+                                                <p className="text-[9px] font-bold text-zinc-400">{safeFormatAOA(item.preco_unitario || item.preco)}</p>
                                              </div>
+                                             <Plus size={16} className="text-zinc-300 group-hover:text-yellow-600" />
                                           </div>
-                                       ))
-                                    )}
-                                 </div>
-
-                                 <div className="pt-6 space-y-3 border-t border-zinc-200">
-                                    <div className="flex justify-between text-[11px] font-bold text-zinc-500 uppercase">
-                                       <span>Subtotal</span>
-                                       <span>{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0))}</span>
+                                       ))}
                                     </div>
-                                    <div className="flex justify-between text-[11px] font-bold text-zinc-500 uppercase">
-                                       <span>IVA (14%)</span>
-                                       <span>{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0) * 0.14)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-xl font-black text-zinc-900 pt-2 border-t border-zinc-200">
-                                       <span className="uppercase tracking-tighter">Total Geral</span>
-                                       <span className="text-yellow-600">{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0) * 1.14)}</span>
-                                    </div>
-                                 </div>
-
-                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Observações</label>
-                                    <textarea value={invoiceForm.observacoes} onChange={e => setInvoiceForm({ ...invoiceForm, observacoes: e.target.value })}
-                                       className="w-full bg-white border border-zinc-200 rounded-2xl p-4 text-[10px] font-bold text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                       rows={2} placeholder="Condições de pagamento, notas..." />
                                  </div>
                               </div>
 
-                              <button onClick={handleCreateInvoice} disabled={isSavingInvoice || invoiceForm.itens.length === 0}
-                                 className="mt-8 w-full py-6 bg-zinc-900 text-white font-black rounded-[2rem] uppercase text-xs tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-4 disabled:opacity-50 shadow-xl group">
-                                 {isSavingInvoice ? <RefreshCw className="animate-spin" size={20} /> : <FileCheck size={20} className="group-hover:scale-125 transition-transform" />}
-                                 {isSavingInvoice ? 'A Processar...' : `Finalizar e Emitir ${invoiceForm.tipo}`}
-                              </button>
+                              {/* Coluna Direita: Resumo e Totais */}
+                              <div className="lg:col-span-5 bg-zinc-50 rounded-[2.5rem] p-8 flex flex-col h-full border border-zinc-200 shadow-inner">
+                                 <div className="flex-1 space-y-6">
+                                    <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest pb-4 border-b border-zinc-200">Itens do Documento</h3>
+
+                                    <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                                       {invoiceForm.itens.length === 0 ? (
+                                          <div className="py-10 text-center space-y-3">
+                                             <Package className="mx-auto text-zinc-300" size={32} />
+                                             <p className="text-[10px] font-bold text-zinc-400 uppercase italic">Nenhum item adicionado</p>
+                                          </div>
+                                       ) : (
+                                          invoiceForm.itens.map(it => (
+                                             <div key={it.id} className="bg-white p-5 rounded-2xl shadow-sm space-y-4 relative group animate-in slide-in-from-right-4 border border-transparent hover:border-zinc-200">
+                                                <button onClick={() => handleRemoveInvoiceItem(it.id)} className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10">
+                                                   <X size={14} />
+                                                </button>
+                                                <div className="flex justify-between items-start">
+                                                   <p className="text-[10px] font-black text-zinc-900 uppercase truncate max-w-[200px]">{it.nome}</p>
+                                                   <p className="text-xs font-black text-zinc-900">{safeFormatAOA(it.total)}</p>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3 items-center">
+                                                   <div className="flex items-center gap-2">
+                                                      <span className="text-[9px] font-black text-zinc-400 uppercase">Qtd:</span>
+                                                      <input type="number" value={it.qtd} onChange={e => handleUpdateInvoiceItem(it.id, 'qtd', e.target.value)}
+                                                         className="w-16 bg-zinc-50 border border-zinc-100 rounded-lg p-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
+                                                   </div>
+                                                   <div className="flex items-center gap-2">
+                                                      <span className="text-[9px] font-black text-zinc-400 uppercase">Preço:</span>
+                                                      <input type="number" value={it.preco_unitario} onChange={e => handleUpdateInvoiceItem(it.id, 'preco_unitario', e.target.value)}
+                                                         className="w-full bg-zinc-50 border border-zinc-100 rounded-lg p-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
+                                                   </div>
+                                                </div>
+                                             </div>
+                                          ))
+                                       )}
+                                    </div>
+
+                                    <div className="pt-6 space-y-3 border-t border-zinc-200">
+                                       <div className="flex justify-between text-[11px] font-bold text-zinc-500 uppercase">
+                                          <span>Subtotal</span>
+                                          <span>{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0))}</span>
+                                       </div>
+                                       <div className="flex justify-between text-[11px] font-bold text-zinc-500 uppercase">
+                                          <span>IVA (14%)</span>
+                                          <span>{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0) * 0.14)}</span>
+                                       </div>
+                                       <div className="flex justify-between text-xl font-black text-zinc-900 pt-2 border-t border-zinc-200">
+                                          <span className="uppercase tracking-tighter">Total Geral</span>
+                                          <span className="text-yellow-600">{safeFormatAOA(invoiceForm.itens.reduce((acc, i) => acc + i.total, 0) * 1.14)}</span>
+                                       </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                       <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Observações</label>
+                                       <textarea value={invoiceForm.observacoes} onChange={e => setInvoiceForm({ ...invoiceForm, observacoes: e.target.value })}
+                                          className="w-full bg-white border border-zinc-200 rounded-2xl p-4 text-[10px] font-bold text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                          rows={2} placeholder="Condições de pagamento, notas..." />
+                                    </div>
+                                 </div>
+
+                                 <button onClick={handleCreateInvoice} disabled={isSavingInvoice || invoiceForm.itens.length === 0}
+                                    className="mt-8 w-full py-6 bg-zinc-900 text-white font-black rounded-[2rem] uppercase text-xs tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-4 disabled:opacity-50 shadow-xl group">
+                                    {isSavingInvoice ? <RefreshCw className="animate-spin" size={20} /> : <FileCheck size={20} className="group-hover:scale-125 transition-transform" />}
+                                    {isSavingInvoice ? 'A Processar...' : `Finalizar e Emitir ${invoiceForm.tipo}`}
+                                 </button>
+                              </div>
                            </div>
                         </div>
                      </div>
-                  </div>
-               )}
+                  )
+               }
 
                {/* ===== PAINEL DE APROVAÇÃO PENDENTE (badge flutuante) ===== */}
-               {pendingApproval.length > 0 && (
-                  <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
-                     <button onClick={() => setShowApprovalModal(true)}
-                        className="flex items-center gap-3 bg-yellow-500 text-zinc-900 px-5 py-4 rounded-2xl shadow-2xl font-black text-sm hover:bg-yellow-400 transition-all">
-                        <div className="relative">
-                           <CheckCircle2 size={22} />
-                           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
-                              {pendingApproval.length}
-                           </span>
-                        </div>
-                        {pendingApproval.length} Lançamento{pendingApproval.length > 1 ? 's' : ''} Aguarda{pendingApproval.length === 1 ? '' : 'm'} Aprovação
-                     </button>
-                  </div>
-               )}
+               {
+                  pendingApproval.length > 0 && (
+                     <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
+                        <button onClick={() => setShowApprovalModal(true)}
+                           className="flex items-center gap-3 bg-yellow-500 text-zinc-900 px-5 py-4 rounded-2xl shadow-2xl font-black text-sm hover:bg-yellow-400 transition-all">
+                           <div className="relative">
+                              <CheckCircle2 size={22} />
+                              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+                                 {pendingApproval.length}
+                              </span>
+                           </div>
+                           {pendingApproval.length} Lançamento{pendingApproval.length > 1 ? 's' : ''} Aguarda{pendingApproval.length === 1 ? '' : 'm'} Aprovação
+                        </button>
+                     </div>
+                  )
+               }
 
                {/* ===== MODAL DE APROVAÇÃO ===== */}
-               {showApprovalModal && (
-                  <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-                     <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
-                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-yellow-50">
-                           <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                              <CheckCircle2 className="text-yellow-500" size={24} /> Aprovação de Lançamentos
-                           </h2>
-                           <button onClick={() => { setShowApprovalModal(false); setApprovalTarget(null); setApprovalObs(''); }} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
-                        </div>
-                        {approvalTarget ? (
-                           // Detalhe do lançamento a aprovar
-                           <div className="p-8 space-y-5">
-                              <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4">
-                                 <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">Lançamento</p>
-                                 <p className="font-black text-zinc-900">{approvalTarget.descricao}</p>
-                                 <p className="text-xs text-zinc-500 mt-1">{approvalTarget.data ? new Date(approvalTarget.data).toLocaleDateString('pt-PT') : ''} · {approvalTarget.tipo_transacao}</p>
+               {
+                  showApprovalModal && (
+                     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                        <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-yellow-50">
+                              <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
+                                 <CheckCircle2 className="text-yellow-500" size={24} /> Aprovação de Lançamentos
+                              </h2>
+                              <button onClick={() => { setShowApprovalModal(false); setApprovalTarget(null); setApprovalObs(''); }} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
+                           </div>
+                           {approvalTarget ? (
+                              // Detalhe do lançamento a aprovar
+                              <div className="p-8 space-y-5">
+                                 <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4">
+                                    <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">Lançamento</p>
+                                    <p className="font-black text-zinc-900">{approvalTarget.descricao}</p>
+                                    <p className="text-xs text-zinc-500 mt-1">{approvalTarget.data ? new Date(approvalTarget.data).toLocaleDateString('pt-PT') : ''} · {approvalTarget.tipo_transacao}</p>
+                                 </div>
+                                 <div className="space-y-2">
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens do Lançamento</p>
+                                    {(approvalTarget.itens || []).map((it: any, i: number) => (
+                                       <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-50 text-xs">
+                                          <span className="font-bold text-zinc-700">{it.conta_codigo} — {it.conta_nome}</span>
+                                          <span className={`font-black px-2 py-0.5 rounded-lg ${it.tipo === 'D' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
+                                             {it.tipo} {safeFormatAOA(it.valor)}
+                                          </span>
+                                       </div>
+                                    ))}
+                                 </div>
+                                 <div>
+                                    <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Observações (Opcional)</label>
+                                    <textarea value={approvalObs} onChange={e => setApprovalObs(e.target.value)}
+                                       className="w-full border border-zinc-200 rounded-2xl p-4 text-xs text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400" rows={3}
+                                       placeholder="Notas de aprovação..." />
+                                 </div>
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => handleRejeitarLancamento(approvalTarget)}
+                                       className="py-4 bg-red-50 text-red-700 border border-red-200 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                                       <X size={14} /> Rejeitar
+                                    </button>
+                                    <button onClick={() => handleAprovarLancamento(approvalTarget, approvalObs)} disabled={isApprovingId === approvalTarget.id}
+                                       className="py-4 bg-green-500 text-white font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                                       {isApprovingId ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Aprovar e Postar
+                                    </button>
+                                 </div>
+                                 <button onClick={() => { setApprovalTarget(null); setApprovalObs(''); }} className="w-full text-xs text-zinc-400 hover:text-zinc-600 transition-colors">← Voltar à lista</button>
                               </div>
-                              <div className="space-y-2">
-                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens do Lançamento</p>
-                                 {(approvalTarget.itens || []).map((it: any, i: number) => (
-                                    <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-50 text-xs">
-                                       <span className="font-bold text-zinc-700">{it.conta_codigo} — {it.conta_nome}</span>
-                                       <span className={`font-black px-2 py-0.5 rounded-lg ${it.tipo === 'D' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
-                                          {it.tipo} {safeFormatAOA(it.valor)}
-                                       </span>
+                           ) : (
+                              // Lista de lançamentos pendentes
+                              <div className="p-8 space-y-3">
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-4">{pendingApproval.length} lançamento(s) aguardam revisão</p>
+                                 {pendingApproval.map(l => (
+                                    <div key={l.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-yellow-50 hover:border-yellow-200 transition-all cursor-pointer" onClick={() => setApprovalTarget(l)}>
+                                       <div>
+                                          <p className="text-sm font-black text-zinc-800">{l.descricao}</p>
+                                          <p className="text-[9px] text-zinc-400 font-bold uppercase">{l.tipo_transacao} · {l.data ? new Date(l.data).toLocaleDateString('pt-PT') : ''}</p>
+                                       </div>
+                                       <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-[9px] font-black rounded-lg uppercase tracking-widest">Pendente</span>
                                     </div>
                                  ))}
                               </div>
-                              <div>
-                                 <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Observações (Opcional)</label>
-                                 <textarea value={approvalObs} onChange={e => setApprovalObs(e.target.value)}
-                                    className="w-full border border-zinc-200 rounded-2xl p-4 text-xs text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400" rows={3}
-                                    placeholder="Notas de aprovação..." />
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                 <button onClick={() => handleRejeitarLancamento(approvalTarget)}
-                                    className="py-4 bg-red-50 text-red-700 border border-red-200 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-red-100 transition-all flex items-center justify-center gap-2">
-                                    <X size={14} /> Rejeitar
-                                 </button>
-                                 <button onClick={() => handleAprovarLancamento(approvalTarget, approvalObs)} disabled={isApprovingId === approvalTarget.id}
-                                    className="py-4 bg-green-500 text-white font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                                    {isApprovingId ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Aprovar e Postar
-                                 </button>
-                              </div>
-                              <button onClick={() => { setApprovalTarget(null); setApprovalObs(''); }} className="w-full text-xs text-zinc-400 hover:text-zinc-600 transition-colors">← Voltar à lista</button>
-                           </div>
-                        ) : (
-                           // Lista de lançamentos pendentes
-                           <div className="p-8 space-y-3">
-                              <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-4">{pendingApproval.length} lançamento(s) aguardam revisão</p>
-                              {pendingApproval.map(l => (
-                                 <div key={l.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-yellow-50 hover:border-yellow-200 transition-all cursor-pointer" onClick={() => setApprovalTarget(l)}>
-                                    <div>
-                                       <p className="text-sm font-black text-zinc-800">{l.descricao}</p>
-                                       <p className="text-[9px] text-zinc-400 font-bold uppercase">{l.tipo_transacao} · {l.data ? new Date(l.data).toLocaleDateString('pt-PT') : ''}</p>
-                                    </div>
-                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-[9px] font-black rounded-lg uppercase tracking-widest">Pendente</span>
-                                 </div>
-                              ))}
-                           </div>
-                        )}
+                           )}
+                        </div>
                      </div>
-                  </div>
-               )}
+                  )
+               }
 
 
                {/* --- TABELAS DE DOCUMENTOS (FACTURAS, PROFORMAS, GUIAS, ENCOMENDAS) --- */}
-               {['facturas', 'proformas', 'guias', 'encomendas'].includes(activeTab) && (() => {
-                  const typeMap: any = { 'facturas': 'Factura', 'proformas': 'Pró-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
-                  const filtered = extFinanceiroNotas.filter(n => n.tipo?.includes(typeMap[activeTab]) || (activeTab === 'facturas' && n.tipo === 'Venda'));
+               {
+                  ['facturas', 'proformas', 'guias', 'encomendas'].includes(activeTab) && (() => {
+                     const typeMap: any = { 'facturas': 'Factura', 'proformas': 'Pró-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
+                     const filtered = extFinanceiroNotas.filter(n => n.tipo?.includes(typeMap[activeTab]) || (activeTab === 'facturas' && n.tipo === 'Venda'));
 
-                  return (
-                     <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-bottom-4">
-                        <div className="flex items-center justify-between">
-                           <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Gestão de {sidebarItems.find(i => i.id === activeTab)?.label}</h2>
-                           <button
-                              onClick={() => {
-                                 const mapping: any = { 'facturas': 'Factura', 'proformas': 'Pró-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
-                                 setInvoiceForm(f => ({ ...f, tipo: mapping[activeTab] || 'Factura' }));
-                                 setShowInvoiceModal(true);
-                              }}
-                              className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
-                           >
-                              Nova Emissão
-                           </button>
-                        </div>
-                        <div className="overflow-x-auto">
-                           <table className="w-full text-left">
-                              <thead>
-                                 <tr className="border-b border-zinc-100">
-                                    {['Nº Documento', 'Entidade', 'Valor Total', 'Data', 'Status', ''].map(h => (
-                                       <th key={h} className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
-                                    ))}
-                                 </tr>
-                              </thead>
-                              <tbody className="divide-y divide-zinc-50">
-                                 {filtered.map((n, i) => (
-                                    <tr key={i} className="hover:bg-zinc-50 transition-colors group">
-                                       <td className="py-5 px-4">
-                                          <div className="flex items-center gap-3">
-                                             <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-500">
-                                                <Receipt size={14} />
-                                             </div>
-                                             <span className="text-xs font-black text-zinc-900 uppercase">
-                                                {n.numero_fatura || n.numero || `DOC-${i + 100}`}
-                                             </span>
-                                          </div>
-                                       </td>
-                                       <td className="py-5 px-4 text-xs font-bold text-zinc-600 uppercase">{n.cliente_nome || n.entidade}</td>
-                                       <td className="py-5 px-4 text-xs font-black text-zinc-900">{safeFormatAOA(n.valor_total || n.valor)}</td>
-                                       <td className="py-5 px-4 text-[10px] font-bold text-zinc-400 uppercase">{n.data_emissao || n.data}</td>
-                                       <td className="py-5 px-4">
-                                          <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${n.status === 'Pago' ? 'bg-green-50 text-green-700' : (n.status === 'Anulado' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700')}`}>
-                                             {n.status || 'Pendente'}
-                                          </span>
-                                       </td>
-                                       <td className="py-5 px-4 text-right">
-                                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                             <button onClick={() => handlePrintFatura(n)} className="p-2 hover:bg-zinc-100 rounded-lg transition-all text-zinc-600" title="Imprimir"><Printer size={14} /></button>
-                                             {n.status !== 'Anulado' && (
-                                                <button onClick={() => handleAnularFatura(n)} className="p-2 hover:bg-zinc-100 rounded-lg transition-all text-red-500" title="Anular"><X size={14} /></button>
-                                             )}
-                                          </div>
-                                       </td>
-                                    </tr>
-                                 ))}
-                                 {filtered.length === 0 && (
-                                    <tr>
-                                       <td colSpan={6} className="py-20 text-center text-zinc-400 font-bold uppercase text-[10px]">Nenhum documento encontrado</td>
-                                    </tr>
-                                 )}
-                              </tbody>
-                           </table>
-                        </div>
-                     </div>
-                  );
-               })()}
-
-               {/* --- CONTACTOS (CRM) --- */}
-               {activeTab === 'contactos' && (
-                  <div className="space-y-10 animate-in slide-in-from-bottom-4">
-                     <div className="flex items-center justify-between bg-white p-10 rounded-[3rem] border border-zinc-100 shadow-sm transition-all hover:shadow-xl">
-                        <div className="space-y-1">
-                           <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tighter">Gestão de <span className="text-yellow-600">Contactos</span></h2>
-                           <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Base de Dados CRM Integrada</p>
-                        </div>
-                        <button
-                           onClick={() => setShowContactModal(true)}
-                           className="px-10 py-5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-3xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
-                        >
-                           <Plus size={18} /> Novo Contacto
-                        </button>
-                     </div>
-
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {contactos.filter(c => c.empresa_id === selectedEmpresaId).length > 0 ? (
-                           contactos.filter(c => c.empresa_id === selectedEmpresaId).map((c) => (
-                              <div key={c.id} className="bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden">
-                                 <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="p-3 text-zinc-300 hover:text-zinc-600"><MoreVertical size={20} /></button>
-                                 </div>
-                                 <div className="flex items-center gap-6 mb-8">
-                                    <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center font-black text-3xl text-yellow-600 transition-colors group-hover:bg-yellow-500 group-hover:text-zinc-900 shadow-inner">
-                                       {c.nome.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                       <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight leading-tight">{c.nome}</h3>
-                                       <span className={`inline-block mt-1 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${c.tipo === 'Cliente' ? 'bg-sky-50 text-sky-600' :
-                                          c.tipo === 'Fornecedor' ? 'bg-purple-50 text-purple-600' :
-                                             'bg-yellow-50 text-yellow-600'
-                                          }`}>
-                                          {c.tipo}
-                                       </span>
-                                    </div>
-                                 </div>
-
-                                 <div className="space-y-4 border-t border-zinc-50 pt-6">
-                                    {c.nif && (
-                                       <div className="flex items-center gap-3">
-                                          <Shield size={14} className="text-zinc-400" />
-                                          <p className="text-[11px] font-bold text-zinc-500 uppercase">NIF: <span className="text-zinc-800">{c.nif}</span></p>
-                                       </div>
-                                    )}
-                                    {c.email && (
-                                       <div className="flex items-center gap-3">
-                                          <Mail size={14} className="text-zinc-400" />
-                                          <p className="text-[11px] font-bold text-zinc-500">{c.email}</p>
-                                       </div>
-                                    )}
-                                    {c.telefone && (
-                                       <div className="flex items-center gap-3">
-                                          <Phone size={14} className="text-zinc-400" />
-                                          <p className="text-[11px] font-bold text-zinc-500">{c.telefone}</p>
-                                       </div>
-                                    )}
-                                 </div>
-                              </div>
-                           ))
-                        ) : (
-                           <div className="col-span-full py-32 bg-zinc-50 rounded-[4rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center space-y-4 opacity-50">
-                              <Users size={64} className="text-zinc-300" />
-                              <p className="text-lg font-black text-zinc-400 uppercase tracking-tighter">Nenhum contacto registado nesta empresa</p>
-                           </div>
-                        )}
-                     </div>
-                  </div>
-               )}
-
-               {/* --- ITENS --- */}
-               {activeTab === 'itens' && (
-                  <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                     {/* Header e Acções Rápidas */}
-                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm">
-                        <div>
-                           <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-tight">Gestão de Inventário</h2>
-                           <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Controlo de stock, categorias e alertas críticos</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <button
-                              onClick={() => setShowCategoryModal(true)}
-                              className="px-6 py-4 bg-zinc-50 text-zinc-600 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-zinc-100 transition-all flex items-center gap-2 border border-zinc-200"
-                           >
-                              <ListFilter size={16} /> Nova Categoria
-                           </button>
-                           <button
-                              onClick={() => setShowItemModal(true)}
-                              className="px-6 py-4 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95"
-                           >
-                              <Plus size={16} /> Adicionar Item
-                           </button>
-                        </div>
-                     </div>
-
-                     {/* Filtros de Categorias */}
-                     <div className="flex items-center gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                        <button className="px-6 py-3 bg-zinc-900 text-yellow-500 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
-                           Todos os Itens ({extInventario.length})
-                        </button>
-                        {categorias.map(cat => (
-                           <button key={cat.id} className="px-6 py-3 bg-white border border-zinc-100 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap hover:border-yellow-400 transition-all flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.cor || '#fbbf24' }} />
-                              {cat.nome}
-                           </button>
-                        ))}
-                     </div>
-
-                     {/* Grelha de Itens */}
-                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {extInventario.map((item, i) => {
-                           const isLowStock = Number(item.quantidade_atual) <= Number(item.quantidade_minima);
-                           const cat = categorias.find(c => c.id === item.categoria_id);
-
-                           return (
-                              <div key={i} className={`p-6 bg-white rounded-[2.5rem] border transition-all group relative overflow-hidden flex flex-col ${isLowStock ? 'border-red-100' : 'border-zinc-100 hover:border-yellow-400 hover:shadow-2xl'}`}>
-                                 {isLowStock && (
-                                    <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-red-100 text-red-600 px-3 py-1.5 rounded-xl animate-pulse">
-                                       <AlertTriangle size={12} />
-                                       <span className="text-[9px] font-black uppercase">Stock Baixo</span>
-                                    </div>
-                                 )}
-
-                                 <div className="w-full aspect-square bg-zinc-50 rounded-3xl mb-6 flex items-center justify-center text-zinc-200 group-hover:scale-105 transition-transform">
-                                    {item.foto_url ? (
-                                       <img src={item.foto_url} alt={item.nome} className="w-full h-full object-cover rounded-3xl" />
-                                    ) : (
-                                       <Package size={64} className="opacity-20 text-zinc-400" />
-                                    )}
-                                 </div>
-
-                                 <div className="flex-1 space-y-2">
-                                    <div className="flex items-center gap-2">
-                                       <span className="text-[8px] font-black text-zinc-400 uppercase bg-zinc-50 px-2 py-0.5 rounded border border-zinc-100">{item.unidade || 'Unidade'}</span>
-                                       {cat && (
-                                          <span className="text-[8px] font-black uppercase bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">{cat.nome}</span>
-                                       )}
-                                    </div>
-                                    <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight leading-tight">{item.nome}</h3>
-                                    <p className="text-[9px] font-bold text-zinc-400 uppercase line-clamp-1">{item.descricao || 'Sem descrição'}</p>
-                                 </div>
-
-                                 <div className="mt-6 pt-6 border-t border-zinc-50 flex items-center justify-between">
-                                    <div>
-                                       <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Preço Un.</p>
-                                       <p className="text-base font-black text-zinc-900">{safeFormatAOA(item.preco_unitario || item.preco_venda)}</p>
-                                    </div>
-                                    <div className="text-right">
-                                       <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Stock</p>
-                                       <p className={`text-sm font-black ${isLowStock ? 'text-red-500' : 'text-zinc-900'}`}>{item.quantidade_atual} {item.unidade || 'UN'}</p>
-                                    </div>
-                                 </div>
-                              </div>
-                           );
-                        })}
-                     </div>
-                  </div>
-               )}
-
-               {/* --- RELATÓRIOS DASHBOARD --- */}
-               {activeTab === 'relatorios' && (
-                  <div className="space-y-10 animate-in slide-in-from-bottom-4">
-                     {/* Banner Superior */}
-                     <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 p-12 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-500/20 rounded-full -mr-48 -mt-48 blur-3xl animate-pulse" />
-                        <div className="relative z-10 space-y-4">
-                           <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter">Central de <span className="text-yellow-500">Inteligência</span></h2>
-                           <p className="text-zinc-400 font-bold text-sm lg:text-base uppercase tracking-widest max-w-2xl">
-                              Gere demonstrações financeiras, balancetes e relatórios analíticos com um clique. Dados exportáveis em PDF e Excel.
-                           </p>
-                        </div>
-                     </div>
-
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {[
-                           { id: 'balanco', title: 'Balanço Patrimonial', desc: 'Posição financeira detalhada de ativos e passivos.', icon: <LayoutList size={28} className="text-blue-500" />, color: 'bg-blue-50' },
-                           { id: 'dre', title: 'Demonstração de Resultados', desc: 'Análise de lucro e prejuízo por período seleccionado.', icon: <TrendingUp size={28} className="text-green-500" />, color: 'bg-green-50 text-green-700' },
-                           { id: 'balancete', title: 'Balancete de Verificação', desc: 'Verificação de débitos e créditos de todas as contas.', icon: <CheckCircle2 size={28} className="text-purple-500" />, color: 'bg-purple-50 text-purple-700' },
-                           { id: 'diario', title: 'Diário de Lançamentos', desc: 'Listagem cronológica de todos os movimentos.', icon: <BookOpen size={28} className="text-orange-500" />, color: 'bg-orange-50 text-orange-700' },
-                           { id: 'razão', title: 'Livro Razão', desc: 'Movimentação individualizada por conta contabilística.', icon: <FileText size={28} className="text-sky-500" />, color: 'bg-sky-50 text-sky-700' },
-                           { id: 'cashflow', title: 'Fluxo de Caixa', desc: 'Origem e aplicação de recursos financeiros.', icon: <Landmark size={28} className="text-yellow-600" />, color: 'bg-yellow-50 text-yellow-700' },
-                           { id: 'fiscal', title: 'Relatório Fiscal (IVA/IRT)', desc: 'Apuramento de impostos para submissão à AGT.', icon: <FileCheck size={28} className="text-red-500" />, color: 'bg-red-50 text-red-700' },
-                           { id: 'auditoria', title: 'Trilhas de Auditoria', desc: 'Histórico completo de alterações e logs do sistema.', icon: <ShieldCheck size={28} className="text-zinc-500" />, color: 'bg-zinc-100 text-zinc-700' },
-                        ].map((rep) => (
-                           <div key={rep.id} className="bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm hover:shadow-2xl hover:scale-[1.02] transition-all group flex flex-col justify-between h-[320px]">
-                              <div>
-                                 <div className={`w-16 h-16 ${rep.color} rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:rotate-6`}>
-                                    {rep.icon}
-                                 </div>
-                                 <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight mb-2 leading-tight">{rep.title}</h3>
-                                 <p className="text-[10px] font-bold text-zinc-400 uppercase leading-relaxed">{rep.desc}</p>
-                              </div>
-                              <div className="flex gap-2">
-                                 <button className="flex-1 py-4 bg-zinc-900 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-2">
-                                    <Printer size={14} /> Gerar PDF
-                                 </button>
-                                 <button className="p-4 bg-zinc-50 text-zinc-400 rounded-2xl hover:bg-zinc-100 transition-all">
-                                    <Share2 size={16} />
-                                 </button>
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-               )}
-
-               {/* --- ABA: FONTES DE DADOS (INTEGRAÇÃO AUTOMÁTICA) --- */}
-               {activeTab === 'fontes' && (() => {
-
-                  // ─── Métricas por Módulo ───
-                  const totalFaturas = extFaturas.reduce((s, f) => s + (Number(f.valor_total) || 0), 0);
-                  const faturasPagas = extFaturas.filter(f => f.status === 'pago' || f.status === 'Paga').length;
-                  const totalTesouraria = extTesouraria.reduce((s, t) => s + (Number(t.valor) || 0), 0);
-                  const entradas = extTesouraria.filter(t => t.tipo === 'Entrada' || t.tipo === 'entrada' || t.tipo === 'receita').reduce((s, t) => s + (Number(t.valor) || 0), 0);
-                  const saidas = extTesouraria.filter(t => t.tipo === 'Saída' || t.tipo === 'saida' || t.tipo === 'despesa').reduce((s, t) => s + (Number(t.valor) || 0), 0);
-                  const totalSalarios = extRhRecibos.reduce((s, r) => s + (Number(r.liquido) || 0), 0);
-                  const totalBruto = extRhRecibos.reduce((s, r) => s + (Number(r.bruto) || 0), 0);
-                  const totalInventarioValor = extInventario.reduce((s, i) => s + (Number(i.quantidade_atual) || 0) * (Number(i.preco_unitario) || 0), 0);
-                  const itensCriticos = extInventario.filter(i => Number(i.quantidade_atual) <= Number(i.quantidade_minima)).length;
-
-                  const syncNow = async () => {
-                     setIsSyncingModules(true);
-                     const fq = async (q: any) => { try { const { data } = await q; return data || []; } catch { return []; } };
-                     const [fat, tes, rh, inv, smov] = await Promise.all([
-                        fq(supabase.from('contabil_faturas').select('*').order('data_emissao', { ascending: false }).limit(100)),
-                        fq(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }).limit(100)),
-                        fq(supabase.from('hr_recibos').select('*').order('created_at', { ascending: false }).limit(100)),
-                        fq(supabase.from('inventario').select('*').order('nome')),
-                        fq(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100))
-                     ]);
-                     setExtFaturas(fat); setExtTesouraria(tes); setExtRhRecibos(rh); setExtInventario(inv); setExtStockMov(smov);
-                     setLastSyncAt(new Date());
-                     setIsSyncingModules(false);
-                  };
-
-                  const modulos = [
-                     {
-                        nome: 'Faturação', icon: <FileText size={22} className="text-blue-500" />, bg: 'bg-blue-50 border-blue-100',
-                        badge: `${extFaturas.length} faturas`,
-                        stats: [
-                           { label: 'Total Faturado', value: safeFormatAOA(totalFaturas), color: 'text-blue-600' },
-                           { label: 'Pagas', value: `${faturasPagas}/${extFaturas.length}`, color: 'text-green-600' },
-                           { label: 'Pendentes', value: `${extFaturas.length - faturasPagas}`, color: 'text-yellow-500' },
-                        ],
-                        items: extFaturas.slice(0, 5).map(f => ({
-                           label: f.numero_fatura || f.cliente_nome || '—',
-                           value: safeFormatAOA(f.valor_total),
-                           sub: f.status || '',
-                           date: f.data_emissao || '',
-                           onAutoLaunch: () => handleAutoLaunchFromFatura(f)
-                        }))
-                     },
-                     {
-                        nome: 'Tesouraria', icon: <DollarSign size={22} className="text-green-500" />, bg: 'bg-green-50 border-green-100',
-                        badge: `${extTesouraria.length} movimentos`,
-                        stats: [
-                           { label: 'Total Movimentos', value: safeFormatAOA(totalTesouraria), color: 'text-green-600' },
-                           { label: 'Entradas', value: safeFormatAOA(entradas), color: 'text-green-600' },
-                           { label: 'Saídas', value: safeFormatAOA(saidas), color: 'text-red-500' },
-                        ],
-                        items: extTesouraria.slice(0, 5).map(t => ({
-                           label: t.descricao || t.categoria || '—',
-                           value: safeFormatAOA(t.valor),
-                           sub: t.tipo || '',
-                           date: t.data || '',
-                           onAutoLaunch: () => handleAutoLaunchFromTesouraria(t)
-                        }))
-                     },
-                     {
-                        nome: 'RH / Salários', icon: <Users size={22} className="text-purple-500" />, bg: 'bg-purple-50 border-purple-100',
-                        badge: `${extRhRecibos.length} recibos`,
-                        stats: [
-                           { label: 'Total Líquido', value: safeFormatAOA(totalSalarios), color: 'text-purple-600' },
-                           { label: 'Total Bruto', value: safeFormatAOA(totalBruto), color: 'text-zinc-600' },
-                           { label: 'Recibos', value: `${extRhRecibos.length}`, color: 'text-purple-600' },
-                        ],
-                        items: extRhRecibos.slice(0, 5).map(r => ({
-                           label: `${r.mes || ''}/${r.ano || ''}`,
-                           value: safeFormatAOA(r.liquido),
-                           sub: `Bruto: ${safeFormatAOA(r.bruto)}`,
-                           date: '',
-                           onAutoLaunch: undefined
-                        }))
-                     },
-                     {
-                        nome: 'Inventário', icon: <FileCheck size={22} className="text-orange-500" />, bg: 'bg-orange-50 border-orange-100',
-                        badge: `${extInventario.length} itens`,
-                        stats: [
-                           { label: 'Valor Stock', value: safeFormatAOA(totalInventarioValor), color: 'text-orange-600' },
-                           { label: 'SKUs', value: `${extInventario.length}`, color: 'text-zinc-600' },
-                           { label: 'Críticos (Stock Mín.)', value: `${itensCriticos}`, color: itensCriticos > 0 ? 'text-red-500' : 'text-green-600' },
-                        ],
-                        items: extInventario.slice(0, 5).map(i => ({
-                           label: i.nome || '—',
-                           onAutoLaunch: undefined
-                        }))
-                     },
-                  ];
-
-                  return (
-                     <div className="space-y-8 animate-in slide-in-from-bottom-4 text-left">
-                        {/* Header com botão de sincronização */}
-                        <div className="flex flex-wrap items-center justify-between gap-4 bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
-                           <div>
-                              <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-                                 <Share2 className="text-yellow-500" size={26} /> Fontes de Dados Integradas
-                              </h2>
-                              <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
-                                 Dados recebidos automaticamente dos módulos activos do ERP
-                              </p>
-                           </div>
-                           <div className="flex flex-col items-end gap-2">
-                              <button onClick={syncNow} disabled={isSyncingModules}
-                                 className="flex items-center gap-2 px-5 py-3 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[9px] uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50">
-                                 <RefreshCw size={14} className={isSyncingModules ? 'animate-spin' : ''} />
-                                 {isSyncingModules ? 'Sincronizando...' : 'Sincronizar Agora'}
+                     return (
+                        <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-bottom-4">
+                           <div className="flex items-center justify-between">
+                              <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Gestão de {sidebarItems.find(i => i.id === activeTab)?.label}</h2>
+                              <button
+                                 onClick={() => {
+                                    const mapping: any = { 'facturas': 'Factura', 'proformas': 'Pró-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
+                                    setInvoiceForm(f => ({ ...f, tipo: mapping[activeTab] || 'Factura' }));
+                                    setShowInvoiceModal(true);
+                                 }}
+                                 className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
+                              >
+                                 Nova Emissão
                               </button>
-                              {lastSyncAt && (
-                                 <p className="text-[9px] text-zinc-500 font-bold">
-                                    Última Sinc: {lastSyncAt.toLocaleTimeString()}
-                                 </p>
-                              )}
                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                           {modulos.map((m, idx) => (
-                              <div key={idx} className={`p-8 rounded-[2.5rem] border ${m.bg} space-y-6 shadow-sm bg-white`}>
-                                 <div className="flex justify-between items-start">
-                                    <div className="flex gap-4 items-center">
-                                       <div className="p-4 bg-white rounded-2xl shadow-sm border border-zinc-100">{m.icon}</div>
-                                       <div>
-                                          <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight">{m.nome}</h3>
-                                          <p className="text-[10px] font-black uppercase text-zinc-400">{m.badge}</p>
-                                       </div>
-                                    </div>
-                                 </div>
-                                 <div className="grid grid-cols-3 gap-2">
-                                    {m.stats.map((s, i) => (
-                                       <div key={i} className="p-3 bg-white/60 rounded-xl border border-white/80">
-                                          <p className="text-[8px] font-black text-zinc-400 uppercase leading-tight mb-1">{s.label}</p>
-                                          <p className={`text-[10px] font-black ${s.color}`}>{s.value}</p>
-                                       </div>
-                                    ))}
-                                 </div>
-                                 <div className="space-y-3 pt-2">
-                                    {m.items.map((it, i) => (
-                                       <div key={i} className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/60 group hover:bg-white transition-all hover:shadow-sm">
-                                          <div className="flex items-center gap-3">
-                                             <div className="w-2 h-2 rounded-full bg-zinc-200 group-hover:bg-yellow-500 transition-colors" />
-                                             <div>
-                                                <p className="text-[10px] font-black text-zinc-800 uppercase leading-none">{it.label}</p>
-                                                <p className="text-[8px] font-bold text-zinc-400 uppercase mt-1">{it.date} {it.sub ? `• ${it.sub}` : ''}</p>
-                                             </div>
-                                          </div>
-                                          <div className="flex items-center gap-4">
-                                             <p className="text-[10px] font-black text-zinc-900">{it.value}</p>
-                                             {it.onAutoLaunch && (
-                                                <button onClick={it.onAutoLaunch} className="p-2 bg-zinc-900 text-white rounded-lg hover:bg-yellow-500 hover:text-zinc-900 transition-all">
-                                                   <Sparkles size={12} />
-                                                </button>
-                                             )}
-                                          </div>
-                                       </div>
-                                    ))}
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
-
-                        {/* Movimentos de Stock Recentes */}
-                        <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8">
-                           <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                              <RefreshCw size={24} className="text-yellow-500" /> Movimentos de Inventário em Tempo Real
-                           </h3>
                            <div className="overflow-x-auto">
                               <table className="w-full text-left">
                                  <thead>
                                     <tr className="border-b border-zinc-100">
-                                       {['Tipo', 'Responsável', 'Referência', 'Quantidade', 'Data'].map(h => (
+                                       {['Nº Documento', 'Entidade', 'Valor Total', 'Data', 'Status', ''].map(h => (
                                           <th key={h} className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
                                        ))}
                                     </tr>
                                  </thead>
                                  <tbody className="divide-y divide-zinc-50">
-                                    {extStockMov.slice(0, 10).map((m, i) => (
-                                       <tr key={i} className="hover:bg-zinc-50 transition-colors">
-                                          <td className="py-4 px-4">
-                                             <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${m.tipo === 'entrada' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>{m.tipo}</span>
+                                    {filtered.map((n, i) => (
+                                       <tr key={i} className="hover:bg-zinc-50 transition-colors group">
+                                          <td className="py-5 px-4">
+                                             <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-500">
+                                                   <Receipt size={14} />
+                                                </div>
+                                                <span className="text-xs font-black text-zinc-900 uppercase">
+                                                   {n.numero_fatura || n.numero || `DOC-${i + 100}`}
+                                                </span>
+                                             </div>
                                           </td>
-                                          <td className="py-4 px-4 text-[11px] font-black text-zinc-800 uppercase tracking-tight">{m.entidade || 'Sistema'}</td>
-                                          <td className="py-4 px-4 text-[10px] font-bold text-zinc-500 uppercase">{m.referencia || '—'}</td>
-                                          <td className="py-4 px-4 text-[11px] font-black text-zinc-900">{m.quantidade}</td>
-                                          <td className="py-4 px-4 text-[10px] font-bold text-zinc-400">{new Date(m.created_at).toLocaleDateString()}</td>
+                                          <td className="py-5 px-4 text-xs font-bold text-zinc-600 uppercase">{n.cliente_nome || n.entidade}</td>
+                                          <td className="py-5 px-4 text-xs font-black text-zinc-900">{safeFormatAOA(n.valor_total || n.valor)}</td>
+                                          <td className="py-5 px-4 text-[10px] font-bold text-zinc-400 uppercase">{n.data_emissao || n.data}</td>
+                                          <td className="py-5 px-4">
+                                             <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${n.status === 'Pago' ? 'bg-green-50 text-green-700' : (n.status === 'Anulado' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700')}`}>
+                                                {n.status || 'Pendente'}
+                                             </span>
+                                          </td>
+                                          <td className="py-5 px-4 text-right">
+                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handlePrintFatura(n)} className="p-2 hover:bg-zinc-100 rounded-lg transition-all text-zinc-600" title="Imprimir"><Printer size={14} /></button>
+                                                {n.status !== 'Anulado' && (
+                                                   <button onClick={() => handleAnularFatura(n)} className="p-2 hover:bg-zinc-100 rounded-lg transition-all text-red-500" title="Anular"><X size={14} /></button>
+                                                )}
+                                             </div>
+                                          </td>
                                        </tr>
                                     ))}
+                                    {filtered.length === 0 && (
+                                       <tr>
+                                          <td colSpan={6} className="py-20 text-center text-zinc-400 font-bold uppercase text-[10px]">Nenhum documento encontrado</td>
+                                       </tr>
+                                    )}
                                  </tbody>
                               </table>
                            </div>
                         </div>
-                     </div>
-                  );
-               })()}
+                     );
+                  })()
+               }
 
-               {/* --- CONSOLIDAÇÃO MULTIEMPRESA --- */}
-               {activeTab === 'consolidacao' && (() => {
-                  const consolidadoPorEmpresa = empresas.map(emp => {
-                     const empLancs = (lancamentos || []).filter(l => l.empresa_id === emp.id);
-                     let receita = 0, despesa = 0, ativo = 0, passivo = 0;
-                     empLancs.forEach(l => {
-                        (l.itens || []).forEach(it => {
-                           if (!it) return;
-                           const val = Number(it.valor) || 0;
-                           if (it.conta_codigo?.startsWith('6') && it.tipo === 'C') receita += val;
-                           if (it.conta_codigo?.startsWith('7') && it.tipo === 'D') despesa += val;
-                           if ((it.conta_codigo?.startsWith('1') || it.conta_codigo?.startsWith('2') || it.conta_codigo?.startsWith('3')) && it.tipo === 'D') ativo += val;
-                           if (it.conta_codigo?.startsWith('4') && it.tipo === 'C') passivo += val;
-                        });
-                     });
-                     const lucro = receita - despesa;
-                     const margem = receita > 0 ? (lucro / receita) * 100 : 0;
-                     return { id: emp.id, nome: emp.nome, receita, despesa, lucro, ativo, passivo, margem, lancamentos: empLancs.length };
-                  });
-
-                  const totalGrupo = {
-                     receita: consolidadoPorEmpresa.reduce((a, e) => a + e.receita, 0),
-                     despesa: consolidadoPorEmpresa.reduce((a, e) => a + e.despesa, 0),
-                     lucro: consolidadoPorEmpresa.reduce((a, e) => a + e.lucro, 0),
-                     ativo: consolidadoPorEmpresa.reduce((a, e) => a + e.ativo, 0),
-                     passivo: consolidadoPorEmpresa.reduce((a, e) => a + e.passivo, 0),
-                  };
-                  const maxReceita = Math.max(...consolidadoPorEmpresa.map(e => e.receita), 1);
-
-                  // Estado local de eliminações mock (até o form ser implementado)
-                  const eliminacoesExemplo = [
-                     { id: '1', tipo: 'Receita Interna', valor: 50000, descricao: 'Prestação de serviços interna', origem: empresas[0]?.nome || '—', destino: empresas[1]?.nome || '—' },
-                     { id: '2', tipo: 'Empréstimo', valor: 200000, descricao: 'Financiamento entre afiliadas', origem: empresas[1]?.nome || '—', destino: empresas[0]?.nome || '—' },
-                  ].filter(e => empresas.length >= 2);
-
-                  const totalEliminacoes = eliminacoesExemplo.reduce((a, e) => a + e.valor, 0);
-                  const lucroConsolidado = totalGrupo.lucro - totalEliminacoes;
-
-                  return (
-                     <div className="space-y-8 animate-in slide-in-from-bottom-4">
-
-                        {/* Header */}
-                        <div className="flex items-center justify-between bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
-                           <div>
-                              <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-                                 <Building2 className="text-yellow-500" size={28} /> Consolidação do Grupo
-                              </h2>
-                              <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
-                                 {empresas.length} Entidade{empresas.length !== 1 ? 's' : ''} · Dados calculados automaticamente
-                              </p>
+               {/* --- CONTACTOS (CRM) --- */}
+               {
+                  activeTab === 'contactos' && (
+                     <div className="space-y-10 animate-in slide-in-from-bottom-4">
+                        <div className="flex items-center justify-between bg-white p-10 rounded-[3rem] border border-zinc-100 shadow-sm transition-all hover:shadow-xl">
+                           <div className="space-y-1">
+                              <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tighter">Gestão de <span className="text-yellow-600">Contactos</span></h2>
+                              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Base de Dados CRM Integrada</p>
                            </div>
-                           <div className="text-right">
-                              <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Lucro Líquido Consolidado</p>
-                              <p className={`text-4xl font-black ${lucroConsolidado >= 0 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                 {safeFormatAOA(lucroConsolidado)}
-                              </p>
-                              <p className="text-[9px] text-zinc-500 font-bold mt-1">Após eliminações de {safeFormatAOA(totalEliminacoes)}</p>
-                           </div>
+                           <button
+                              onClick={() => setShowContactModal(true)}
+                              className="px-10 py-5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-3xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+                           >
+                              <Plus size={18} /> Novo Contacto
+                           </button>
                         </div>
 
-                        {/* KPIs do Grupo Consolidado */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                           {[
-                              { label: 'Receita Consolidada', value: totalGrupo.receita, color: 'text-green-600', bg: 'bg-green-50 border-green-100' },
-                              { label: 'Despesa Consolidada', value: totalGrupo.despesa, color: 'text-red-500', bg: 'bg-red-50 border-red-100' },
-                              { label: 'Activo Total Grupo', value: totalGrupo.ativo, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' },
-                              { label: 'Passivo Total Grupo', value: totalGrupo.passivo, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-100' },
-                           ].map((kpi, i) => (
-                              <div key={i} className={`p-7 rounded-[2.5rem] border ${kpi.bg}`}>
-                                 <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-2">{kpi.label}</p>
-                                 <p className={`text-2xl font-black ${kpi.color}`}>{safeFormatAOA(kpi.value)}</p>
-                              </div>
-                           ))}
-                        </div>
-
-                        {/* Comparação Financeira entre Empresas */}
-                        <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
-                           <div className="flex items-center justify-between mb-6">
-                              <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                                 <BarChart2 size={18} className="text-yellow-500" /> Comparação Financeira entre Entidades
-                              </h3>
-                              <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 rounded-xl text-[9px] font-black uppercase tracking-widest border border-zinc-100 transition-all">
-                                 <Printer size={14} /> Relatório
-                              </button>
-                           </div>
-
-                           {consolidadoPorEmpresa.length === 0 ? (
-                              <div className="text-center py-16 text-zinc-400">
-                                 <Building2 size={40} className="mx-auto mb-4 opacity-30" />
-                                 <p className="font-black uppercase text-xs">Nenhuma empresa com dados para consolidar</p>
-                              </div>
-                           ) : (
-                              <div className="space-y-4">
-                                 {consolidadoPorEmpresa.map((emp, i) => (
-                                    <div key={emp.id} className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50/50 hover:bg-white hover:shadow-sm transition-all">
-                                       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                                          <div className="flex items-center gap-3">
-                                             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black text-white"
-                                                style={{ background: COLORS_PIE[i % COLORS_PIE.length] }}>
-                                                {emp.nome?.charAt(0)?.toUpperCase() || '?'}
-                                             </div>
-                                             <div>
-                                                <p className="font-black text-sm text-zinc-900">{emp.nome}</p>
-                                                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{emp.lancamentos} lançamento{emp.lancamentos !== 1 ? 's' : ''}</p>
-                                             </div>
-                                          </div>
-                                          <div className="flex gap-6 text-right">
-                                             <div>
-                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Receita</p>
-                                                <p className="text-sm font-black text-green-600">{safeFormatAOA(emp.receita)}</p>
-                                             </div>
-                                             <div>
-                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Despesa</p>
-                                                <p className="text-sm font-black text-red-500">{safeFormatAOA(emp.despesa)}</p>
-                                             </div>
-                                             <div>
-                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Lucro</p>
-                                                <p className={`text-sm font-black ${emp.lucro >= 0 ? 'text-zinc-900' : 'text-red-500'}`}>{safeFormatAOA(emp.lucro)}</p>
-                                             </div>
-                                             <div>
-                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Margem</p>
-                                                <p className={`text-sm font-black ${emp.margem >= 10 ? 'text-green-600' : emp.margem > 0 ? 'text-yellow-500' : 'text-red-500'}`}>{emp.margem.toFixed(1)}%</p>
-                                             </div>
-                                          </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                           {contactos.filter(c => c.empresa_id === selectedEmpresaId).length > 0 ? (
+                              contactos.filter(c => c.empresa_id === selectedEmpresaId).map((c) => (
+                                 <div key={c.id} className="bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                       <button className="p-3 text-zinc-300 hover:text-zinc-600"><MoreVertical size={20} /></button>
+                                    </div>
+                                    <div className="flex items-center gap-6 mb-8">
+                                       <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center font-black text-3xl text-yellow-600 transition-colors group-hover:bg-yellow-500 group-hover:text-zinc-900 shadow-inner">
+                                          {c.nome.charAt(0).toUpperCase()}
                                        </div>
-                                       {/* Barra de participação na receita do grupo */}
                                        <div>
-                                          <div className="flex justify-between items-center mb-1">
-                                             <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Contribuição para Receita do Grupo</p>
-                                             <p className="text-[9px] font-black text-zinc-600">{maxReceita > 0 ? ((emp.receita / Math.max(totalGrupo.receita, 1)) * 100).toFixed(1) : 0}%</p>
-                                          </div>
-                                          <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
-                                             <div className="h-full rounded-full transition-all duration-700"
-                                                style={{ width: `${(emp.receita / maxReceita) * 100}%`, background: COLORS_PIE[i % COLORS_PIE.length] }} />
-                                          </div>
+                                          <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight leading-tight">{c.nome}</h3>
+                                          <span className={`inline-block mt-1 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${c.tipo === 'Cliente' ? 'bg-sky-50 text-sky-600' :
+                                             c.tipo === 'Fornecedor' ? 'bg-purple-50 text-purple-600' :
+                                                'bg-yellow-50 text-yellow-600'
+                                             }`}>
+                                             {c.tipo}
+                                          </span>
                                        </div>
                                     </div>
-                                 ))}
+
+                                    <div className="space-y-4 border-t border-zinc-50 pt-6">
+                                       {c.nif && (
+                                          <div className="flex items-center gap-3">
+                                             <Shield size={14} className="text-zinc-400" />
+                                             <p className="text-[11px] font-bold text-zinc-500 uppercase">NIF: <span className="text-zinc-800">{c.nif}</span></p>
+                                          </div>
+                                       )}
+                                       {c.email && (
+                                          <div className="flex items-center gap-3">
+                                             <Mail size={14} className="text-zinc-400" />
+                                             <p className="text-[11px] font-bold text-zinc-500">{c.email}</p>
+                                          </div>
+                                       )}
+                                       {c.telefone && (
+                                          <div className="flex items-center gap-3">
+                                             <Phone size={14} className="text-zinc-400" />
+                                             <p className="text-[11px] font-bold text-zinc-500">{c.telefone}</p>
+                                          </div>
+                                       )}
+                                    </div>
+                                 </div>
+                              ))
+                           ) : (
+                              <div className="col-span-full py-32 bg-zinc-50 rounded-[4rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center space-y-4 opacity-50">
+                                 <Users size={64} className="text-zinc-300" />
+                                 <p className="text-lg font-black text-zinc-400 uppercase tracking-tighter">Nenhum contacto registado nesta empresa</p>
                               </div>
                            )}
                         </div>
+                     </div>
+                  )
+               }
 
-                        {/* Eliminações Intercompany */}
-                        <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
-                           <div className="flex items-center justify-between mb-6">
-                              <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                                 <ArrowDownLeft size={18} className="text-yellow-500" /> Eliminações Intercompany
-                              </h3>
-                              <span className="text-[9px] font-black text-zinc-400 px-3 py-1.5 bg-zinc-50 rounded-xl border border-zinc-100 uppercase tracking-widest">
-                                 Total: {safeFormatAOA(totalEliminacoes)}
-                              </span>
+               {/* --- ITENS --- */}
+               {
+                  activeTab === 'itens' && (
+                     <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                        {/* Header e Acções Rápidas */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm">
+                           <div>
+                              <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-tight">Gestão de Inventário</h2>
+                              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Controlo de stock, categorias e alertas críticos</p>
+                           </div>
+                           <div className="flex items-center gap-3">
+                              <button
+                                 onClick={() => setShowCategoryModal(true)}
+                                 className="px-6 py-4 bg-zinc-50 text-zinc-600 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-zinc-100 transition-all flex items-center gap-2 border border-zinc-200"
+                              >
+                                 <ListFilter size={16} /> Nova Categoria
+                              </button>
+                              <button
+                                 onClick={() => setShowItemModal(true)}
+                                 className="px-6 py-4 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95"
+                              >
+                                 <Plus size={16} /> Adicionar Item
+                              </button>
+                           </div>
+                        </div>
+
+                        {/* Filtros de Categorias */}
+                        <div className="flex items-center gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                           <button className="px-6 py-3 bg-zinc-900 text-yellow-500 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                              Todos os Itens ({extInventario.length})
+                           </button>
+                           {categorias.map(cat => (
+                              <button key={cat.id} className="px-6 py-3 bg-white border border-zinc-100 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap hover:border-yellow-400 transition-all flex items-center gap-2">
+                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.cor || '#fbbf24' }} />
+                                 {cat.nome}
+                              </button>
+                           ))}
+                        </div>
+
+                        {/* Grelha de Itens */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                           {extInventario.map((item, i) => {
+                              const isLowStock = Number(item.quantidade_atual) <= Number(item.quantidade_minima);
+                              const cat = categorias.find(c => c.id === item.categoria_id);
+
+                              return (
+                                 <div key={i} className={`p-6 bg-white rounded-[2.5rem] border transition-all group relative overflow-hidden flex flex-col ${isLowStock ? 'border-red-100' : 'border-zinc-100 hover:border-yellow-400 hover:shadow-2xl'}`}>
+                                    {isLowStock && (
+                                       <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-red-100 text-red-600 px-3 py-1.5 rounded-xl animate-pulse">
+                                          <AlertTriangle size={12} />
+                                          <span className="text-[9px] font-black uppercase">Stock Baixo</span>
+                                       </div>
+                                    )}
+
+                                    <div className="w-full aspect-square bg-zinc-50 rounded-3xl mb-6 flex items-center justify-center text-zinc-200 group-hover:scale-105 transition-transform">
+                                       {item.foto_url ? (
+                                          <img src={item.foto_url} alt={item.nome} className="w-full h-full object-cover rounded-3xl" />
+                                       ) : (
+                                          <Package size={64} className="opacity-20 text-zinc-400" />
+                                       )}
+                                    </div>
+
+                                    <div className="flex-1 space-y-2">
+                                       <div className="flex items-center gap-2">
+                                          <span className="text-[8px] font-black text-zinc-400 uppercase bg-zinc-50 px-2 py-0.5 rounded border border-zinc-100">{item.unidade || 'Unidade'}</span>
+                                          {cat && (
+                                             <span className="text-[8px] font-black uppercase bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">{cat.nome}</span>
+                                          )}
+                                       </div>
+                                       <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight leading-tight">{item.nome}</h3>
+                                       <p className="text-[9px] font-bold text-zinc-400 uppercase line-clamp-1">{item.descricao || 'Sem descrição'}</p>
+                                    </div>
+
+                                    <div className="mt-6 pt-6 border-t border-zinc-50 flex items-center justify-between">
+                                       <div>
+                                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Preço Un.</p>
+                                          <p className="text-base font-black text-zinc-900">{safeFormatAOA(item.preco_unitario || item.preco_venda)}</p>
+                                       </div>
+                                       <div className="text-right">
+                                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Stock</p>
+                                          <p className={`text-sm font-black ${isLowStock ? 'text-red-500' : 'text-zinc-900'}`}>{item.quantidade_atual} {item.unidade || 'UN'}</p>
+                                       </div>
+                                    </div>
+                                 </div>
+                              );
+                           })}
+                        </div>
+                     </div>
+                  )
+               }
+
+               {/* --- RELATÓRIOS DASHBOARD --- */}
+               {
+                  activeTab === 'relatorios' && (
+                     <div className="space-y-10 animate-in slide-in-from-bottom-4">
+                        {/* Banner Superior */}
+                        <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 p-12 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl">
+                           <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-500/20 rounded-full -mr-48 -mt-48 blur-3xl animate-pulse" />
+                           <div className="relative z-10 space-y-4">
+                              <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter">Central de <span className="text-yellow-500">Inteligência</span></h2>
+                              <p className="text-zinc-400 font-bold text-sm lg:text-base uppercase tracking-widest max-w-2xl">
+                                 Gere demonstrações financeiras, balancetes e relatórios analíticos com um clique. Dados exportáveis em PDF e Excel.
+                              </p>
+                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                           {[
+                              { id: 'balanco', title: 'Balanço Patrimonial', desc: 'Posição financeira detalhada de ativos e passivos.', icon: <LayoutList size={28} className="text-blue-500" />, color: 'bg-blue-50' },
+                              { id: 'dre', title: 'Demonstração de Resultados', desc: 'Análise de lucro e prejuízo por período seleccionado.', icon: <TrendingUp size={28} className="text-green-500" />, color: 'bg-green-50 text-green-700' },
+                              { id: 'balancete', title: 'Balancete de Verificação', desc: 'Verificação de débitos e créditos de todas as contas.', icon: <CheckCircle2 size={28} className="text-purple-500" />, color: 'bg-purple-50 text-purple-700' },
+                              { id: 'diario', title: 'Diário de Lançamentos', desc: 'Listagem cronológica de todos os movimentos.', icon: <BookOpen size={28} className="text-orange-500" />, color: 'bg-orange-50 text-orange-700' },
+                              { id: 'razão', title: 'Livro Razão', desc: 'Movimentação individualizada por conta contabilística.', icon: <FileText size={28} className="text-sky-500" />, color: 'bg-sky-50 text-sky-700' },
+                              { id: 'cashflow', title: 'Fluxo de Caixa', desc: 'Origem e aplicação de recursos financeiros.', icon: <Landmark size={28} className="text-yellow-600" />, color: 'bg-yellow-50 text-yellow-700' },
+                              { id: 'fiscal', title: 'Relatório Fiscal (IVA/IRT)', desc: 'Apuramento de impostos para submissão à AGT.', icon: <FileCheck size={28} className="text-red-500" />, color: 'bg-red-50 text-red-700' },
+                              { id: 'auditoria', title: 'Trilhas de Auditoria', desc: 'Histórico completo de alterações e logs do sistema.', icon: <ShieldCheck size={28} className="text-zinc-500" />, color: 'bg-zinc-100 text-zinc-700' },
+                           ].map((rep) => (
+                              <div key={rep.id} className="bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm hover:shadow-2xl hover:scale-[1.02] transition-all group flex flex-col justify-between h-[320px]">
+                                 <div>
+                                    <div className={`w-16 h-16 ${rep.color} rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:rotate-6`}>
+                                       {rep.icon}
+                                    </div>
+                                    <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight mb-2 leading-tight">{rep.title}</h3>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-relaxed">{rep.desc}</p>
+                                 </div>
+                                 <div className="flex gap-2">
+                                    <button
+                                       onClick={() => openReport(rep.id)}
+                                       disabled={isGeneratingReport}
+                                       className="flex-1 py-4 bg-zinc-900 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-2"
+                                    >
+                                       {isGeneratingReport ? <RefreshCw className="animate-spin" size={14} /> : <Printer size={14} />}
+                                       {isGeneratingReport ? 'Gerando...' : 'Gerar Relatório'}
+                                    </button>
+                                    <button className="p-4 bg-zinc-50 text-zinc-400 rounded-2xl hover:bg-zinc-100 transition-all">
+                                       <Share2 size={16} />
+                                    </button>
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  )
+               }
+
+               {/* --- ABA: FONTES DE DADOS (INTEGRAÇÃO AUTOMÁTICA) --- */}
+               {
+                  activeTab === 'fontes' && (() => {
+
+                     // ─── Métricas por Módulo ───
+                     const totalFaturas = extFaturas.reduce((s, f) => s + (Number(f.valor_total) || 0), 0);
+                     const faturasPagas = extFaturas.filter(f => f.status === 'pago' || f.status === 'Paga').length;
+                     const totalTesouraria = extTesouraria.reduce((s, t) => s + (Number(t.valor) || 0), 0);
+                     const entradas = extTesouraria.filter(t => t.tipo === 'Entrada' || t.tipo === 'entrada' || t.tipo === 'receita').reduce((s, t) => s + (Number(t.valor) || 0), 0);
+                     const saidas = extTesouraria.filter(t => t.tipo === 'Saída' || t.tipo === 'saida' || t.tipo === 'despesa').reduce((s, t) => s + (Number(t.valor) || 0), 0);
+                     const totalSalarios = extRhRecibos.reduce((s, r) => s + (Number(r.liquido) || 0), 0);
+                     const totalBruto = extRhRecibos.reduce((s, r) => s + (Number(r.bruto) || 0), 0);
+                     const totalInventarioValor = extInventario.reduce((s, i) => s + (Number(i.quantidade_atual) || 0) * (Number(i.preco_unitario) || 0), 0);
+                     const itensCriticos = extInventario.filter(i => Number(i.quantidade_atual) <= Number(i.quantidade_minima)).length;
+
+                     const syncNow = async () => {
+                        setIsSyncingModules(true);
+                        const fq = async (q: any) => { try { const { data } = await q; return data || []; } catch { return []; } };
+                        const [fat, tes, rh, inv, smov] = await Promise.all([
+                           fq(supabase.from('contabil_faturas').select('*').order('data_emissao', { ascending: false }).limit(100)),
+                           fq(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }).limit(100)),
+                           fq(supabase.from('hr_recibos').select('*').order('created_at', { ascending: false }).limit(100)),
+                           fq(supabase.from('inventario').select('*').order('nome')),
+                           fq(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100))
+                        ]);
+                        setExtFaturas(fat); setExtTesouraria(tes); setExtRhRecibos(rh); setExtInventario(inv); setExtStockMov(smov);
+                        setLastSyncAt(new Date());
+                        setIsSyncingModules(false);
+                     };
+
+                     const modulos = [
+                        {
+                           nome: 'Faturação', icon: <FileText size={22} className="text-blue-500" />, bg: 'bg-blue-50 border-blue-100',
+                           badge: `${extFaturas.length} faturas`,
+                           stats: [
+                              { label: 'Total Faturado', value: safeFormatAOA(totalFaturas), color: 'text-blue-600' },
+                              { label: 'Pagas', value: `${faturasPagas}/${extFaturas.length}`, color: 'text-green-600' },
+                              { label: 'Pendentes', value: `${extFaturas.length - faturasPagas}`, color: 'text-yellow-500' },
+                           ],
+                           items: extFaturas.slice(0, 5).map(f => ({
+                              label: f.numero_fatura || f.cliente_nome || '—',
+                              value: safeFormatAOA(f.valor_total),
+                              sub: f.status || '',
+                              date: f.data_emissao || '',
+                              onAutoLaunch: () => handleAutoLaunchFromFatura(f)
+                           }))
+                        },
+                        {
+                           nome: 'Tesouraria', icon: <DollarSign size={22} className="text-green-500" />, bg: 'bg-green-50 border-green-100',
+                           badge: `${extTesouraria.length} movimentos`,
+                           stats: [
+                              { label: 'Total Movimentos', value: safeFormatAOA(totalTesouraria), color: 'text-green-600' },
+                              { label: 'Entradas', value: safeFormatAOA(entradas), color: 'text-green-600' },
+                              { label: 'Saídas', value: safeFormatAOA(saidas), color: 'text-red-500' },
+                           ],
+                           items: extTesouraria.slice(0, 5).map(t => ({
+                              label: t.descricao || t.categoria || '—',
+                              value: safeFormatAOA(t.valor),
+                              sub: t.tipo || '',
+                              date: t.data || '',
+                              onAutoLaunch: () => handleAutoLaunchFromTesouraria(t)
+                           }))
+                        },
+                        {
+                           nome: 'RH / Salários', icon: <Users size={22} className="text-purple-500" />, bg: 'bg-purple-50 border-purple-100',
+                           badge: `${extRhRecibos.length} recibos`,
+                           stats: [
+                              { label: 'Total Líquido', value: safeFormatAOA(totalSalarios), color: 'text-purple-600' },
+                              { label: 'Total Bruto', value: safeFormatAOA(totalBruto), color: 'text-zinc-600' },
+                              { label: 'Recibos', value: `${extRhRecibos.length}`, color: 'text-purple-600' },
+                           ],
+                           items: extRhRecibos.slice(0, 5).map(r => ({
+                              label: `${r.mes || ''}/${r.ano || ''}`,
+                              value: safeFormatAOA(r.liquido),
+                              sub: `Bruto: ${safeFormatAOA(r.bruto)}`,
+                              date: '',
+                              onAutoLaunch: undefined
+                           }))
+                        },
+                        {
+                           nome: 'Inventário', icon: <FileCheck size={22} className="text-orange-500" />, bg: 'bg-orange-50 border-orange-100',
+                           badge: `${extInventario.length} itens`,
+                           stats: [
+                              { label: 'Valor Stock', value: safeFormatAOA(totalInventarioValor), color: 'text-orange-600' },
+                              { label: 'SKUs', value: `${extInventario.length}`, color: 'text-zinc-600' },
+                              { label: 'Críticos (Stock Mín.)', value: `${itensCriticos}`, color: itensCriticos > 0 ? 'text-red-500' : 'text-green-600' },
+                           ],
+                           items: extInventario.slice(0, 5).map(i => ({
+                              label: i.nome || '—',
+                              onAutoLaunch: undefined
+                           }))
+                        },
+                     ];
+
+                     return (
+                        <div className="space-y-8 animate-in slide-in-from-bottom-4 text-left">
+                           {/* Header com botão de sincronização */}
+                           <div className="flex flex-wrap items-center justify-between gap-4 bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
+                              <div>
+                                 <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
+                                    <Share2 className="text-yellow-500" size={26} /> Fontes de Dados Integradas
+                                 </h2>
+                                 <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
+                                    Dados recebidos automaticamente dos módulos activos do ERP
+                                 </p>
+                              </div>
+                              <div className="flex flex-col items-end gap-2">
+                                 <button onClick={syncNow} disabled={isSyncingModules}
+                                    className="flex items-center gap-2 px-5 py-3 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[9px] uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50">
+                                    <RefreshCw size={14} className={isSyncingModules ? 'animate-spin' : ''} />
+                                    {isSyncingModules ? 'Sincronizando...' : 'Sincronizar Agora'}
+                                 </button>
+                                 {lastSyncAt && (
+                                    <p className="text-[9px] text-zinc-500 font-bold">
+                                       Última Sinc: {lastSyncAt.toLocaleTimeString()}
+                                    </p>
+                                 )}
+                              </div>
                            </div>
 
-                           {empresas.length < 2 ? (
-                              <div className="text-center py-10 bg-zinc-50 rounded-2xl">
-                                 <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">São necessárias pelo menos 2 empresas no grupo para registar eliminações.</p>
-                              </div>
-                           ) : eliminacoesExemplo.length === 0 ? (
-                              <div className="text-center py-10 bg-zinc-50 rounded-2xl">
-                                 <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Nenhuma eliminação intercompany registada.</p>
-                              </div>
-                           ) : (
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                              {modulos.map((m, idx) => (
+                                 <div key={idx} className={`p-8 rounded-[2.5rem] border ${m.bg} space-y-6 shadow-sm bg-white`}>
+                                    <div className="flex justify-between items-start">
+                                       <div className="flex gap-4 items-center">
+                                          <div className="p-4 bg-white rounded-2xl shadow-sm border border-zinc-100">{m.icon}</div>
+                                          <div>
+                                             <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight">{m.nome}</h3>
+                                             <p className="text-[10px] font-black uppercase text-zinc-400">{m.badge}</p>
+                                          </div>
+                                       </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                       {m.stats.map((s, i) => (
+                                          <div key={i} className="p-3 bg-white/60 rounded-xl border border-white/80">
+                                             <p className="text-[8px] font-black text-zinc-400 uppercase leading-tight mb-1">{s.label}</p>
+                                             <p className={`text-[10px] font-black ${s.color}`}>{s.value}</p>
+                                          </div>
+                                       ))}
+                                    </div>
+                                    <div className="space-y-3 pt-2">
+                                       {m.items.map((it, i) => (
+                                          <div key={i} className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/60 group hover:bg-white transition-all hover:shadow-sm">
+                                             <div className="flex items-center gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-zinc-200 group-hover:bg-yellow-500 transition-colors" />
+                                                <div>
+                                                   <p className="text-[10px] font-black text-zinc-800 uppercase leading-none">{it.label}</p>
+                                                   <p className="text-[8px] font-bold text-zinc-400 uppercase mt-1">{it.date} {it.sub ? `• ${it.sub}` : ''}</p>
+                                                </div>
+                                             </div>
+                                             <div className="flex items-center gap-4">
+                                                <p className="text-[10px] font-black text-zinc-900">{it.value}</p>
+                                                {it.onAutoLaunch && (
+                                                   <button onClick={it.onAutoLaunch} className="p-2 bg-zinc-900 text-white rounded-lg hover:bg-yellow-500 hover:text-zinc-900 transition-all">
+                                                      <Sparkles size={12} />
+                                                   </button>
+                                                )}
+                                             </div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+
+                           {/* Movimentos de Stock Recentes */}
+                           <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8">
+                              <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
+                                 <RefreshCw size={24} className="text-yellow-500" /> Movimentos de Inventário em Tempo Real
+                              </h3>
                               <div className="overflow-x-auto">
                                  <table className="w-full text-left">
                                     <thead>
                                        <tr className="border-b border-zinc-100">
-                                          {['Tipo', 'Descrição', 'Origem', 'Destino', 'Valor'].map(h => (
-                                             <th key={h} className="pb-3 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
+                                          {['Tipo', 'Responsável', 'Referência', 'Quantidade', 'Data'].map(h => (
+                                             <th key={h} className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
                                           ))}
                                        </tr>
                                     </thead>
-                                    <tbody>
-                                       {eliminacoesExemplo.map(el => (
-                                          <tr key={el.id} className="border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
-                                             <td className="py-3 px-4">
-                                                <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-yellow-50 text-yellow-700 border border-yellow-100">{el.tipo}</span>
+                                    <tbody className="divide-y divide-zinc-50">
+                                       {extStockMov.slice(0, 10).map((m, i) => (
+                                          <tr key={i} className="hover:bg-zinc-50 transition-colors">
+                                             <td className="py-4 px-4">
+                                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${m.tipo === 'entrada' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>{m.tipo}</span>
                                              </td>
-                                             <td className="py-3 px-4 text-sm font-bold text-zinc-700">{el.descricao}</td>
-                                             <td className="py-3 px-4 text-xs font-bold text-zinc-500">{el.origem}</td>
-                                             <td className="py-3 px-4 text-xs font-bold text-zinc-500">{el.destino}</td>
-                                             <td className="py-3 px-4 text-sm font-black text-red-500 text-right">({safeFormatAOA(el.valor)})</td>
+                                             <td className="py-4 px-4 text-[11px] font-black text-zinc-800 uppercase tracking-tight">{m.entidade || 'Sistema'}</td>
+                                             <td className="py-4 px-4 text-[10px] font-bold text-zinc-500 uppercase">{m.referencia || '—'}</td>
+                                             <td className="py-4 px-4 text-[11px] font-black text-zinc-900">{m.quantidade}</td>
+                                             <td className="py-4 px-4 text-[10px] font-bold text-zinc-400">{new Date(m.created_at).toLocaleDateString()}</td>
                                           </tr>
                                        ))}
                                     </tbody>
-                                    <tfoot>
-                                       <tr className="border-t-2 border-zinc-200">
-                                          <td colSpan={4} className="pt-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">Total a Eliminar</td>
-                                          <td className="pt-4 px-4 text-base font-black text-red-600 text-right">({safeFormatAOA(totalEliminacoes)})</td>
-                                       </tr>
-                                       <tr>
-                                          <td colSpan={4} className="pt-2 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-900">Lucro Consolidado Ajustado</td>
-                                          <td className={`pt-2 px-4 text-base font-black text-right ${lucroConsolidado >= 0 ? 'text-green-600' : 'text-red-600'}`}>{safeFormatAOA(lucroConsolidado)}</td>
-                                       </tr>
-                                    </tfoot>
                                  </table>
                               </div>
-                           )}
+                           </div>
                         </div>
-                     </div>
-                  );
-               })()}
+                     );
+                  })()
+               }
+
+               {/* --- CONSOLIDAÇÃO MULTIEMPRESA --- */}
+               {
+                  activeTab === 'consolidacao' && (() => {
+                     const consolidadoPorEmpresa = empresas.map(emp => {
+                        const empLancs = (lancamentos || []).filter(l => l.empresa_id === emp.id);
+                        let receita = 0, despesa = 0, ativo = 0, passivo = 0;
+                        empLancs.forEach(l => {
+                           (l.itens || []).forEach(it => {
+                              if (!it) return;
+                              const val = Number(it.valor) || 0;
+                              if (it.conta_codigo?.startsWith('6') && it.tipo === 'C') receita += val;
+                              if (it.conta_codigo?.startsWith('7') && it.tipo === 'D') despesa += val;
+                              if ((it.conta_codigo?.startsWith('1') || it.conta_codigo?.startsWith('2') || it.conta_codigo?.startsWith('3')) && it.tipo === 'D') ativo += val;
+                              if (it.conta_codigo?.startsWith('4') && it.tipo === 'C') passivo += val;
+                           });
+                        });
+                        const lucro = receita - despesa;
+                        const margem = receita > 0 ? (lucro / receita) * 100 : 0;
+                        return { id: emp.id, nome: emp.nome, receita, despesa, lucro, ativo, passivo, margem, lancamentos: empLancs.length };
+                     });
+
+                     const totalGrupo = {
+                        receita: consolidadoPorEmpresa.reduce((a, e) => a + e.receita, 0),
+                        despesa: consolidadoPorEmpresa.reduce((a, e) => a + e.despesa, 0),
+                        lucro: consolidadoPorEmpresa.reduce((a, e) => a + e.lucro, 0),
+                        ativo: consolidadoPorEmpresa.reduce((a, e) => a + e.ativo, 0),
+                        passivo: consolidadoPorEmpresa.reduce((a, e) => a + e.passivo, 0),
+                     };
+                     const maxReceita = Math.max(...consolidadoPorEmpresa.map(e => e.receita), 1);
+
+                     // Estado local de eliminações mock (até o form ser implementado)
+                     const eliminacoesExemplo = [
+                        { id: '1', tipo: 'Receita Interna', valor: 50000, descricao: 'Prestação de serviços interna', origem: empresas[0]?.nome || '—', destino: empresas[1]?.nome || '—' },
+                        { id: '2', tipo: 'Empréstimo', valor: 200000, descricao: 'Financiamento entre afiliadas', origem: empresas[1]?.nome || '—', destino: empresas[0]?.nome || '—' },
+                     ].filter(e => empresas.length >= 2);
+
+                     const totalEliminacoes = eliminacoesExemplo.reduce((a, e) => a + e.valor, 0);
+                     const lucroConsolidado = totalGrupo.lucro - totalEliminacoes;
+
+                     return (
+                        <div className="space-y-8 animate-in slide-in-from-bottom-4">
+
+                           {/* Header */}
+                           <div className="flex items-center justify-between bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
+                              <div>
+                                 <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
+                                    <Building2 className="text-yellow-500" size={28} /> Consolidação do Grupo
+                                 </h2>
+                                 <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
+                                    {empresas.length} Entidade{empresas.length !== 1 ? 's' : ''} · Dados calculados automaticamente
+                                 </p>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Lucro Líquido Consolidado</p>
+                                 <p className={`text-4xl font-black ${lucroConsolidado >= 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                    {safeFormatAOA(lucroConsolidado)}
+                                 </p>
+                                 <p className="text-[9px] text-zinc-500 font-bold mt-1">Após eliminações de {safeFormatAOA(totalEliminacoes)}</p>
+                              </div>
+                           </div>
+
+                           {/* KPIs do Grupo Consolidado */}
+                           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                              {[
+                                 { label: 'Receita Consolidada', value: totalGrupo.receita, color: 'text-green-600', bg: 'bg-green-50 border-green-100' },
+                                 { label: 'Despesa Consolidada', value: totalGrupo.despesa, color: 'text-red-500', bg: 'bg-red-50 border-red-100' },
+                                 { label: 'Activo Total Grupo', value: totalGrupo.ativo, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' },
+                                 { label: 'Passivo Total Grupo', value: totalGrupo.passivo, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-100' },
+                              ].map((kpi, i) => (
+                                 <div key={i} className={`p-7 rounded-[2.5rem] border ${kpi.bg}`}>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-2">{kpi.label}</p>
+                                    <p className={`text-2xl font-black ${kpi.color}`}>{safeFormatAOA(kpi.value)}</p>
+                                 </div>
+                              ))}
+                           </div>
+
+                           {/* Comparação Financeira entre Empresas */}
+                           <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
+                              <div className="flex items-center justify-between mb-6">
+                                 <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
+                                    <BarChart2 size={18} className="text-yellow-500" /> Comparação Financeira entre Entidades
+                                 </h3>
+                                 <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 rounded-xl text-[9px] font-black uppercase tracking-widest border border-zinc-100 transition-all">
+                                    <Printer size={14} /> Relatório
+                                 </button>
+                              </div>
+
+                              {consolidadoPorEmpresa.length === 0 ? (
+                                 <div className="text-center py-16 text-zinc-400">
+                                    <Building2 size={40} className="mx-auto mb-4 opacity-30" />
+                                    <p className="font-black uppercase text-xs">Nenhuma empresa com dados para consolidar</p>
+                                 </div>
+                              ) : (
+                                 <div className="space-y-4">
+                                    {consolidadoPorEmpresa.map((emp, i) => (
+                                       <div key={emp.id} className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50/50 hover:bg-white hover:shadow-sm transition-all">
+                                          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                                             <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black text-white"
+                                                   style={{ background: COLORS_PIE[i % COLORS_PIE.length] }}>
+                                                   {emp.nome?.charAt(0)?.toUpperCase() || '?'}
+                                                </div>
+                                                <div>
+                                                   <p className="font-black text-sm text-zinc-900">{emp.nome}</p>
+                                                   <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{emp.lancamentos} lançamento{emp.lancamentos !== 1 ? 's' : ''}</p>
+                                                </div>
+                                             </div>
+                                             <div className="flex gap-6 text-right">
+                                                <div>
+                                                   <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Receita</p>
+                                                   <p className="text-sm font-black text-green-600">{safeFormatAOA(emp.receita)}</p>
+                                                </div>
+                                                <div>
+                                                   <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Despesa</p>
+                                                   <p className="text-sm font-black text-red-500">{safeFormatAOA(emp.despesa)}</p>
+                                                </div>
+                                                <div>
+                                                   <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Lucro</p>
+                                                   <p className={`text-sm font-black ${emp.lucro >= 0 ? 'text-zinc-900' : 'text-red-500'}`}>{safeFormatAOA(emp.lucro)}</p>
+                                                </div>
+                                                <div>
+                                                   <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Margem</p>
+                                                   <p className={`text-sm font-black ${emp.margem >= 10 ? 'text-green-600' : emp.margem > 0 ? 'text-yellow-500' : 'text-red-500'}`}>{emp.margem.toFixed(1)}%</p>
+                                                </div>
+                                             </div>
+                                          </div>
+                                          {/* Barra de participação na receita do grupo */}
+                                          <div>
+                                             <div className="flex justify-between items-center mb-1">
+                                                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Contribuição para Receita do Grupo</p>
+                                                <p className="text-[9px] font-black text-zinc-600">{maxReceita > 0 ? ((emp.receita / Math.max(totalGrupo.receita, 1)) * 100).toFixed(1) : 0}%</p>
+                                             </div>
+                                             <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
+                                                <div className="h-full rounded-full transition-all duration-700"
+                                                   style={{ width: `${(emp.receita / maxReceita) * 100}%`, background: COLORS_PIE[i % COLORS_PIE.length] }} />
+                                             </div>
+                                          </div>
+                                       </div>
+                                    ))}
+                                 </div>
+                              )}
+                           </div>
+
+                           {/* Eliminações Intercompany */}
+                           <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
+                              <div className="flex items-center justify-between mb-6">
+                                 <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
+                                    <ArrowDownLeft size={18} className="text-yellow-500" /> Eliminações Intercompany
+                                 </h3>
+                                 <span className="text-[9px] font-black text-zinc-400 px-3 py-1.5 bg-zinc-50 rounded-xl border border-zinc-100 uppercase tracking-widest">
+                                    Total: {safeFormatAOA(totalEliminacoes)}
+                                 </span>
+                              </div>
+
+                              {empresas.length < 2 ? (
+                                 <div className="text-center py-10 bg-zinc-50 rounded-2xl">
+                                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">São necessárias pelo menos 2 empresas no grupo para registar eliminações.</p>
+                                 </div>
+                              ) : eliminacoesExemplo.length === 0 ? (
+                                 <div className="text-center py-10 bg-zinc-50 rounded-2xl">
+                                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Nenhuma eliminação intercompany registada.</p>
+                                 </div>
+                              ) : (
+                                 <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                       <thead>
+                                          <tr className="border-b border-zinc-100">
+                                             {['Tipo', 'Descrição', 'Origem', 'Destino', 'Valor'].map(h => (
+                                                <th key={h} className="pb-3 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
+                                             ))}
+                                          </tr>
+                                       </thead>
+                                       <tbody>
+                                          {eliminacoesExemplo.map(el => (
+                                             <tr key={el.id} className="border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
+                                                <td className="py-3 px-4">
+                                                   <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-yellow-50 text-yellow-700 border border-yellow-100">{el.tipo}</span>
+                                                </td>
+                                                <td className="py-3 px-4 text-sm font-bold text-zinc-700">{el.descricao}</td>
+                                                <td className="py-3 px-4 text-xs font-bold text-zinc-500">{el.origem}</td>
+                                                <td className="py-3 px-4 text-xs font-bold text-zinc-500">{el.destino}</td>
+                                                <td className="py-3 px-4 text-sm font-black text-red-500 text-right">({safeFormatAOA(el.valor)})</td>
+                                             </tr>
+                                          ))}
+                                       </tbody>
+                                       <tfoot>
+                                          <tr className="border-t-2 border-zinc-200">
+                                             <td colSpan={4} className="pt-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">Total a Eliminar</td>
+                                             <td className="pt-4 px-4 text-base font-black text-red-600 text-right">({safeFormatAOA(totalEliminacoes)})</td>
+                                          </tr>
+                                          <tr>
+                                             <td colSpan={4} className="pt-2 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-900">Lucro Consolidado Ajustado</td>
+                                             <td className={`pt-2 px-4 text-base font-black text-right ${lucroConsolidado >= 0 ? 'text-green-600' : 'text-red-600'}`}>{safeFormatAOA(lucroConsolidado)}</td>
+                                          </tr>
+                                       </tfoot>
+                                    </table>
+                                 </div>
+                              )}
+                           </div>
+                        </div>
+                     );
+                  })()
+               }
                {/* --- MODAL NOVA CONTA (PLANO DE CONTAS) --- */}
                {
                   showAccountModal && (
@@ -4355,363 +4581,372 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                }
 
                {/* --- MODAL NOVO CONTACTO (CRM) --- */}
-               {showContactModal && (
-                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                     <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
-                                 <Users size={24} />
+               {
+                  showContactModal && (
+                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                              <div className="flex items-center gap-4">
+                                 <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                    <Users size={24} />
+                                 </div>
+                                 <div>
+                                    <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Contacto</h2>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Parceiro de Negócio</p>
+                                 </div>
                               </div>
-                              <div>
-                                 <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Contacto</h2>
-                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Parceiro de Negócio</p>
-                              </div>
+                              <button onClick={() => setShowContactModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                            </div>
-                           <button onClick={() => setShowContactModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                           <form onSubmit={handleCreateContact} className="p-8 space-y-6">
+                              <div className="grid grid-cols-2 gap-6">
+                                 <div className="col-span-2">
+                                    <Input label="Nome Completo / Razão Social" required placeholder="Ex: Amazing Corporation Lda"
+                                       value={newContact.nome} onChange={(e: any) => setNewContact({ ...newContact, nome: e.target.value })}
+                                    />
+                                 </div>
+                                 <Input label="NIF" placeholder="Ex: 5000123456"
+                                    value={newContact.nif} onChange={(e: any) => setNewContact({ ...newContact, nif: e.target.value })}
+                                 />
+                                 <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo de Contacto</label>
+                                    <Select
+                                       value={newContact.tipo}
+                                       onChange={(e: any) => setNewContact({ ...newContact, tipo: e.target.value as any })}
+                                       options={[
+                                          { value: 'Cliente', label: 'Cliente' },
+                                          { value: 'Fornecedor', label: 'Fornecedor' },
+                                          { value: 'Ambos', label: 'Ambos (Parceiro)' }
+                                       ]}
+                                    />
+                                 </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-50">
+                                 <Input label="E-mail" type="email" placeholder="contacto@email.com"
+                                    value={newContact.email} onChange={(e: any) => setNewContact({ ...newContact, email: e.target.value })}
+                                 />
+                                 <Input label="Telefone" placeholder="+244 9XX XXX XXX"
+                                    value={newContact.telefone} onChange={(e: any) => setNewContact({ ...newContact, telefone: e.target.value })}
+                                 />
+                                 <div className="col-span-2">
+                                    <Input label="Morada / Localização" placeholder="Cidade, Bairro, Rua..."
+                                       value={newContact.morada} onChange={(e: any) => setNewContact({ ...newContact, morada: e.target.value })}
+                                    />
+                                 </div>
+                              </div>
+
+                              <div className="pt-6">
+                                 <button type="submit" disabled={isSavingContact} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
+                                    {isSavingContact ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
+                                    {isSavingContact ? 'A Processar...' : 'Confirmar Registo'}
+                                 </button>
+                              </div>
+                           </form>
                         </div>
-                        <form onSubmit={handleCreateContact} className="p-8 space-y-6">
-                           <div className="grid grid-cols-2 gap-6">
-                              <div className="col-span-2">
-                                 <Input label="Nome Completo / Razão Social" required placeholder="Ex: Amazing Corporation Lda"
-                                    value={newContact.nome} onChange={(e: any) => setNewContact({ ...newContact, nome: e.target.value })}
-                                 />
-                              </div>
-                              <Input label="NIF" placeholder="Ex: 5000123456"
-                                 value={newContact.nif} onChange={(e: any) => setNewContact({ ...newContact, nif: e.target.value })}
-                              />
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo de Contacto</label>
-                                 <Select
-                                    value={newContact.tipo}
-                                    onChange={(e: any) => setNewContact({ ...newContact, tipo: e.target.value as any })}
-                                    options={[
-                                       { value: 'Cliente', label: 'Cliente' },
-                                       { value: 'Fornecedor', label: 'Fornecedor' },
-                                       { value: 'Ambos', label: 'Ambos (Parceiro)' }
-                                    ]}
-                                 />
-                              </div>
-                           </div>
-
-                           <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-50">
-                              <Input label="E-mail" type="email" placeholder="contacto@email.com"
-                                 value={newContact.email} onChange={(e: any) => setNewContact({ ...newContact, email: e.target.value })}
-                              />
-                              <Input label="Telefone" placeholder="+244 9XX XXX XXX"
-                                 value={newContact.telefone} onChange={(e: any) => setNewContact({ ...newContact, telefone: e.target.value })}
-                              />
-                              <div className="col-span-2">
-                                 <Input label="Morada / Localização" placeholder="Cidade, Bairro, Rua..."
-                                    value={newContact.morada} onChange={(e: any) => setNewContact({ ...newContact, morada: e.target.value })}
-                                 />
-                              </div>
-                           </div>
-
-                           <div className="pt-6">
-                              <button type="submit" disabled={isSavingContact} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
-                                 {isSavingContact ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
-                                 {isSavingContact ? 'A Processar...' : 'Confirmar Registo'}
-                              </button>
-                           </div>
-                        </form>
                      </div>
-                  </div>
-               )
+                  )
                }
 
                {/* --- MODAL NOVA CATEGORIA (INVENTÁRIO) --- */}
-               {showCategoryModal && (
-                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                     <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
-                                 <ListFilter size={24} />
+               {
+                  showCategoryModal && (
+                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                              <div className="flex items-center gap-4">
+                                 <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                    <ListFilter size={24} />
+                                 </div>
+                                 <div>
+                                    <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Nova Categoria</h2>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Organização de Itens e Stock</p>
+                                 </div>
                               </div>
-                              <div>
-                                 <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Nova Categoria</h2>
-                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Organização de Itens e Stock</p>
-                              </div>
+                              <button onClick={() => setShowCategoryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                            </div>
-                           <button onClick={() => setShowCategoryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                           <form onSubmit={handleCreateCategory} className="p-8 space-y-6">
+                              <div className="space-y-4">
+                                 <Input label="Nome da Categoria" required placeholder="Ex: Informática, Bebidas..."
+                                    value={newCategory.nome} onChange={(e: any) => setNewCategory({ ...newCategory, nome: e.target.value })}
+                                 />
+                                 <Input label="Descrição Curta" placeholder="Opcional..."
+                                    value={newCategory.descricao} onChange={(e: any) => setNewCategory({ ...newCategory, descricao: e.target.value })}
+                                 />
+                                 <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cor de Identificação</label>
+                                    <div className="flex gap-3">
+                                       {['#fbbf24', '#3b82f6', '#ef4444', '#10b981', '#a855f7', '#6366f1'].map(color => (
+                                          <button
+                                             key={color}
+                                             type="button"
+                                             onClick={() => setNewCategory({ ...newCategory, cor: color })}
+                                             className={`w-10 h-10 rounded-xl transition-all ${newCategory.cor === color ? 'ring-4 ring-zinc-900 ring-offset-2' : 'hover:scale-110'}`}
+                                             style={{ backgroundColor: color }}
+                                          />
+                                       ))}
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div className="pt-6">
+                                 <button type="submit" disabled={isSavingCategory} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
+                                    {isSavingCategory ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
+                                    {isSavingCategory ? 'A Guardar...' : 'Criar Categoria'}
+                                 </button>
+                              </div>
+                           </form>
                         </div>
-                        <form onSubmit={handleCreateCategory} className="p-8 space-y-6">
-                           <div className="space-y-4">
-                              <Input label="Nome da Categoria" required placeholder="Ex: Informática, Bebidas..."
-                                 value={newCategory.nome} onChange={(e: any) => setNewCategory({ ...newCategory, nome: e.target.value })}
-                              />
-                              <Input label="Descrição Curta" placeholder="Opcional..."
-                                 value={newCategory.descricao} onChange={(e: any) => setNewCategory({ ...newCategory, descricao: e.target.value })}
-                              />
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cor de Identificação</label>
-                                 <div className="flex gap-3">
-                                    {['#fbbf24', '#3b82f6', '#ef4444', '#10b981', '#a855f7', '#6366f1'].map(color => (
-                                       <button
-                                          key={color}
-                                          type="button"
-                                          onClick={() => setNewCategory({ ...newCategory, cor: color })}
-                                          className={`w-10 h-10 rounded-xl transition-all ${newCategory.cor === color ? 'ring-4 ring-zinc-900 ring-offset-2' : 'hover:scale-110'}`}
-                                          style={{ backgroundColor: color }}
-                                       />
+                     </div>
+                  )
+               }
+
+               {/* --- MODAL NOVO ITEM (INVENTÁRIO) --- */}
+               {
+                  showItemModal && (
+                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                              <div className="flex items-center gap-4">
+                                 <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                    <Plus size={24} />
+                                 </div>
+                                 <div>
+                                    <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Item no Catálogo</h2>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Produto ou Serviço</p>
+                                 </div>
+                              </div>
+                              <button onClick={() => setShowItemModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                           </div>
+                           <form onSubmit={handleCreateItem} className="p-8 space-y-6">
+                              <div className="grid grid-cols-2 gap-6">
+                                 <div className="col-span-2">
+                                    <Input label="Nome do Item / Serviço" required placeholder="Ex: Consultoria Fiscal, Resma A4..."
+                                       value={newInventoryItem.nome} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, nome: e.target.value })}
+                                    />
+                                 </div>
+                                 <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Categoria</label>
+                                    <Select
+                                       value={newInventoryItem.categoria_id}
+                                       onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, categoria_id: e.target.value })}
+                                       options={[
+                                          { value: '', label: 'Seleccione uma categoria' },
+                                          ...categorias.map(cat => ({ value: cat.id, label: cat.nome }))
+                                       ]}
+                                       required
+                                    />
+                                 </div>
+                                 <Input label="Código/SKU" placeholder="Ex: SERV-001"
+                                    value={newInventoryItem.codigo} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, codigo: e.target.value })}
+                                 />
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-6 pt-4 border-t border-zinc-50">
+                                 <Input label="Preço Unitário" type="number"
+                                    value={newInventoryItem.preco_unitario} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, preco_unitario: Number(e.target.value) })}
+                                 />
+                                 <Input label="Qtd. Inicial" type="number"
+                                    value={newInventoryItem.quantidade_atual} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, quantidade_atual: Number(e.target.value) })}
+                                 />
+                                 <Input label="Stock Mínimo" type="number"
+                                    value={newInventoryItem.quantidade_minima} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, quantidade_minima: Number(e.target.value) })}
+                                 />
+                              </div>
+
+                              <div className="flex gap-4 pt-4">
+                                 <div className="flex-1">
+                                    <Input label="Unidade" placeholder="Ex: un, kg, hora..."
+                                       value={newInventoryItem.unidade} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, unidade: e.target.value })}
+                                    />
+                                 </div>
+                                 <div className="flex-1">
+                                    <Input label="Referência Interna" placeholder="Opcional..."
+                                       value={newInventoryItem.referencia} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, referencia: e.target.value })}
+                                    />
+                                 </div>
+                              </div>
+
+                              <div className="pt-6">
+                                 <button type="submit" disabled={isSavingItem} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
+                                    {isSavingItem ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
+                                    {isSavingItem ? 'A Processar...' : 'Adicionar ao Catálogo'}
+                                 </button>
+                              </div>
+                           </form>
+                        </div>
+                     </div>
+                  )
+               }
+               {/* --- MODAL NOVO FUNCIONÁRIO --- */}
+               {
+                  showEmployeeModal && (
+                     <div className="fixed inset-0 z-[130] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                        <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-900 text-white">
+                              <div className="flex items-center gap-4">
+                                 <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                    <UserPlus size={24} />
+                                 </div>
+                                 <div>
+                                    <h2 className="text-xl font-black uppercase tracking-tight">Registar Colaborador</h2>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{currentEmpresa?.nome}</p>
+                                 </div>
+                              </div>
+                              <button onClick={() => setShowEmployeeModal(false)} className="p-3 text-white/50 hover:bg-white/10 rounded-full transition-all"><X size={24} /></button>
+                           </div>
+                           <form onSubmit={handleSaveEmployee} className="p-10 space-y-10">
+                              {/* Bloco 1: Identificação e Base */}
+                              <div className="space-y-4">
+                                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">Informação Base e Identificação</h4>
+                                 <div className="grid grid-cols-3 gap-6">
+                                    <div className="col-span-1">
+                                       <Input label="Nome Completo" required value={newEmployee.nome} onChange={e => setNewEmployee({ ...newEmployee, nome: e.target.value })} placeholder="Ex: João Manuel dos Santos" />
+                                    </div>
+                                    <Input label="Função / Cargo" required value={newEmployee.funcao} onChange={e => setNewEmployee({ ...newEmployee, funcao: e.target.value })} placeholder="Ex: Contabilista Sénior" />
+                                    <Input label="NIF" value={newEmployee.nif} onChange={e => setNewEmployee({ ...newEmployee, nif: e.target.value })} placeholder="000000000LA000" />
+
+                                    <Input label="Salário Base (AOA)" type="number" required value={newEmployee.salario_base} onChange={e => setNewEmployee({ ...newEmployee, salario_base: Number(e.target.value) })} />
+                                    <Input label="N.º Segurança Social" value={newEmployee.numero_ss} onChange={e => setNewEmployee({ ...newEmployee, numero_ss: e.target.value })} placeholder="00000000000" />
+                                    <div className="flex items-end pb-1">
+                                       <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 w-full">
+                                          <p className="text-[9px] font-bold text-zinc-400 uppercase">Cálculo Estimado</p>
+                                          <p className="text-xs font-black text-zinc-900">IRT/INSS Automático</p>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Bloco 2: Subsídios Mensais e Anuais (Lado a Lado) */}
+                              <div className="grid grid-cols-2 gap-8">
+                                 <div className="p-6 bg-zinc-50/50 rounded-3xl border border-zinc-100 space-y-6">
+                                    <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">Subsídios Mensais Fixos</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                       <Input label="Alimentação" type="number" value={newEmployee.subsidio_alimentacao} onChange={e => setNewEmployee({ ...newEmployee, subsidio_alimentacao: Number(e.target.value) })} />
+                                       <Input label="Transporte" type="number" value={newEmployee.subsidio_transporte} onChange={e => setNewEmployee({ ...newEmployee, subsidio_transporte: Number(e.target.value) })} />
+                                    </div>
+                                 </div>
+
+                                 <div className="p-6 bg-yellow-50/30 rounded-3xl border border-yellow-100 space-y-6">
+                                    <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">Bónus, Horas e Adiantamentos</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                       <Input label="Horas Extras (Valor)" type="number" value={newEmployee.valor_hora_extra_base} onChange={e => setNewEmployee({ ...newEmployee, valor_hora_extra_base: Number(e.target.value) })} />
+                                       <Input label="Adiantamento Padrão" type="number" value={newEmployee.adiantamento_padrao} onChange={e => setNewEmployee({ ...newEmployee, adiantamento_padrao: Number(e.target.value) })} />
+                                       <Input label="Base Férias" type="number" value={newEmployee.subsidio_ferias_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_ferias_base: Number(e.target.value) })} />
+                                       <Input label="Base Natal" type="number" value={newEmployee.subsidio_natal_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_natal_base: Number(e.target.value) })} />
+                                       <div className="col-span-2">
+                                          <Input label="Gratificações Mensais" type="number" value={newEmployee.outras_bonificacoes_base} onChange={e => setNewEmployee({ ...newEmployee, outras_bonificacoes_base: Number(e.target.value) })} />
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div className="pt-4">
+                                 <button type="submit" disabled={isProcessingPayroll} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
+                                    {isProcessingPayroll ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
+                                    {isProcessingPayroll ? 'Processando...' : 'Confirmar Registo do Funcionário'}
+                                 </button>
+                              </div>
+                           </form>
+                        </div>
+                     </div>
+                  )
+               }
+
+               {/* --- MODAL RECIBO DE SALÁRIO --- */}
+               {
+                  selectedFolha && (
+                     <div className="fixed inset-0 z-[140] flex items-center justify-center bg-zinc-950/90 backdrop-blur-xl p-4 animate-in fade-in">
+                        <div className="bg-white w-full max-w-3xl rounded-[4rem] shadow-3xl overflow-hidden animate-in zoom-in-95 relative print:shadow-none print:rounded-none">
+                           <div className="absolute top-8 right-8 flex gap-2 print:hidden">
+                              <button onClick={() => window.print()} className="p-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-2xl transition-all"><Printer size={24} /></button>
+                              <button onClick={() => setSelectedFolha(null)} className="p-4 bg-zinc-100 hover:bg-red-50 text-zinc-400 hover:text-red-500 rounded-2xl transition-all"><X size={24} /></button>
+                           </div>
+
+                           <div className="p-16 space-y-12">
+                              {/* Cabeçalho do Recibo */}
+                              <div className="flex justify-between items-start border-b-4 border-zinc-900 pb-10">
+                                 <div>
+                                    <h2 className="text-4xl font-black uppercase tracking-tighter text-zinc-900 leading-none mb-2">Recibo de Salário</h2>
+                                    <p className="text-lg font-bold text-zinc-400 uppercase tracking-widest">Mês de Referência: {selectedFolha.mes_referencia}</p>
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-xl font-black text-zinc-900 uppercase">{currentEmpresa?.nome}</p>
+                                    <p className="text-sm font-bold text-zinc-400">NIF: {currentEmpresa?.nif || '---'}</p>
+                                 </div>
+                              </div>
+
+                              {/* Dados do Funcionário */}
+                              <div className="grid grid-cols-2 gap-10">
+                                 <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Colaborador</p>
+                                    <p className="text-2xl font-black text-zinc-900 uppercase tracking-tighter">{selectedFolha.funcionario_nome}</p>
+                                 </div>
+                                 <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Cargo / Função</p>
+                                    <p className="text-xl font-black text-zinc-700 uppercase tracking-tighter">Funcionário Activo</p>
+                                 </div>
+                              </div>
+
+                              {/* Tabela de Vencimentos e Descontos */}
+                              <div className="space-y-4">
+                                 <div className="grid grid-cols-12 gap-4 px-6 text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">
+                                    <div className="col-span-6">Descrição</div>
+                                    <div className="col-span-3 text-right">Vencimentos</div>
+                                    <div className="col-span-3 text-right">Descontos</div>
+                                 </div>
+                                 <div className="space-y-2">
+                                    {[
+                                       { d: 'Salário Base', v: Number(selectedFolha.salario_base), type: 'V' },
+                                       { d: 'Subsídios (Alim./Transp.)', v: Number(selectedFolha.subsidios), type: 'V' },
+                                       { d: 'Horas Extras', v: Number((selectedFolha as any).horas_extras || 0), type: 'V' },
+                                       { d: 'Subsídio de Férias', v: Number((selectedFolha as any).subsidio_ferias || 0), type: 'V' },
+                                       { d: 'Subsídio de Natal', v: Number((selectedFolha as any).subsidio_natal || 0), type: 'V' },
+                                       { d: 'Bónus e Gratificações', v: Number((selectedFolha as any).outras_bonificacoes || 0), type: 'V' },
+                                       { d: 'INSS (3%)', v: Number(selectedFolha.inss_trabal_ador || selectedFolha.inss_trabalhador), type: 'D' },
+                                       { d: 'IRT / Taxa Fiscal', v: Number(selectedFolha.irt), type: 'D' },
+                                       { d: 'Desconto Atrasos/Faltas', v: Number((selectedFolha as any).desconto_atrasos || 0), type: 'D' },
+                                       { d: 'Desconto Férias', v: Number((selectedFolha as any).desconto_ferias || 0), type: 'D' },
+                                       { d: 'Adiantamento Salarial', v: Number((selectedFolha as any).adiantamento_salarial || 0), type: 'D' },
+                                    ].filter(item => item.v > 0 || item.type === 'D').map((item, idx) => (
+                                       <div key={idx} className="grid grid-cols-12 gap-4 px-6 py-4 rounded-2xl hover:bg-zinc-50 transition-colors">
+                                          <div className="col-span-6 text-sm font-bold text-zinc-900">{item.d}</div>
+                                          <div className="col-span-3 text-right text-sm font-black text-green-600">{item.type === 'V' ? safeFormatAOA(item.v) : ''}</div>
+                                          <div className="col-span-3 text-right text-sm font-black text-red-500">{item.type === 'D' ? safeFormatAOA(item.v) : ''}</div>
+                                       </div>
                                     ))}
                                  </div>
                               </div>
-                           </div>
 
-                           <div className="pt-6">
-                              <button type="submit" disabled={isSavingCategory} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
-                                 {isSavingCategory ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
-                                 {isSavingCategory ? 'A Guardar...' : 'Criar Categoria'}
-                              </button>
-                           </div>
-                        </form>
-                     </div>
-                  </div>
-               )}
-
-               {/* --- MODAL NOVO ITEM (INVENTÁRIO) --- */}
-               {showItemModal && (
-                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                     <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
-                                 <Plus size={24} />
-                              </div>
-                              <div>
-                                 <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Item no Catálogo</h2>
-                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Produto ou Serviço</p>
-                              </div>
-                           </div>
-                           <button onClick={() => setShowItemModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
-                        </div>
-                        <form onSubmit={handleCreateItem} className="p-8 space-y-6">
-                           <div className="grid grid-cols-2 gap-6">
-                              <div className="col-span-2">
-                                 <Input label="Nome do Item / Serviço" required placeholder="Ex: Consultoria Fiscal, Resma A4..."
-                                    value={newInventoryItem.nome} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, nome: e.target.value })}
-                                 />
-                              </div>
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Categoria</label>
-                                 <Select
-                                    value={newInventoryItem.categoria_id}
-                                    onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, categoria_id: e.target.value })}
-                                    options={[
-                                       { value: '', label: 'Seleccione uma categoria' },
-                                       ...categorias.map(cat => ({ value: cat.id, label: cat.nome }))
-                                    ]}
-                                    required
-                                 />
-                              </div>
-                              <Input label="Código/SKU" placeholder="Ex: SERV-001"
-                                 value={newInventoryItem.codigo} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, codigo: e.target.value })}
-                              />
-                           </div>
-
-                           <div className="grid grid-cols-3 gap-6 pt-4 border-t border-zinc-50">
-                              <Input label="Preço Unitário" type="number"
-                                 value={newInventoryItem.preco_unitario} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, preco_unitario: Number(e.target.value) })}
-                              />
-                              <Input label="Qtd. Inicial" type="number"
-                                 value={newInventoryItem.quantidade_atual} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, quantidade_atual: Number(e.target.value) })}
-                              />
-                              <Input label="Stock Mínimo" type="number"
-                                 value={newInventoryItem.quantidade_minima} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, quantidade_minima: Number(e.target.value) })}
-                              />
-                           </div>
-
-                           <div className="flex gap-4 pt-4">
-                              <div className="flex-1">
-                                 <Input label="Unidade" placeholder="Ex: un, kg, hora..."
-                                    value={newInventoryItem.unidade} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, unidade: e.target.value })}
-                                 />
-                              </div>
-                              <div className="flex-1">
-                                 <Input label="Referência Interna" placeholder="Opcional..."
-                                    value={newInventoryItem.referencia} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, referencia: e.target.value })}
-                                 />
-                              </div>
-                           </div>
-
-                           <div className="pt-6">
-                              <button type="submit" disabled={isSavingItem} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
-                                 {isSavingItem ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
-                                 {isSavingItem ? 'A Processar...' : 'Adicionar ao Catálogo'}
-                              </button>
-                           </div>
-                        </form>
-                     </div>
-                  </div>
-               )}
-               {/* --- MODAL NOVO FUNCIONÁRIO --- */}
-               {showEmployeeModal && (
-                  <div className="fixed inset-0 z-[130] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-                     <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-900 text-white">
-                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
-                                 <UserPlus size={24} />
-                              </div>
-                              <div>
-                                 <h2 className="text-xl font-black uppercase tracking-tight">Registar Colaborador</h2>
-                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{currentEmpresa?.nome}</p>
-                              </div>
-                           </div>
-                           <button onClick={() => setShowEmployeeModal(false)} className="p-3 text-white/50 hover:bg-white/10 rounded-full transition-all"><X size={24} /></button>
-                        </div>
-                        <form onSubmit={handleSaveEmployee} className="p-10 space-y-10">
-                           {/* Bloco 1: Identificação e Base */}
-                           <div className="space-y-4">
-                              <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">Informação Base e Identificação</h4>
-                              <div className="grid grid-cols-3 gap-6">
-                                 <div className="col-span-1">
-                                    <Input label="Nome Completo" required value={newEmployee.nome} onChange={e => setNewEmployee({ ...newEmployee, nome: e.target.value })} placeholder="Ex: João Manuel dos Santos" />
+                              {/* Totais Finas */}
+                              <div className="grid grid-cols-3 gap-8 pt-10 border-t-4 border-zinc-100">
+                                 <div className="text-center">
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total Bruto</p>
+                                    <p className="text-xl font-bold text-zinc-900">{safeFormatAOA(Number((selectedFolha as any).salario_bruto) || (Number(selectedFolha.salario_base) + Number(selectedFolha.subsidios)))}</p>
                                  </div>
-                                 <Input label="Função / Cargo" required value={newEmployee.funcao} onChange={e => setNewEmployee({ ...newEmployee, funcao: e.target.value })} placeholder="Ex: Contabilista Sénior" />
-                                 <Input label="NIF" value={newEmployee.nif} onChange={e => setNewEmployee({ ...newEmployee, nif: e.target.value })} placeholder="000000000LA000" />
-
-                                 <Input label="Salário Base (AOA)" type="number" required value={newEmployee.salario_base} onChange={e => setNewEmployee({ ...newEmployee, salario_base: Number(e.target.value) })} />
-                                 <Input label="N.º Segurança Social" value={newEmployee.numero_ss} onChange={e => setNewEmployee({ ...newEmployee, numero_ss: e.target.value })} placeholder="00000000000" />
-                                 <div className="flex items-end pb-1">
-                                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 w-full">
-                                       <p className="text-[9px] font-bold text-zinc-400 uppercase">Cálculo Estimado</p>
-                                       <p className="text-xs font-black text-zinc-900">IRT/INSS Automático</p>
-                                    </div>
+                                 <div className="text-center">
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total Descontos</p>
+                                    <p className="text-xl font-bold text-red-500">-{safeFormatAOA(Number((selectedFolha as any).total_descontos) || (Number(selectedFolha.inss_trabalhador) + Number(selectedFolha.irt)))}</p>
                                  </div>
-                              </div>
-                           </div>
-
-                           {/* Bloco 2: Subsídios Mensais e Anuais (Lado a Lado) */}
-                           <div className="grid grid-cols-2 gap-8">
-                              <div className="p-6 bg-zinc-50/50 rounded-3xl border border-zinc-100 space-y-6">
-                                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">Subsídios Mensais Fixos</h4>
-                                 <div className="grid grid-cols-2 gap-4">
-                                    <Input label="Alimentação" type="number" value={newEmployee.subsidio_alimentacao} onChange={e => setNewEmployee({ ...newEmployee, subsidio_alimentacao: Number(e.target.value) })} />
-                                    <Input label="Transporte" type="number" value={newEmployee.subsidio_transporte} onChange={e => setNewEmployee({ ...newEmployee, subsidio_transporte: Number(e.target.value) })} />
+                                 <div className="text-center">
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Salário a Receber</p>
+                                    <p className="text-3xl font-black text-green-600">{safeFormatAOA(Number(selectedFolha.salario_liquido))}</p>
                                  </div>
                               </div>
 
-                              <div className="p-6 bg-yellow-50/30 rounded-3xl border border-yellow-100 space-y-6">
-                                 <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">Bónus, Horas e Adiantamentos</h4>
-                                 <div className="grid grid-cols-2 gap-4">
-                                    <Input label="Horas Extras (Valor)" type="number" value={newEmployee.valor_hora_extra_base} onChange={e => setNewEmployee({ ...newEmployee, valor_hora_extra_base: Number(e.target.value) })} />
-                                    <Input label="Adiantamento Padrão" type="number" value={newEmployee.adiantamento_padrao} onChange={e => setNewEmployee({ ...newEmployee, adiantamento_padrao: Number(e.target.value) })} />
-                                    <Input label="Base Férias" type="number" value={newEmployee.subsidio_ferias_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_ferias_base: Number(e.target.value) })} />
-                                    <Input label="Base Natal" type="number" value={newEmployee.subsidio_natal_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_natal_base: Number(e.target.value) })} />
-                                    <div className="col-span-2">
-                                       <Input label="Gratificações Mensais" type="number" value={newEmployee.outras_bonificacoes_base} onChange={e => setNewEmployee({ ...newEmployee, outras_bonificacoes_base: Number(e.target.value) })} />
-                                    </div>
+                              <div className="pt-10 flex justify-between items-end">
+                                 <div className="space-y-4">
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Assinatura da Entidade</p>
+                                    <div className="w-64 h-px bg-zinc-200"></div>
                                  </div>
-                              </div>
-                           </div>
-
-                           <div className="pt-4">
-                              <button type="submit" disabled={isProcessingPayroll} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
-                                 {isProcessingPayroll ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
-                                 {isProcessingPayroll ? 'Processando...' : 'Confirmar Registo do Funcionário'}
-                              </button>
-                           </div>
-                        </form>
-                     </div>
-                  </div>
-               )}
-
-               {/* --- MODAL RECIBO DE SALÁRIO --- */}
-               {selectedFolha && (
-                  <div className="fixed inset-0 z-[140] flex items-center justify-center bg-zinc-950/90 backdrop-blur-xl p-4 animate-in fade-in">
-                     <div className="bg-white w-full max-w-3xl rounded-[4rem] shadow-3xl overflow-hidden animate-in zoom-in-95 relative print:shadow-none print:rounded-none">
-                        <div className="absolute top-8 right-8 flex gap-2 print:hidden">
-                           <button onClick={() => window.print()} className="p-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-2xl transition-all"><Printer size={24} /></button>
-                           <button onClick={() => setSelectedFolha(null)} className="p-4 bg-zinc-100 hover:bg-red-50 text-zinc-400 hover:text-red-500 rounded-2xl transition-all"><X size={24} /></button>
-                        </div>
-
-                        <div className="p-16 space-y-12">
-                           {/* Cabeçalho do Recibo */}
-                           <div className="flex justify-between items-start border-b-4 border-zinc-900 pb-10">
-                              <div>
-                                 <h2 className="text-4xl font-black uppercase tracking-tighter text-zinc-900 leading-none mb-2">Recibo de Salário</h2>
-                                 <p className="text-lg font-bold text-zinc-400 uppercase tracking-widest">Mês de Referência: {selectedFolha.mes_referencia}</p>
-                              </div>
-                              <div className="text-right">
-                                 <p className="text-xl font-black text-zinc-900 uppercase">{currentEmpresa?.nome}</p>
-                                 <p className="text-sm font-bold text-zinc-400">NIF: {currentEmpresa?.nif || '---'}</p>
-                              </div>
-                           </div>
-
-                           {/* Dados do Funcionário */}
-                           <div className="grid grid-cols-2 gap-10">
-                              <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Colaborador</p>
-                                 <p className="text-2xl font-black text-zinc-900 uppercase tracking-tighter">{selectedFolha.funcionario_nome}</p>
-                              </div>
-                              <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Cargo / Função</p>
-                                 <p className="text-xl font-black text-zinc-700 uppercase tracking-tighter">Funcionário Activo</p>
-                              </div>
-                           </div>
-
-                           {/* Tabela de Vencimentos e Descontos */}
-                           <div className="space-y-4">
-                              <div className="grid grid-cols-12 gap-4 px-6 text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">
-                                 <div className="col-span-6">Descrição</div>
-                                 <div className="col-span-3 text-right">Vencimentos</div>
-                                 <div className="col-span-3 text-right">Descontos</div>
-                              </div>
-                              <div className="space-y-2">
-                                 {[
-                                    { d: 'Salário Base', v: Number(selectedFolha.salario_base), type: 'V' },
-                                    { d: 'Subsídios (Alim./Transp.)', v: Number(selectedFolha.subsidios), type: 'V' },
-                                    { d: 'Horas Extras', v: Number((selectedFolha as any).horas_extras || 0), type: 'V' },
-                                    { d: 'Subsídio de Férias', v: Number((selectedFolha as any).subsidio_ferias || 0), type: 'V' },
-                                    { d: 'Subsídio de Natal', v: Number((selectedFolha as any).subsidio_natal || 0), type: 'V' },
-                                    { d: 'Bónus e Gratificações', v: Number((selectedFolha as any).outras_bonificacoes || 0), type: 'V' },
-                                    { d: 'INSS (3%)', v: Number(selectedFolha.inss_trabal_ador || selectedFolha.inss_trabalhador), type: 'D' },
-                                    { d: 'IRT / Taxa Fiscal', v: Number(selectedFolha.irt), type: 'D' },
-                                    { d: 'Desconto Atrasos/Faltas', v: Number((selectedFolha as any).desconto_atrasos || 0), type: 'D' },
-                                    { d: 'Desconto Férias', v: Number((selectedFolha as any).desconto_ferias || 0), type: 'D' },
-                                    { d: 'Adiantamento Salarial', v: Number((selectedFolha as any).adiantamento_salarial || 0), type: 'D' },
-                                 ].filter(item => item.v > 0 || item.type === 'D').map((item, idx) => (
-                                    <div key={idx} className="grid grid-cols-12 gap-4 px-6 py-4 rounded-2xl hover:bg-zinc-50 transition-colors">
-                                       <div className="col-span-6 text-sm font-bold text-zinc-900">{item.d}</div>
-                                       <div className="col-span-3 text-right text-sm font-black text-green-600">{item.type === 'V' ? safeFormatAOA(item.v) : ''}</div>
-                                       <div className="col-span-3 text-right text-sm font-black text-red-500">{item.type === 'D' ? safeFormatAOA(item.v) : ''}</div>
-                                    </div>
-                                 ))}
-                              </div>
-                           </div>
-
-                           {/* Totais Finas */}
-                           <div className="grid grid-cols-3 gap-8 pt-10 border-t-4 border-zinc-100">
-                              <div className="text-center">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total Bruto</p>
-                                 <p className="text-xl font-bold text-zinc-900">{safeFormatAOA(Number((selectedFolha as any).salario_bruto) || (Number(selectedFolha.salario_base) + Number(selectedFolha.subsidios)))}</p>
-                              </div>
-                              <div className="text-center">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total Descontos</p>
-                                 <p className="text-xl font-bold text-red-500">-{safeFormatAOA(Number((selectedFolha as any).total_descontos) || (Number(selectedFolha.inss_trabalhador) + Number(selectedFolha.irt)))}</p>
-                              </div>
-                              <div className="text-center">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Salário a Receber</p>
-                                 <p className="text-3xl font-black text-green-600">{safeFormatAOA(Number(selectedFolha.salario_liquido))}</p>
-                              </div>
-                           </div>
-
-                           <div className="pt-10 flex justify-between items-end">
-                              <div className="space-y-4">
-                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Assinatura da Entidade</p>
-                                 <div className="w-64 h-px bg-zinc-200"></div>
-                              </div>
-                              <div className="text-right">
-                                 <p className="text-[8px] font-black text-zinc-300 uppercase tracking-widest">Processado via Amazing ContábilExpert ERP</p>
+                                 <div className="text-right">
+                                    <p className="text-[8px] font-black text-zinc-300 uppercase tracking-widest">Processado via Amazing ContábilExpert ERP</p>
+                                 </div>
                               </div>
                            </div>
                         </div>
                      </div>
-                  </div>
-               )}
+                  )
+               }
             </div >
          </main >
       </div >
