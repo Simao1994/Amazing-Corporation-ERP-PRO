@@ -676,7 +676,10 @@ const AccountingPage: React.FC = () => {
          if (dataPeriodos && dataPeriodos.length > 0) {
             setPeriodos(dataPeriodos as any);
             if (!selectedPeriodoId) {
-               setSelectedPeriodoId(dataPeriodos[0].id);
+               // Inicialização inteligente: primeiro período da primeira empresa
+               const firstEmpId = emps[0]?.id;
+               const initialPeriod = (dataPeriodos as any[]).find(p => p.empresa_id === firstEmpId) || dataPeriodos[0];
+               setSelectedPeriodoId(initialPeriod.id);
             }
          }
 
@@ -791,6 +794,8 @@ const AccountingPage: React.FC = () => {
 
       if (!isPeriodValid && companyPeriods.length > 0) {
          setSelectedPeriodoId(companyPeriods[0].id);
+      } else if (companyPeriods.length === 0) {
+         setSelectedPeriodoId('');
       }
    }, [selectedEmpresaId, periodos, selectedPeriodoId]);
 
@@ -1613,10 +1618,13 @@ const AccountingPage: React.FC = () => {
                            onChange={(e) => setSelectedPeriodoId(e.target.value)}
                            className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase text-zinc-800 pr-8 cursor-pointer outline-none"
                         >
-                           {(periodos || []).filter(p => p.empresa_id === selectedEmpresaId).map(p => (
-                              <option key={p.id} value={p.id}>{`${p.mes}/${p.ano} - ${p.status}`}</option>
-                           ))}
-                           {(!periodos || periodos.length === 0) && <option value="">Sem Ciclos</option>}
+                           {(() => {
+                              const filtered = (periodos || []).filter(p => p.empresa_id === selectedEmpresaId);
+                              if (filtered.length === 0) return <option value="">Sem Ciclos</option>;
+                              return filtered.map(p => (
+                                 <option key={p.id} value={p.id}>{`${p.mes}/${p.ano} - ${p.status}`}</option>
+                              ));
+                           })()}
                         </select>
                      </div>
                   </div>
