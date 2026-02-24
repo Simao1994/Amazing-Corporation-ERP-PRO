@@ -507,7 +507,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          const novosRecibos = ativos.map(f => {
             const calc = calculatePayrollForEmployee(f);
             return {
-               id: `REC-${Date.now()}-${f.id.substring(0, 5)}`,
+               id: `REC-${Date.now()}-${f.id.substring(0, 5)}-${Math.random().toString(36).substring(2, 7)}`,
                funcionario_id: f.id,
                nome: f.nome,
                mes: currentMonthName,
