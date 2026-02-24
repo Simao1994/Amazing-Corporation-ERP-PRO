@@ -675,7 +675,7 @@ const CorporateHome: React.FC = () => {
     <div className="min-h-screen bg-white font-sans text-zinc-900 scroll-smooth selection:bg-yellow-500 selection:text-zinc-900 overflow-x-hidden">
       {/* NAVIGATION BAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-md border-b border-white/5 px-6 md:px-12 py-5 flex items-center justify-between shadow-2xl">
-        <Logo className="h-16 md:h-20 cursor-pointer brightness-0 invert" onClick={() => scrollIntoView('inicio')} />
+        <Logo className="h-16 md:h-20 cursor-pointer" onClick={() => scrollIntoView('inicio')} />
         <div className="hidden lg:flex items-center gap-10 text-[12px] font-black uppercase tracking-widest text-white">
           <button onClick={() => scrollIntoView('inicio')} className="hover:text-yellow-500 transition-colors">Início</button>
           <button onClick={() => scrollIntoView('sectores')} className="hover:text-yellow-500 transition-colors">Sectores</button>
