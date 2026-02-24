@@ -189,95 +189,68 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const currentFiscalYear = new Date().getFullYear();
 
    const fetchHRData = async () => {
-      setLoading(true);
-      try {
-         const { data: funcData, error: funcError } = await supabase.from('funcionarios').select('*').order('nome');
-         if (funcError) throw funcError;
-         let filteredFuncs = funcData || [];
+      // 1. Background fetch for all keys
+      const keys = [STORAGE_KEYS.FUNCIONARIOS, STORAGE_KEYS.RECIBOS, STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS];
+      await AmazingStorage.loadSpecificKeys(keys);
 
-         // Se for diretor (não HR/Admin), filtrar por departamento
-         if (!isHRAdmin && user.role.includes('director')) {
-            // Tentar encontrar o departamento do diretor baseado no papel
-            const deptId = user.role.split('_').pop() === 'finance' ? 'Financeiro' : '';
-            // Nota: No mundo real, buscaríamos o depto associado ao ID do usuário.
-            // Aqui usaremos uma lógica de filtro simplificada se houver correspondência.
-            if (deptId) {
-               filteredFuncs = filteredFuncs.filter((f: any) => f.departamento === deptId);
-            }
-         }
-
-         if (funcData) {
-            setFuncionarios(filteredFuncs.map((f: any) => ({
-               id: f.id,
-               nome: f.nome,
-               data_nascimento: f.notas?.match(/Nascimento: (.*?)(?:$|\n)/)?.[1] || '',
-               funcao: f.cargo,
-               bilhete: f.bi,
-               telefone: f.telefone,
-               morada: f.notas?.match(/Morada: (.*?)(?:$|\n)/)?.[1] || '',
-               departamento_id: f.departamento,
-               data_admissao: f.data_admissao,
-               tipo_contrato: f.notas?.match(/Contrato: (.*?)(?:$|\n)/)?.[1] || 'Efectivo',
-               status: f.status as any,
-               nivel_escolaridade: f.notas?.match(/Escolaridade: (.*?)(?:$|\n)/)?.[1] || '',
-               area_formacao: f.notas?.match(/Curso: (.*?)(?:$|\n)/)?.[1] || '',
-               salario_base: Number(f.salario),
-               subsidio_alimentacao: f.subsidio_alimentacao || 0,
-               subsidio_transporte: f.subsidio_transporte || 0,
-               bonus_assiduidade: 0,
-               outros_bonus: f.outros_bonus || 0,
-               foto_url: f.foto_url,
-               documentos: [],
-               historico_alteracoes: [],
-               tempo_contrato: f.notas?.match(/Tempo: (.*?)(?:$|\n)/)?.[1] || '',
-               provincia: f.notas?.match(/Provincia: (.*?)(?:$|\n)/)?.[1] || 'Benguela',
-               municipio: f.notas?.match(/Municipio: (.*?)(?:$|\n)/)?.[1] || '',
-               nome_pai: f.notas?.match(/Pai: (.*?)(?:$|\n)/)?.[1] || '',
-               nome_mae: f.notas?.match(/Mae: (.*?)(?:$|\n)/)?.[1] || '',
-               telefone_alternativo: f.notas?.match(/TelAlt: (.*?)(?:$|\n)/)?.[1] || ''
-            })));
-         }
-
-         const { data: presData, error: presError } = await supabase.from('hr_presencas').select('*').order('data', { ascending: false });
-         if (presError) throw presError;
-         setPresencas(presData || []);
-
-         const { data: recData, error: recError } = await supabase.from('hr_recibos').select('*').order('created_at', { ascending: false });
-         if (recError) throw recError;
-         setRecibos(recData.map((r: any) => ({
-            id: r.id,
-            funcionario_id: r.funcionario_id,
-            nome: funcionarios.find(f => f.id === r.funcionario_id)?.nome || 'Colaborador',
-            mes: r.mes,
-            ano: r.ano,
-            base: r.base,
-            subsidios: r.subsidios,
-            subsidio_alimentacao: r.subsidio_alimentacao || 0,
-            subsidio_transporte: r.subsidio_transporte || 0,
-            horas_extras_valor: r.horas_extras_valor,
-            bonus_premios: r.bonus_premios || 0,
-            faltas_desconto: r.faltas_desconto,
-            inss_trabalhador: r.inss_trabalhador,
-            irt: r.irt,
-            adiantamentos: r.adiantamentos || 0,
-            bruto: r.bruto || 0,
-            liquido: r.liquido,
-            data_emissao: r.data_emissao
+      // 2. Update states from fresh cache
+      const funcData = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
+      if (funcData.length > 0) {
+         setFuncionarios(funcData.map((f: any) => ({
+            id: f.id,
+            nome: f.nome,
+            data_nascimento: f.notas?.match(/Nascimento: (.*?)(?:$|\n)/)?.[1] || '',
+            funcao: f.cargo,
+            bilhete: f.bi,
+            telefone: f.telefone,
+            morada: f.notas?.match(/Morada: (.*?)(?:$|\n)/)?.[1] || '',
+            departamento_id: f.departamento,
+            data_admissao: f.data_admissao,
+            tipo_contrato: f.notas?.match(/Contrato: (.*?)(?:$|\n)/)?.[1] || 'Efectivo',
+            status: f.status as any,
+            nivel_escolaridade: f.notas?.match(/Escolaridade: (.*?)(?:$|\n)/)?.[1] || '',
+            area_formacao: f.notas?.match(/Curso: (.*?)(?:$|\n)/)?.[1] || '',
+            salario_base: Number(f.salario),
+            subsidio_alimentacao: f.subsidio_alimentacao || 0,
+            subsidio_transporte: f.subsidio_transporte || 0,
+            bonus_assiduidade: 0,
+            outros_bonus: f.outros_bonus || 0,
+            foto_url: f.foto_url,
+            documentos: [],
+            historico_alteracoes: [],
+            tempo_contrato: f.notas?.match(/Tempo: (.*?)(?:$|\n)/)?.[1] || '',
+            provincia: f.notas?.match(/Provincia: (.*?)(?:$|\n)/)?.[1] || 'Benguela',
+            municipio: f.notas?.match(/Municipio: (.*?)(?:$|\n)/)?.[1] || '',
+            nome_pai: f.notas?.match(/Pai: (.*?)(?:$|\n)/)?.[1] || '',
+            nome_mae: f.notas?.match(/Mae: (.*?)(?:$|\n)/)?.[1] || '',
+            telefone_alternativo: f.notas?.match(/TelAlt: (.*?)(?:$|\n)/)?.[1] || ''
          })));
-
-         const { data: metaData, error: metaError } = await supabase.from('hr_metas').select('*');
-         if (metaError) throw metaError;
-         setMetas(metaData || []);
-
-      } catch (error) {
-         console.error('Error fetching HR data:', error);
-      } finally {
-         setLoading(false);
       }
+
+      setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
+      setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
+      setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
    };
 
    useEffect(() => {
-      fetchHRData();
+      // 1. Initial UI unblock with local storage
+      const localStaff = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
+      if (localStaff.length > 0) {
+         // This map is repetitive, but necessary for immediate UI if cache exists
+         setFuncionarios(localStaff.map((f: any) => ({
+            ...f,
+            salario_base: Number(f.salario || f.salario_base)
+         })));
+         setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
+         setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
+         setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
+         setLoading(false);
+      } else {
+         setLoading(true);
+      }
+
+      // 2. Background sync
+      fetchHRData().finally(() => setLoading(false));
    }, []);
 
    // Atualiza idade quando data de nascimento muda
@@ -488,6 +461,10 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       const ativos = funcionarios.filter(f => f.status === 'ativo');
       if (ativos.length === 0) return alert("Não existem colaboradores activos.");
 
+      // 1. Hard check for session to avoid 401s
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return alert("Sessão expirada. Reinicie a aplicação.");
+
       // Verificar se já existe processamento para este mês
       const { data: existing } = await supabase.from('hr_recibos').select('id').eq('mes', currentMonthName).eq('ano', currentFiscalYear);
 
@@ -495,7 +472,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          const confirmUpdate = confirm(`A folha de ${currentMonthName}/${currentFiscalYear} já foi processada (${existing.length} recibos). Deseja ANULAR os anteriores e processar novamente?`);
          if (!confirmUpdate) return;
 
-         // Eliminar anteriores para garantir integridade
+         // Eliminar anteriores
          const { error: delError } = await supabase.from('hr_recibos').delete().eq('mes', currentMonthName).eq('ano', currentFiscalYear);
          if (delError) return alert("Erro ao limpar processamento anterior.");
       } else {
@@ -512,31 +489,45 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                nome: f.nome,
                mes: currentMonthName,
                ano: currentFiscalYear,
-               base: f.salario_base,
-               subsidios: Number((calc.subAlim + calc.subTrans).toFixed(2)),
-               // Mapeamento enriquecido conforme discussão de layout
-               subsidio_alimentacao: Number(calc.subAlim.toFixed(2)),
-               subsidio_transporte: Number(calc.subTrans.toFixed(2)),
-               horas_extras_valor: Number(calc.valorHorasExtras.toFixed(2)),
-               bonus_premios: Number(calc.premiosBonus.toFixed(2)),
-               inss_trabalhador: Number(calc.inss.toFixed(2)),
-               irt: Number(calc.irt.toFixed(2)),
-               faltas_desconto: Number(calc.descontoFaltas.toFixed(2)),
+               base: f.salario_base || 0,
+               subsidios: Number((calc.subsidiosTotal || 0).toFixed(2)),
+               subsidio_alimentacao: Number((calc.subAlim || 0).toFixed(2)),
+               subsidio_transporte: Number((calc.subTrans || 0).toFixed(2)),
+               horas_extras_valor: Number((calc.valorHorasExtras || 0).toFixed(2)),
+               bonus_premios: Number((calc.premiosBonus || 0).toFixed(2)),
+               inss_trabalhador: Number((calc.inss || 0).toFixed(2)),
+               irt: Number((calc.irt || 0).toFixed(2)),
+               faltas_desconto: Number((calc.descontoFaltas || 0).toFixed(2)),
                adiantamentos: Number((calc.inputs.adiantamento || 0).toFixed(2)),
-               bruto: Number(calc.bruto.toFixed(2)),
-               liquido: Number(calc.liquido.toFixed(2)),
+               bruto: Number((calc.bruto || 0).toFixed(2)),
+               liquido: Number((calc.liquido || 0).toFixed(2)),
                data_emissao: new Date().toISOString()
             };
          });
 
-         const { error } = await supabase.from('hr_recibos').insert(novosRecibos);
-         if (error) throw error;
+         let { error } = await supabase.from('hr_recibos').insert(novosRecibos);
 
-         fetchHRData();
-         AmazingStorage.logAction('Payroll', 'RH', `Folha de ${currentMonthName} processada com sucesso. (Bônus e Subsídios detalhados)`);
+         // Retry once on transient error (401 or specific codes)
+         if (error && (error.code === 'PGRST301' || error.message.includes('401'))) {
+            console.warn("Transient auth error, retrying payroll insert...");
+            const { data: { session: retrySession } } = await supabase.auth.getSession();
+            if (retrySession) {
+               const { error: retryError } = await supabase.from('hr_recibos').insert(novosRecibos);
+               error = retryError;
+            }
+         }
+
+         if (error) {
+            console.error("Payroll Insert Error:", error);
+            throw error;
+         }
+
+         await fetchHRData();
+         AmazingStorage.logAction('Payroll', 'RH', `Folha de ${currentMonthName} processada com sucesso.`);
          alert("Folha de salários processada e fechada com sucesso!");
-      } catch (error) {
-         alert("Falha no processamento.");
+      } catch (error: any) {
+         console.error("Critical Payroll Error:", error);
+         alert(`Falha no processamento: ${error.message || 'Erro de rede ou permissão'}`);
       } finally {
          setIsProcessing(false);
       }

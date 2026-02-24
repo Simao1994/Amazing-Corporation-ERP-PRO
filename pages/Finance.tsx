@@ -31,12 +31,15 @@ const FinancePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchNotas = async () => {
-    setLoading(true);
+    // Only show loader if we have no data at all
+    if (notas.length === 0) setLoading(true);
+
     try {
       const { data, error } = await supabase
         .from('fin_notas')
         .select('*')
         .order('created_at', { ascending: false });
+
       if (error) throw error;
       if (data) {
         const mapped = data.map((n: any) => ({
@@ -44,6 +47,8 @@ const FinancePage: React.FC = () => {
           id: n.short_id
         }));
         setNotas(mapped as unknown as NotaFiscal[]);
+        // Persist to local storage for next visit
+        localStorage.setItem(STORAGE_KEYS.NOTAS, JSON.stringify(mapped));
       }
     } catch (error) {
       console.error('Error fetching invoices:', error);
@@ -52,7 +57,16 @@ const FinancePage: React.FC = () => {
     }
   };
 
+  // Cache-First loading
   useEffect(() => {
+    // 1. Load from local cache immediately
+    const cached = AmazingStorage.get<NotaFiscal[]>(STORAGE_KEYS.NOTAS, []);
+    if (cached.length > 0) {
+      setNotas(cached);
+      setLoading(false);
+    }
+
+    // 2. Fetch from cloud in background
     fetchNotas();
   }, []);
 

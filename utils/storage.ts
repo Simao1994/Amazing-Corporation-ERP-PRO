@@ -135,13 +135,20 @@ export const AmazingStorage = {
 
   loadSpecificKeys: async (keys: string[]) => {
     try {
+      // Return local cache immediately if it exists to unblock UI
+      const results: Record<string, any> = {};
+      keys.forEach(k => {
+        const val = localStorage.getItem(k);
+        if (val) results[k] = JSON.parse(val);
+      });
+
+      // Background fetch to update cache
       const { data, error } = await supabase
         .from('erp_data')
         .select('*')
         .in('key_name', keys);
 
-      if (error) throw error;
-      if (data) {
+      if (!error && data) {
         data.forEach((row: any) => {
           localStorage.setItem(row.key_name, JSON.stringify(row.json_data));
         });
