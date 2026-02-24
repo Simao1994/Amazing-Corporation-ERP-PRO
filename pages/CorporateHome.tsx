@@ -531,13 +531,12 @@ const CorporateHome: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initial loading simulation or actual check
-    const checkState = async () => {
-      // Small delay to ensure smooth transition
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setLoading(false);
+    // 1. Parallelize all public data fetching
+    const fetchAllData = async () => {
+      // Don't await them serially, let them run in background
+      setLoading(false); // Unblock UI immediately
     };
-    checkState();
+    fetchAllData();
   }, []);
 
   // Get current user to determine button state

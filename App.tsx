@@ -57,45 +57,41 @@ const App: React.FC = () => {
       console.log(`Auth event: ${event}`);
 
       if (session?.user) {
-        try {
-          // Load profile with timeout/fallback
-          const { data: profile } = await getUserProfile(session.user.id);
+        // 1. Immediate unblock of UI
+        setIsInitializing(false);
 
+        // 2. Parallel Background tasks
+        Promise.all([
+          getUserProfile(session.user.id),
+          AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]),
+          AmazingStorage.loadAllFromCloud()
+        ]).then(([{ data: profile }]) => {
           const userData: User = {
             id: session.user.id,
             email: session.user.email || '',
             nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
-            role: profile?.role || 'admin', // Fallback to admin if logged in but profile missing
+            role: profile?.role || 'admin',
           };
-
           setUser(userData);
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
-
-          // Background tasks
-          AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
-          setIsSyncing(true);
-          AmazingStorage.loadAllFromCloud().finally(() => setIsSyncing(false));
-
-        } catch (err) {
-          console.error("Critical error during app initialization:", err);
-          // Don't block the user if it's just a profile network error, use fallback
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            nome: 'Utilizador',
-            role: 'admin'
-          });
-        } finally {
-          setIsInitializing(false);
-        }
+        }).catch(err => {
+          console.error("Background initialization error:", err);
+          // Fallback if not already set
+          if (!user) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              nome: 'Utilizador',
+              role: 'admin'
+            });
+          }
+        });
       } else {
         setUser(null);
         localStorage.removeItem(STORAGE_KEYS.USER);
-
-        // Sync public info even if logged out
-        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]).finally(() => {
-          setIsInitializing(false);
-        });
+        setIsInitializing(false);
+        // Background sync for public info
+        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
       }
     });
 

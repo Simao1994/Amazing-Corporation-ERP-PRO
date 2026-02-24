@@ -81,9 +81,10 @@ export const AmazingStorage = {
 
   syncToCloud: async (key: string, data: any) => {
     try {
-      // Direct session check to avoid hanging
-      const sessionStr = localStorage.getItem('supabase.auth.token');
-      if (!sessionStr) return;
+      // FAST-PATH: Use localStorage directly for session detection
+      const hasSession = !!localStorage.getItem('supabase.auth.token') ||
+        !!localStorage.getItem('sb-jgktemwegesmmomlftgt-auth-token');
+      if (!hasSession) return;
 
       await supabase
         .from('erp_data')
