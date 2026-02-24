@@ -155,6 +155,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       salario_base: 0,
       subsidio_alimentacao: 0,
       subsidio_transporte: 0,
+      subsidio_ferias_base: 0,
+      subsidio_natal_base: 0,
+      outras_bonificacoes_base: 0,
       nif: '',
       numero_ss: ''
    });
@@ -1134,6 +1137,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             salario_base: newEmployee.salario_base,
             subsidio_alimentacao: newEmployee.subsidio_alimentacao,
             subsidio_transporte: newEmployee.subsidio_transporte,
+            subsidio_ferias_base: newEmployee.subsidio_ferias_base,
+            subsidio_natal_base: newEmployee.subsidio_natal_base,
+            outras_bonificacoes_base: newEmployee.outras_bonificacoes_base,
             nif: newEmployee.nif,
             numero_ss: newEmployee.numero_ss,
             empresa_id: selectedEmpresaId,
@@ -1143,7 +1149,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          if (error) throw error;
          alert("Funcionário registado com sucesso!");
          setShowEmployeeModal(false);
-         setNewEmployee({ nome: '', funcao: '', salario_base: 0, subsidio_alimentacao: 0, subsidio_transporte: 0, nif: '', numero_ss: '' });
+         setNewEmployee({
+            nome: '', funcao: '', salario_base: 0,
+            subsidio_alimentacao: 0, subsidio_transporte: 0,
+            subsidio_ferias_base: 0, subsidio_natal_base: 0, outras_bonificacoes_base: 0,
+            nif: '', numero_ss: ''
+         });
          fetchAccountingData();
       } catch (e: any) {
          alert(`Erro ao registar funcionário: ${e.message}`);
@@ -1182,10 +1193,28 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       try {
          const payrollBatch = funcionariosAtivos.map(f => {
             const base = Number(f.salario_base) || 0;
-            const inss = calculateINSS(base);
-            const irt = calculateIRT(base);
             const subAlim = Number((f as any).subsidio_alimentacao) || 0;
             const subTrans = Number((f as any).subsidio_transporte) || 0;
+            const bonifBase = Number((f as any).outras_bonificacoes_base) || 0;
+
+            // Cálculos Automáticos
+            let natal = 0;
+            let ferias = 0;
+
+            // Subsídio de Natal automático em Dezembro (mês 12)
+            if (activePeriodo.mes === 12) {
+               natal = Number((f as any).subsidio_natal_base) || base;
+            }
+
+            // Subsídio de Férias automático (para simplificar, vamos assumir que pode ser atribuído ou pago em Junho (mês 6) ou mediante flag)
+            // Vou implementar como mês 6 para demonstração de "automação"
+            if (activePeriodo.mes === 6) {
+               ferias = Number((f as any).subsidio_ferias_base) || base;
+            }
+
+            const rendimentoTributavel = base + subAlim + subTrans + bonifBase + natal + ferias;
+            const inss = calculateINSS(base); // INSS incide apenas sobre base e complementos específicos (simplificando para base)
+            const irt = calculateIRT(rendimentoTributavel - inss.trabalhador); // IRT incide sobre líquido de INSS
 
             return {
                funcionario_id: f.id,
@@ -1195,11 +1224,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                empresa_id: selectedEmpresaId,
                salario_base: base,
                subsidios: subAlim + subTrans,
+               subsidio_ferias: ferias,
+               subsidio_natal: natal,
+               outras_bonificacoes: bonifBase,
                inss_trabalhador: inss.trabalhador,
                inss_empresa: inss.empresa,
                irt: irt,
                seguro_trabalho: base * 0.01,
-               salario_liquido: (base + subAlim + subTrans) - (inss.trabalhador + irt),
+               salario_liquido: rendimentoTributavel - (inss.trabalhador + irt),
                status: 'Processado'
             };
          });
@@ -1209,7 +1241,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          if (fError) throw fError;
 
          // 2. Criar Lançamento Contábil Correspondente
-         const totalBruto = (payrollBatch || []).reduce((acc, f) => acc + f.salario_base + f.subsidios, 0);
+         const totalBruto = (payrollBatch || []).reduce((acc, f) =>
+            acc + Number(f.salario_base) + Number(f.subsidios) + Number(f.subsidio_ferias) + Number(f.subsidio_natal) + Number(f.outras_bonificacoes), 0);
          const totalLiquido = (payrollBatch || []).reduce((acc, f) => acc + (Number(f.salario_liquido) || 0), 0);
          const totalDescontos = totalBruto - totalLiquido;
 
@@ -2881,10 +2914,28 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         {/* Mini Dashboard de Custos */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                            {[
-                              { label: 'Total Bruto', value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) => acc + (Number(f.salario_base) + Number(f.subsidios)), 0) || 0, color: 'zinc' },
-                              { label: 'Total Líquido', value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) => acc + (Number(f.salario_liquido) || 0), 0) || 0, color: 'sky' },
-                              { label: 'Encargos (INSS/IRT)', value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) => acc + (Number(f.inss_trabalhador) + Number(f.irt)), 0) || 0, color: 'red' },
-                              { label: 'Custo Empresa', value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) => acc + (Number(f.salario_base) + Number(f.subsidios) + Number(f.inss_empresa)), 0) || 0, color: 'yellow' },
+                              {
+                                 label: 'Total Bruto',
+                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) =>
+                                    acc + (Number(f.salario_base) + Number(f.subsidios) + Number((f as any).subsidio_ferias || 0) + Number((f as any).subsidio_natal || 0) + Number((f as any).outras_bonificacoes || 0)), 0) || 0,
+                                 color: 'zinc'
+                              },
+                              {
+                                 label: 'Total Líquido',
+                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) => acc + (Number(f.salario_liquido) || 0), 0) || 0,
+                                 color: 'sky'
+                              },
+                              {
+                                 label: 'Encargos (INSS/IRT)',
+                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) => acc + (Number(f.inss_trabalhador) + Number(f.irt)), 0) || 0,
+                                 color: 'red'
+                              },
+                              {
+                                 label: 'Custo Empresa',
+                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) =>
+                                    acc + (Number(f.salario_base) + Number(f.subsidios) + Number((f as any).subsidio_ferias || 0) + Number((f as any).subsidio_natal || 0) + Number((f as any).outras_bonificacoes || 0) + Number(f.inss_empresa)), 0) || 0,
+                                 color: 'yellow'
+                              },
                            ].map((card, i) => (
                               <div key={i} className={`bg-white p-6 rounded-3xl border border-${card.color}-100 shadow-sm transition-all hover:shadow-md`}>
                                  <p className={`text-[9px] font-black text-${card.color}-500 uppercase tracking-widest mb-2`}>{card.label}</p>
@@ -4516,9 +4567,18 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
 
                            <div className="grid grid-cols-2 gap-6 p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
-                              <h4 className="col-span-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">Subsídios e Suplementos</h4>
+                              <h4 className="col-span-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">Subsídios Reais</h4>
                               <Input label="Subsídio Alimentação" type="number" value={newEmployee.subsidio_alimentacao} onChange={e => setNewEmployee({ ...newEmployee, subsidio_alimentacao: Number(e.target.value) })} />
                               <Input label="Subsídio Transporte" type="number" value={newEmployee.subsidio_transporte} onChange={e => setNewEmployee({ ...newEmployee, subsidio_transporte: Number(e.target.value) })} />
+                           </div>
+
+                           <div className="grid grid-cols-2 gap-6 p-6 bg-yellow-50/50 rounded-3xl border border-yellow-100">
+                              <h4 className="col-span-2 text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">Subsídios Anuais e Bónus (Bases)</h4>
+                              <Input label="Base Subsídio Férias" type="number" value={newEmployee.subsidio_ferias_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_ferias_base: Number(e.target.value) })} />
+                              <Input label="Base Subsídio Natal" type="number" value={newEmployee.subsidio_natal_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_natal_base: Number(e.target.value) })} />
+                              <div className="col-span-2">
+                                 <Input label="Bónus / Gratificações Mensais" type="number" value={newEmployee.outras_bonificacoes_base} onChange={e => setNewEmployee({ ...newEmployee, outras_bonificacoes_base: Number(e.target.value) })} />
+                              </div>
                            </div>
 
                            <div className="pt-4">
@@ -4576,10 +4636,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <div className="space-y-2">
                                  {[
                                     { d: 'Salário Base', v: Number(selectedFolha.salario_base), type: 'V' },
-                                    { d: 'Subsídios e Outros', v: Number(selectedFolha.subsidios), type: 'V' },
+                                    { d: 'Subsídios (Alim./Transp.)', v: Number(selectedFolha.subsidios), type: 'V' },
+                                    { d: 'Subsídio de Férias', v: Number((selectedFolha as any).subsidio_ferias || 0), type: 'V' },
+                                    { d: 'Subsídio de Natal', v: Number((selectedFolha as any).subsidio_natal || 0), type: 'V' },
+                                    { d: 'Bónus e Gratificações', v: Number((selectedFolha as any).outras_bonificacoes || 0), type: 'V' },
                                     { d: 'INSS (3%)', v: Number(selectedFolha.inss_trabalhador), type: 'D' },
                                     { d: 'IRT (Imposto sobre o Rendimento)', v: Number(selectedFolha.irt), type: 'D' },
-                                 ].map((item, idx) => (
+                                 ].filter(item => item.v > 0 || item.type === 'D').map((item, idx) => (
                                     <div key={idx} className="grid grid-cols-12 gap-4 px-6 py-4 rounded-2xl hover:bg-zinc-50 transition-colors">
                                        <div className="col-span-6 text-sm font-bold text-zinc-900">{item.d}</div>
                                        <div className="col-span-3 text-right text-sm font-black text-green-600">{item.type === 'V' ? safeFormatAOA(item.v) : ''}</div>
@@ -4593,7 +4656,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            <div className="grid grid-cols-3 gap-8 pt-10 border-t-4 border-zinc-100">
                               <div className="text-center">
                                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total Bruto</p>
-                                 <p className="text-xl font-bold text-zinc-900">{safeFormatAOA(Number(selectedFolha.salario_base) + Number(selectedFolha.subsidios))}</p>
+                                 <p className="text-xl font-bold text-zinc-900">{safeFormatAOA(
+                                    Number(selectedFolha.salario_base) +
+                                    Number(selectedFolha.subsidios) +
+                                    Number((selectedFolha as any).subsidio_ferias || 0) +
+                                    Number((selectedFolha as any).subsidio_natal || 0) +
+                                    Number((selectedFolha as any).outras_bonificacoes || 0)
+                                 )}</p>
                               </div>
                               <div className="text-center">
                                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total Descontos</p>
