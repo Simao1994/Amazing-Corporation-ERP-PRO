@@ -64,16 +64,16 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="h-screen w-full bg-zinc-950 flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-zinc-950 flex items-center justify-center p-6 py-12 relative overflow-x-hidden">
       {/* Background Gradients - Static */}
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-500/5 blur-[120px] rounded-full pointer-events-none"></div>
 
       {/* Center Content Block */}
       <div className="w-full max-w-md flex flex-col items-center relative z-10 animate-in fade-in zoom-in-95 duration-700">
-        <div className="mb-10 flex flex-col items-center text-center">
-          <Logo className="h-24 w-auto" />
-          <p className="text-white text-sm mt-6 uppercase tracking-[0.6em] font-black">Sistema Empresarial ERP</p>
+        <div className="mb-8 flex flex-col items-center text-center">
+          <Logo className="h-16 md:h-20 w-auto" />
+          <p className="text-white text-sm mt-4 uppercase tracking-[0.6em] font-black">Sistema Empresarial ERP</p>
         </div>
 
         <div className="bg-white w-full rounded-[3rem] shadow-2xl p-10 space-y-6 border border-sky-100 relative">
@@ -158,7 +158,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {/* Footer info - Part of the centered block for stability */}
-        <div className="mt-10 text-center space-y-2">
+        <div className="mt-8 text-center space-y-2">
           <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 Amazing Corporation.</p>
           <p className="text-slate-300 text-[9px] font-medium italic">Sistema protegido por criptografia ponta-a-ponta.</p>
         </div>
