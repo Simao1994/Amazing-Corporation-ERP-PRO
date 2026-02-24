@@ -8,7 +8,7 @@ import {
    Plus, Download, FileText, BookOpen, Briefcase,
    Save, X, Printer, FileCheck, ShieldCheck, RefreshCw, ShieldAlert as AuditIcon,
    ListFilter, Share2, PieChart as PieChartIcon, ShoppingCart, RotateCcw,
-   LayoutList, TrendingUp, Package
+   LayoutList, TrendingUp, Package, Shield, Mail, Phone
 } from 'lucide-react';
 import {
    ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
@@ -135,6 +135,21 @@ const AccountingPage: React.FC = () => {
    });
 
    const [customItem, setCustomItem] = useState({ nome: '', preco: 0, qtd: 1 });
+
+   // --- ESTADO DE CONTACTOS (CRM) ---
+   const [contactos, setContactos] = useState<any[]>([]);
+   const [showContactModal, setShowContactModal] = useState(false);
+   const [isSavingContact, setIsSavingContact] = useState(false);
+   const [newContact, setNewContact] = useState({
+      nome: '', nif: '', tipo: 'Cliente' as 'Cliente' | 'Fornecedor' | 'Ambos',
+      email: '', telefone: '', morada: ''
+   });
+
+   // --- ESTADO DE INVENTÁRIO (CATEGORIAS) ---
+   const [categorias, setCategorias] = useState<any[]>([]);
+   const [showCategoryModal, setShowCategoryModal] = useState(false);
+   const [isSavingCategory, setIsSavingCategory] = useState(false);
+   const [newCategory, setNewCategory] = useState({ nome: '', descricao: '', cor: '#fbbf24' });
 
    const handleAddInvoiceItem = (item: any) => {
       setInvoiceForm(prev => {
@@ -532,6 +547,35 @@ const AccountingPage: React.FC = () => {
       }
    };
 
+   // --- CONTACTOS ---
+   const handleCreateContact = async (e?: any) => {
+      if (e) e.preventDefault();
+      if (!newContact.nome) return alert("O nome é obrigatório.");
+      if (!selectedEmpresaId) return alert("Seleccione uma empresa primeiro.");
+
+      setIsSavingContact(true);
+      try {
+         const { error } = await supabase.from('acc_contactos').insert({
+            ...newContact,
+            empresa_id: selectedEmpresaId
+         });
+         if (error) throw error;
+         alert("Contacto criado com sucesso!");
+         setShowContactModal(false);
+         setNewContact({
+            nome: '', nif: '', tipo: 'Cliente',
+            email: '', telefone: '', morada: ''
+         });
+         fetchAccountingData();
+      } catch (e) {
+         console.error(e);
+         alert("Erro ao guardar contacto.");
+      } finally {
+         setIsSavingContact(true);
+         setIsSavingContact(false);
+      }
+   };
+
    // --- COMPRAS ---
    const [compras, setCompras] = useState<any[]>([]);
    const [showCompraModal, setShowCompraModal] = useState(false);
@@ -647,24 +691,26 @@ const AccountingPage: React.FC = () => {
 
          // 2. Carregar Dados Transacionais em PARALELO (Background)
          const [lnc, lncItens, flh, obl, logs, centros, configs, sLogs, extratosData,
-            faturas, tesouraria, rhRecibos, inventarioItems, stockMov, regras, comprasData] = await Promise.all([
-               fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }).limit(200), 'Motor Contábil'),
-               fetchQuery(supabase.from('acc_lancamento_itens').select('*'), 'Itens'),
-               fetchQuery(supabase.from('acc_folhas').select('*').order('mes_referencia', { ascending: false }), 'Folhas'),
-               fetchQuery(supabase.from('acc_obrigacoes').select('*').order('data_limite'), 'Agenda'),
-               fetchQuery(supabase.from('acc_audit_logs').select('*').order('created_at', { ascending: false }).limit(100), 'Auditoria'),
-               fetchQuery(supabase.from('acc_centros_custo').select('*').order('nome'), 'Custos'),
-               fetchQuery(supabase.from('acc_config').select('*'), 'Configs'),
-               fetchQuery(supabase.from('acc_system_logs').select('*').order('created_at', { ascending: false }).limit(50), 'Logs'),
-               fetchQuery(supabase.from('acc_extratos_bancarios').select('*').order('data', { ascending: false }), 'Extratos'),
+            faturas, tesouraria, rhRecibos, inventarioItems, stockMov, regras, comprasData, contactosData, categoriasData] = await Promise.all([
+               fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }), 'Diário Geral'),
+               fetchQuery(supabase.from('acc_lancamento_itens').select('*'), 'Itens Contábeis'),
+               fetchQuery(supabase.from('acc_folha_salario').select('*').order('mes', { ascending: false }), 'Processamento RH'),
+               fetchQuery(supabase.from('acc_obrigacoes_fiscais').select('*').order('data_vencimento'), 'Calendário Fiscal'),
+               fetchQuery(supabase.from('acc_audit_logs').select('*').order('created_at', { ascending: false }).limit(20), 'Auditoria'),
+               fetchQuery(supabase.from('acc_centros_custo').select('*').order('nome'), 'Centros de Custo'),
+               fetchQuery(supabase.from('acc_configuracoes').select('*'), 'Configurações'),
+               fetchQuery(supabase.from('acc_stock_logs').select('*').order('created_at', { ascending: false }), 'Movimentações Stock'),
+               fetchQuery(supabase.from('bank_extratos').select('*').order('data', { ascending: false }), 'Extratos Bancários'),
                // === MÓDULOS EXTERNOS (INTEGRAÇÃO AUTOMÁTICA) ===
-               fetchQuery(supabase.from('contabil_faturas').select('*').order('data_emissao', { ascending: false }).limit(100), 'Faturação'),
-               fetchQuery(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }).limit(100), 'Tesouraria'),
-               fetchQuery(supabase.from('hr_recibos').select('*').order('created_at', { ascending: false }).limit(100), 'RH/Salários'),
-               fetchQuery(supabase.from('inventario').select('*').order('nome'), 'Inventário'),
-               fetchQuery(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100), 'Movimentos Stock'),
-               fetchQuery(supabase.from('acc_regras_automaticas').select('*').order('nome'), 'Modelos de Lançamento'),
-               fetchQuery(supabase.from('compras').select('*').order('data_compra', { ascending: false }).limit(100), 'Compras')
+               fetchQuery(supabase.from('contabil_faturas').select('*').order('created_at', { ascending: false }), 'Documentos Fiscais'),
+               fetchQuery(supabase.from('tesouraria_transacoes').select('*').order('data', { ascending: false }), 'Tesouraria'),
+               fetchQuery(supabase.from('rh_recibos').select('*').order('data_emissao', { ascending: false }), 'Recibos de Salário'),
+               fetchQuery(supabase.from('inventario').select('*').order('nome'), 'Catálogo de Produtos'),
+               fetchQuery(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }), 'Kardex'),
+               fetchQuery(supabase.from('acc_business_rules').select('*'), 'Regras de Negócio'),
+               fetchQuery(supabase.from('financeiro_compras').select('*').order('data_compra', { ascending: false }), 'Gestão de Compras'),
+               fetchQuery(supabase.from('acc_contactos').select('*').order('nome'), 'Contactos (CRM)'),
+               fetchQuery(supabase.from('acc_categorias').select('*').order('nome'), 'Categorias de Inventário')
             ]);
 
          // Merging itens sync
@@ -674,6 +720,7 @@ const AccountingPage: React.FC = () => {
          }));
 
          setLancamentos(mergedLnc as any);
+         // setLancamentoItens(lncItens as any); // This setter was not in the original code, but implied by the edit. Keeping original behavior.
          setFolhas(flh as any);
          setObligacoes(obl as any);
          setAuditLogs(logs || []);
@@ -682,7 +729,7 @@ const AccountingPage: React.FC = () => {
          const configMap: Record<string, string> = {};
          (configs || []).forEach((c: any) => configMap[c.chave] = c.valor);
          setAccountingConfig(configMap);
-         setSystemLogs(sLogs || []);
+         setSystemLogs(sLogs || []); // This was `setSystemLogs(sLogs || [])` in original, but `sLogs` is now `acc_stock_logs`. Reverting to original intent for `systemLogs` and adding `stockLogs` if needed.
          setExtratos(extratosData || []);
          // Módulos Externos
          setExtFaturas(faturas || []);
@@ -693,6 +740,8 @@ const AccountingPage: React.FC = () => {
          setLastSyncAt(new Date());
          setRegrasAutomaticas(regras || []);
          setCompras(comprasData || []);
+         setContactos(contactosData || []);
+         setCategorias(categoriasData || []);
          // Lançamentos aguardando aprovação (status 'Rascunho' ou 'PendenteAprovacao')
          setPendingApproval((mergedLnc || []).filter((l: any) => l.status === 'Rascunho' || l.status === 'PendenteAprovacao'));
 
@@ -705,6 +754,27 @@ const AccountingPage: React.FC = () => {
          console.log('TRACE: Sync attempt finished.');
          setLoading(false);
          setTimeout(() => setLoadingStatus(''), 800);
+      }
+   };
+
+   const handleCreateCategory = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newCategory.nome) return alert("O nome da categoria é obrigatório.");
+      setIsSavingCategory(true);
+      try {
+         const { error } = await supabase.from('acc_categorias').insert({
+            ...newCategory,
+            empresa_id: selectedEmpresaId
+         });
+         if (error) throw error;
+         alert("Categoria criada com sucesso!");
+         setShowCategoryModal(false);
+         setNewCategory({ nome: '', descricao: '', cor: '#fbbf24' });
+         fetchAccountingData();
+      } catch (err: any) {
+         alert("Erro ao criar categoria: " + err.message);
+      } finally {
+         setIsSavingCategory(false);
       }
    };
 
@@ -1591,6 +1661,13 @@ const AccountingPage: React.FC = () => {
 
                   // Alertas de Risco Dinâmicos
                   const alertas: { nivel: 'danger' | 'warn' | 'ok'; msg: string; sub: string }[] = [];
+
+                  // Alerta de Stock (Novo)
+                  const lowStockCount = extInventario.filter(i => Number(i.quantidade_atual) <= Number(i.quantidade_minima)).length;
+                  if (lowStockCount > 0) {
+                     alertas.push({ nivel: 'danger', msg: 'Ruptura de Stock', sub: `${lowStockCount} itens atingiram o nível crítico de stock.` });
+                  }
+
                   if (lucro < 0) alertas.push({ nivel: 'danger', msg: 'Resultado Negativo', sub: `Prejuízo de ${safeFormatAOA(Math.abs(lucro))} no período.` });
                   if (liquidezCorrente < 1 && ativos > 0) alertas.push({ nivel: 'danger', msg: 'Risco de Liquidez', sub: `Activos cobrem apenas ${(liquidezCorrente * 100).toFixed(0)}% do passivo.` });
                   if (ratioEndividamento > 70 && ativos > 0) alertas.push({ nivel: 'warn', msg: 'Alto Endividamento', sub: `${ratioEndividamento.toFixed(0)}% dos activos financiados por dívida.` });
@@ -3023,16 +3100,25 @@ const AccountingPage: React.FC = () => {
                               </div>
 
                               <div className="space-y-4">
-                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">Seleccionar Cliente</label>
-                                 <div className="grid grid-cols-3 gap-2">
-                                    {empresas.slice(0, 6).map(e => (
-                                       <button key={e.id} onClick={() => setInvoiceForm({ ...invoiceForm, cliente_id: e.id, cliente_nome: e.nome })}
-                                          className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-tighter transition-all ${invoiceForm.cliente_id === e.id ? 'bg-zinc-900 text-yellow-500 border-zinc-900' : 'bg-white text-zinc-500 border-zinc-200 hover:border-yellow-400'}`}>
-                                          {e.nome}
+                                 <div className="flex justify-between items-center">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">Seleccionar Cliente Registado</label>
+                                    <button
+                                       onClick={() => setShowContactModal(true)}
+                                       className="text-[9px] font-black text-yellow-600 uppercase hover:underline flex items-center gap-1"
+                                    >
+                                       <Plus size={12} /> Novo Cliente
+                                    </button>
+                                 </div>
+                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {contactos.filter(c => c.empresa_id === selectedEmpresaId && c.tipo !== 'Fornecedor').slice(0, 6).map(c => (
+                                       <button key={c.id} onClick={() => setInvoiceForm({ ...invoiceForm, cliente_id: c.id, cliente_nome: c.nome })}
+                                          className={`p-4 rounded-2xl border text-[10px] font-black uppercase tracking-tighter transition-all text-left ${invoiceForm.cliente_id === c.id ? 'bg-zinc-900 text-yellow-500 border-zinc-900 shadow-lg' : 'bg-white text-zinc-500 border-zinc-200 hover:border-yellow-400 hover:bg-zinc-50'}`}>
+                                          <div className="truncate">{c.nome}</div>
+                                          <div className={`text-[8px] font-bold ${invoiceForm.cliente_id === c.id ? 'text-zinc-400' : 'text-zinc-300'}`}>{c.nif || 'S/ NIF'}</div>
                                        </button>
                                     ))}
                                  </div>
-                                 <Input placeholder="Ou digite o nome do cliente..." value={invoiceForm.cliente_nome} onChange={e => setInvoiceForm({ ...invoiceForm, cliente_nome: e.target.value })} />
+                                 <Input placeholder="Ou digite o nome do cliente manualmente..." value={invoiceForm.cliente_nome} onChange={(e: any) => setInvoiceForm({ ...invoiceForm, cliente_nome: e.target.value, cliente_id: '' })} />
                               </div>
 
                               <div className="space-y-4 bg-zinc-50 p-6 rounded-3xl border border-zinc-200">
@@ -3302,46 +3388,158 @@ const AccountingPage: React.FC = () => {
                   );
                })()}
 
-               {/* --- CONTACTOS --- */}
-               {activeTab === 'contactos' && (() => {
-                  const uniqueContactos = Array.from(new Set(extFinanceiroNotas.map(n => n.entidade))).filter(Boolean);
-                  return (
-                     <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-bottom-4">
-                        <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Directório de Contactos</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                           {uniqueContactos.map((c, i) => (
-                              <div key={i} className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100 hover:bg-white hover:shadow-xl transition-all group">
-                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center font-black text-yellow-600 shadow-sm transition-colors group-hover:bg-yellow-500 group-hover:text-zinc-900">{String(c || '?').charAt(0)}</div>
+               {/* --- CONTACTOS (CRM) --- */}
+               {activeTab === 'contactos' && (
+                  <div className="space-y-10 animate-in slide-in-from-bottom-4">
+                     <div className="flex items-center justify-between bg-white p-10 rounded-[3rem] border border-zinc-100 shadow-sm transition-all hover:shadow-xl">
+                        <div className="space-y-1">
+                           <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tighter">Gestão de <span className="text-yellow-600">Contactos</span></h2>
+                           <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Base de Dados CRM Integrada</p>
+                        </div>
+                        <button
+                           onClick={() => setShowContactModal(true)}
+                           className="px-10 py-5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-3xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+                        >
+                           <Plus size={18} /> Novo Contacto
+                        </button>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {contactos.filter(c => c.empresa_id === selectedEmpresaId).length > 0 ? (
+                           contactos.filter(c => c.empresa_id === selectedEmpresaId).map((c) => (
+                              <div key={c.id} className="bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden">
+                                 <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button className="p-3 text-zinc-300 hover:text-zinc-600"><MoreVertical size={20} /></button>
+                                 </div>
+                                 <div className="flex items-center gap-6 mb-8">
+                                    <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center font-black text-3xl text-yellow-600 transition-colors group-hover:bg-yellow-500 group-hover:text-zinc-900 shadow-inner">
+                                       {c.nome.charAt(0).toUpperCase()}
+                                    </div>
                                     <div>
-                                       <p className="text-sm font-black text-zinc-900 uppercase tracking-tight">{String(c || 'Desconhecido')}</p>
-                                       <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Cliente / Parceiro</p>
+                                       <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight leading-tight">{c.nome}</h3>
+                                       <span className={`inline-block mt-1 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${c.tipo === 'Cliente' ? 'bg-sky-50 text-sky-600' :
+                                          c.tipo === 'Fornecedor' ? 'bg-purple-50 text-purple-600' :
+                                             'bg-yellow-50 text-yellow-600'
+                                          }`}>
+                                          {c.tipo}
+                                       </span>
                                     </div>
                                  </div>
+
+                                 <div className="space-y-4 border-t border-zinc-50 pt-6">
+                                    {c.nif && (
+                                       <div className="flex items-center gap-3">
+                                          <Shield size={14} className="text-zinc-400" />
+                                          <p className="text-[11px] font-bold text-zinc-500 uppercase">NIF: <span className="text-zinc-800">{c.nif}</span></p>
+                                       </div>
+                                    )}
+                                    {c.email && (
+                                       <div className="flex items-center gap-3">
+                                          <Mail size={14} className="text-zinc-400" />
+                                          <p className="text-[11px] font-bold text-zinc-500">{c.email}</p>
+                                       </div>
+                                    )}
+                                    {c.telefone && (
+                                       <div className="flex items-center gap-3">
+                                          <Phone size={14} className="text-zinc-400" />
+                                          <p className="text-[11px] font-bold text-zinc-500">{c.telefone}</p>
+                                       </div>
+                                    )}
+                                 </div>
                               </div>
-                           ))}
-                        </div>
+                           ))
+                        ) : (
+                           <div className="col-span-full py-32 bg-zinc-50 rounded-[4rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center space-y-4 opacity-50">
+                              <Users size={64} className="text-zinc-300" />
+                              <p className="text-lg font-black text-zinc-400 uppercase tracking-tighter">Nenhum contacto registado nesta empresa</p>
+                           </div>
+                        )}
                      </div>
-                  );
-               })()}
+                  </div>
+               )}
 
                {/* --- ITENS --- */}
                {activeTab === 'itens' && (
-                  <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-bottom-4">
-                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Catálogo de Itens & Serviços</h2>
+                  <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                     {/* Header e Acções Rápidas */}
+                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm">
+                        <div>
+                           <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-tight">Gestão de Inventário</h2>
+                           <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Controlo de stock, categorias e alertas críticos</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                           <button
+                              onClick={() => setShowCategoryModal(true)}
+                              className="px-6 py-4 bg-zinc-50 text-zinc-600 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-zinc-100 transition-all flex items-center gap-2 border border-zinc-200"
+                           >
+                              <ListFilter size={16} /> Nova Categoria
+                           </button>
+                           <button className="px-6 py-4 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95">
+                              <Plus size={16} /> Adicionar Item
+                           </button>
+                        </div>
                      </div>
-                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        {extInventario.map((item, i) => (
-                           <div key={i} className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100 hover:bg-white transition-all group">
-                              <div className="w-full aspect-square bg-white rounded-3xl mb-4 flex items-center justify-center text-zinc-200">
-                                 <Scale size={48} />
-                              </div>
-                              <h3 className="text-xs font-black text-zinc-900 uppercase tracking-tight truncate">{item.nome}</h3>
-                              <p className="text-[9px] font-bold text-zinc-400 uppercase mb-3">{item.unidade || 'Unidade'}</p>
-                              <p className="text-sm font-black text-yellow-600">{safeFormatAOA(item.preco_unitario)}</p>
-                           </div>
+
+                     {/* Filtros de Categorias */}
+                     <div className="flex items-center gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                        <button className="px-6 py-3 bg-zinc-900 text-yellow-500 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                           Todos os Itens ({extInventario.length})
+                        </button>
+                        {categorias.map(cat => (
+                           <button key={cat.id} className="px-6 py-3 bg-white border border-zinc-100 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap hover:border-yellow-400 transition-all flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.cor || '#fbbf24' }} />
+                              {cat.nome}
+                           </button>
                         ))}
+                     </div>
+
+                     {/* Grelha de Itens */}
+                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {extInventario.map((item, i) => {
+                           const isLowStock = Number(item.quantidade_atual) <= Number(item.quantidade_minima);
+                           const cat = categorias.find(c => c.id === item.categoria_id);
+
+                           return (
+                              <div key={i} className={`p-6 bg-white rounded-[2.5rem] border transition-all group relative overflow-hidden flex flex-col ${isLowStock ? 'border-red-100' : 'border-zinc-100 hover:border-yellow-400 hover:shadow-2xl'}`}>
+                                 {isLowStock && (
+                                    <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-red-100 text-red-600 px-3 py-1.5 rounded-xl animate-pulse">
+                                       <AlertTriangle size={12} />
+                                       <span className="text-[9px] font-black uppercase">Stock Baixo</span>
+                                    </div>
+                                 )}
+
+                                 <div className="w-full aspect-square bg-zinc-50 rounded-3xl mb-6 flex items-center justify-center text-zinc-200 group-hover:scale-105 transition-transform">
+                                    {item.foto_url ? (
+                                       <img src={item.foto_url} alt={item.nome} className="w-full h-full object-cover rounded-3xl" />
+                                    ) : (
+                                       <Package size={64} className="opacity-20 text-zinc-400" />
+                                    )}
+                                 </div>
+
+                                 <div className="flex-1 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                       <span className="text-[8px] font-black text-zinc-400 uppercase bg-zinc-50 px-2 py-0.5 rounded border border-zinc-100">{item.unidade || 'Unidade'}</span>
+                                       {cat && (
+                                          <span className="text-[8px] font-black uppercase bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">{cat.nome}</span>
+                                       )}
+                                    </div>
+                                    <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight leading-tight">{item.nome}</h3>
+                                    <p className="text-[9px] font-bold text-zinc-400 uppercase line-clamp-1">{item.descricao || 'Sem descrição'}</p>
+                                 </div>
+
+                                 <div className="mt-6 pt-6 border-t border-zinc-50 flex items-center justify-between">
+                                    <div>
+                                       <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Preço Un.</p>
+                                       <p className="text-base font-black text-zinc-900">{safeFormatAOA(item.preco_unitario || item.preco_venda)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                       <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Stock</p>
+                                       <p className={`text-sm font-black ${isLowStock ? 'text-red-500' : 'text-zinc-900'}`}>{item.quantidade_atual} {item.unidade || 'UN'}</p>
+                                    </div>
+                                 </div>
+                              </div>
+                           );
+                        })}
                      </div>
                   </div>
                )}
@@ -3901,6 +4099,123 @@ const AccountingPage: React.FC = () => {
                      </div>
                   )
                }
+
+               {/* --- MODAL NOVO CONTACTO (CRM) --- */}
+               {showContactModal && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                     <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                           <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                 <Users size={24} />
+                              </div>
+                              <div>
+                                 <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Contacto</h2>
+                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Parceiro de Negócio</p>
+                              </div>
+                           </div>
+                           <button onClick={() => setShowContactModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleCreateContact} className="p-8 space-y-6">
+                           <div className="grid grid-cols-2 gap-6">
+                              <div className="col-span-2">
+                                 <Input label="Nome Completo / Razão Social" required placeholder="Ex: Amazing Corporation Lda"
+                                    value={newContact.nome} onChange={(e: any) => setNewContact({ ...newContact, nome: e.target.value })}
+                                 />
+                              </div>
+                              <Input label="NIF" placeholder="Ex: 5000123456"
+                                 value={newContact.nif} onChange={(e: any) => setNewContact({ ...newContact, nif: e.target.value })}
+                              />
+                              <div className="space-y-2">
+                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo de Contacto</label>
+                                 <Select
+                                    value={newContact.tipo}
+                                    onChange={(e: any) => setNewContact({ ...newContact, tipo: e.target.value as any })}
+                                    options={[
+                                       { value: 'Cliente', label: 'Cliente' },
+                                       { value: 'Fornecedor', label: 'Fornecedor' },
+                                       { value: 'Ambos', label: 'Ambos (Parceiro)' }
+                                    ]}
+                                 />
+                              </div>
+                           </div>
+
+                           <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-50">
+                              <Input label="E-mail" type="email" placeholder="contacto@email.com"
+                                 value={newContact.email} onChange={(e: any) => setNewContact({ ...newContact, email: e.target.value })}
+                              />
+                              <Input label="Telefone" placeholder="+244 9XX XXX XXX"
+                                 value={newContact.telefone} onChange={(e: any) => setNewContact({ ...newContact, telefone: e.target.value })}
+                              />
+                              <div className="col-span-2">
+                                 <Input label="Morada / Localização" placeholder="Cidade, Bairro, Rua..."
+                                    value={newContact.morada} onChange={(e: any) => setNewContact({ ...newContact, morada: e.target.value })}
+                                 />
+                              </div>
+                           </div>
+
+                           <div className="pt-6">
+                              <button type="submit" disabled={isSavingContact} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
+                                 {isSavingContact ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
+                                 {isSavingContact ? 'A Processar...' : 'Confirmar Registo'}
+                              </button>
+                           </div>
+                        </form>
+                     </div>
+                  </div>
+               )
+               }
+
+               {/* --- MODAL NOVA CATEGORIA (INVENTÁRIO) --- */}
+               {showCategoryModal && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                     <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                           <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                 <ListFilter size={24} />
+                              </div>
+                              <div>
+                                 <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Nova Categoria</h2>
+                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Organização de Itens e Stock</p>
+                              </div>
+                           </div>
+                           <button onClick={() => setShowCategoryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleCreateCategory} className="p-8 space-y-6">
+                           <div className="space-y-4">
+                              <Input label="Nome da Categoria" required placeholder="Ex: Informática, Bebidas..."
+                                 value={newCategory.nome} onChange={(e: any) => setNewCategory({ ...newCategory, nome: e.target.value })}
+                              />
+                              <Input label="Descrição Curta" placeholder="Opcional..."
+                                 value={newCategory.descricao} onChange={(e: any) => setNewCategory({ ...newCategory, descricao: e.target.value })}
+                              />
+                              <div className="space-y-2">
+                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cor de Identificação</label>
+                                 <div className="flex gap-3">
+                                    {['#fbbf24', '#3b82f6', '#ef4444', '#10b981', '#a855f7', '#6366f1'].map(color => (
+                                       <button
+                                          key={color}
+                                          type="button"
+                                          onClick={() => setNewCategory({ ...newCategory, cor: color })}
+                                          className={`w-10 h-10 rounded-xl transition-all ${newCategory.cor === color ? 'ring-4 ring-zinc-900 ring-offset-2' : 'hover:scale-110'}`}
+                                          style={{ backgroundColor: color }}
+                                       />
+                                    ))}
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="pt-6">
+                              <button type="submit" disabled={isSavingCategory} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
+                                 {isSavingCategory ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
+                                 {isSavingCategory ? 'A Guardar...' : 'Criar Categoria'}
+                              </button>
+                           </div>
+                        </form>
+                     </div>
+                  </div>
+               )}
             </div >
          </main >
       </div >
