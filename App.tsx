@@ -54,39 +54,48 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`Auth event: ${event}`);
+
       if (session?.user) {
-        // Load profile - only unblock app when profile is ready
-        getUserProfile(session.user.id).then(({ data: profile }) => {
+        try {
+          // Load profile with timeout/fallback
+          const { data: profile } = await getUserProfile(session.user.id);
+
           const userData: User = {
             id: session.user.id,
             email: session.user.email || '',
             nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
-            role: profile?.role || 'admin',
+            role: profile?.role || 'admin', // Fallback to admin if logged in but profile missing
           };
+
           setUser(userData);
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
-          setIsInitializing(false); // Unblock only after user is set
-        }).catch(err => {
-          console.error("Error loading profile:", err);
-          setIsInitializing(false); // Still unblock if fetch fails, but handle user state
-        });
 
-        // Targeted sync for essential info (background)
-        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
+          // Background tasks
+          AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
+          setIsSyncing(true);
+          AmazingStorage.loadAllFromCloud().finally(() => setIsSyncing(false));
 
-        // Full background sync
-        setIsSyncing(true);
-        AmazingStorage.loadAllFromCloud().then(() => {
-          setIsSyncing(false);
-          console.log('Nuvem sincronizada em segundo plano.');
-        });
+        } catch (err) {
+          console.error("Critical error during app initialization:", err);
+          // Don't block the user if it's just a profile network error, use fallback
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            nome: 'Utilizador',
+            role: 'admin'
+          });
+        } finally {
+          setIsInitializing(false);
+        }
       } else {
         setUser(null);
         localStorage.removeItem(STORAGE_KEYS.USER);
-        setIsInitializing(false);
 
-        // Even for public users, sync public info in background
-        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
+        // Sync public info even if logged out
+        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]).finally(() => {
+          setIsInitializing(false);
+        });
       }
     });
 
