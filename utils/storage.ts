@@ -81,9 +81,10 @@ export const AmazingStorage = {
 
   syncToCloud: async (key: string, data: any) => {
     try {
-      // Guard: only write to cloud if there is an active authenticated session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      // Direct session check to avoid hanging
+      const sessionStr = localStorage.getItem('supabase.auth.token');
+      if (!sessionStr) return;
+
       await supabase
         .from('erp_data')
         .upsert({
@@ -96,9 +97,10 @@ export const AmazingStorage = {
 
   loadAllFromCloud: async () => {
     try {
-      const { data, error } = await supabase.from('erp_data').select('*');
+      const { data, error } = await supabase.from('erp_data').select('key_name, json_data');
       if (error) throw error;
       if (data) {
+        // Batch update localStorage
         data.forEach((row: any) => {
           localStorage.setItem(row.key_name, JSON.stringify(row.json_data));
         });

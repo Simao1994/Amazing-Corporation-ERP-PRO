@@ -102,15 +102,16 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = async (userData: User) => {
+  const handleLogin = (userData: User) => {
     setUser(userData);
     AmazingStorage.save(STORAGE_KEYS.USER, userData);
+
+    // Non-blocking background sync
     setIsSyncing(true);
-    await AmazingStorage.loadAllFromCloud();
-    setIsSyncing(false);
+    AmazingStorage.loadAllFromCloud().finally(() => setIsSyncing(false));
+
     AmazingStorage.logAction('Login', 'Sessão', `Utilizador ${userData.nome} acedeu ao sistema`);
     showToast("Login realizado com sucesso!");
-    // Force redirect to Home Corporativo after login
     window.location.hash = '#/';
   };
 
