@@ -674,19 +674,19 @@ const CorporateHome: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-sans text-zinc-900 scroll-smooth selection:bg-yellow-500 selection:text-zinc-900 overflow-x-hidden">
       {/* NAVIGATION BAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-zinc-100 px-6 md:px-12 py-5 flex items-center justify-between shadow-sm">
-        <Logo className="h-16 md:h-20 cursor-pointer" onClick={() => scrollIntoView('inicio')} />
-        <div className="hidden lg:flex items-center gap-10 text-[12px] font-black uppercase tracking-widest text-zinc-500">
-          <button onClick={() => scrollIntoView('inicio')} className="hover:text-yellow-600 transition-colors">Início</button>
-          <button onClick={() => scrollIntoView('sectores')} className="hover:text-yellow-600 transition-colors">Sectores</button>
-          <button onClick={() => scrollIntoView('noticias')} className="hover:text-yellow-600 transition-colors text-zinc-900">Notícias</button>
-          <Link to="/arena" className="flex items-center gap-3 text-indigo-600 hover:text-indigo-800 transition-all bg-indigo-50 px-6 py-3 rounded-full border border-indigo-100">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-md border-b border-white/5 px-6 md:px-12 py-5 flex items-center justify-between shadow-2xl">
+        <Logo className="h-16 md:h-20 cursor-pointer brightness-0 invert" onClick={() => scrollIntoView('inicio')} />
+        <div className="hidden lg:flex items-center gap-10 text-[12px] font-black uppercase tracking-widest text-white">
+          <button onClick={() => scrollIntoView('inicio')} className="hover:text-yellow-500 transition-colors">Início</button>
+          <button onClick={() => scrollIntoView('sectores')} className="hover:text-yellow-500 transition-colors">Sectores</button>
+          <button onClick={() => scrollIntoView('noticias')} className="hover:text-yellow-500 transition-colors">Notícias</button>
+          <Link to="/arena" className="flex items-center gap-3 text-indigo-400 hover:text-indigo-300 transition-all bg-white/5 px-6 py-3 rounded-full border border-white/10">
             <Gamepad2 size={18} /> Amazing Arena Gamer
           </Link>
-          <button onClick={() => scrollIntoView('carreiras')} className="text-zinc-900 hover:text-yellow-600 transition-colors">Trabalhe Connosco</button>
-          <button onClick={() => scrollIntoView('contactos')} className="hover:text-yellow-600 transition-colors">Contactos</button>
+          <button onClick={() => scrollIntoView('carreiras')} className="hover:text-yellow-500 transition-colors">Trabalhe Connosco</button>
+          <button onClick={() => scrollIntoView('contactos')} className="hover:text-yellow-500 transition-colors">Contactos</button>
         </div>
-        <Link to="/dashboard" className={`px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${currentUser ? 'bg-zinc-900 text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}>
+        <Link to="/dashboard" className={`px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${currentUser ? 'bg-white text-zinc-900 hover:bg-zinc-200' : 'bg-white/10 text-zinc-400 hover:bg-white/20'}`}>
           {currentUser ? (
             <>
               <LayoutDashboard size={16} /> Meu Dashboard
