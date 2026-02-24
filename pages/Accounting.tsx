@@ -693,6 +693,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          console.log('TRACE: UI Unlocked.');
 
          // 2. Carregar Dados Transacionais em PARALELO (Background)
+         const effEmpId = selectedEmpresaId || emps[0]?.id;
+
          const [lnc, lncItens, flh, obl, logs, centros, configs, sLogs, extratosData,
             faturas, tesouraria, rhRecibos, inventarioItems, stockMov, regras, comprasData, contactosData, categoriasData] = await Promise.all([
                fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }), 'Diário Geral'),
@@ -708,12 +710,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                fetchQuery(supabase.from('contabil_faturas').select('*').order('created_at', { ascending: false }), 'Documentos Fiscais'),
                fetchQuery(supabase.from('tesouraria_transacoes').select('*').order('data', { ascending: false }), 'Tesouraria'),
                fetchQuery(supabase.from('rh_recibos').select('*').order('data_emissao', { ascending: false }), 'Recibos de Salário'),
-               fetchQuery(supabase.from('inventario').select('*').order('nome'), 'Catálogo de Produtos'),
+               fetchQuery(supabase.from('inventario').select('*').eq('empresa_id', effEmpId).order('nome'), 'Catálogo de Produtos'),
                fetchQuery(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }), 'Kardex'),
                fetchQuery(supabase.from('acc_business_rules').select('*'), 'Regras de Negócio'),
                fetchQuery(supabase.from('financeiro_compras').select('*').order('data_compra', { ascending: false }), 'Gestão de Compras'),
                fetchQuery(supabase.from('acc_contactos').select('*').order('nome'), 'Contactos (CRM)'),
-               fetchQuery(supabase.from('acc_categorias').select('*').order('nome'), 'Categorias de Inventário')
+               fetchQuery(supabase.from('acc_categorias').select('*').eq('empresa_id', effEmpId).order('nome'), 'Categorias de Inventário')
             ]);
 
          // Merging itens sync
@@ -783,7 +785,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
    useEffect(() => {
       fetchAccountingData();
-   }, []);
+   }, [selectedEmpresaId]);
 
    // Garantir que o período selecionado pertence à empresa selecionada
    useEffect(() => {
