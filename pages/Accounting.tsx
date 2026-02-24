@@ -145,11 +145,25 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       email: '', telefone: '', morada: ''
    });
 
-   // --- ESTADO DE INVENTÁRIO (CATEGORIAS) ---
+   // --- ESTADO DE INVENTÁRIO (CATEGORIAS E ITENS) ---
    const [categorias, setCategorias] = useState<any[]>([]);
    const [showCategoryModal, setShowCategoryModal] = useState(false);
    const [isSavingCategory, setIsSavingCategory] = useState(false);
    const [newCategory, setNewCategory] = useState({ nome: '', descricao: '', cor: '#fbbf24' });
+
+   const [showItemModal, setShowItemModal] = useState(false);
+   const [isSavingItem, setIsSavingItem] = useState(false);
+   const [newInventoryItem, setNewInventoryItem] = useState({
+      nome: '',
+      descricao: '',
+      categoria_id: '',
+      unidade: 'unidade',
+      quantidade_atual: 0,
+      quantidade_minima: 5,
+      preco_unitario: 0,
+      codigo: '',
+      referencia: ''
+   });
 
    const handleAddInvoiceItem = (item: any) => {
       setInvoiceForm(prev => {
@@ -780,6 +794,31 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          alert("Erro ao criar categoria: " + err.message);
       } finally {
          setIsSavingCategory(false);
+      }
+   };
+
+   const handleCreateItem = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newInventoryItem.nome || !newInventoryItem.categoria_id) return alert("Nome e Categoria são obrigatórios.");
+      setIsSavingItem(true);
+      try {
+         const { error } = await supabase.from('inventario').insert({
+            ...newInventoryItem,
+            empresa_id: selectedEmpresaId
+         });
+         if (error) throw error;
+         alert("Item adicionado com sucesso!");
+         setShowItemModal(false);
+         setNewInventoryItem({
+            nome: '', descricao: '', categoria_id: '', unidade: 'unidade',
+            quantidade_atual: 0, quantidade_minima: 5, preco_unitario: 0,
+            codigo: '', referencia: ''
+         });
+         fetchAccountingData();
+      } catch (err: any) {
+         alert("Erro ao adicionar item: " + err.message);
+      } finally {
+         setIsSavingItem(false);
       }
    };
 
@@ -3484,7 +3523,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            >
                               <ListFilter size={16} /> Nova Categoria
                            </button>
-                           <button className="px-6 py-4 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95">
+                           <button
+                              onClick={() => setShowItemModal(true)}
+                              className="px-6 py-4 bg-yellow-500 text-zinc-900 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95"
+                           >
                               <Plus size={16} /> Adicionar Item
                            </button>
                         </div>
@@ -4220,6 +4262,82 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <button type="submit" disabled={isSavingCategory} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
                                  {isSavingCategory ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
                                  {isSavingCategory ? 'A Guardar...' : 'Criar Categoria'}
+                              </button>
+                           </div>
+                        </form>
+                     </div>
+                  </div>
+               )}
+
+               {/* --- MODAL NOVO ITEM (INVENTÁRIO) --- */}
+               {showItemModal && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                     <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                           <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg">
+                                 <Plus size={24} />
+                              </div>
+                              <div>
+                                 <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Item no Catálogo</h2>
+                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Produto ou Serviço</p>
+                              </div>
+                           </div>
+                           <button onClick={() => setShowItemModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleCreateItem} className="p-8 space-y-6">
+                           <div className="grid grid-cols-2 gap-6">
+                              <div className="col-span-2">
+                                 <Input label="Nome do Item / Serviço" required placeholder="Ex: Consultoria Fiscal, Resma A4..."
+                                    value={newInventoryItem.nome} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, nome: e.target.value })}
+                                 />
+                              </div>
+                              <div className="space-y-2">
+                                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Categoria</label>
+                                 <Select
+                                    value={newInventoryItem.categoria_id}
+                                    onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, categoria_id: e.target.value })}
+                                    options={[
+                                       { value: '', label: 'Seleccione uma categoria' },
+                                       ...categorias.map(cat => ({ value: cat.id, label: cat.nome }))
+                                    ]}
+                                    required
+                                 />
+                              </div>
+                              <Input label="Código/SKU" placeholder="Ex: SERV-001"
+                                 value={newInventoryItem.codigo} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, codigo: e.target.value })}
+                              />
+                           </div>
+
+                           <div className="grid grid-cols-3 gap-6 pt-4 border-t border-zinc-50">
+                              <Input label="Preço Unitário" type="number"
+                                 value={newInventoryItem.preco_unitario} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, preco_unitario: Number(e.target.value) })}
+                              />
+                              <Input label="Qtd. Inicial" type="number"
+                                 value={newInventoryItem.quantidade_atual} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, quantidade_atual: Number(e.target.value) })}
+                              />
+                              <Input label="Stock Mínimo" type="number"
+                                 value={newInventoryItem.quantidade_minima} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, quantidade_minima: Number(e.target.value) })}
+                              />
+                           </div>
+
+                           <div className="flex gap-4 pt-4">
+                              <div className="flex-1">
+                                 <Input label="Unidade" placeholder="Ex: un, kg, hora..."
+                                    value={newInventoryItem.unidade} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, unidade: e.target.value })}
+                                 />
+                              </div>
+                              <div className="flex-1">
+                                 <Input label="Referência Interna" placeholder="Opcional..."
+                                    value={newInventoryItem.referencia} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, referencia: e.target.value })}
+                                 />
+                              </div>
+                           </div>
+
+                           <div className="pt-6">
+                              <button type="submit" disabled={isSavingItem} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
+                                 {isSavingItem ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
+                                 {isSavingItem ? 'A Processar...' : 'Adicionar ao Catálogo'}
                               </button>
                            </div>
                         </form>
