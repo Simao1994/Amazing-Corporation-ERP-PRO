@@ -995,7 +995,7 @@ const CorporateHome: React.FC = () => {
         <div className="w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-20 pb-20 border-b border-white/5">
             <div className="space-y-8">
-              <Logo className="h-16 brightness-110 contrast-125 saturate-150" />
+              <Logo className="h-20 md:h-24 brightness-110 contrast-125 saturate-150" />
               <p className="text-zinc-500 font-medium leading-relaxed">Excelência operativa e inovação constante para transformar o mercado angolano em todos os sectores.</p>
               <div className="flex gap-4">
                 <a href="https://facebook.com/amazingcorporation.ao" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer">
