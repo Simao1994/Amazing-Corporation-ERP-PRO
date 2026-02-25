@@ -119,6 +119,9 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
     }, [items]);
 
     const handleUpload = async (files: File[]) => {
+        const errors: string[] = [];
+        let successCount = 0;
+
         for (const file of files) {
             try {
                 const fileExt = file.name.split('.').pop();
@@ -148,14 +151,20 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
                 });
 
                 if (dbError) throw dbError;
+                successCount++;
 
             } catch (err: any) {
                 console.error("Upload error for file:", file.name, err);
-                alert(`Erro ao carregar ${file.name}: ${err.message}`);
+                errors.push(`${file.name}: ${err.message}`);
             }
         }
+
+        if (errors.length > 0) {
+            alert(`Upload concluído com intercorrências.\n\nFicheiros com sucesso: ${successCount}\nErros: ${errors.length}\n\nExemplo de erro: ${errors[0]}`);
+        }
+
         fetchData();
-        AmazingStorage.logAction('Upload Mídia', 'Galeria', `${files.length} novos ficheiros adicionados.`);
+        AmazingStorage.logAction('Upload Mídia', 'Galeria', `${successCount} novos ficheiros adicionados. ${errors.length} falhas.`);
     };
 
     const handleDelete = async (id: string) => {

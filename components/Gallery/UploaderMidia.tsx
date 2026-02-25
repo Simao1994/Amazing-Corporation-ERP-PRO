@@ -12,6 +12,7 @@ const UploaderMidia: React.FC<UploaderMidiaProps> = ({ onUpload, onClose }) => {
     const [isUploading, setIsUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const folderInputRef = useRef<HTMLInputElement>(null);
 
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();
@@ -34,11 +35,20 @@ const UploaderMidia: React.FC<UploaderMidiaProps> = ({ onUpload, onClose }) => {
 
     const addFiles = (newFiles: File[]) => {
         // Validate types
-        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
-        const filteredFiles = newFiles.filter(f => validTypes.includes(f.type));
+        const validTypes = [
+            'image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/gif',
+            'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'
+        ];
 
-        if (filteredFiles.length < newFiles.length) {
-            alert("Alguns ficheiros foram ignorados por terem formatos não suportados.");
+        const filteredFiles = newFiles.filter(f => {
+            // Some files might not have a type (e.g. system files in folders)
+            if (!f.type) return false;
+            return validTypes.includes(f.type) || f.type.startsWith('image/') || f.type.startsWith('video/');
+        });
+
+        if (filteredFiles.length === 0 && newFiles.length > 0) {
+            alert("Nenhum dos ficheiros selecionados é uma imagem ou vídeo suportado.");
+            return;
         }
 
         setFiles(prev => [...prev, ...filteredFiles]);
@@ -93,12 +103,37 @@ const UploaderMidia: React.FC<UploaderMidiaProps> = ({ onUpload, onClose }) => {
                             accept="image/*,video/*"
                             onChange={(e) => e.target.files && addFiles(Array.from(e.target.files))}
                         />
+                        <input
+                            ref={folderInputRef}
+                            type="file"
+                            webkitdirectory=""
+                            directory=""
+                            multiple
+                            className="hidden"
+                            onChange={(e) => e.target.files && addFiles(Array.from(e.target.files))}
+                        />
                         <div className="w-20 h-20 bg-zinc-900 text-yellow-500 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 transition-transform">
                             <Upload size={32} />
                         </div>
                         <p className="text-lg font-black text-zinc-900">Arraste os ficheiros aqui</p>
-                        <p className="text-zinc-500 text-sm mt-1">ou clique para procurar no computador</p>
-                        <div className="mt-6 flex gap-2">
+                        <p className="text-zinc-500 text-sm mt-1">ou arraste para este espaço</p>
+                        <div className="mt-8 flex flex-wrap justify-center gap-4">
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                                className="px-6 py-3 bg-zinc-900 text-[10px] font-black text-yellow-500 rounded-2xl uppercase tracking-widest hover:bg-zinc-800 transition-all shadow-lg"
+                            >
+                                Seleccionar Ficheiros
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); folderInputRef.current?.click(); }}
+                                className="px-6 py-3 bg-white border-2 border-zinc-900 text-[10px] font-black text-zinc-900 rounded-2xl uppercase tracking-widest hover:bg-zinc-50 transition-all shadow-md"
+                            >
+                                Carregar Pasta
+                            </button>
+                        </div>
+                        <div className="mt-8 flex gap-2">
                             <span className="px-3 py-1 bg-zinc-100 text-[10px] font-black text-zinc-500 rounded-full uppercase tracking-widest">IMAGENS</span>
                             <span className="px-3 py-1 bg-zinc-100 text-[10px] font-black text-zinc-500 rounded-full uppercase tracking-widest">VÍDEOS</span>
                         </div>
