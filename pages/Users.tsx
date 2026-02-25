@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/lib/supabase';
 import { UserPlus, Trash2, RefreshCw, ShieldCheck, User, Search, Eye, EyeOff, Edit2, Key } from 'lucide-react';
 
-const SUPABASE_URL = 'https://jgktemwegesmmomlftgt.supabase.co';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const roleOptions = [
     { value: 'admin', label: 'Administrador do Sistema (Global)' },
@@ -17,6 +17,7 @@ const roleOptions = [
     { value: 'manager_inventory', label: 'Responsável Inventário & Stock' },
     { value: 'director_hr', label: 'Director Recursos Humanos' },
     { value: 'director_finance', label: 'Director Finanças' },
+    { value: 'bibliotecario', label: 'Bibliotecário Institucional' },
 ];
 
 const getRoleLabel = (role: string) => roleOptions.find(r => r.value === role)?.label || role;
@@ -33,6 +34,7 @@ const roleColors: Record<string, string> = {
     manager_inventory: 'bg-rose-100 text-rose-800 border-rose-300',
     director_hr: 'bg-pink-100 text-pink-800 border-pink-300',
     director_finance: 'bg-cyan-100 text-cyan-800 border-cyan-300',
+    bibliotecario: 'bg-zinc-100 text-zinc-800 border-zinc-300',
 };
 
 interface Profile {
@@ -70,7 +72,16 @@ const UsersPage: React.FC = () => {
         // Ensure authentication session is active before querying.
         // Without this, the query may run as 'anon' (before session is restored)
         // and RLS will return 0 rows silently.
-        const { data: { session } } = await supabase.auth.getSession();
+        // Robust session check with small delay to handle race conditions during auth restoration
+        let { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+            // Wait 500ms and try once more (fixes race condition in Vite dev server)
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const recheck = await supabase.auth.getSession();
+            session = recheck.data.session;
+        }
+
         if (!session) {
             setError('Sem sessão autenticada. Por favor faça login novamente.');
             setLoading(false);

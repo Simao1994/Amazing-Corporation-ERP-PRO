@@ -5,7 +5,7 @@ import {
   LogOut, Bell, Search, Plus, FileText, Download, Trash2, Edit, Eye, Settings,
   Layers, Share2, Home, Inbox, Handshake, Building2, Newspaper, Image as ImageIcon,
   Factory, Scale, Calculator, PieChart as PieChartIcon, Sprout, Key, ClipboardList,
-  UserPlus, Gamepad2
+  UserPlus, Gamepad2, Files
 } from 'lucide-react';
 import { UserRole } from './types';
 
@@ -47,11 +47,12 @@ export const MENU_ITEMS = [
   { id: 'fornecedores', label: 'Gestão de Fornecedores', icon: <Handshake size={20} />, path: '/fornecedores' },
   { id: 'empresas', label: 'Unidades do Grupo', icon: <Building2 size={20} />, path: '/empresas' },
   { id: 'utilizadores', label: 'Gestão de Utilizadores', icon: <Users size={20} />, path: '/utilizadores' },
+  { id: 'arquivos', label: 'Gestão de Arquivos', icon: <Files size={20} />, path: '/dashboard/arquivos' },
 ];
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
   // Administrador tem acesso total (incluindo gestão de utilizadores)
-  admin: ['all', 'utilizadores', 'fornecedores', 'parceiros', 'empresas', 'galeria_corp', 'biblioteca'],
+  admin: ['all', 'utilizadores', 'fornecedores', 'parceiros', 'empresas', 'galeria_corp', 'biblioteca', 'arquivos'],
 
   // Director Amazing Arena Gamer - Apenas Arena + Dashboard + Solicitações
   director_arena: ['home', 'dashboard', 'arena_admin', 'solicitacoes', 'blog'],

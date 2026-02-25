@@ -26,6 +26,7 @@ import ArenaGames from './pages/ArenaGames';
 import ArenaAdmin from './pages/ArenaAdmin';
 import DashboardGallery from './pages/DashboardGallery';
 import DashboardLibrary from './pages/DashboardLibrary';
+import DashboardFiles from './pages/DashboardFiles';
 import UnauthorizedPage from './pages/Unauthorized';
 import FornecedoresPage from './pages/Fornecedores';
 import ParceirosPage from './pages/Parceiros';
@@ -175,6 +176,7 @@ const App: React.FC = () => {
                     <Route path="/dashboard" element={<ProtectedRoute user={user} path="/dashboard"><Dashboard /></ProtectedRoute>} />
                     <Route path="/dashboard/galeria" element={<ProtectedRoute user={user} path="/dashboard/galeria"><DashboardGallery /></ProtectedRoute>} />
                     <Route path="/dashboard/biblioteca" element={<ProtectedRoute user={user} path="/dashboard/biblioteca"><DashboardLibrary /></ProtectedRoute>} />
+                    <Route path="/dashboard/arquivos" element={<ProtectedRoute user={user} path="/dashboard/arquivos"><DashboardFiles /></ProtectedRoute>} />
                     <Route path="/arena/admin" element={<ProtectedRoute user={user} path="/arena/admin"><ArenaAdmin /></ProtectedRoute>} />
                     <Route path="/recrutamento" element={<ProtectedRoute user={user} path="/recrutamento"><RecruitmentPage /></ProtectedRoute>} />
                     <Route path="/tesouraria" element={<ProtectedRoute user={user} path="/tesouraria"><FinancialHubPage /></ProtectedRoute>} />

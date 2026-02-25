@@ -19,7 +19,7 @@ const PainelEmprestimos: React.FC<PainelEmprestimosProps> = ({ onClose }) => {
             const { data } = await supabase
                 .from('biblioteca_emprestimos')
                 .select('*, material:biblioteca_materiais(titulo), profile:profiles(nome)')
-                .order('data_saida', { ascending: false });
+                .order('data_emprestimo', { ascending: false });
             setEmprestimos(data || []);
         } catch (err) {
             console.error(err);
@@ -116,7 +116,7 @@ const PainelEmprestimos: React.FC<PainelEmprestimosProps> = ({ onClose }) => {
                                     <div className="flex flex-wrap items-center gap-8">
                                         <div className="space-y-1">
                                             <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Saída</p>
-                                            <p className="text-xs font-bold text-zinc-600">{new Date(emp.data_saida).toLocaleDateString()}</p>
+                                            <p className="text-xs font-bold text-zinc-600">{new Date(emp.data_emprestimo).toLocaleDateString()}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Prevista</p>

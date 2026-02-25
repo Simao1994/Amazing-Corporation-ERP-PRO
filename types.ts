@@ -685,3 +685,27 @@ export interface Candidatura {
   data_candidatura: string;
   notas_internas?: string;
 }
+
+// --- GESTÃO DE ARQUIVOS ---
+export interface FileCategory {
+  id: string;
+  nome: string;
+  criado_em: string;
+}
+
+export interface FileDocument {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  nome_arquivo: string;
+  tipo_arquivo: string;
+  tamanho_arquivo: number;
+  categoria_id?: string;
+  responsavel_id?: string;
+  tags?: string;
+  caminho: string;
+  criado_em: string;
+  atualizado_em: string;
+  categoria?: { nome: string };
+  responsavel?: { nome: string };
+}
