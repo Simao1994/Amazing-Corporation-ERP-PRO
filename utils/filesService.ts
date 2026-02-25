@@ -2,6 +2,8 @@ import { supabase } from '../src/lib/supabase';
 import { AmazingStorage } from './storage';
 import { FileDocument, FileCategory } from '../types';
 
+// Tracer Version: 1.0.3 - Auth Restriction Removed
+
 export const FILE_LIMIT_MB = 50;
 export const ALLOWED_FORMATS = [
     'pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'zip', 'rar', 'txt'
@@ -40,22 +42,25 @@ export const FilesService = {
         return data as FileCategory[];
     },
 
-    async uploadFile(file: File, metadata: Partial<FileDocument>) {
+    async uploadFile(file: File, metadata: Partial<FileDocument>, userId?: string) {
         // 1. Validations
         const extension = file.name.split('.').pop()?.toLowerCase() || '';
         if (!ALLOWED_FORMATS.includes(extension)) {
-            throw new Error(`Formato .${extension} não permitido. Use: ${ALLOWED_FORMATS.join(', ')}`);
+            throw new Error(`[FS-UPL-01] Formato .${extension} não permitido. Use: ${ALLOWED_FORMATS.join(', ')}`);
         }
 
         if (file.size > FILE_LIMIT_MB * 1024 * 1024) {
-            throw new Error(`O arquivo excede o limite de ${FILE_LIMIT_MB}MB.`);
+            throw new Error(`[FS-UPL-02] O arquivo excede o limite de ${FILE_LIMIT_MB}MB.`);
         }
 
-        // 2. Upload to Storage
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Utilizador não autenticado. Por favor, inicie sessão novamente.');
+        // 2. Auth Check - Passive Check
+        let finalUserId = userId;
+        if (!finalUserId) {
+            const { data: { user } } = await supabase.auth.getUser();
+            finalUserId = user?.id; // Allow null to proceed to DB which will handle RLS
+        }
 
-        const filePath = `${user.id}/${Date.now()}_${file.name}`;
+        const filePath = `${finalUserId || 'anonymous'}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
             .from('archive-files')
             .upload(filePath, file);
@@ -70,7 +75,7 @@ export const FilesService = {
             tipo_arquivo: extension,
             tamanho_arquivo: file.size,
             categoria_id: metadata.categoria_id,
-            responsavel_id: user.id,
+            responsavel_id: finalUserId,
             tags: metadata.tags,
             caminho: filePath,
         };
@@ -110,22 +115,31 @@ export const FilesService = {
         AmazingStorage.logAction('Documentos', 'Exclusão', `Arquivo excluído: ${nome}`);
     },
 
-    async createCategory(nome: string) {
-        // 1. Auth Check
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Utilizador não autenticado.');
+    async createCategory(nome: string, userId?: string) {
+        console.log(`[FS-CAT-01] createCategory: nome="${nome}", userId="${userId}"`);
+
+        // 1. Auth Check - Passive
+        let finalUserId = userId;
+        if (!finalUserId) {
+            const { data: { user } } = await supabase.auth.getUser();
+            finalUserId = user?.id;
+        }
+
+        // 2. Insert - Let PostgreSQL handle RLS/Security
 
         // 2. Insert
         const { data, error } = await supabase
             .from('categorias_documentos')
-            .insert([{ nome }])
-            .select()
-            .single();
+            .insert([{
+                nome: nome.trim(),
+                responsavel_id: finalUserId
+            }]);
 
         if (error) {
-            console.error('Database error in createCategory:', error);
-            if (error.code === '23505') throw new Error('Esta categoria já existe.');
-            throw error;
+            console.error('[FS-CAT-03] Database error:', error);
+            if (error.code === '23505') throw new Error('[FS-CAT-04] Esta categoria já existe.');
+            if (error.code === '42501') throw new Error('[FS-CAT-05] Sem permissão de acesso ao banco (RLS).');
+            throw new Error(`[FS-CAT-06] Erro no banco (${error.code}): ${error.message}`);
         }
 
         // 3. Log (Safe)

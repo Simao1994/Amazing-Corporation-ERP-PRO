@@ -27,7 +27,7 @@ const GestorCategorias: React.FC<GestorCategoriasProps> = ({ categorias, onRefre
             if (error) throw error;
             setNovoNome('');
             setNovaDescricao('');
-            onRefresh();
+            await onRefresh();
         } catch (err: any) {
             console.error('Error creating library category:', err);
             alert(`Erro ao criar categoria: ${err.message || 'Erro desconhecido'}`);

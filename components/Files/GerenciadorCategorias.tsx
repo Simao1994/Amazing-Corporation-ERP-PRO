@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Tag, Plus, Trash2, X, Hash } from 'lucide-react';
 import { FilesService } from '../../utils/filesService';
-import { FileCategory } from '../../types';
+import { FileCategory, User } from '../../types';
 
 interface GerenciadorCategoriasProps {
+    user: User | null;
     categories: FileCategory[];
     onRefresh: () => void;
     onClose: () => void;
 }
 
-const GerenciadorCategorias: React.FC<GerenciadorCategoriasProps> = ({ categories, onRefresh, onClose }) => {
+const GerenciadorCategorias: React.FC<GerenciadorCategoriasProps> = ({ user, categories, onRefresh, onClose }) => {
     const [newCat, setNewCat] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -17,13 +18,16 @@ const GerenciadorCategorias: React.FC<GerenciadorCategoriasProps> = ({ categorie
         e.preventDefault();
         if (!newCat.trim()) return;
         setLoading(true);
+        console.log('[GERENCIADOR_CATEGORIAS] Creating category:', { newCat, userId: user?.id, userObject: user });
         try {
-            await FilesService.createCategory(newCat.trim());
+            await FilesService.createCategory(newCat.trim(), user?.id);
             setNewCat('');
-            onRefresh();
+            console.log('Category created successfully, refreshing list...');
+            await onRefresh();
         } catch (err: any) {
-            console.error('Error creating category:', err);
-            alert(`Erro ao criar categoria: ${err.message || 'Erro desconhecido'}`);
+            console.error('Detailed error in handleCreate:', err);
+            const errorMsg = err instanceof Error ? err.message : (typeof err === 'string' ? err : JSON.stringify(err));
+            alert(`Erro ao criar categoria: ${errorMsg}`);
         } finally {
             setLoading(false);
         }

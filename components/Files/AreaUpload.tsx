@@ -69,7 +69,7 @@ const AreaUpload: React.FC<AreaUploadProps> = ({ onSuccess, categories, user }) 
         setLoading(true);
         setError('');
         try {
-            await FilesService.uploadFile(file, formData);
+            await FilesService.uploadFile(file, formData, user?.id);
             setSuccess('Arquivo enviado com sucesso!');
             setFile(null);
             setFormData({ titulo: '', descricao: '', categoria_id: '', tags: '' });

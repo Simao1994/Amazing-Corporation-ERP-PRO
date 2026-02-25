@@ -199,6 +199,7 @@ const DashboardFiles: React.FC<DashboardFilesProps> = ({ user }) => {
             {/* Modals */}
             {showCatManager && (
                 <GerenciadorCategorias
+                    user={user}
                     categories={categories}
                     onClose={() => setShowCatManager(false)}
                     onRefresh={async () => {
