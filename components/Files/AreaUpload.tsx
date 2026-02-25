@@ -1,13 +1,15 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { FilesService, FILE_LIMIT_MB, ALLOWED_FORMATS } from '../../utils/filesService';
+import { User } from '../../types';
 
 interface AreaUploadProps {
     onSuccess: () => void;
     categories: { id: string, nome: string }[];
+    user: User | null;
 }
 
-const AreaUpload: React.FC<AreaUploadProps> = ({ onSuccess, categories }) => {
+const AreaUpload: React.FC<AreaUploadProps> = ({ onSuccess, categories, user }) => {
     const [dragActive, setDragActive] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);

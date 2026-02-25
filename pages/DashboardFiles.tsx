@@ -6,9 +6,14 @@ import CartaoArquivo from '../components/Files/CartaoArquivo';
 import GerenciadorCategorias from '../components/Files/GerenciadorCategorias';
 import ModalPreviewArquivo from '../components/Files/ModalPreviewArquivo';
 import LogAtividades from '../components/Files/LogAtividades';
-import { FilesService, FileDocument, FileCategory } from '../utils/filesService';
+import { FilesService } from '../utils/filesService';
+import { User, FileDocument, FileCategory } from '../types';
 
-const DashboardFiles: React.FC = () => {
+interface DashboardFilesProps {
+    user: User | null;
+}
+
+const DashboardFiles: React.FC<DashboardFilesProps> = ({ user }) => {
     const [documents, setDocuments] = useState<FileDocument[]>([]);
     const [categories, setCategories] = useState<FileCategory[]>([]);
     const [loading, setLoading] = useState(true);
@@ -100,8 +105,8 @@ const DashboardFiles: React.FC = () => {
                         <button
                             onClick={() => setShowUpload(!showUpload)}
                             className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg ${showUpload
-                                    ? 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
+                                ? 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
                                 }`}
                         >
                             <Plus className={`w-5 h-5 transition-transform ${showUpload ? 'rotate-45' : ''}`} />
@@ -127,6 +132,7 @@ const DashboardFiles: React.FC = () => {
                     {showUpload && (
                         <div className="animate-in slide-in-from-top-4 duration-300">
                             <AreaUpload
+                                user={user}
                                 categories={categories}
                                 onSuccess={() => {
                                     setShowUpload(false);

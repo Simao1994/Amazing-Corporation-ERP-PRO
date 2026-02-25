@@ -52,10 +52,10 @@ export const FilesService = {
         }
 
         // 2. Upload to Storage
-        const user = await supabase.auth.getUser();
-        if (!user.data.user) throw new Error('Utilizador não autenticado.');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Utilizador não autenticado. Por favor, inicie sessão novamente.');
 
-        const filePath = `${user.data.user.id}/${Date.now()}_${file.name}`;
+        const filePath = `${user.id}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
             .from('archive-files')
             .upload(filePath, file);
@@ -70,7 +70,7 @@ export const FilesService = {
             tipo_arquivo: extension,
             tamanho_arquivo: file.size,
             categoria_id: metadata.categoria_id,
-            responsavel_id: user.data.user.id,
+            responsavel_id: user.id,
             tags: metadata.tags,
             caminho: filePath,
         };

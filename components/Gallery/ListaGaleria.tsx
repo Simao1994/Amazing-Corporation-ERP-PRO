@@ -4,13 +4,14 @@ import { FileText, Image as ImageIcon, Video, MoreVertical, Download, Trash2, He
 
 interface ListaGaleriaProps {
     items: any[];
+    loading: boolean;
     onPreview: (item: any) => void;
     onDelete: (id: string) => void;
     onToggleFavorite: (id: string) => void;
     onDownload: (item: any) => void;
 }
 
-const ListaGaleria: React.FC<ListaGaleriaProps> = ({ items, onPreview, onDelete, onToggleFavorite, onDownload }) => {
+const ListaGaleria: React.FC<ListaGaleriaProps> = ({ items, loading, onPreview, onDelete, onToggleFavorite, onDownload }) => {
     const formatSize = (bytes: number) => {
         if (bytes === 0) return '0 B';
         const k = 1024;
