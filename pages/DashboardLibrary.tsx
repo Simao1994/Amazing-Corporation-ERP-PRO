@@ -15,7 +15,11 @@ import PainelReservas from '../components/Library/PainelReservas';
 import ModalManuseioMaterial from '../components/Library/ModalManuseioMaterial';
 import MeusEmprestimos from '../components/Library/MeusEmprestimos';
 
-const DashboardLibrary: React.FC = () => {
+interface DashboardLibraryProps {
+    user: User | null;
+}
+
+const DashboardLibrary: React.FC<DashboardLibraryProps> = ({ user: initialUser }) => {
     // Data State
     const [materiais, setMateriais] = useState<any[]>([]);
     const [categorias, setCategorias] = useState<any[]>([]);
@@ -35,25 +39,29 @@ const DashboardLibrary: React.FC = () => {
     const [showMeusItems, setShowMeusItems] = useState(false);
     const [itemParaEditar, setItemParaEditar] = useState<any | null>(null);
 
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(initialUser);
 
     useEffect(() => {
-        const fetchUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-                if (profile) {
-                    setUser({
-                        id: profile.id,
-                        email: profile.email,
-                        nome: profile.nome,
-                        role: profile.role
-                    });
+        if (initialUser) {
+            setUser(initialUser);
+        } else {
+            const fetchUser = async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user) {
+                    const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+                    if (profile) {
+                        setUser({
+                            id: profile.id,
+                            email: profile.email,
+                            nome: profile.nome,
+                            role: profile.role
+                        });
+                    }
                 }
-            }
-        };
-        fetchUser();
-    }, []);
+            };
+            fetchUser();
+        }
+    }, [initialUser]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -89,8 +97,12 @@ const DashboardLibrary: React.FC = () => {
             }
 
             setMateriais(filtered);
-        } catch (err) {
-            console.error(err);
+        } catch (err: any) {
+            console.error('Fetch Library Error:', err);
+            // Mostrar erro no console e possivelmente num toast
+            if ((window as any).notify) {
+                (window as any).notify(`Erro ao carregar biblioteca: ${err.message || 'Erro desconhecido'}`, 'error');
+            }
         } finally {
             setLoading(false);
         }
