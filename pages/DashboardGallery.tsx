@@ -35,12 +35,14 @@ const DashboardGallery: React.FC = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-                setUser({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    nome: profile?.nome || session.user.user_metadata?.nome || 'Utilizador',
-                    role: profile?.role || 'user'
-                });
+                if (profile) {
+                    setUser({
+                        id: profile.id,
+                        email: profile.email,
+                        nome: profile.nome,
+                        role: profile.role
+                    });
+                }
             }
         };
         fetchUser();
@@ -50,7 +52,8 @@ const DashboardGallery: React.FC = () => {
         setLoading(true);
         try {
             // Fetch Albums
-            const { data: albumsData } = await supabase.from('galeria_albuns').select('*, galeria_arquivos(count)').order('nome');
+            const { data: albumsData, error: albumsError } = await supabase.from('galeria_albuns').select('*, galeria_arquivos(count)').order('nome');
+            if (albumsError) throw albumsError;
             setAlbuns(albumsData?.map(a => ({ ...a, count: a.galeria_arquivos?.[0]?.count || 0 })) || []);
 
             // Fetch Files
@@ -59,17 +62,17 @@ const DashboardGallery: React.FC = () => {
             if (activeAlbum) query = query.eq('album_id', activeAlbum);
             if (tipo !== 'all') query = query.eq('tipo', tipo);
 
-            // Privacy Filter: Only show public to non-admins/editors, unless it's their own
+            // Privacy Filter - Refined
             const isAdmin = user?.role === 'admin' || user?.role?.includes('editor') || user?.role?.includes('director');
             if (!isAdmin && user) {
                 query = query.or(`privacidade.eq.public,usuario_id.eq.${user.id}`);
             }
 
-            const { data: filesData } = await query;
+            const { data: filesData, error: filesError } = await query;
+            if (filesError) throw filesError;
 
-            // Sorting & Search (Done locally for responsiveness)
+            // Sorting & Search
             let processed = filesData || [];
-
             if (search) {
                 processed = processed.filter(f => f.nome.toLowerCase().includes(search.toLowerCase()));
             }
@@ -100,7 +103,7 @@ const DashboardGallery: React.FC = () => {
 
     // Statistics calculated from full items list (if available) or DB
     const stats = useMemo(() => {
-        const totalSize = items.reduce((acc, curr) => acc + curr.tamanho, 0);
+        const totalSize = items.reduce((acc, curr) => acc + (curr.tamanho || 0), 0);
         return {
             count: items.length,
             size: (totalSize / (1024 * 1024)).toFixed(1) // MB
@@ -124,7 +127,7 @@ const DashboardGallery: React.FC = () => {
                     .from('blog-media')
                     .getPublicUrl(filePath);
 
-                await supabase.from('galeria_arquivos').insert({
+                const { error: dbError } = await supabase.from('galeria_arquivos').insert({
                     nome: file.name,
                     tipo: file.type.startsWith('image/') ? 'image' : 'video',
                     formato: fileExt,
@@ -136,8 +139,11 @@ const DashboardGallery: React.FC = () => {
                     privacidade: 'private'
                 });
 
-            } catch (err) {
+                if (dbError) throw dbError;
+
+            } catch (err: any) {
                 console.error("Upload error for file:", file.name, err);
+                alert(`Erro ao carregar ${file.name}: ${err.message}`);
             }
         }
         fetchData();
@@ -148,13 +154,17 @@ const DashboardGallery: React.FC = () => {
         try {
             const itemToDelete = items.find(i => i.id === id);
             if (itemToDelete) {
-                await supabase.storage.from('blog-media').remove([itemToDelete.caminho]);
-                await supabase.from('galeria_arquivos').delete().eq('id', id);
+                if (itemToDelete.caminho) {
+                    await supabase.storage.from('blog-media').remove([itemToDelete.caminho]);
+                }
+                const { error } = await supabase.from('galeria_arquivos').delete().eq('id', id);
+                if (error) throw error;
+
                 setItems(items.filter(i => i.id !== id));
                 AmazingStorage.logAction('Eliminar Mídia', 'Galeria', `Arquivo ${itemToDelete.nome} removido.`);
             }
-        } catch (err) {
-            alert("Erro ao eliminar ficheiro.");
+        } catch (err: any) {
+            alert(`Erro ao eliminar ficheiro: ${err.message}`);
         }
     };
 
@@ -171,7 +181,7 @@ const DashboardGallery: React.FC = () => {
             if (error) throw error;
             setItems(items.map(i => i.id === id ? { ...i, favorito: !item.favorito } : i));
             if (previewItem?.id === id) setPreviewItem({ ...previewItem, favorito: !item.favorito });
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error toggling favorite:", err);
         }
     };
@@ -187,8 +197,8 @@ const DashboardGallery: React.FC = () => {
             setItems(items.map(i => i.id === id ? { ...i, ...updates } : i));
             if (previewItem?.id === id) setPreviewItem({ ...previewItem, ...updates });
             if (updates.album_id) fetchData(); // Refresh if moved album
-        } catch (err) {
-            alert("Erro ao atualizar!");
+        } catch (err: any) {
+            alert(`Erro ao atualizar: ${err.message}`);
         }
     };
 
@@ -197,12 +207,25 @@ const DashboardGallery: React.FC = () => {
         if (!nome) return;
 
         try {
-            const { data, error } = await supabase.from('galeria_albuns').insert({ nome }).select();
-            if (error) throw error;
-            setAlbuns([...albuns, { ...data[0], count: 0 }]);
-            AmazingStorage.logAction('Criar Álbum', 'Galeria', `Álbum ${nome} criado.`);
-        } catch (err) {
-            alert("Erro ao criar álbum.");
+            const { data, error } = await supabase
+                .from('galeria_albuns')
+                .insert({
+                    nome,
+                    usuario_id: user?.id
+                })
+                .select();
+
+            if (error) {
+                console.error("Album creation error:", error);
+                throw error;
+            }
+            if (data && data[0]) {
+                setAlbuns([...albuns, { ...data[0], count: 0 }]);
+                AmazingStorage.logAction('Criar Álbum', 'Galeria', `Álbum ${nome} criado.`);
+            }
+        } catch (err: any) {
+            console.error("Catch error while creating album:", err);
+            alert(`Erro ao criar álbum: ${err.message || 'Erro desconhecido'}`);
         }
     };
 
