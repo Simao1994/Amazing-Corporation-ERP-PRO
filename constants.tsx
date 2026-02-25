@@ -30,6 +30,7 @@ export const MENU_ITEMS = [
   { id: 'solicitacoes', label: 'Solicitações', icon: <Inbox size={20} />, path: '/solicitacoes' },
   { id: 'galeria', label: 'Galeria & CEO', icon: <ImageIcon size={20} />, path: '/galeria' },
   { id: 'galeria_corp', label: 'Galeria Corporativa', icon: <ImageIcon size={20} />, path: '/dashboard/galeria' },
+  { id: 'biblioteca', label: 'Biblioteca', icon: <BookOpen size={20} />, path: '/dashboard/biblioteca' },
   { id: 'agro', label: 'Amazing Agro', icon: <Sprout size={20} />, path: '/agro' },
   { id: 'imobiliario', label: 'Amazing Imobiliário', icon: <Building2 size={20} />, path: '/imobiliario' },
   { id: 'tesouraria', label: 'Tesouraria', icon: <PieChartIcon size={20} />, path: '/tesouraria' },
@@ -50,7 +51,7 @@ export const MENU_ITEMS = [
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
   // Administrador tem acesso total (incluindo gestão de utilizadores)
-  admin: ['all', 'utilizadores', 'fornecedores', 'parceiros', 'empresas', 'galeria_corp'],
+  admin: ['all', 'utilizadores', 'fornecedores', 'parceiros', 'empresas', 'galeria_corp', 'biblioteca'],
 
   // Director Amazing Arena Gamer - Apenas Arena + Dashboard + Solicitações
   director_arena: ['home', 'dashboard', 'arena_admin', 'solicitacoes', 'blog'],
@@ -81,6 +82,9 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
 
   // Director de Finanças - Apenas Finanças + Dashboard + Solicitações
   director_finance: ['home', 'dashboard', 'financeiro', 'solicitacoes', 'blog', 'empresas'],
+
+  // Bibliotecário - Gestão da Biblioteca
+  bibliotecario: ['home', 'dashboard', 'biblioteca', 'solicitacoes', 'blog'],
 };
 
 export const formatAOA = (value: number) => {
