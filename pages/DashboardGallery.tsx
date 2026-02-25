@@ -13,7 +13,11 @@ import GestorAlbuns from '../components/Gallery/GestorAlbuns';
 import FiltroGaleria from '../components/Gallery/FiltroGaleria';
 import { ModalPreviewMidia } from '../components/Gallery/ModalPreviewMidia';
 
-const DashboardGallery: React.FC = () => {
+interface DashboardGalleryProps {
+    user: User | null;
+}
+
+const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }) => {
     // State
     const [items, setItems] = useState<any[]>([]);
     const [albuns, setAlbuns] = useState<any[]>([]);
@@ -28,25 +32,29 @@ const DashboardGallery: React.FC = () => {
     const [previewItem, setPreviewItem] = useState<any | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(initialUser);
 
     useEffect(() => {
-        const fetchUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-                if (profile) {
-                    setUser({
-                        id: profile.id,
-                        email: profile.email,
-                        nome: profile.nome,
-                        role: profile.role
-                    });
+        if (initialUser) {
+            setUser(initialUser);
+        } else {
+            const fetchUser = async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user) {
+                    const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+                    if (profile) {
+                        setUser({
+                            id: profile.id,
+                            email: profile.email,
+                            nome: profile.nome,
+                            role: profile.role
+                        });
+                    }
                 }
-            }
-        };
-        fetchUser();
-    }, []);
+            };
+            fetchUser();
+        }
+    }, [initialUser]);
 
     const fetchData = async () => {
         setLoading(true);
