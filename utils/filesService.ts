@@ -61,11 +61,16 @@ export const FilesService = {
         }
 
         const filePath = `${finalUserId || 'anonymous'}/${Date.now()}_${file.name}`;
+        console.log(`[FS-UPL-10] Starting storage upload to archive-files: ${filePath}`);
         const { error: uploadError } = await supabase.storage
             .from('archive-files')
             .upload(filePath, file);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            console.error('[FS-UPL-11] Storage upload error:', uploadError);
+            throw new Error(`[FS-UPL-12] Erro no armazenamento: ${uploadError.message}`);
+        }
+        console.log('[FS-UPL-13] Storage upload success');
 
         // 3. Save to Database
         const docData = {
@@ -80,6 +85,7 @@ export const FilesService = {
             caminho: filePath,
         };
 
+        console.log('[FS-UPL-14] Inserting into documentos table:', docData);
         const { data, error: dbError } = await supabase
             .from('documentos')
             .insert([docData])
@@ -87,9 +93,10 @@ export const FilesService = {
             .single();
 
         if (dbError) {
+            console.error('[FS-UPL-15] Database insert error:', dbError);
             // Rollback storage if DB fails
             await supabase.storage.from('archive-files').remove([filePath]);
-            throw dbError;
+            throw new Error(`[FS-UPL-16] Erro no registro do banco (RLS?): ${dbError.message}`);
         }
 
         AmazingStorage.logAction('Documentos', 'Upload', `Arquivo enviado: ${file.name}`);
