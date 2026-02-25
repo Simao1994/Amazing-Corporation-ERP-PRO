@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, BookOpen, User, Hash, Globe, FileText, Download, Bookmark, Clock, CheckCircle, Info, Calendar, Link as LinkIcon, Edit2, Trash2 } from 'lucide-react';
+import { X, BookOpen, User, Hash, Globe, FileText, Download, Bookmark, Clock, CheckCircle, Info, Calendar, Link as LinkIcon, Edit2, Trash2, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
 
 interface DetalhesProps {
@@ -135,6 +135,9 @@ const DetalhesMaterial: React.FC<DetalhesProps> = ({ material, user, onClose, on
                                         <p className="text-xs font-bold text-zinc-500">Editora: <span className="text-zinc-900">{material.editora || 'N/A'}</span></p>
                                         <p className="text-xs font-bold text-zinc-500">ISBN: <span className="text-zinc-900">{material.isbn || 'N/A'}</span></p>
                                         <p className="text-xs font-bold text-zinc-500">Páginas: <span className="text-zinc-900">{material.numero_paginas || 'N/A'}</span></p>
+                                        <p className="text-xs font-bold text-yellow-600 uppercase tracking-widest pt-2 flex items-center gap-2">
+                                            <ShieldCheck size={12} /> Cadastrado por: <span className="text-zinc-900">{material.profiles?.nome || 'Sistema Amazing'}</span>
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="space-y-4">

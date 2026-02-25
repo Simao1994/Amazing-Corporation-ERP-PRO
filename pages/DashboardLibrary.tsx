@@ -42,12 +42,14 @@ const DashboardLibrary: React.FC = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-                setUser({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    nome: profile?.nome || session.user.user_metadata?.nome || 'Utilizador',
-                    role: profile?.role || 'user'
-                });
+                if (profile) {
+                    setUser({
+                        id: profile.id,
+                        email: profile.email,
+                        nome: profile.nome,
+                        role: profile.role
+                    });
+                }
             }
         };
         fetchUser();
@@ -60,13 +62,19 @@ const DashboardLibrary: React.FC = () => {
             const { data: cats } = await supabase.from('biblioteca_categorias').select('*').order('nome');
             setCategorias(cats || []);
 
-            // Materiais
-            let query = supabase.from('biblioteca_materiais').select('*').order('criado_em', { ascending: false });
+            // Materiais - Joining with profiles to get the registering user's name
+            let query = supabase
+                .from('biblioteca_materiais')
+                .select('*, profiles:usuario_id(nome)')
+                .order('criado_em', { ascending: false });
 
             if (categoria !== 'all') query = query.eq('categoria_id', categoria);
             if (tipo !== 'all') query = query.eq('tipo_material', tipo);
 
-            const { data: mats } = await query;
+            const { data: mats, error } = await query;
+            if (error) throw error;
+
+            console.log('Fetched materials with profiles:', mats);
 
             // Search local
             let filtered = mats || [];
