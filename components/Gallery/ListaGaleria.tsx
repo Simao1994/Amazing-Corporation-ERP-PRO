@@ -20,6 +20,15 @@ const ListaGaleria: React.FC<ListaGaleriaProps> = ({ items, loading, onPreview, 
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-40 space-y-4">
+                <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Sincronizando Galeria...</p>
+            </div>
+        );
+    }
+
     if (items.length === 0) return null;
 
     return (
@@ -31,6 +40,7 @@ const ListaGaleria: React.FC<ListaGaleriaProps> = ({ items, loading, onPreview, 
                         <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo</th>
                         <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tamanho</th>
                         <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Data</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Pasta</th>
                         <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Acções</th>
                     </tr>
                 </thead>
@@ -72,6 +82,11 @@ const ListaGaleria: React.FC<ListaGaleriaProps> = ({ items, loading, onPreview, 
                             </td>
                             <td className="px-6 py-4">
                                 <span className="text-xs font-bold text-zinc-500">{new Date(item.criado_em).toLocaleDateString()}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-relaxed">
+                                    {item.album_nome || 'Raiz'}
+                                </span>
                             </td>
                             <td className="px-6 py-4 text-right">
                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
