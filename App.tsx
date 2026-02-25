@@ -41,7 +41,7 @@ import ForgotPasswordPage from './pages/ForgotPassword';
 import ResetPasswordPage from './pages/ResetPassword';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(() => AmazingStorage.get<User | null>(STORAGE_KEYS.USER, null));
+  const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -60,10 +60,7 @@ const App: React.FC = () => {
       console.log(`Auth event: ${event}`);
 
       if (session?.user) {
-        // 1. Immediate unblock of UI
-        setIsInitializing(false);
-
-        // 2. Parallel Background tasks
+        // Parallel Background tasks
         Promise.all([
           getUserProfile(session.user.id),
           AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]),
@@ -77,6 +74,7 @@ const App: React.FC = () => {
           };
           setUser(userData);
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
+          setIsInitializing(false);
         }).catch(err => {
           console.error("Background initialization error:", err);
           // Fallback if not already set
@@ -88,13 +86,15 @@ const App: React.FC = () => {
               role: 'admin'
             });
           }
+          setIsInitializing(false);
         });
       } else {
         setUser(null);
         localStorage.removeItem(STORAGE_KEYS.USER);
-        setIsInitializing(false);
         // Background sync for public info
-        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
+        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]).finally(() => {
+          setIsInitializing(false);
+        });
       }
     });
 

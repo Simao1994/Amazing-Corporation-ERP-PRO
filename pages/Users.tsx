@@ -69,37 +69,31 @@ const UsersPage: React.FC = () => {
         setLoading(true);
         setError('');
 
-        // Ensure authentication session is active before querying.
-        // Without this, the query may run as 'anon' (before session is restored)
-        // and RLS will return 0 rows silently.
-        // Robust session check with small delay to handle race conditions during auth restoration
-        let { data: { session } } = await supabase.auth.getSession();
+        try {
+            // Attempt to fetch profiles. If not authenticated, Supabase will return empty or error based on RLS.
+            // Since App.tsx now guarantees session before rendering this, we can be more direct.
+            const { data, error: fetchError } = await supabase
+                .from('profiles')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-        if (!session) {
-            // Wait 500ms and try once more (fixes race condition in Vite dev server)
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const recheck = await supabase.auth.getSession();
-            session = recheck.data.session;
-        }
+            if (fetchError) {
+                // If it's a JWT/Session error, let's be explicit
+                if (fetchError.code === 'PGRST301' || fetchError.message.includes('JWT')) {
+                    throw new Error('Sessão expirada ou inválida. Por favor, saia e entre novamente.');
+                }
+                throw fetchError;
+            }
 
-        if (!session) {
-            setError('Sem sessão autenticada. Por favor faça login novamente.');
+            if (data) {
+                setProfiles(data);
+            }
+        } catch (err: any) {
+            console.error('Error fetching users:', err);
+            setError(`Falha ao carregar utilizadores: ${err.message || 'Erro desconhecido'}`);
+        } finally {
             setLoading(false);
-            return;
         }
-
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching users:', error);
-            setError(`Falha ao carregar utilizadores: ${error.message} (código: ${error.code})`);
-        } else if (data) {
-            setProfiles(data);
-        }
-        setLoading(false);
     };
 
     useEffect(() => {
