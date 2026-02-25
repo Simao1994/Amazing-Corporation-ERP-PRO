@@ -31,6 +31,21 @@ export const MENU_ITEMS = [
   { id: 'galeria', label: 'Galeria & CEO', icon: <ImageIcon size={20} />, path: '/galeria' },
   { id: 'galeria_corp', label: 'Galeria Corporativa', icon: <ImageIcon size={20} />, path: '/dashboard/galeria' },
   { id: 'agro', label: 'Amazing Agro', icon: <Sprout size={20} />, path: '/agro' },
+  { id: 'imobiliario', label: 'Amazing Imobiliário', icon: <Building2 size={20} />, path: '/imobiliario' },
+  { id: 'tesouraria', label: 'Tesouraria', icon: <PieChartIcon size={20} />, path: '/tesouraria' },
+  { id: 'transportes', label: 'Amazing Express', icon: <Truck size={20} />, path: '/transportes' },
+  { id: 'manutencao', label: 'Manutenção', icon: <Wrench size={20} />, path: '/manutencao' },
+  { id: 'inventario', label: 'Inventário & Stock', icon: <Package size={20} />, path: '/inventario' },
+  { id: 'rh', label: 'Recursos Humanos', icon: <Users size={20} />, path: '/rh' },
+  { id: 'financeiro', label: 'Finanças', icon: <Wallet size={20} />, path: '/financeiro' },
+  { id: 'contabilidade', label: 'Amazing ContábilExpert', icon: <Scale size={20} />, path: '/contabilidade' },
+  { id: 'auditoria', label: 'Auditoria & Logs', icon: <ShieldCheck size={20} />, path: '/auditoria' },
+  { id: 'blog', label: 'Blog & Notícias', icon: <Newspaper size={20} />, path: '/blog' },
+  { id: 'configuracoes', label: 'Configurações', icon: <Settings size={20} />, path: '/configuracoes' },
+  { id: 'parceiros', label: 'Base de Parceiros', icon: <Handshake size={20} />, path: '/parceiros' },
+  { id: 'fornecedores', label: 'Gestão de Fornecedores', icon: <Handshake size={20} />, path: '/fornecedores' },
+  { id: 'empresas', label: 'Unidades do Grupo', icon: <Building2 size={20} />, path: '/empresas' },
+  { id: 'utilizadores', label: 'Gestão de Utilizadores', icon: <Users size={20} />, path: '/utilizadores' },
 ];
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
