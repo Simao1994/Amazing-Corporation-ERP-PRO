@@ -14,8 +14,9 @@ interface LoginProps {
 const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('amazing_remember_email') || '');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -41,6 +42,12 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
       if (error) throw error;
 
       if (data.user) {
+        if (rememberMe) {
+          localStorage.setItem('amazing_remember_email', email);
+        } else {
+          localStorage.removeItem('amazing_remember_email');
+        }
+
         // Fetch role and name from profiles table in DB
         const { data: profile } = await supabase
           .from('profiles')
@@ -127,7 +134,12 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
 
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 text-slate-500 cursor-pointer">
-                <input type="checkbox" className="rounded border-sky-200 bg-white text-yellow-500 focus:ring-yellow-500" />
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-sky-200 bg-white text-yellow-500 focus:ring-yellow-500"
+                />
                 Lembrar sessão
               </label>
               <Link to="/recuperar-senha" title="Clique para recuperar sua senha" className="text-yellow-600 font-bold hover:text-yellow-700">Recuperar Senha</Link>
