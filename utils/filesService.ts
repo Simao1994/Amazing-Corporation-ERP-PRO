@@ -126,13 +126,10 @@ export const FilesService = {
         }
 
         // 2. Insert - Let PostgreSQL handle RLS/Security
-
-        // 2. Insert
         const { data, error } = await supabase
             .from('categorias_documentos')
             .insert([{
-                nome: nome.trim(),
-                responsavel_id: finalUserId
+                nome: nome.trim()
             }]);
 
         if (error) {
