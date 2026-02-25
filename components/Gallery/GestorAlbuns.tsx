@@ -2,25 +2,25 @@
 import React from 'react';
 import { Folder, Plus, ChevronRight, FolderPlus, MoreHorizontal } from 'lucide-react';
 
-interface Album {
+interface FolderItem {
     id: string;
     nome: string;
     count: number;
 }
 
-interface GestorAlbunsProps {
-    albuns: Album[];
+interface GestorPastasProps {
+    albuns: FolderItem[];
     activeAlbum: string | null;
     onSelectAlbum: (id: string | null) => void;
     onCreateAlbum: () => void;
 }
 
-const GestorAlbuns: React.FC<GestorAlbunsProps> = ({ albuns, activeAlbum, onSelectAlbum, onCreateAlbum }) => {
+const GestorAlbuns: React.FC<GestorPastasProps> = ({ albuns, activeAlbum, onSelectAlbum, onCreateAlbum }) => {
     return (
         <div className="bg-white rounded-[2.5rem] border border-sky-100 shadow-sm overflow-hidden h-fit">
             <div className="p-6 border-b border-zinc-50 flex justify-between items-center">
                 <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                    <Folder size={18} className="text-yellow-500" /> Álbuns
+                    <Folder size={18} className="text-yellow-500" /> Pastas
                 </h3>
                 <button
                     onClick={onCreateAlbum}
@@ -69,7 +69,7 @@ const GestorAlbuns: React.FC<GestorAlbunsProps> = ({ albuns, activeAlbum, onSele
                             <FolderPlus size={20} className="text-zinc-300" />
                         </div>
                         <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-relaxed">
-                            Nenhum álbum<br />criado ainda.
+                            Nenhuma pasta<br />criada ainda.
                         </p>
                     </div>
                 )}

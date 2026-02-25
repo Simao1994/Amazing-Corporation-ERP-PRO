@@ -11,6 +11,7 @@ import ListaGaleria from '../components/Gallery/ListaGaleria';
 import UploaderMidia from '../components/Gallery/UploaderMidia';
 import GestorAlbuns from '../components/Gallery/GestorAlbuns';
 import FiltroGaleria from '../components/Gallery/FiltroGaleria';
+import Breadcrumbs from '../components/Gallery/Breadcrumbs';
 import { ModalPreviewMidia } from '../components/Gallery/ModalPreviewMidia';
 
 interface DashboardGalleryProps {
@@ -20,9 +21,10 @@ interface DashboardGalleryProps {
 const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }) => {
     // State
     const [items, setItems] = useState<any[]>([]);
-    const [albuns, setAlbuns] = useState<any[]>([]);
+    const [pastas, setPastas] = useState<any[]>([]);
+    const [path, setPath] = useState<{ id: string; nome: string }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeAlbum, setActiveAlbum] = useState<string | null>(null);
+    const [activeFolder, setActiveFolder] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [tipo, setTipo] = useState('all');
     const [sort, setSort] = useState('date-desc');
@@ -59,15 +61,25 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch Albums
-            const { data: albumsData, error: albumsError } = await supabase.from('galeria_albuns').select('*, galeria_arquivos(count)').order('nome');
-            if (albumsError) throw albumsError;
-            setAlbuns(albumsData?.map(a => ({ ...a, count: a.galeria_arquivos?.[0]?.count || 0 })) || []);
+            // Fetch Folders (Children of current folder)
+            let foldersQuery = supabase.from('galeria_albuns').select('*, galeria_arquivos(count)').order('nome');
+
+            if (activeFolder) {
+                foldersQuery = foldersQuery.eq('parent_id', activeFolder);
+            } else {
+                foldersQuery = foldersQuery.is('parent_id', null);
+            }
+
+            const { data: foldersData, error: foldersError } = await foldersQuery;
+            if (foldersError) throw foldersError;
+            setPastas(foldersData?.map(a => ({ ...a, count: a.galeria_arquivos?.[0]?.count || 0 })) || []);
 
             // Fetch Files
             let query = supabase.from('galeria_arquivos').select('*');
 
-            if (activeAlbum) query = query.eq('album_id', activeAlbum);
+            if (activeFolder) {
+                query = query.eq('album_id', activeFolder);
+            }
             if (tipo !== 'all') query = query.eq('tipo', tipo);
 
             // Privacy Filter - Refined
@@ -105,9 +117,42 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
         }
     };
 
+    // Navigation path management
+    useEffect(() => {
+        const fetchPath = async () => {
+            if (!activeFolder) {
+                setPath([]);
+                return;
+            }
+
+            let currentId = activeFolder;
+            const newPath: { id: string; nome: string }[] = [];
+            let safetyBreak = 0; // Prevent infinite loops in case of bad data
+
+            while (currentId && safetyBreak < 10) { // Max 10 levels deep for safety
+                const { data, error } = await supabase
+                    .from('galeria_albuns')
+                    .select('id, nome, parent_id')
+                    .eq('id', currentId)
+                    .single();
+
+                if (error || !data) {
+                    console.error("Error fetching folder for path:", error);
+                    break;
+                }
+                newPath.unshift({ id: data.id, nome: data.nome });
+                currentId = data.parent_id;
+                safetyBreak++;
+            }
+            setPath(newPath);
+        };
+
+        fetchPath();
+    }, [activeFolder]);
+
     useEffect(() => {
         if (user) fetchData();
-    }, [activeAlbum, tipo, search, sort, user]);
+    }, [activeFolder, tipo, search, sort, user]);
 
     // Statistics calculated from full items list (if available) or DB
     const stats = useMemo(() => {
@@ -120,9 +165,12 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
 
     const handleUpload = async (files: File[]) => {
         const errors: string[] = [];
+        const validInserts: any[] = [];
         let successCount = 0;
 
-        for (const file of files) {
+        // Process storage uploads in parallel
+        // We use a small delay if needed, but Promise.all is faster
+        const uploadPromises = files.map(async (file) => {
             try {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
@@ -138,33 +186,48 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
                     .from('blog-media')
                     .getPublicUrl(filePath);
 
-                const { error: dbError } = await supabase.from('galeria_arquivos').insert({
+                validInserts.push({
                     nome: file.name,
                     tipo: file.type.startsWith('image/') ? 'image' : 'video',
                     formato: fileExt,
                     tamanho: file.size,
                     caminho: filePath,
                     url: publicUrl,
-                    album_id: activeAlbum,
+                    album_id: activeFolder,
                     usuario_id: user?.id,
                     privacidade: 'private'
                 });
 
-                if (dbError) throw dbError;
                 successCount++;
-
             } catch (err: any) {
                 console.error("Upload error for file:", file.name, err);
                 errors.push(`${file.name}: ${err.message}`);
             }
+        });
+
+        // Wait for all storage uploads to finish
+        await Promise.all(uploadPromises);
+
+        // Batch insert into DB if we have successful uploads
+        if (validInserts.length > 0) {
+            try {
+                const { error: dbError } = await supabase
+                    .from('galeria_arquivos')
+                    .insert(validInserts);
+
+                if (dbError) throw dbError;
+            } catch (err: any) {
+                console.error("Batch DB insert error:", err);
+                errors.push(`Erro ao registar na base de dados: ${err.message}`);
+            }
         }
 
         if (errors.length > 0) {
-            alert(`Upload concluído com intercorrências.\n\nFicheiros com sucesso: ${successCount}\nErros: ${errors.length}\n\nExemplo de erro: ${errors[0]}`);
+            alert(`Upload concluído com intercorrências.\n\nFicheiros com sucesso: ${successCount}\nErros: ${errors.length}\n\nNota: ${errors[0]}`);
         }
 
         fetchData();
-        AmazingStorage.logAction('Upload Mídia', 'Galeria', `${successCount} novos ficheiros adicionados. ${errors.length} falhas.`);
+        AmazingStorage.logAction('Upload Mídia', 'Galeria', `Otimizado: ${successCount} ficheiros adicionados. ${errors.length} falhas.`);
     };
 
     const handleDelete = async (id: string) => {
@@ -213,14 +276,14 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
             if (error) throw error;
             setItems(items.map(i => i.id === id ? { ...i, ...updates } : i));
             if (previewItem?.id === id) setPreviewItem({ ...previewItem, ...updates });
-            if (updates.album_id) fetchData(); // Refresh if moved album
+            if (updates.album_id) fetchData(); // Refresh if moved folder
         } catch (err: any) {
             alert(`Erro ao atualizar: ${err.message}`);
         }
     };
 
-    const handleCreateAlbum = async () => {
-        const nome = prompt("Nome do novo álbum:");
+    const handleCreateFolder = async () => {
+        const nome = prompt("Nome da nova pasta:");
         if (!nome) return;
 
         try {
@@ -228,21 +291,22 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
                 .from('galeria_albuns')
                 .insert({
                     nome,
-                    usuario_id: user?.id
+                    usuario_id: user?.id,
+                    parent_id: activeFolder
                 })
                 .select();
 
             if (error) {
-                console.error("Album creation error:", error);
+                console.error("Folder creation error:", error);
                 throw error;
             }
             if (data && data[0]) {
-                setAlbuns([...albuns, { ...data[0], count: 0 }]);
-                AmazingStorage.logAction('Criar Álbum', 'Galeria', `Álbum ${nome} criado.`);
+                setPastas([...pastas, { ...data[0], count: 0 }]);
+                AmazingStorage.logAction('Criar Pasta', 'Galeria', `Pasta ${nome} criada.`);
             }
         } catch (err: any) {
-            console.error("Catch error while creating album:", err);
-            alert(`Erro ao criar álbum: ${err.message || 'Erro desconhecido'}`);
+            console.error("Catch error while creating folder:", err);
+            alert(`Erro ao criar pasta: ${err.message || 'Erro desconhecido'}`);
         }
     };
 
@@ -267,7 +331,9 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
         <div className="space-y-8 animate-in fade-in duration-700 pb-20">
             {/* Header Premium */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-sky-200">
-                <div className="space-y-1">
+                <div className="flex-1 min-w-0">
+                    <Breadcrumbs path={path} onNavigate={setActiveFolder} />
+
                     <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="text-yellow-500" size={14} />
                         <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.4em]">Activos Digitais</span>
@@ -327,10 +393,10 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
                     </div>
 
                     <GestorAlbuns
-                        albuns={albuns}
-                        activeAlbum={activeAlbum}
-                        onSelectAlbum={setActiveAlbum}
-                        onCreateAlbum={handleCreateAlbum}
+                        albuns={pastas}
+                        activeAlbum={activeFolder}
+                        onSelectAlbum={setActiveFolder}
+                        onCreateAlbum={handleCreateFolder}
                     />
                 </div>
 
@@ -354,15 +420,18 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
                         ) : viewMode === 'grid' ? (
                             <GradeGaleria
                                 items={items}
+                                folders={pastas}
                                 loading={loading}
                                 onPreview={setPreviewItem}
                                 onDelete={handleDelete}
                                 onToggleFavorite={handleToggleFavorite}
                                 onDownload={handleDownload}
+                                onOpenFolder={setActiveFolder}
                             />
                         ) : (
                             <ListaGaleria
                                 items={items}
+                                loading={loading}
                                 onPreview={setPreviewItem}
                                 onDelete={handleDelete}
                                 onToggleFavorite={handleToggleFavorite}
@@ -385,7 +454,7 @@ const DashboardGallery: React.FC<DashboardGalleryProps> = ({ user: initialUser }
                 <ModalPreviewMidia
                     item={previewItem}
                     user={user}
-                    albuns={albuns}
+                    pastas={pastas}
                     onClose={() => setPreviewItem(null)}
                     onDelete={handleDelete}
                     onToggleFavorite={handleToggleFavorite}

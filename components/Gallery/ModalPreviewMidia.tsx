@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { X, Download, Trash2, Heart, Info, Tag, Plus } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
@@ -6,14 +5,14 @@ import { supabase } from '../../src/lib/supabase';
 interface PreviewProps {
     item: any;
     user: any;
-    albuns: any[];
+    pastas: any[];
     onClose: () => void;
     onDelete: (id: string) => void;
     onToggleFavorite: (id: string) => void;
     onUpdate: (id: string, updates: any) => void;
 }
 
-export const ModalPreviewMidia: React.FC<PreviewProps> = ({ item, user, albuns, onClose, onDelete, onToggleFavorite, onUpdate }) => {
+export const ModalPreviewMidia: React.FC<PreviewProps> = ({ item, user, pastas, onClose, onDelete, onToggleFavorite, onUpdate }) => {
     const [tags, setTags] = React.useState<any[]>([]);
     const [loadingTags, setLoadingTags] = React.useState(false);
 
@@ -156,15 +155,15 @@ export const ModalPreviewMidia: React.FC<PreviewProps> = ({ item, user, albuns, 
                     </div>
 
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mover para Álbum</label>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mover para Pasta</label>
                         <select
                             value={item.album_id || ''}
                             disabled={!canEdit}
                             onChange={handleMove}
                             className="w-full bg-zinc-50 border border-zinc-100 p-3 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer focus:ring-2 ring-sky-100 disabled:opacity-50"
                         >
-                            <option value="">Nenhum Álbum</option>
-                            {albuns.map(a => (
+                            <option value="">Nenhuma Pasta</option>
+                            {pastas.map(a => (
                                 <option key={a.id} value={a.id}>{a.nome}</option>
                             ))}
                         </select>
