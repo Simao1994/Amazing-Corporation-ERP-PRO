@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Tag, Plus, Trash2, X, Hash } from 'lucide-react';
-import { FilesService, FileCategory } from '../../utils/filesService';
+import { FilesService } from '../../utils/filesService';
+import { FileCategory } from '../../types';
 
 interface GerenciadorCategoriasProps {
     categories: FileCategory[];
@@ -20,8 +21,9 @@ const GerenciadorCategorias: React.FC<GerenciadorCategoriasProps> = ({ categorie
             await FilesService.createCategory(newCat.trim());
             setNewCat('');
             onRefresh();
-        } catch (err) {
-            alert('Erro ao criar categoria.');
+        } catch (err: any) {
+            console.error('Error creating category:', err);
+            alert(`Erro ao criar categoria: ${err.message || 'Erro desconhecido'}`);
         } finally {
             setLoading(false);
         }

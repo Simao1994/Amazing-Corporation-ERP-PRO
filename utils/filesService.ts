@@ -111,14 +111,30 @@ export const FilesService = {
     },
 
     async createCategory(nome: string) {
+        // 1. Auth Check
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Utilizador não autenticado.');
+
+        // 2. Insert
         const { data, error } = await supabase
             .from('categorias_documentos')
             .insert([{ nome }])
             .select()
             .single();
 
-        if (error) throw error;
-        AmazingStorage.logAction('Documentos', 'Configuração', `Categoria criada: ${nome}`);
+        if (error) {
+            console.error('Database error in createCategory:', error);
+            if (error.code === '23505') throw new Error('Esta categoria já existe.');
+            throw error;
+        }
+
+        // 3. Log (Safe)
+        try {
+            AmazingStorage.logAction('Documentos', 'Configuração', `Categoria criada: ${nome}`);
+        } catch (logErr) {
+            console.warn('Logging failed but category was created:', logErr);
+        }
+
         return data;
     },
 
