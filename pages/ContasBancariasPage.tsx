@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 
 interface ContasBancariasPageProps {
    user: User;
+   inAppTab?: boolean;
 }
 
 interface ContaComFuncionario extends ContaBancariaHR {
@@ -17,7 +18,7 @@ interface ContaComFuncionario extends ContaBancariaHR {
    };
 }
 
-const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user }) => {
+const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTab }) => {
    const [contas, setContas] = useState<ContaComFuncionario[]>([]);
    const [loading, setLoading] = useState(true);
    const [searchTerm, setSearchTerm] = useState('');
@@ -119,20 +120,33 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user }) => {
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-sky-200">
-            <div className="flex items-center gap-3">
-               <Link to="/rh" className="p-3 bg-white rounded-2xl shadow-sm border border-sky-100 hover:bg-zinc-50 transition-all text-zinc-400 hover:text-zinc-900 mr-2">
-                  <ArrowLeft size={24} />
-               </Link>
-               <div className="p-3 bg-zinc-900 rounded-2xl shadow-xl border border-white/10">
-                  <Building className="text-yellow-500" size={28} />
+         {!inAppTab && (
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-sky-200">
+               <div className="flex items-center gap-3">
+                  <Link to="/rh" className="p-3 bg-white rounded-2xl shadow-sm border border-sky-100 hover:bg-zinc-50 transition-all text-zinc-400 hover:text-zinc-900 mr-2">
+                     <ArrowLeft size={24} />
+                  </Link>
+                  <div className="p-3 bg-zinc-900 rounded-2xl shadow-xl border border-white/10">
+                     <Building className="text-yellow-500" size={28} />
+                  </div>
+                  <div>
+                     <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Contas <span className="text-yellow-500">Bancárias</span></h1>
+                     <p className="text-zinc-500 font-bold flex items-center gap-2 mt-1">Diretório Centralizado do Pessoal</p>
+                  </div>
                </div>
-               <div>
-                  <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Contas <span className="text-yellow-500">Bancárias</span></h1>
-                  <p className="text-zinc-500 font-bold flex items-center gap-2 mt-1">Diretório Centralizado do Pessoal</p>
+               <div className="flex gap-4">
+                  <button onClick={fetchData} className="px-5 py-3 bg-white border border-sky-100 text-zinc-600 rounded-xl font-black text-[10px] uppercase hover:bg-zinc-50 transition-all flex items-center gap-2 shadow-sm">
+                     <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Atualizar
+                  </button>
+                  <button onClick={exportToCSV} className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-2 shadow-xl">
+                     <Download size={16} /> Exportar
+                  </button>
                </div>
             </div>
-            <div className="flex gap-4">
+         )}
+         
+         {inAppTab && (
+            <div className="flex justify-end gap-4 mb-2">
                <button onClick={fetchData} className="px-5 py-3 bg-white border border-sky-100 text-zinc-600 rounded-xl font-black text-[10px] uppercase hover:bg-zinc-50 transition-all flex items-center gap-2 shadow-sm">
                   <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Atualizar
                </button>
@@ -140,7 +154,7 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user }) => {
                   <Download size={16} /> Exportar
                </button>
             </div>
-         </div>
+         )}
 
          {/* Filtros */}
          <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-[2rem] border border-sky-100 shadow-sm">
