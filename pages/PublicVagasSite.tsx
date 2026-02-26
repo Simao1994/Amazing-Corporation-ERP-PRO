@@ -84,7 +84,10 @@ const PublicVagasSite: React.FC = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-transparent border-none text-zinc-900 font-bold p-4 focus:ring-0 outline-none placeholder:text-zinc-400 placeholder:font-medium"
                         />
-                        <button className="bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-xl font-bold transition-colors whitespace-nowrap">
+                        <button 
+                            onClick={() => document.getElementById('vagas-list')?.scrollIntoView({ behavior: 'smooth' })}
+                            className="bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-xl font-bold transition-colors whitespace-nowrap"
+                        >
                             Procurar
                         </button>
                     </div>
@@ -102,7 +105,7 @@ const PublicVagasSite: React.FC = () => {
       </div>
 
       {/* LISTAGEM DE VAGAS */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 -mt-16 relative z-20 mb-20">
+      <main id="vagas-list" className="flex-1 max-w-6xl mx-auto w-full px-6 -mt-16 relative z-20 mb-20">
           <div className="bg-white rounded-3xl p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-zinc-100">
              
              <div className="flex justify-between items-center mb-10 border-b border-zinc-100 pb-6">
