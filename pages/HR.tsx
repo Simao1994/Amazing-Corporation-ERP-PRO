@@ -1105,6 +1105,13 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
+         {/* VAGAS DE EMPREGO (RECRUTAMENTO) */}
+         {activeTab === 'vagas' && (
+            <div className="animate-in slide-in-from-bottom-4">
+               <VagasAdminTab />
+            </div>
+         )}
+
          {/* MODAL CADASTRO FUNCIONÁRIO (MANTIDO) */}
          {showModal && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
