@@ -169,10 +169,10 @@ const PublicVagaDetalhes: React.FC = () => {
             </header>
 
             <main className="max-w-6xl mx-auto px-6 pt-12">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="max-w-4xl mx-auto space-y-16">
                     
-                    {/* COLUNA ESQUERDA: DETALHES DA VAGA */}
-                    <div className="lg:col-span-2 space-y-8">
+                    {/* PARTE SUPERIOR: DETALHES DA VAGA */}
+                    <div className="space-y-8">
                         <div>
                             <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-black uppercase tracking-widest mb-4">
                                 Vaga Aberta
@@ -243,9 +243,9 @@ const PublicVagaDetalhes: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* COLUNA DIREITA: FORMULÁRIO */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white p-8 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-zinc-100 sticky top-28">
+                    {/* PARTE INFERIOR: FORMULÁRIO */}
+                    <div>
+                        <div className="bg-white p-8 md:p-12 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-zinc-100">
                             
                             {isSuccess ? (
                                 <div className="text-center py-10 animate-in zoom-in duration-500">
@@ -324,16 +324,21 @@ const PublicVagaDetalhes: React.FC = () => {
                                                 className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Estado Civil *</label>
-                                                <input 
+                                                <select 
                                                     required
-                                                    type="text" 
                                                     value={formData.estado_civil}
                                                     onChange={e => setFormData({...formData, estado_civil: e.target.value})}
-                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
-                                                />
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all appearance-none cursor-pointer" 
+                                                >
+                                                    <option value="" disabled>Selecione...</option>
+                                                    <option value="Solteiro(a)">Solteiro(a)</option>
+                                                    <option value="Casado(a)">Casado(a)</option>
+                                                    <option value="Divorciado(a)">Divorciado(a)</option>
+                                                    <option value="Viúvo(a)">Viúvo(a)</option>
+                                                </select>
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Naturalidade *</label>
@@ -347,7 +352,7 @@ const PublicVagaDetalhes: React.FC = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Morada Própria *</label>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Morada *</label>
                                             <input 
                                                 required
                                                 type="text" 
@@ -358,24 +363,54 @@ const PublicVagaDetalhes: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Província *</label>
-                                            <input 
+                                            <select 
                                                 required
-                                                type="text" 
                                                 value={formData.provincia}
                                                 onChange={e => setFormData({...formData, provincia: e.target.value})}
-                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
-                                            />
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all appearance-none cursor-pointer" 
+                                            >
+                                                <option value="" disabled>Selecione a Província...</option>
+                                                <option value="Bengo">Bengo</option>
+                                                <option value="Benguela">Benguela</option>
+                                                <option value="Bié">Bié</option>
+                                                <option value="Cabinda">Cabinda</option>
+                                                <option value="Cassai Zambeze">Cassai Zambeze</option>
+                                                <option value="Cuando">Cuando</option>
+                                                <option value="Cuanza Norte">Cuanza Norte</option>
+                                                <option value="Cuanza Sul">Cuanza Sul</option>
+                                                <option value="Cubango">Cubango</option>
+                                                <option value="Cunene">Cunene</option>
+                                                <option value="Huambo">Huambo</option>
+                                                <option value="Huíla">Huíla</option>
+                                                <option value="Icolo e Bengo">Icolo e Bengo</option>
+                                                <option value="Luanda">Luanda</option>
+                                                <option value="Lunda Norte">Lunda Norte</option>
+                                                <option value="Lunda Sul">Lunda Sul</option>
+                                                <option value="Malanje">Malanje</option>
+                                                <option value="Moxico">Moxico</option>
+                                                <option value="Namibe">Namibe</option>
+                                                <option value="Uíge">Uíge</option>
+                                                <option value="Zaire">Zaire</option>
+                                            </select>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nível Académico *</label>
-                                                <input 
+                                                <select 
                                                     required
-                                                    type="text" 
                                                     value={formData.nivel_academico}
                                                     onChange={e => setFormData({...formData, nivel_academico: e.target.value})}
-                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
-                                                />
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all appearance-none cursor-pointer" 
+                                                >
+                                                    <option value="" disabled>Selecione...</option>
+                                                    <option value="Ensino Básico">Ensino Básico</option>
+                                                    <option value="Ensino Médio / Técnico">Ensino Médio / Técnico</option>
+                                                    <option value="Frequência Universitária">Frequência Universitária</option>
+                                                    <option value="Licenciatura">Licenciatura</option>
+                                                    <option value="Pós-Graduação / Especialização">Pós-Graduação / Especialização</option>
+                                                    <option value="Mestrado">Mestrado</option>
+                                                    <option value="Doutoramento">Doutoramento</option>
+                                                </select>
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Curso / Formação *</label>
