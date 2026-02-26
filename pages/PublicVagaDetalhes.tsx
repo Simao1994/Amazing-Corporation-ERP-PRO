@@ -157,14 +157,15 @@ const PublicVagaDetalhes: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-50 font-sans pb-24">
+        <div className="min-h-screen bg-sky-50 font-sans pb-24">
             {/* CABEÇALHO SIMPLES */}
-            <header className="bg-white border-b border-zinc-100 sticky top-0 z-50">
-                <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <button onClick={() => navigate('/carreiras')} className="p-2 -ml-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 rounded-xl transition-colors flex items-center gap-2 font-bold text-sm">
-                        <ChevronLeft size={20} /> Voltar
+            <header className="bg-zinc-950 border-b border-white/10 sticky top-0 z-50 shadow-xl">
+                <div className="max-w-6xl mx-auto px-6 h-28 flex items-center justify-between">
+                    <div className="w-64 brightness-0 invert opacity-95 transition-transform hover:scale-105 duration-300 ml-[-1rem]"><Logo /></div>
+                    
+                    <button onClick={() => navigate('/carreiras')} className="px-6 py-3 text-zinc-400 border border-white/10 hover:border-yellow-500/50 hover:bg-zinc-900 hover:text-white rounded-xl transition-all flex items-center gap-2 font-bold text-sm bg-white/5 backdrop-blur-md">
+                        <ChevronLeft size={20} /> Voltar à Lista
                     </button>
-                    <div className="w-32 opacity-80"><Logo /></div>
                 </div>
             </header>
 
