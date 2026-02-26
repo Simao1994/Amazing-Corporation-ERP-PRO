@@ -71,22 +71,32 @@ const PublicVagasSite: React.FC = () => {
                Faça parte de um ecossistema corporativo de excelência. Procure pelas nossas oportunidades abertas e envie a sua candidatura hoje mesmo.
             </p>
             
-            {/* SEARCH BAR */}
-            <div className="max-w-2xl mx-auto relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-sky-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative bg-white rounded-2xl flex items-center p-2 shadow-2xl">
-                    <Search className="text-zinc-400 ml-4 flex-shrink-0" size={24} />
-                    <input 
-                        type="text" 
-                        placeholder="Pesquisar por cargo ou localização..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-transparent border-none text-zinc-900 font-bold p-4 focus:ring-0 outline-none placeholder:text-zinc-400 placeholder:font-medium"
-                    />
-                    <button className="bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-xl font-bold transition-colors whitespace-nowrap">
-                        Procurar
-                    </button>
+            {/* SEARCH BAR E CONSULTA */}
+            <div className="max-w-2xl mx-auto flex flex-col items-center gap-6">
+                <div className="w-full relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-sky-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative bg-white rounded-2xl flex items-center p-2 shadow-2xl">
+                        <Search className="text-zinc-400 ml-4 flex-shrink-0" size={24} />
+                        <input 
+                            type="text" 
+                            placeholder="Pesquisar por cargo ou localização..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-transparent border-none text-zinc-900 font-bold p-4 focus:ring-0 outline-none placeholder:text-zinc-400 placeholder:font-medium"
+                        />
+                        <button className="bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-4 rounded-xl font-bold transition-colors whitespace-nowrap">
+                            Procurar
+                        </button>
+                    </div>
                 </div>
+
+                <button 
+                    onClick={() => navigate('/carreiras/estado')} 
+                    className="flex items-center gap-3 text-yellow-400 font-bold hover:text-yellow-300 transition-colors bg-white/5 py-3 px-6 rounded-xl border border-white/10 hover:border-yellow-400/30 backdrop-blur-sm"
+                >
+                    <Clock size={20} />
+                    Já me candidatei: Consultar Estado
+                </button>
             </div>
          </div>
       </div>

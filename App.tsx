@@ -33,6 +33,7 @@ import FornecedoresPage from './pages/Fornecedores';
 import ParceirosPage from './pages/Parceiros';
 import PublicVagasSite from './pages/PublicVagasSite';
 import PublicVagaDetalhes from './pages/PublicVagaDetalhes';
+import PublicCandidaturaStatus from './pages/PublicCandidaturaStatus';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import UsersPage from './pages/Users';
@@ -163,6 +164,7 @@ const App: React.FC = () => {
             {/* Rotas Públicas */}
             <Route path="/" element={<CorporateHome />} />
             <Route path="/carreiras" element={<PublicVagasSite />} />
+            <Route path="/carreiras/estado" element={<PublicCandidaturaStatus />} />
             <Route path="/carreiras/:id" element={<PublicVagaDetalhes />} />
             <Route path="/candidatura" element={<RecruitmentPage isPublic={true} />} />
             <Route path="/arena" element={<ArenaGames />} />
