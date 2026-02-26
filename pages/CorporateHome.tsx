@@ -414,7 +414,15 @@ const PublicVagasGrid: React.FC = () => {
           .limit(3);
 
         if (error) throw error;
-        setVagas(data as any);
+        
+        // Filtrar no frontend as vagas cuja data_encerramento já passou
+        const vagasValidas = (data as any[]).filter(v => {
+          if (!v.data_encerramento) return true;
+          const dataFim = new Date(v.data_encerramento);
+          dataFim.setHours(23, 59, 59, 999);
+          return dataFim.getTime() >= new Date().getTime();
+        });
+        setVagas(vagasValidas);
       } catch (err) {
         console.error('Erro ao buscar vagas publicas:', err);
       } finally {
@@ -455,7 +463,6 @@ const PublicVagasGrid: React.FC = () => {
             <div className="flex flex-col gap-3 text-xs font-bold text-zinc-400">
                <span className="flex items-center gap-3"><MapPin size={16} className="text-sky-400" /> {vaga.localizacao}</span>
                <span className="flex items-center gap-3"><Building2 size={16} className="text-purple-400" /> {vaga.nivel_experiencia}</span>
-               {(vaga as any).salario && <span className="flex items-center gap-3 text-emerald-400"><span className="font-bold">Kz</span> {(vaga as any).salario}</span>}
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-zinc-700/50 flex justify-between items-center group-hover:border-yellow-500/30">

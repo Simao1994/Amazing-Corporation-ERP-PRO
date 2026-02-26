@@ -758,5 +758,19 @@ export interface RhCandidaturaPublica {
   mensagem?: string;
   status: 'pendente' | 'em_analise' | 'aprovado' | 'rejeitado';
   data_envio: string;
+  
+  // Novos campos exigidos no formulário completo:
+  nivel_academico?: string;
+  curso?: string;
+  bi?: string;
+  estado_civil?: string;
+  disponibilidade?: string;
+  telefone_alternativo?: string;
+  morada?: string;
+  provincia?: string;
+  naturalidade?: string;
+  expectativa_5_anos?: string;
+  sobre_mim?: string;
+  pretensao_salarial?: string;
 }
 

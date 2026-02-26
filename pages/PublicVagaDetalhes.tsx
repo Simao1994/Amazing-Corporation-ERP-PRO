@@ -21,6 +21,18 @@ const PublicVagaDetalhes: React.FC = () => {
         nome: '',
         email: '',
         telefone: '',
+        telefone_alternativo: '',
+        nivel_academico: '',
+        curso: '',
+        bi: '',
+        estado_civil: '',
+        disponibilidade: '',
+        morada: '',
+        provincia: '',
+        naturalidade: '',
+        pretensao_salarial: '',
+        expectativa_5_anos: '',
+        sobre_mim: '',
         mensagem: '',
         cvFile: null as File | null
     });
@@ -94,6 +106,18 @@ const PublicVagaDetalhes: React.FC = () => {
                 nome: formData.nome,
                 email: formData.email,
                 telefone: formData.telefone,
+                telefone_alternativo: formData.telefone_alternativo,
+                nivel_academico: formData.nivel_academico,
+                curso: formData.curso,
+                bi: formData.bi,
+                estado_civil: formData.estado_civil,
+                disponibilidade: formData.disponibilidade,
+                morada: formData.morada,
+                provincia: formData.provincia,
+                naturalidade: formData.naturalidade,
+                pretensao_salarial: formData.pretensao_salarial,
+                expectativa_5_anos: formData.expectativa_5_anos,
+                sobre_mim: formData.sobre_mim,
                 mensagem: formData.mensagem,
                 cv_path: cv_path,
                 status: 'pendente'
@@ -170,12 +194,10 @@ const PublicVagaDetalhes: React.FC = () => {
                                     <Building2 className="text-purple-500" size={20} />
                                     <span>{vaga.nivel_experiencia}</span>
                                 </div>
-                                {(vaga as any).salario && (
-                                    <div className="flex items-center gap-2 text-zinc-600 font-medium">
-                                        <span className="text-emerald-500 font-bold">Kz</span>
-                                        <span>{(vaga as any).salario}</span>
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-2 text-zinc-600 font-medium">
+                                    <Building2 className="text-purple-500" size={20} />
+                                    <span>{vaga.nivel_experiencia}</span>
+                                </div>
                                 {(vaga as any).quantidade && (
                                     <div className="flex items-center gap-2 text-zinc-600 font-medium">
                                         <span className="text-zinc-400 font-black tracking-widest uppercase text-[10px] bg-zinc-100 px-2 py-1 rounded">Vagas: {(vaga as any).quantidade}</span>
@@ -272,13 +294,140 @@ const PublicVagaDetalhes: React.FC = () => {
                                         </div>
                                         
                                         <div>
-                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Telefone (Opcional)</label>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Telefone *</label>
                                             <input 
+                                                required
                                                 type="tel" 
                                                 value={formData.telefone}
                                                 onChange={e => setFormData({...formData, telefone: e.target.value})}
                                                 className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
                                                 placeholder="+244 900 000 000"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Telefone Alternativo *</label>
+                                            <input 
+                                                required
+                                                type="tel" 
+                                                value={formData.telefone_alternativo}
+                                                onChange={e => setFormData({...formData, telefone_alternativo: e.target.value})}
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nº Bilhete de Identidade *</label>
+                                            <input 
+                                                required
+                                                type="text" 
+                                                value={formData.bi}
+                                                onChange={e => setFormData({...formData, bi: e.target.value})}
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Estado Civil *</label>
+                                                <input 
+                                                    required
+                                                    type="text" 
+                                                    value={formData.estado_civil}
+                                                    onChange={e => setFormData({...formData, estado_civil: e.target.value})}
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Naturalidade *</label>
+                                                <input 
+                                                    required
+                                                    type="text" 
+                                                    value={formData.naturalidade}
+                                                    onChange={e => setFormData({...formData, naturalidade: e.target.value})}
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Morada Própria *</label>
+                                            <input 
+                                                required
+                                                type="text" 
+                                                value={formData.morada}
+                                                onChange={e => setFormData({...formData, morada: e.target.value})}
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Província *</label>
+                                            <input 
+                                                required
+                                                type="text" 
+                                                value={formData.provincia}
+                                                onChange={e => setFormData({...formData, provincia: e.target.value})}
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nível Académico *</label>
+                                                <input 
+                                                    required
+                                                    type="text" 
+                                                    value={formData.nivel_academico}
+                                                    onChange={e => setFormData({...formData, nivel_academico: e.target.value})}
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Curso / Formação *</label>
+                                                <input 
+                                                    required
+                                                    type="text" 
+                                                    value={formData.curso}
+                                                    onChange={e => setFormData({...formData, curso: e.target.value})}
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Disponibilidade de início *</label>
+                                            <input 
+                                                required
+                                                type="text" 
+                                                value={formData.disponibilidade}
+                                                onChange={e => setFormData({...formData, disponibilidade: e.target.value})}
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                placeholder="Ex: Imediato, Daqui a 1 mês..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Pretensão Salarial *</label>
+                                            <input 
+                                                required
+                                                type="text" 
+                                                value={formData.pretensao_salarial}
+                                                onChange={e => setFormData({...formData, pretensao_salarial: e.target.value})}
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                placeholder="Ex: 50.000 Kz ou Negociável"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Onde espera chegar daqui a 5 anos? *</label>
+                                            <textarea 
+                                                required
+                                                rows={2} 
+                                                value={formData.expectativa_5_anos}
+                                                onChange={e => setFormData({...formData, expectativa_5_anos: e.target.value})}
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all resize-none" 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Fala-nos um pouco sobre ti *</label>
+                                            <textarea 
+                                                required
+                                                rows={3} 
+                                                value={formData.sobre_mim}
+                                                onChange={e => setFormData({...formData, sobre_mim: e.target.value})}
+                                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all resize-none" 
                                             />
                                         </div>
 
