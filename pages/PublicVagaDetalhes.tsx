@@ -157,16 +157,16 @@ const PublicVagaDetalhes: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#e0f2fe] font-sans pb-24">
-            {/* CABEÇALHO PRETO PREMIUM E LOGO A DIREITA SEM INVERT */}
-            <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50 shadow-2xl">
-                <div className="max-w-6xl mx-auto px-6 h-24 flex items-center justify-between">
-                    <button onClick={() => navigate('/carreiras')} className="px-6 py-3 text-zinc-300 border border-zinc-700 hover:border-yellow-500/50 hover:bg-zinc-800 hover:text-white rounded-xl transition-all flex items-center gap-2 font-bold text-sm bg-zinc-900/50">
+        <div className="min-h-screen bg-[#89CFF0] font-sans pb-24">
+            {/* CABEÇALHO CLARO E LOGO ORIGINAL A DIREITA */}
+            <header className="bg-white border-b border-white/20 sticky top-0 z-50 shadow-sm">
+                <div className="max-w-6xl mx-auto px-6 h-28 flex items-center justify-between">
+                    <button onClick={() => navigate('/carreiras')} className="px-6 py-3 text-zinc-500 border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 rounded-xl transition-all flex items-center gap-2 font-bold text-sm bg-white shadow-sm">
                         <ChevronLeft size={20} /> Voltar à Lista
                     </button>
 
-                    {/* Logo volta à direita sem brilho invertido, e um pouco maior do que o normal mas comportado */}
-                    <div className="w-40 transition-transform hover:scale-105 duration-300"><Logo /></div>
+                    {/* Logo volta à direita nas suas cores originais sem background preto colidindo */}
+                    <div className="w-48 transition-transform hover:scale-105 duration-300"><Logo /></div>
                 </div>
             </header>
 
