@@ -28,6 +28,10 @@ const VagasAdminTab: React.FC = () => {
     const fetchVagas = async () => {
         setLoading(true);
         const { data, error } = await supabase.from('rh_vagas').select('*').order('criado_em', { ascending: false });
+        if (error) {
+            console.error(error);
+            alert(`Erro ao carregar vagas: ${error.message}`);
+        }
         if (!error && data) {
             setVagas(data);
         }
@@ -56,18 +60,22 @@ const VagasAdminTab: React.FC = () => {
         try {
             if (editingVaga.id) {
                 // UPDATE
-                await supabase.from('rh_vagas').update(editingVaga).eq('id', editingVaga.id);
+                const { error } = await supabase.from('rh_vagas').update(editingVaga).eq('id', editingVaga.id);
+                if (error) throw error;
             } else {
                 // INSERT
-                await supabase.from('rh_vagas').insert(editingVaga);
+                const { id, ...vagaToInsert } = editingVaga;
+                const { error } = await supabase.from('rh_vagas').insert([vagaToInsert]);
+                if (error) throw error;
             }
             setShowVagaModal(false);
             setEditingVaga({ status: 'ativa', quantidade: 1, tipo_contrato: 'Tempo Inteiro', nivel_experiencia: 'Júnior' });
             fetchVagas();
             alert('Vaga guardada com sucesso!');
-        } catch (error) {
-            alert('Erro ao guardar vaga.');
-            console.error(error);
+        } catch (error: any) {
+            const msg = error?.message || JSON.stringify(error);
+            alert(`Erro do Banco de Dados ao Guardar: ${msg}`);
+            console.error('Supabase save error:', error);
         }
     };
     
