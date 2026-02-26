@@ -43,13 +43,14 @@ import {
   Video,
   Image as ImageIcon,
   Sparkles,
-  User as UserMini
+  User as UserMini,
+  ChevronRight
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { CorporateSettings, Solicitacao, User, BlogPost } from '../types';
+import { CorporateSettings, Solicitacao, User, BlogPost, RhVaga } from '../types';
 import { supabase } from '../src/lib/supabase';
 
 const PublicNewsGrid: React.FC = () => {
@@ -393,6 +394,77 @@ const PublicMediaGallery: React.FC = () => {
         </div>
       )}
     </>
+  );
+};
+
+// --- PUBLIC VAGAS GRID COMPONENT ---
+const PublicVagasGrid: React.FC = () => {
+  const [vagas, setVagas] = useState<RhVaga[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchPublicVagas = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('rh_vagas')
+          .select('*')
+          .eq('status', 'ativa')
+          .order('data_publicacao', { ascending: false })
+          .limit(3);
+
+        if (error) throw error;
+        setVagas(data as any);
+      } catch (err) {
+        console.error('Erro ao buscar vagas publicas:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPublicVagas();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 w-full max-w-6xl mx-auto">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-64 bg-zinc-800/30 rounded-3xl animate-pulse"></div>
+        ))}
+      </div>
+    );
+  }
+
+  if (vagas.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16 w-full max-w-6xl mx-auto relative z-20">
+      {vagas.map(vaga => (
+        <div 
+          key={vaga.id} 
+          onClick={() => navigate(`/carreiras/${vaga.id}`)}
+          className="bg-zinc-800/40 backdrop-blur-md border border-zinc-700/50 p-8 rounded-[2rem] hover:bg-zinc-800 hover:border-yellow-500/50 hover:shadow-2xl hover:shadow-yellow-500/10 transition-all cursor-pointer group text-left flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex justify-between items-start mb-6">
+               <span className="bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">{vaga.tipo_contrato}</span>
+               {(vaga as any).data_encerramento && (
+                  <span className="text-zinc-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"><Clock size={12} className="text-red-400" /> Fim: {new Date((vaga as any).data_encerramento).toLocaleDateString()}</span>
+               )}
+            </div>
+            <h3 className="text-xl font-black text-white group-hover:text-yellow-400 mb-6 leading-tight line-clamp-2">{vaga.titulo}</h3>
+            <div className="flex flex-col gap-3 text-xs font-bold text-zinc-400">
+               <span className="flex items-center gap-3"><MapPin size={16} className="text-sky-400" /> {vaga.localizacao}</span>
+               <span className="flex items-center gap-3"><Building2 size={16} className="text-purple-400" /> {vaga.nivel_experiencia}</span>
+               {(vaga as any).salario && <span className="flex items-center gap-3 text-emerald-400"><span className="font-bold">Kz</span> {(vaga as any).salario}</span>}
+            </div>
+          </div>
+          <div className="mt-8 pt-6 border-t border-zinc-700/50 flex justify-between items-center group-hover:border-yellow-500/30">
+             <span className="text-[10px] font-black text-yellow-600 uppercase tracking-widest group-hover:text-yellow-500 transition-colors">Ver Detalhes</span>
+             <ChevronRight size={18} className="text-yellow-600 group-hover:text-yellow-500 group-hover:translate-x-1 transition-all" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 };
 
@@ -883,21 +955,26 @@ const CorporateHome: React.FC = () => {
       </section>
 
       {/* CARREIRAS / RECRUTAMENTO SECTION - 100% WIDTH */}
-      <section id="carreiras" className="min-h-[70vh] py-32 px-8 md:px-20 lg:px-32 bg-zinc-900 text-white relative overflow-hidden flex items-center">
+      <section id="carreiras" className="min-h-[70vh] py-32 px-8 md:px-20 lg:px-32 bg-zinc-900 text-white relative overflow-hidden flex flex-col items-center">
         <div className="absolute top-0 right-0 p-20 opacity-5">
           <Briefcase size={500} />
         </div>
-        <div className="w-full text-center space-y-12 relative z-10">
+        <div className="w-full text-center space-y-8 relative z-10 max-w-5xl mx-auto">
+          <div className="inline-flex items-center justify-center p-4 bg-yellow-500/10 rounded-full mb-4">
+             <Briefcase size={32} className="text-yellow-500" />
+          </div>
           <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter">Faça Parte da Nossa <br /><span className="text-yellow-500">História de Sucesso.</span></h2>
-          <p className="text-zinc-400 text-xl md:text-2xl max-w-5xl mx-auto leading-relaxed">
-            Estamos sempre em busca de talentos excepcionais para as nossas divisões de Logística, Agro e Tecnologia. Sua carreira começa aqui.
+          <p className="text-zinc-400 text-xl md:text-2xl leading-relaxed font-medium">
+            Estamos sempre em busca de talentos excepcionais para as nossas divisões corporativas. A sua carreira começa aqui connosco.
           </p>
           <div className="pt-6">
-            <Link to="/candidatura" className="px-20 py-8 bg-yellow-500 text-zinc-900 font-black rounded-3xl hover:bg-yellow-400 transition-all shadow-2xl text-sm uppercase tracking-[0.3em] inline-flex items-center gap-4">
-              Submeter Candidatura Online <Rocket size={24} />
+            <Link to="/carreiras" className="px-12 py-6 bg-yellow-500 text-zinc-900 font-black rounded-2xl hover:bg-yellow-400 transition-all shadow-xl text-xs uppercase tracking-widest inline-flex items-center gap-4">
+              Ver Todas as Vagas <ArrowRight size={20} />
             </Link>
           </div>
         </div>
+
+        <PublicVagasGrid />
       </section>
 
       {/* CONTACTS & MAP - 100% WIDTH */}
