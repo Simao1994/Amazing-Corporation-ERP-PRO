@@ -157,7 +157,7 @@ const PublicVagaDetalhes: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#89CFF0] font-sans pb-24">
+        <div className="min-h-screen bg-zinc-100 font-sans pb-24">
             {/* CABEÇALHO PRETO PREMIUM E LOGO A ESQUERDA HOMOGENEO */}
             <header className="bg-zinc-950 border-b border-black sticky top-0 z-50 shadow-2xl">
                 <div className="max-w-[1400px] mx-auto px-6 h-28 flex items-center justify-between">
