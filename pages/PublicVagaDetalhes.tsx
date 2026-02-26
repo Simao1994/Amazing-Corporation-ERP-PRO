@@ -157,16 +157,14 @@ const PublicVagaDetalhes: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#89CFF0] font-sans pb-24">
-            {/* CABEÇALHO CLARO E LOGO ORIGINAL A DIREITA */}
-            <header className="bg-white border-b border-white/20 sticky top-0 z-50 shadow-sm">
-                <div className="max-w-6xl mx-auto px-6 h-28 flex items-center justify-between">
-                    <button onClick={() => navigate('/carreiras')} className="px-6 py-3 text-zinc-500 border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 rounded-xl transition-all flex items-center gap-2 font-bold text-sm bg-white shadow-sm">
-                        <ChevronLeft size={20} /> Voltar à Lista
+        <div className="min-h-screen bg-zinc-50 font-sans pb-24">
+            {/* CABEÇALHO SIMPLES */}
+            <header className="bg-white border-b border-zinc-100 sticky top-0 z-50">
+                <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+                    <button onClick={() => navigate('/carreiras')} className="p-2 -ml-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 rounded-xl transition-colors flex items-center gap-2 font-bold text-sm">
+                        <ChevronLeft size={20} /> Voltar
                     </button>
-
-                    {/* Logo volta à direita nas suas cores originais sem background preto colidindo */}
-                    <div className="w-48 transition-transform hover:scale-105 duration-300"><Logo /></div>
+                    <div className="w-32 opacity-80"><Logo /></div>
                 </div>
             </header>
 
