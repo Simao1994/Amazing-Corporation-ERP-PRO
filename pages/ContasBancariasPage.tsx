@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/lib/supabase';
 import { ContaBancariaHR, User, Funcionario } from '../types';
-import { Building, Search, ArrowLeft, RefreshCw, AlertCircle, FileText, Download } from 'lucide-react';
+import { Building, Search, ArrowLeft, RefreshCw, AlertCircle, FileText, Download, PlusCircle, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BankAccountsTab from '../components/hr/BankAccountsTab';
+import Select from '../components/ui/Select';
 
 interface ContasBancariasPageProps {
    user: User;
@@ -24,6 +26,9 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
    const [searchTerm, setSearchTerm] = useState('');
    const [filtroStatus, setFiltroStatus] = useState<'todos' | 'ativo' | 'inativo'>('todos');
    const [funcionariosMap, setFuncionariosMap] = useState<Record<string, any>>({});
+   const [funcionariosList, setFuncionariosList] = useState<any[]>([]);
+   const [showAddModal, setShowAddModal] = useState(false);
+   const [selectedFuncId, setSelectedFuncId] = useState('');
 
    const isHRAdmin = ['admin', 'hr', 'director_hr'].includes(user.role);
 
@@ -34,6 +39,7 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
          const { data: funcData } = await supabase.from('funcionarios').select('id, nome, cargo, departamento, foto_url');
          const map: Record<string, any> = {};
          if (funcData) {
+            setFuncionariosList(funcData);
             funcData.forEach(f => {
                map[f.id] = f;
             });
@@ -138,8 +144,11 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
                   <button onClick={fetchData} className="px-5 py-3 bg-white border border-sky-100 text-zinc-600 rounded-xl font-black text-[10px] uppercase hover:bg-zinc-50 transition-all flex items-center gap-2 shadow-sm">
                      <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Atualizar
                   </button>
-                  <button onClick={exportToCSV} className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-2 shadow-xl">
+                  <button onClick={exportToCSV} className="px-6 py-3 bg-white border border-sky-100 text-zinc-600 rounded-xl font-black text-[10px] uppercase hover:bg-zinc-50 transition-all flex items-center gap-2 shadow-sm">
                      <Download size={16} /> Exportar
+                  </button>
+                  <button onClick={() => setShowAddModal(true)} className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-2 shadow-xl">
+                     <PlusCircle size={16} /> Nova Conta
                   </button>
                </div>
             </div>
@@ -150,8 +159,11 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
                <button onClick={fetchData} className="px-5 py-3 bg-white border border-sky-100 text-zinc-600 rounded-xl font-black text-[10px] uppercase hover:bg-zinc-50 transition-all flex items-center gap-2 shadow-sm">
                   <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Atualizar
                </button>
-               <button onClick={exportToCSV} className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-2 shadow-xl">
+               <button onClick={exportToCSV} className="px-6 py-3 bg-white border border-sky-100 text-zinc-600 rounded-xl font-black text-[10px] uppercase hover:bg-zinc-50 transition-all flex items-center gap-2 shadow-sm">
                   <Download size={16} /> Exportar
+               </button>
+               <button onClick={() => setShowAddModal(true)} className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-2 shadow-xl">
+                  <PlusCircle size={16} /> Nova Conta
                </button>
             </div>
          )}
@@ -241,6 +253,45 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
                </div>
             )}
          </div>
+
+         {/* MODAL ADICIONAR CONTA GLOBAL */}
+         {showAddModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                     <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
+                        <PlusCircle className="text-yellow-500" /> Nova Conta Bancária
+                     </h2>
+                     <button onClick={() => { setShowAddModal(false); setSelectedFuncId(''); fetchData(); }} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400">
+                        <X size={28} />
+                     </button>
+                  </div>
+                  <div className="p-8 overflow-y-auto w-full">
+                     <div className="mb-6 bg-zinc-50 p-6 rounded-3xl border border-sky-100">
+                        <Select 
+                           name="funcionario" 
+                           label="Selecione o Colaborador primeiro" 
+                           value={selectedFuncId} 
+                           onChange={(e) => setSelectedFuncId(e.target.value)}
+                           options={[
+                              { value: '', label: '-- Selecione um colaborador --' },
+                              ...funcionariosList.map(f => ({ value: f.id, label: `${f.nome} (${f.cargo})` }))
+                           ]}
+                        />
+                     </div>
+                     {selectedFuncId ? (
+                        <div className="border border-zinc-100 rounded-3xl p-6 bg-white shadow-sm">
+                           <BankAccountsTab funcionarioId={selectedFuncId} user={user} />
+                        </div>
+                     ) : (
+                        <div className="py-20 text-center text-zinc-400 font-bold">
+                           Nenhum colaborador selecionado. Escolha um funcionário acima para exibir ou adicionar contas.
+                        </div>
+                     )}
+                  </div>
+               </div>
+            </div>
+         )}
       </div>
    );
 };
