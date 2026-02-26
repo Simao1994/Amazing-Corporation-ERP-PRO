@@ -130,6 +130,16 @@ const PublicVagasSite: React.FC = () => {
                                      <span className="flex items-center gap-2 text-sm text-zinc-500 font-medium bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50">
                                          <Building2 size={16} className="text-purple-500" /> {vaga.nivel_experiencia || 'Júnior / Pleno'}
                                      </span>
+                                     {(vaga as any).salario && (
+                                         <span className="flex items-center gap-2 text-sm text-zinc-500 font-medium bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50">
+                                            <span className="text-emerald-500 font-bold">Kz</span> {(vaga as any).salario}
+                                         </span>
+                                     )}
+                                     {(vaga as any).data_encerramento && (
+                                         <span className="flex items-center gap-2 text-sm text-zinc-500 font-medium bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50">
+                                             <Clock size={16} className="text-red-400" /> Fim a: {new Date((vaga as any).data_encerramento).toLocaleDateString()}
+                                         </span>
+                                     )}
                                  </div>
                              </div>
                              

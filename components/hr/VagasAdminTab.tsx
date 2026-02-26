@@ -15,7 +15,9 @@ const VagasAdminTab: React.FC = () => {
         status: 'ativa',
         quantidade: 1,
         tipo_contrato: 'Tempo Inteiro',
-        nivel_experiencia: 'Júnior'
+        nivel_experiencia: 'Júnior',
+        salario: '',
+        data_encerramento: ''
     });
     
     // Vaga selecionada para ver candidaturas
@@ -69,7 +71,7 @@ const VagasAdminTab: React.FC = () => {
                 if (error) throw error;
             }
             setShowVagaModal(false);
-            setEditingVaga({ status: 'ativa', quantidade: 1, tipo_contrato: 'Tempo Inteiro', nivel_experiencia: 'Júnior' });
+            setEditingVaga({ status: 'ativa', quantidade: 1, tipo_contrato: 'Tempo Inteiro', nivel_experiencia: 'Júnior', salario: '', data_encerramento: '' });
             fetchVagas();
             alert('Vaga guardada com sucesso!');
         } catch (error: any) {
@@ -99,7 +101,7 @@ const VagasAdminTab: React.FC = () => {
                 </div>
                 <button
                     onClick={() => {
-                        setEditingVaga({ status: 'ativa', quantidade: 1, tipo_contrato: 'Tempo Inteiro', nivel_experiencia: 'Júnior' });
+                        setEditingVaga({ status: 'ativa', quantidade: 1, tipo_contrato: 'Tempo Inteiro', nivel_experiencia: 'Júnior', salario: '', data_encerramento: '' });
                         setShowVagaModal(true);
                     }}
                     className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 px-6 py-3 rounded-xl font-bold transition-all shadow-sm"
@@ -214,6 +216,18 @@ const VagasAdminTab: React.FC = () => {
                                         <option value="Sênior">Sênior</option>
                                         <option value="Diretor">Diretor</option>
                                     </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Pretensão Salarial (Opcional)</label>
+                                    <input type="text" value={editingVaga.salario || ''} onChange={e => setEditingVaga({...editingVaga, salario: e.target.value})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-sm text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="Ex: Negociável, ou 1.000.000 Kz" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Nº de Vagas Abertas</label>
+                                    <input type="number" min="1" value={editingVaga.quantidade || 1} onChange={e => setEditingVaga({...editingVaga, quantidade: parseInt(e.target.value)})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-sm text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Data de Encerramento (Opcional)</label>
+                                    <input type="date" value={editingVaga.data_encerramento ? new Date(editingVaga.data_encerramento).toISOString().split('T')[0] : ''} onChange={e => setEditingVaga({...editingVaga, data_encerramento: e.target.value})} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-sm text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Status da Vaga</label>

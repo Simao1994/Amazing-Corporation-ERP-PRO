@@ -170,6 +170,23 @@ const PublicVagaDetalhes: React.FC = () => {
                                     <Building2 className="text-purple-500" size={20} />
                                     <span>{vaga.nivel_experiencia}</span>
                                 </div>
+                                {(vaga as any).salario && (
+                                    <div className="flex items-center gap-2 text-zinc-600 font-medium">
+                                        <span className="text-emerald-500 font-bold">Kz</span>
+                                        <span>{(vaga as any).salario}</span>
+                                    </div>
+                                )}
+                                {(vaga as any).quantidade && (
+                                    <div className="flex items-center gap-2 text-zinc-600 font-medium">
+                                        <span className="text-zinc-400 font-black tracking-widest uppercase text-[10px] bg-zinc-100 px-2 py-1 rounded">Vagas: {(vaga as any).quantidade}</span>
+                                    </div>
+                                )}
+                                {(vaga as any).data_encerramento && (
+                                    <div className="flex items-center gap-2 text-zinc-600 font-medium">
+                                        <Clock className="text-red-400" size={20} />
+                                        <span>Encerra a: {new Date((vaga as any).data_encerramento).toLocaleDateString()}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
