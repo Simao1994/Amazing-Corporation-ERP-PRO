@@ -26,6 +26,7 @@ import {
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
 import Logo from '../components/Logo';
+import BankAccountsTab from '../components/hr/BankAccountsTab';
 
 // --- CONFIGURAÇÃO DE HORÁRIO E REGRAS ---
 const WORK_RULES = {
@@ -163,6 +164,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const [printingPass, setPrintingPass] = useState<Funcionario | null>(null);
    const [viewingRecibo, setViewingRecibo] = useState<ReciboSalarial | null>(null);
    const [historyFuncionario, setHistoryFuncionario] = useState<Funcionario | null>(null);
+   const [modalActiveTab, setModalActiveTab] = useState<'geral' | 'contas'>('geral');
 
    // Estados locais do formulário para controlo dinâmico
    const [formState, setFormState] = useState({
@@ -286,6 +288,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             curso: ''
          });
       }
+      setModalActiveTab('geral');
       setShowModal(true);
    };
 
@@ -1098,13 +1101,33 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
                      <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
                         {editingItem ? <Edit className="text-yellow-500" /> : <UserPlus className="text-yellow-500" />}
-                        {editingItem ? 'Actualizar Ficha' : 'Nova Admissão'}
+                        {editingItem ? 'Ficha do Colaborador' : 'Nova Admissão'}
                      </h2>
                      <button onClick={() => setShowModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><X size={28} /></button>
                   </div>
 
-                  <form onSubmit={handleSubmitFuncionario} className="p-10 space-y-8 overflow-y-auto">
-                     <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                  {/* ABAS DO MODAL */}
+                  {editingItem && (
+                     <div className="flex border-b border-zinc-100 bg-white px-8 pt-4 gap-6">
+                        <button 
+                           onClick={() => setModalActiveTab('geral')} 
+                           className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modalActiveTab === 'geral' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
+                        >
+                           Dados Gerais
+                        </button>
+                        <button 
+                           onClick={() => setModalActiveTab('contas')} 
+                           className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modalActiveTab === 'contas' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
+                        >
+                           Contas Bancárias
+                        </button>
+                     </div>
+                  )}
+
+                  <div className="overflow-y-auto w-full h-full p-0">
+                     {modalActiveTab === 'geral' ? (
+                        <form onSubmit={handleSubmitFuncionario} className="p-10 space-y-8">
+                           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                         {/* Coluna da Foto */}
                         <div className="md:col-span-3 flex flex-col items-center gap-4">
                            <div className="w-full aspect-square bg-zinc-50 rounded-[3rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400 overflow-hidden cursor-pointer hover:border-yellow-500 transition-all relative" onClick={() => document.getElementById('photo-upload')?.click()}>
@@ -1211,6 +1234,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </button>
                      </div>
                   </form>
+                  ) : (
+                     <div className="p-10 min-h-[500px]">
+                        {editingItem && <BankAccountsTab funcionarioId={editingItem.id} user={user} />}
+                     </div>
+                  )}
+                  </div>
                </div>
             </div>
          )}

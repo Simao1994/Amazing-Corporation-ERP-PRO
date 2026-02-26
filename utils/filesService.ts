@@ -1,6 +1,7 @@
 import { supabase } from '../src/lib/supabase';
 import { AmazingStorage } from './storage';
 import { FileDocument, FileCategory } from '../types';
+export type { FileDocument, FileCategory };
 
 // Tracer Version: 1.0.3 - Auth Restriction Removed
 

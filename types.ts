@@ -115,6 +115,26 @@ export interface ArenaRanking {
 }
 
 // --- RH E PESSOAL ---
+export interface ContaBancariaHR {
+  id: string;
+  funcionario_id: string;
+  nome_banco: string;
+  numero_conta: string;
+  iban?: string;
+  swift_bic?: string;
+  tipo_conta?: string;
+  moeda: string;
+  titular_conta?: string;
+  pais_banco: string;
+  codigo_banco?: string;
+  codigo_agencia?: string;
+  principal: boolean;
+  status: 'ativo' | 'inativo';
+  observacoes?: string;
+  criado_em?: string;
+  atualizado_em?: string;
+}
+
 export type ContratoTipo = 'Indeterminado' | 'Determinado' | 'Estágio';
 export type FuncionarioStatus = 'ativo' | 'ferias' | 'inativo' | 'rescindido';
 
