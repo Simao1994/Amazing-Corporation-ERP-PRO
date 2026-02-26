@@ -1128,26 +1128,26 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      {modalActiveTab === 'geral' ? (
                         <form onSubmit={handleSubmitFuncionario} className="p-10 space-y-8">
                            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                        {/* Coluna da Foto */}
-                        <div className="md:col-span-3 flex flex-col items-center gap-4">
-                           <div className="w-full aspect-square bg-zinc-50 rounded-[3rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400 overflow-hidden cursor-pointer hover:border-yellow-500 transition-all relative" onClick={() => document.getElementById('photo-upload')?.click()}>
-                              {photoPreview ? <img src={photoPreview} className="w-full h-full object-cover" /> : <Camera size={48} />}
-                              <input type="file" id="photo-upload" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { const r = new FileReader(); r.onload = () => setPhotoPreview(r.result as string); r.readAsDataURL(file); } }} />
-                           </div>
-                           <p className="text-[9px] font-black text-zinc-400 uppercase">Foto Institucional</p>
-                        </div>
+                              {/* Coluna da Foto */}
+                              <div className="md:col-span-3 flex flex-col items-center gap-4">
+                                 <div className="w-full aspect-square bg-zinc-50 rounded-[3rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400 overflow-hidden cursor-pointer hover:border-yellow-500 transition-all relative" onClick={() => document.getElementById('photo-upload')?.click()}>
+                                    {photoPreview ? <img src={photoPreview} className="w-full h-full object-cover" /> : <Camera size={48} />}
+                                    <input type="file" id="photo-upload" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { const r = new FileReader(); r.onload = () => setPhotoPreview(r.result as string); r.readAsDataURL(file); } }} />
+                                 </div>
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase">Foto Institucional</p>
+                              </div>
 
-                        {/* Dados Pessoais Principais */}
-                        <div className="md:col-span-9 space-y-6">
-                           <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><UserCheck size={14} /> Identificação & Contactos</h3>
+                              {/* Dados Pessoais Principais */}
+                              <div className="md:col-span-9 space-y-6">
+                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><UserCheck size={14} /> Identificação & Contactos</h3>
 
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <Input name="nome" label="Nome Completo" defaultValue={editingItem?.nome} required />
-                              <Input name="bilhete" label="Nº BI / Identidade" defaultValue={editingItem?.bilhete} required />
-                           </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Input name="nome" label="Nome Completo" defaultValue={editingItem?.nome} required />
+                                    <Input name="bilhete" label="Nº BI / Identidade" defaultValue={editingItem?.bilhete} required />
+                                 </div>
 
-                           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                              <div className="md:col-span-4 grid grid-cols-3 gap-4">
+                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                    <div className="md:col-span-4 grid grid-cols-3 gap-4">
                                  <div className="col-span-2">
                                     <Input
                                        name="nascimento" label="Data de Nascimento" type="date" required
