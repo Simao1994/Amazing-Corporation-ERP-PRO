@@ -729,3 +729,34 @@ export interface FileDocument {
   categoria?: { nome: string };
   responsavel?: { nome: string };
 }
+
+// --- PORTAL VAGAS DE EMPREGO (REC PUBLICO E PRIVADO) ---
+export interface RhVaga {
+  id: string;
+  titulo: string;
+  descricao: string;
+  requisitos?: string;
+  responsabilidades?: string;
+  localizacao?: string;
+  tipo_contrato?: string;
+  nivel_experiencia?: string;
+  salario?: string;
+  quantidade: number;
+  status: 'ativa' | 'encerrada';
+  data_publicacao: string;
+  data_encerramento?: string;
+  criado_em: string;
+}
+
+export interface RhCandidaturaPublica {
+  id: string;
+  vaga_id: string;
+  nome: string;
+  email: string;
+  telefone?: string;
+  cv_path?: string;
+  mensagem?: string;
+  status: 'pendente' | 'em_analise' | 'aprovado' | 'rejeitado';
+  data_envio: string;
+}
+

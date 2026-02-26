@@ -28,6 +28,7 @@ import { supabase } from '../src/lib/supabase';
 import Logo from '../components/Logo';
 import BankAccountsTab from '../components/hr/BankAccountsTab';
 import ContasBancariasPage from './ContasBancariasPage';
+import VagasAdminTab from '../components/hr/VagasAdminTab';
 
 // --- CONFIGURAÇÃO DE HORÁRIO E REGRAS ---
 const WORK_RULES = {
@@ -155,7 +156,7 @@ interface HRPageProps {
 
 const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const isHRAdmin = ['admin', 'hr', 'director_hr'].includes(user.role);
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes' | 'contas'>('dashboard');
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes' | 'contas' | 'vagas'>('dashboard');
    const [showModal, setShowModal] = useState(false);
    const [showMetaModal, setShowMetaModal] = useState(false);
    const [editingItem, setEditingItem] = useState<Funcionario | null>(null);
@@ -698,8 +699,9 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   { id: 'presenca', icon: <Fingerprint size={18} />, label: 'Ponto' },
                   { id: 'performance', icon: <Award size={18} />, label: 'Metas' },
                   { id: 'passes', icon: <IdCard size={18} />, label: 'Passes' },
+                  { id: 'vagas', icon: <UserPlus size={18} />, label: 'Vagas' },
                   { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Bancárias' }
-               ].filter(tab => isHRAdmin || !['gente', 'payroll', 'contas'].includes(tab.id)).map(tab => (
+               ].filter(tab => isHRAdmin || !['gente', 'payroll', 'contas', 'vagas'].includes(tab.id)).map(tab => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'}`}>{tab.icon} {tab.label}</button>
                ))}
             </div>
