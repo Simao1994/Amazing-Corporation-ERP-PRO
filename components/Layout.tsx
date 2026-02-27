@@ -80,11 +80,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     setMessages(allMessages);
 
     // Chat Contacts
-    const mockContacts: ChatContact[] = [
-      { id: 'admin_sys', nome: 'Eng. Simão Puca', role: 'Suporte TI', avatar: '', online: true, lastSeen: new Date().toISOString(), unreadCount: 0 },
-      { id: 'dir_fin', nome: 'Direcção Financeira', role: 'Financeiro', avatar: '', online: true, lastSeen: new Date().toISOString(), unreadCount: 2 },
-      { id: 'rh_manager', nome: 'Recursos Humanos', role: 'RH', avatar: '', online: false, lastSeen: new Date(Date.now() - 3600000).toISOString(), unreadCount: 0 },
-    ];
+      const mockContacts: ChatContact[] = [
+        { id: 'admin_sys', nome: 'Eng. Simão Puca', role: 'Suporte TI', avatar: '', online: true, lastSeen: new Date().toISOString(), unreadCount: 0 },
+      ];
     setContacts(mockContacts);
 
     // Notifications Load (Simulação inicial se vazio)

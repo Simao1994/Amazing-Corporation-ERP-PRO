@@ -762,7 +762,7 @@ const CorporateHome: React.FC = () => {
           <Link to="/arena" className="flex items-center gap-3 text-indigo-400 hover:text-indigo-300 transition-all bg-white/5 px-6 py-3 rounded-full border border-white/10">
             <Gamepad2 size={18} /> Amazing Arena Gamer
           </Link>
-          <button onClick={() => scrollIntoView('carreiras')} className="hover:text-yellow-500 transition-colors">Trabalhe Connosco</button>
+          <button onClick={() => scrollIntoView('carreiras')} className="hover:text-yellow-500 transition-colors">Candidatura Espontânea</button>
           <button onClick={() => scrollIntoView('contactos')} className="hover:text-yellow-500 transition-colors">Contactos</button>
         </div>
         <Link to="/dashboard" className={`px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${currentUser ? 'bg-white text-zinc-900 hover:bg-zinc-200' : 'bg-white/10 text-zinc-400 hover:bg-white/20'}`}>
@@ -1154,7 +1154,10 @@ const CorporateHome: React.FC = () => {
           </div>
 
           <div className="pt-16 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">© 2026 Amazing Corporation S.A. Todos os direitos reservados.</p>
+            <div className="flex flex-col gap-1 font-['Times_New_Roman',_Times,_serif]">
+              <p className="text-[12px] text-zinc-600">Sistema Desenvolvido Pelo Engenheiro Simão Puca, Email: simaopambo94@gamil, Contacto: +244 945 035 089</p>
+              <p className="text-[12px] font-bold text-zinc-600">© 2026 Grupo Amazing Corporation, todos os direitos reservados.</p>
+            </div>
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-green-500"></div>
               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">System Operational • v4.2.0</span>
