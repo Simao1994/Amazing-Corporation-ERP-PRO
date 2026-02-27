@@ -136,19 +136,23 @@ const PublicCandidaturaEspontanea: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-100 text-zinc-900 font-['Times_New_Roman',_Times,_serif] py-12 px-6 relative overflow-x-hidden">
-            {/* Background elements */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-yellow-400/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-sky-200/20 rounded-full blur-[100px] pointer-events-none -z-10"></div>
-
-            <div className="max-w-4xl mx-auto flex justify-between items-center mb-12">
-                <Logo className="h-10" />
-                <div className="flex gap-4">
-                    <Link to="/" className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-zinc-500 hover:text-zinc-900 transition-all">
-                        <Home size={18} /> Início
-                    </Link>
+        <div className="min-h-screen bg-zinc-100 text-zinc-900 font-['Times_New_Roman',_Times,_serif] relative overflow-x-hidden">
+            {/* Premium Black Header */}
+            <div className="w-full bg-zinc-950 py-6 px-8 shadow-xl relative z-20 border-b border-zinc-800">
+                <div className="max-w-7xl mx-auto flex justify-between items-center">
+                    <Logo className="h-14 md:h-16" />
+                    <div className="flex gap-4">
+                        <Link to="/" className="flex items-center gap-2 font-bold text-xs md:text-sm uppercase tracking-widest text-zinc-400 hover:text-white transition-all">
+                            <Home size={18} /> Início
+                        </Link>
+                    </div>
                 </div>
             </div>
+
+            <div className="py-12 px-6 relative z-10">
+                {/* Background elements */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-yellow-400/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+                <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-sky-200/20 rounded-full blur-[100px] pointer-events-none -z-10"></div>
 
             {isSuccess ? (
                 <div className="w-full max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-[3rem] border border-zinc-200 shadow-2xl mt-12 text-center animate-in fade-in zoom-in duration-500">
@@ -345,6 +349,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                     </form>
                 </div>
             )}
+            </div>
         </div>
     );
 };
