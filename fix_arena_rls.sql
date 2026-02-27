@@ -80,7 +80,7 @@ USING (true);
 DROP POLICY IF EXISTS "Permitir tudo a utilizadores autenticados em arena_games" ON public.arena_games;
 CREATE POLICY "Permitir tudo a utilizadores autenticados em arena_games" 
 ON public.arena_games FOR ALL 
-TO authenticated 
+TO public, anon, authenticated 
 USING (true)
 WITH CHECK (true);
 
@@ -100,7 +100,7 @@ WITH CHECK (true);
 DROP POLICY IF EXISTS "Permitir updates a autenticados em arena_pagamentos" ON public.arena_pagamentos;
 CREATE POLICY "Permitir updates a autenticados em arena_pagamentos" 
 ON public.arena_pagamentos FOR ALL 
-TO authenticated 
+TO public, anon, authenticated 
 USING (true)
 WITH CHECK (true);
 
@@ -114,7 +114,7 @@ USING (true);
 DROP POLICY IF EXISTS "Permitir tudo a autenticados em arena_tournaments" ON public.arena_tournaments;
 CREATE POLICY "Permitir tudo a autenticados em arena_tournaments" 
 ON public.arena_tournaments FOR ALL 
-TO authenticated 
+TO public, anon, authenticated 
 USING (true)
 WITH CHECK (true);
 
@@ -128,7 +128,7 @@ USING (true);
 DROP POLICY IF EXISTS "Permitir tudo a autenticados em arena_ranking" ON public.arena_ranking;
 CREATE POLICY "Permitir tudo a autenticados em arena_ranking" 
 ON public.arena_ranking FOR ALL 
-TO authenticated 
+TO public, anon, authenticated 
 USING (true)
 WITH CHECK (true);
 
@@ -136,7 +136,7 @@ WITH CHECK (true);
 DROP POLICY IF EXISTS "Permitir tudo a autenticados em arena_expenses" ON public.arena_expenses;
 CREATE POLICY "Permitir tudo a autenticados em arena_expenses" 
 ON public.arena_expenses FOR ALL 
-TO authenticated 
+TO public, anon, authenticated 
 USING (true)
 WITH CHECK (true);
 
