@@ -25,6 +25,13 @@ const gerarReferencia = () => {
    return `ARENA-${yy}${mm}${dd}-${rand}`;
 };
 
+const formatPrize = (val: string | number) => {
+   if (!val) return 'TBA';
+   const asNum = Number(val);
+   if (!isNaN(asNum) && asNum > 0) return formatAOA(asNum);
+   return String(val);
+};
+
 const NUMERO_ARENA = '929 882 067';
 const SUPABASE_FUNCTIONS_URL = 'https://jgktemwegesmmomlftgt.supabase.co/functions/v1';
 
@@ -332,7 +339,7 @@ const ArenaGames: React.FC = () => {
                            <div className="md:w-1/2 flex flex-col justify-between bg-zinc-900/50 p-8 rounded-[3rem] border border-white/5">
                               <div>
                                  <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Grande Prémio</p>
-                                 <p className="text-2xl font-black text-yellow-500 tracking-tight">{t.premio}</p>
+                                 <p className="text-2xl font-black text-yellow-500 tracking-tight">{formatPrize(t.premio)}</p>
                               </div>
                               <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">
                                  <Eye size={14} /> Clique para ver detalhes
@@ -391,7 +398,7 @@ const ArenaGames: React.FC = () => {
 
                               <div className="bg-yellow-500/5 border border-yellow-500/10 p-8 rounded-[3rem] space-y-4">
                                  <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Premiação Total</p>
-                                 <p className="text-4xl font-black text-white">{viewingTournament.premio}</p>
+                                 <p className="text-4xl font-black text-white">{formatPrize(viewingTournament.premio)}</p>
                                  <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase">
                                     <Award size={14} className="text-yellow-500" /> + Troféu Amazing Arena
                                  </div>

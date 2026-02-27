@@ -247,34 +247,74 @@ const ArenaAdmin: React.FC = () => {
       const fd = new FormData(e.currentTarget);
       const isEditing = !!editingRanking;
 
+      const newScore = Number(fd.get('score'));
       const payload = {
          player_name: fd.get('player_name') as string,
-         score: Number(fd.get('score')),
+         score: newScore,
          last_game: fd.get('last_game') as string,
-         rank: 0
       };
 
       try {
+         // 1. Guardar ou Atualizar o jogador ativo (posição temporária)
          if (isEditing) {
             await supabase.from('arena_ranking').update(payload).eq('id', editingRanking.id);
          } else {
-            const nextRank = rankings.length + 1;
-            await supabase.from('arena_ranking').insert([{ ...payload, rank: nextRank }]);
+            await supabase.from('arena_ranking').insert([{ ...payload, rank: 9999 }]); // Rank temporário no fundo
          }
+
+         // 2. Extrair toda a gente para recalcular a matemática do Ranking Global
+         const { data: allPlayers } = await supabase.from('arena_ranking').select('*').order('score', { ascending: false });
+
+         // 3. Impor Posições (1, 2, 3...) pela ordem dos Pontos
+         if (allPlayers && allPlayers.length > 0) {
+            const updates = allPlayers.map((player, index) => ({
+               id: player.id,
+               player_name: player.player_name,
+               score: player.score,
+               last_game: player.last_game,
+               rank: index + 1
+            }));
+
+            // Upsert massivo para reescrever as posições oficiais de todos ao mesmo tempo
+            const { error: upsertError } = await supabase.from('arena_ranking').upsert(updates);
+            if (upsertError) throw upsertError;
+         }
+
          setShowRankingModal(false);
          setEditingRanking(null);
-         fetchData();
+         fetchData(); // Atualiza a tabela na UI
       } catch (error) {
-         alert('Erro ao salvar ranking');
+         console.error('Erro no recalculo de vitórias:', error);
+         alert('Erro ao salvar e ordenar o ranking global.');
       }
    };
 
    const handleDeleteRanking = async (id: string, name: string) => {
       if (confirm(`Remover "${name}" do Ranking?`)) {
          try {
+            // 1. Apagar o jogador
             await supabase.from('arena_ranking').delete().eq('id', id);
+
+            // 2. Extrair os restantes para recalcular a matemática do Ranking Global
+            const { data: allPlayers } = await supabase.from('arena_ranking').select('*').order('score', { ascending: false });
+
+            // 3. Impor Posições (1, 2, 3...) pela ordem dos Pontos
+            if (allPlayers && allPlayers.length > 0) {
+               const updates = allPlayers.map((player, index) => ({
+                  id: player.id,
+                  player_name: player.player_name,
+                  score: player.score,
+                  last_game: player.last_game,
+                  rank: index + 1
+               }));
+
+               const { error: upsertError } = await supabase.from('arena_ranking').upsert(updates);
+               if (upsertError) throw upsertError;
+            }
+
             fetchData();
          } catch (error) {
+            console.error('Erro na deleção de vitória:', error);
             alert('Erro ao remover do ranking');
          }
       }
