@@ -1012,7 +1012,6 @@ const ArenaAdmin: React.FC = () => {
                </div>
             </div>
          )}
-
          {showTournamentModal && (
             <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in">
                <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-3xl overflow-hidden">
