@@ -294,7 +294,9 @@ const ArenaAdmin: React.FC = () => {
          game_id: gameId,
          jogo: selectedGame ? selectedGame.titulo : '', // Associa o nome do jogo
          data_inicio: fd.get('data_inicio') as string,
+         hora_inicio: (fd.get('hora_inicio') as string) || null,
          data_fim: fd.get('data_fim') as string,
+         hora_fim: (fd.get('hora_fim') as string) || null,
          premio: fd.get('premio') as string,
          status: (fd.get('status') as any) || 'Inscrições',
          vagas: Number(fd.get('vagas')),
@@ -984,8 +986,14 @@ const ArenaAdmin: React.FC = () => {
                         <Select name="game_id" label="Jogo Associado" defaultValue={editingTournament?.game_id} options={games.map(g => ({ value: g.id, label: g.titulo }))} required />
                      </div>
                      <div className="grid grid-cols-2 gap-4">
-                        <Input name="data_inicio" label="Início" type="date" defaultValue={editingTournament?.data_inicio} required />
-                        <Input name="data_fim" label="Fim" type="date" defaultValue={editingTournament?.data_fim} required />
+                        <div className="grid grid-cols-2 gap-2">
+                           <Input name="data_inicio" label="Data Início" type="date" defaultValue={editingTournament?.data_inicio} required />
+                           <Input name="hora_inicio" label="Hora" type="time" defaultValue={editingTournament?.hora_inicio} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                           <Input name="data_fim" label="Data Fim" type="date" defaultValue={editingTournament?.data_fim} required />
+                           <Input name="hora_fim" label="Hora" type="time" defaultValue={editingTournament?.hora_fim} />
+                        </div>
                      </div>
                      <div className="grid grid-cols-2 gap-4">
                         <Input name="premio" label="Prémio" defaultValue={editingTournament?.premio} required />
