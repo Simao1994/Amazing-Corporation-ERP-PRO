@@ -138,9 +138,9 @@ const PublicCandidaturaEspontanea: React.FC = () => {
     return (
         <div className="min-h-screen bg-zinc-100 text-zinc-900 font-['Times_New_Roman',_Times,_serif] relative overflow-x-hidden">
             {/* Premium Black Header */}
-            <div className="w-full bg-zinc-950 py-6 px-8 shadow-xl relative z-20 border-b border-zinc-800">
+            <div className="w-full bg-zinc-950 py-6 px-8 shadow-xl sticky top-0 z-50 border-b border-zinc-800">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <Logo className="h-14 md:h-16" />
+                    <Logo className="h-20 md:h-24" />
                     <div className="flex gap-4">
                         <Link to="/" className="flex items-center gap-2 font-bold text-xs md:text-sm uppercase tracking-widest text-zinc-400 hover:text-white transition-all">
                             <Home size={18} /> Início
