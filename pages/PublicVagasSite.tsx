@@ -48,7 +48,7 @@ const PublicVagasSite: React.FC = () => {
       <header className="bg-zinc-900 border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
-             <div className="w-40 brightness-0 invert opacity-90"><Logo /></div>
+             <div className="w-40"><Logo /></div>
              <div className="h-6 w-px bg-white/20 hidden md:block"></div>
              <span className="text-zinc-400 font-black tracking-widest uppercase text-xs hidden md:block">Portal de Carreiras</span>
           </div>
@@ -174,7 +174,7 @@ const PublicVagasSite: React.FC = () => {
       {/* FOOTER */}
       <footer className="bg-zinc-950 text-zinc-400 py-12 text-center mt-auto">
           <div className="max-w-6xl mx-auto px-6">
-              <div className="w-32 mx-auto brightness-0 invert opacity-50 mb-6"><Logo /></div>
+              <div className="w-32 mx-auto mb-6"><Logo /></div>
               <p className="text-sm font-medium">© {new Date().getFullYear()} Amazing Corporation. Todos os direitos reservados.</p>
           </div>
       </footer>
