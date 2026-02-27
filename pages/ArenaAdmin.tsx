@@ -286,9 +286,13 @@ const ArenaAdmin: React.FC = () => {
       const fd = new FormData(e.currentTarget);
       const isEditing = !!editingTournament;
 
+      const gameId = fd.get('game_id') as string;
+      const selectedGame = games.find(g => g.id === gameId);
+
       const payload = {
          titulo: fd.get('titulo') as string,
-         game_id: fd.get('game_id') as string,
+         game_id: gameId,
+         jogo: selectedGame ? selectedGame.titulo : '', // Associa o nome do jogo
          data_inicio: fd.get('data_inicio') as string,
          data_fim: fd.get('data_fim') as string,
          premio: fd.get('premio') as string,
