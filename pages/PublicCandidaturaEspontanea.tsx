@@ -138,9 +138,9 @@ const PublicCandidaturaEspontanea: React.FC = () => {
     return (
         <div className="min-h-screen bg-zinc-100 text-zinc-900 font-['Times_New_Roman',_Times,_serif] relative overflow-x-hidden">
             {/* Premium Black Header */}
-            <div className="fixed top-0 left-0 w-full bg-zinc-950 py-6 px-4 md:px-12 shadow-xl z-50 border-b border-zinc-800">
+            <div className="fixed top-0 left-0 w-full bg-zinc-950 py-3 px-4 md:px-12 shadow-xl z-50 border-b border-zinc-800">
                 <div className="w-full flex justify-between items-center">
-                    <Logo className="h-20 md:h-24" />
+                    <Logo className="h-10 md:h-12" />
                     <div className="flex gap-4">
                         <Link to="/" className="flex items-center gap-2 font-bold text-xs md:text-sm uppercase tracking-widest text-zinc-400 hover:text-white transition-all">
                             <Home size={18} /> Início
@@ -149,7 +149,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                 </div>
             </div>
 
-            <div className="py-12 pt-40 md:pt-48 px-6 relative z-10">
+            <div className="py-12 pt-24 md:pt-28 px-6 relative z-10">
                 {/* Background elements */}
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-yellow-400/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
                 <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-sky-200/20 rounded-full blur-[100px] pointer-events-none -z-10"></div>
