@@ -97,7 +97,6 @@ const PublicCandidaturaEspontanea: React.FC = () => {
             // Save Application to DB -> No specific job ID (vaga_id = null)
             const novaCandidatura = {
                 short_id: generatedId,
-                vaga_id: null,
                 nome: primeiroNome,
                 sobrenome: restoNome,
                 email: formData.email,
