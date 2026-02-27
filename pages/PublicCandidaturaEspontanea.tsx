@@ -50,7 +50,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                 return;
             }
 
-            const validFiles = newFiles.filter(file => {
+            const validFiles = newFiles.filter((file: any) => {
                 const allowedTypes = [
                     'application/pdf',
                     'application/msword',

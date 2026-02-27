@@ -285,6 +285,7 @@ const ArenaAdmin: React.FC = () => {
 
       const payload = {
          titulo: fd.get('titulo') as string,
+         game_id: fd.get('game_id') as string,
          data_inicio: fd.get('data_inicio') as string,
          data_fim: fd.get('data_fim') as string,
          premio: fd.get('premio') as string,
@@ -968,7 +969,10 @@ const ArenaAdmin: React.FC = () => {
                      <button onClick={() => setShowTournamentModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                   </div>
                   <form onSubmit={handleSaveTournament} className="p-10 space-y-6">
-                     <Input name="titulo" label="Nome do Evento" defaultValue={editingTournament?.titulo} required />
+                     <div className="grid grid-cols-2 gap-4">
+                        <Input name="titulo" label="Nome do Evento" defaultValue={editingTournament?.titulo} required />
+                        <Select name="game_id" label="Jogo Associado" defaultValue={editingTournament?.game_id} options={games.map(g => ({ value: g.id, label: g.titulo }))} required />
+                     </div>
                      <div className="grid grid-cols-2 gap-4">
                         <Input name="data_inicio" label="Início" type="date" defaultValue={editingTournament?.data_inicio} required />
                         <Input name="data_fim" label="Fim" type="date" defaultValue={editingTournament?.data_fim} required />

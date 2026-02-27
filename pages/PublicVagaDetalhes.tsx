@@ -71,7 +71,7 @@ const PublicVagaDetalhes: React.FC = () => {
                 return;
             }
 
-            const validFiles = newFiles.filter(file => {
+            const validFiles = newFiles.filter((file: any) => {
                 if (!file.type.match(/(pdf|msword|document)/)) {
                     alert(`O ficheiro ${file.name} não é válido. Apenas PDF ou Word.`);
                     return false;
