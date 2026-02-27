@@ -104,6 +104,7 @@ export interface ArenaTournament {
   status: 'Inscrições' | 'A decorrer' | 'Finalizado';
   vagas: number;
   vencedor?: string;
+  meta_pontos?: number;
 }
 
 export interface ArenaRanking {

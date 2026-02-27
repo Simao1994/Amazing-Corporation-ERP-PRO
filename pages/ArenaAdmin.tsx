@@ -267,7 +267,26 @@ const ArenaAdmin: React.FC = () => {
          // 2. Extrair toda a gente para recalcular a matemática do Ranking Global
          const { data: allPlayers } = await supabase.from('arena_ranking').select('*').order('score', { ascending: false });
 
-         // 3. Impor Posições (1, 2, 3...) pela ordem dos Pontos
+         // 3. Auto-Win Threshold Verification
+         // Procura torneios em aberto que tenham uma meta e auto-declara este jogador se atingir os pontos
+         const { data: activeTournaments } = await supabase.from('arena_tournaments')
+            .select('*')
+            .in('status', ['Inscrições', 'A decorrer'])
+            .not('meta_pontos', 'is', null);
+
+         if (activeTournaments && activeTournaments.length > 0) {
+            for (const t of activeTournaments) {
+               if (newScore >= t.meta_pontos) {
+                  await supabase.from('arena_tournaments').update({
+                     vencedor: payload.player_name,
+                     status: 'Finalizado' // Encerra o torneio automaticamente
+                  }).eq('id', t.id);
+                  // Notification delay trick is not needed, data is saved. The UI will catch it on next refresh.
+               }
+            }
+         }
+
+         // 4. Impor Posições (1, 2, 3...) pela ordem dos Pontos
          if (allPlayers && allPlayers.length > 0) {
             const updates = allPlayers.map((player, index) => ({
                id: player.id,
@@ -343,6 +362,7 @@ const ArenaAdmin: React.FC = () => {
          premio: fd.get('premio') as string,
          status: (fd.get('status') as any) || 'Inscrições',
          vagas: Number(fd.get('vagas')),
+         meta_pontos: fd.get('meta_pontos') ? Number(fd.get('meta_pontos')) : null,
          vencedor: fd.get('vencedor') as string || undefined
       };
 
@@ -1037,11 +1057,14 @@ const ArenaAdmin: React.FC = () => {
                            <Input name="hora_fim" label="Hora" type="time" defaultValue={editingTournament?.hora_fim} />
                         </div>
                      </div>
-                     <div className="grid grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input name="premio" label="Prémio" defaultValue={editingTournament?.premio} required />
                         <Input name="vagas" label="Vagas" type="number" defaultValue={editingTournament?.vagas} required />
                      </div>
-                     <Select name="status" label="Estado" defaultValue={editingTournament?.status} options={[{ value: 'Inscrições', label: 'Inscrições' }, { value: 'A decorrer', label: 'A decorrer' }, { value: 'Finalizado', label: 'Finalizado' }]} />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Select name="status" label="Estado" defaultValue={editingTournament?.status} options={[{ value: 'Inscrições', label: 'Inscrições' }, { value: 'A decorrer', label: 'A decorrer' }, { value: 'Finalizado', label: 'Finalizado' }]} />
+                        <Input name="meta_pontos" label="Auto-Vitória (Meta PTS)" type="number" defaultValue={editingTournament?.meta_pontos || ''} placeholder="Ex: 500" />
+                     </div>
                      <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"><Save size={18} /> Efectivar Torneio</button>
                   </form>
                </div>
