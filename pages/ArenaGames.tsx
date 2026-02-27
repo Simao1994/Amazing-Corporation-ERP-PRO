@@ -135,7 +135,19 @@ const ArenaGames: React.FC = () => {
          const { error: pError } = await supabase.from('arena_pagamentos').insert([paymentPayload]);
          if (pError) throw pError;
 
-         // NÃO decrementamos vagas aqui — só após confirmação do admin
+         // Decrementar as vagas imediatamente para prevenir overbooking
+         if (selectedItem!.tipo === 'jogo') {
+            const { data } = await supabase.from('arena_games').select('vagas_disponiveis').eq('id', selectedItem!.id).single();
+            if (data && data.vagas_disponiveis > 0) {
+               await supabase.from('arena_games').update({ vagas_disponiveis: data.vagas_disponiveis - 1 }).eq('id', selectedItem!.id);
+            }
+         } else {
+            const { data } = await supabase.from('arena_tournaments').select('vagas').eq('id', selectedItem!.id).single();
+            if (data && data.vagas > 0) {
+               await supabase.from('arena_tournaments').update({ vagas: data.vagas - 1 }).eq('id', selectedItem!.id);
+            }
+         }
+
          setPaymentStep('pending');
 
       } catch (error) {
@@ -274,13 +286,18 @@ const ArenaGames: React.FC = () => {
                                     <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Preço da Sessão</p>
                                     <p className="text-2xl font-black text-white">{formatAOA(game.preco_sessao)}</p>
                                  </div>
-                                 <button
-                                    onClick={() => handleOpenRequest(game, 'jogo')}
-                                    disabled={game.vagas_disponiveis === 0}
-                                    className="px-8 py-5 bg-white text-zinc-900 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-xl active:scale-95 flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
-                                 >
-                                    <Zap size={18} fill="currentColor" /> Solicitar Jogo
-                                 </button>
+                                 {game.vagas_disponiveis > 0 ? (
+                                    <button
+                                       onClick={() => handleOpenRequest(game, 'jogo')}
+                                       className="px-8 py-5 bg-white text-zinc-900 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-xl active:scale-95 flex items-center gap-3"
+                                    >
+                                       <Zap size={18} fill="currentColor" /> Solicitar Jogo
+                                    </button>
+                                 ) : (
+                                    <div className="px-6 py-4 bg-red-950/40 text-red-500 border border-red-500/20 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2">
+                                       ⏳ Vagas Esgotadas
+                                    </div>
+                                 )}
                               </div>
                            </div>
                         </div>
@@ -463,14 +480,18 @@ const ArenaGames: React.FC = () => {
                            </div>
                         </div>
 
-                        {viewingTournament.status === 'Inscrições' && (
+                        {viewingTournament.status === 'Inscrições' && viewingTournament.vagas > 0 ? (
                            <button
                               onClick={() => { setViewingTournament(null); handleOpenRequest(viewingTournament, 'torneio'); }}
                               className="px-12 py-6 bg-white text-zinc-900 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-yellow-500 transition-all shadow-2xl flex items-center gap-4 active:scale-95"
                            >
                               <Zap size={20} fill="currentColor" /> Garantir Minha Vaga
                            </button>
-                        )}
+                        ) : viewingTournament.vagas <= 0 ? (
+                           <div className="px-10 py-5 bg-red-950/40 text-red-500 border border-red-500/20 rounded-[2rem] font-black uppercase text-[10px] tracking-widest flex items-center gap-2">
+                              ⏳ Lotação Esgotada
+                           </div>
+                        ) : null}
                      </div>
                   </div>
                </div>
