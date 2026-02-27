@@ -826,7 +826,7 @@ const ArenaGames: React.FC = () => {
 
                   <div className="space-y-4">
                      <h2 className="text-5xl font-black uppercase tracking-tighter">{viewingPlayer.player_name}</h2>
-                     <p className="text-zinc-500 font-bold uppercase text-xs tracking-[0.4em]">Elite Amazing Arena Gamer</p>
+                     <p className="text-zinc-500 font-bold uppercase text-xs tracking-[0.4em]">Elite ARENA GAMER</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-6 text-left">

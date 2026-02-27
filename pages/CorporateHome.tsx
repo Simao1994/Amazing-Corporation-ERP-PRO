@@ -527,11 +527,11 @@ const SECTOR_HISTORIES = {
     ]
   },
   arena: {
-    title: "Amazing Arena Gamer",
+    title: "Arena Gamer",
     color: "bg-indigo-600",
     icon: <Gamepad2 />,
     milestones: [
-      { year: "2026", event: "Fundação da Amazing Arena Gamer com foco em entretenimento digital de alta fidelidade." },
+      { year: "2026", event: "Fundação da Arena Gamer com foco em entretenimento digital de alta fidelidade." },
       { year: "2026", event: "Inauguração do primeiro hub premium em Benguela equipado com tecnologia de ponta." },
       { year: "2026", event: "Lançamento da plataforma Amazing Championship para competições nacionais de eSports." }
     ]
@@ -765,7 +765,7 @@ const CorporateHome: React.FC = () => {
           <button onClick={() => scrollIntoView('sectores')} className="hover:text-yellow-500 transition-colors">SECTORES</button>
           <button onClick={() => scrollIntoView('noticias')} className="hover:text-yellow-500 transition-colors">NOTÍCIAS</button>
           <Link to="/arena" className="flex items-center gap-3 text-indigo-400 hover:text-indigo-300 transition-all bg-white/5 px-6 py-3 rounded-full border border-white/10">
-            <Gamepad2 size={18} /> AMAZING ARENA GAMER
+            <Gamepad2 size={18} /> Arena Gamer
           </Link>
           <Link to="/carreiras" className="hover:text-yellow-500 transition-colors">VER TODAS AS VAGAS</Link>
           <Link to="/candidatura-espontanea" className="hover:text-yellow-500 transition-colors">CANDIDATURA ESPONTÂNEA</Link>
@@ -900,7 +900,7 @@ const CorporateHome: React.FC = () => {
                 <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center text-white mb-8 group-hover:scale-110 transition-transform">
                   <Gamepad2 size={32} />
                 </div>
-                <h3 className="text-2xl font-black mb-4">Amazing Arena Gamer</h3>
+                <h3 className="text-2xl font-black mb-4">Arena Gamer</h3>
                 <p className="text-zinc-500 font-medium leading-relaxed mb-8">O maior hub de eSports e entretenimento digital de Angola. Experiência imersiva e tecnologia de ponta para gamers.</p>
               </div>
               <button onClick={() => setSelectedHistory('arena')} className="flex items-center gap-2 text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-700 transition-colors">
@@ -1129,7 +1129,7 @@ const CorporateHome: React.FC = () => {
               <ul className="space-y-4 text-zinc-400 font-bold text-sm">
                 <li><button onClick={() => scrollIntoView('inicio')} className="hover:text-white transition-colors">Início Corporativo</button></li>
                 <li><button onClick={() => scrollIntoView('sectores')} className="hover:text-white transition-colors">Sectores de Actuação</button></li>
-                <li><Link to="/arena" className="hover:text-indigo-400 transition-colors">Amazing Arena Gamer</Link></li>
+                <li><Link to="/arena" className="hover:text-indigo-400 transition-colors">Arena Gamer</Link></li>
                 <li><Link to="/candidatura" className="hover:text-white transition-colors">Carreiras / Candidaturas</Link></li>
               </ul>
             </div>

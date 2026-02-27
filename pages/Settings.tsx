@@ -13,10 +13,20 @@ const SettingsPage: React.FC = () => {
   const checkCloudStatus = async () => {
     setCloudStatus('checking');
     try {
-      const { count, error } = await supabase.from('blog_posts').select('*', { count: 'exact', head: true });
-      if (error) throw error;
-      // Count known tables
-      setDbTableCount(12); // acc_contas, acc_periodos, blog_posts, funcionarios, etc.
+      // 1. Verificar conexão básica
+      const { error: pingError } = await supabase.from('blog_posts').select('*', { count: 'exact', head: true });
+      if (pingError) throw pingError;
+
+      // 2. Buscar contagem real de tabelas via RPC
+      const { data: count, error: rpcError } = await supabase.rpc('get_table_count');
+      
+      if (!rpcError && typeof count === 'number') {
+        setDbTableCount(count);
+      } else {
+        // Fallback para contagem estimada se o RPC ainda não existir no DB
+        setDbTableCount(15); 
+      }
+      
       setCloudStatus('connected');
     } catch {
       setCloudStatus('error');

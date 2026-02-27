@@ -762,7 +762,7 @@ const ArenaAdmin: React.FC = () => {
                         <FileText size={24} />
                         <div>
                            <h2 className="text-xl font-black uppercase tracking-tight">Recibo de Pagamento</h2>
-                           <p className="text-[10px] font-bold opacity-70">Amazing Arena Gamer</p>
+                           <p className="text-[10px] font-bold opacity-70">ARENA GAMER</p>
                         </div>
                      </div>
                      <button onClick={() => setSelectedPagamento(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><X size={22} /></button>
