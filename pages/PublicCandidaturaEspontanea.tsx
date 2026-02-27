@@ -8,6 +8,7 @@ import {
     Home
 } from 'lucide-react';
 import { supabase } from '../src/lib/supabase';
+import { enviarEmailCandidatura } from '../src/lib/email';
 import Logo from '../components/Logo';
 
 const PublicCandidaturaEspontanea: React.FC = () => {
@@ -33,7 +34,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
         linkedin_url: '',
         sobre_mim: '',
         mensagem: '',
-        cvFile: null as File | null
+        cvFiles: [] as File[]
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,28 +43,43 @@ const PublicCandidaturaEspontanea: React.FC = () => {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            if (file.size > 5 * 1024 * 1024) {
-                alert('O tamanho do ficheiro não deve exceder 5MB.');
+            const newFiles = Array.from(e.target.files);
+            
+            if (formData.cvFiles.length + newFiles.length > 4) {
+                alert('Pode anexar no máximo 4 ficheiros.');
                 return;
             }
-            const allowedTypes = [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            ];
-            if (!allowedTypes.includes(file.type)) {
-                alert('Apenas formatos PDF ou Word (.doc, .docx) são permitidos.');
-                return;
+
+            const validFiles = newFiles.filter(file => {
+                const allowedTypes = [
+                    'application/pdf',
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                ];
+                if (!allowedTypes.includes(file.type)) {
+                    alert(`O ficheiro ${file.name} não é válido. Apenas PDF ou Word.`);
+                    return false;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(`O ficheiro ${file.name} é demasiado grande. Máximo 5MB.`);
+                    return false;
+                }
+                return true;
+            });
+
+            if (validFiles.length > 0) {
+                setFormData(prev => ({ 
+                    ...prev, 
+                    cvFiles: [...prev.cvFiles, ...validFiles].slice(0, 4) 
+                }));
             }
-            setFormData({ ...formData, cvFile: file });
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.cvFile) {
+        if (formData.cvFiles.length === 0) {
             alert('Por favor, anexe o seu Currículo profissional.');
             return;
         }
@@ -71,27 +87,32 @@ const PublicCandidaturaEspontanea: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            let cvUrl = '';
+            let cv_paths: string[] = [];
 
-            // Upload to Supabase Storage 'cvs' bucket
-            const fileExt = formData.cvFile.name.split('.').pop();
-            const fileName = `espontanea_${formData.bi.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}.${fileExt}`;
-            const filePath = `${fileName}`;
+            // Upload the files
+            for (let i = 0; i < formData.cvFiles.length; i++) {
+                const file = formData.cvFiles[i];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `espontanea_${formData.bi.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}_${i}.${fileExt}`;
+                const filePath = `${fileName}`;
 
-            const { error: uploadError } = await supabase.storage
-                .from('cvs')
-                .upload(filePath, formData.cvFile);
+                const { error: uploadError } = await supabase.storage
+                    .from('cvs')
+                    .upload(filePath, file);
 
-            if (uploadError) {
-                console.error("Erro no upload do CV:", uploadError);
-                throw new Error('Falha ao armazenar o Currículo. Tente novamente mais tarde.');
+                if (uploadError) {
+                    console.error("Erro no upload do anexo:", uploadError);
+                    throw new Error('Falha ao armazenar um ou mais documentos. Tente de novo.');
+                }
+
+                const { data: publicUrlData } = supabase.storage
+                    .from('cvs')
+                    .getPublicUrl(filePath);
+
+                cv_paths.push(publicUrlData.publicUrl);
             }
 
-            const { data: publicUrlData } = supabase.storage
-                .from('cvs')
-                .getPublicUrl(filePath);
-
-            cvUrl = publicUrlData.publicUrl;
+            const finalCvPath = cv_paths.join(',');
 
             // Separar o nome completo no primeiro (nome) e no resto (sobrenome)
             const parts = formData.nome.trim().split(' ');
@@ -135,7 +156,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                 linkedin_url: formData.linkedin_url,
                 notas_internas: `Pretensões (5 Anos): ${formData.expectativa_5_anos}\n\nSobre mim: ${formData.sobre_mim}\n\nMensagem: ${formData.mensagem || 'Candidatura Espontânea (Sem Vaga Específica)'}`,
                 experiencia: `Telefone Alternativo: ${formData.telefone_alternativo}`,
-                doc_cv: cvUrl,
+                doc_cv: finalCvPath,
                 status: 'pendente'
             };
 
@@ -147,6 +168,9 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                 console.error("DB Insert Error", dbError);
                 throw new Error("Erro ao guardar a candidatura spontânea na base de dados.");
             }
+
+            // Enviar notificação por email para o candidato via EmailJS
+            await enviarEmailCandidatura(primeiroNome, formData.email, 'Candidatura Espontânea Institucional');
 
             setIsSuccess(true);
         } catch (err: any) {
@@ -183,9 +207,15 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                     </div>
                     <div className="space-y-4">
                         <h2 className="text-4xl md:text-5xl font-black text-zinc-900 tracking-tight">Candidatura Registada!</h2>
-                        <p className="text-zinc-500 font-medium text-lg max-w-2xl mx-auto">O seu perfil espontâneo foi submetido à base de talentos da Amazing Corporation. Analisaremos as suas valências para oportunidades que venham a surgir e que combinem com a sua experiência.</p>
+                        <p className="text-zinc-500 font-medium text-lg max-w-2xl mx-auto">O seu perfil espontâneo foi submetido com sucesso à base de talentos da Amazing Corporation.</p>
                     </div>
-                    <Link to="/" className="inline-flex mt-12 py-5 px-10 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-yellow-400 transition-all shadow-xl active:scale-95 items-center justify-center gap-3">
+                    
+                    <div className="mt-8 max-w-md mx-auto bg-sky-50 text-sky-800 p-6 rounded-2xl flex flex-col items-center justify-center border border-sky-100">
+                        <span className="font-black text-lg flex items-center gap-2 mb-2">📬 Verifique o seu Email</span>
+                        <span className="text-sky-600 font-medium text-sm">Enviamos agora mesmo uma confirmação da sua candidatura.</span>
+                    </div>
+
+                    <Link to="/" className="inline-flex mt-10 py-5 px-10 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-yellow-400 transition-all shadow-xl active:scale-95 items-center justify-center gap-3">
                         <Home size={18} /> Voltar ao Portal Corporativo
                     </Link>
                 </div>
@@ -208,7 +238,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Telefone *</label>
                                 <input required type="tel" value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" placeholder="+244 9..." />
@@ -224,6 +254,16 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Data de Nasc. *</label>
                                 <input required type="date" value={formData.data_nascimento} onChange={e => setFormData({ ...formData, data_nascimento: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Idade (Calculada)</label>
+                                <input 
+                                    readOnly
+                                    type="text" 
+                                    value={formData.data_nascimento ? Math.floor(Math.abs(new Date().valueOf() - new Date(formData.data_nascimento).valueOf()) / (1000 * 60 * 60 * 24 * 365.25)) : ''}
+                                    placeholder="Auto"
+                                    className="w-full bg-zinc-100 border border-zinc-200 text-zinc-500 rounded-xl p-4 text-sm font-bold cursor-not-allowed outline-none transition-all" 
+                                />
                             </div>
                         </div>
 
@@ -373,26 +413,58 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                         </div>
 
                         <div className="pt-4 border-t border-zinc-100">
-                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-4">Anexar Ficheiro do Currículo *</label>
+                            <div className="flex items-center gap-2 mb-4">
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest">Currículo e Anexos (PDF/DOC) *</label>
+                                <span className="text-[10px] font-bold text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-full">Até 4 arquivos</span>
+                            </div>
                             <div
-                                onClick={() => fileInputRef.current?.click()}
-                                className={`w-full border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all hover:bg-zinc-50
-                                     ${formData.cvFile ? 'border-green-500/50 bg-green-50' : 'border-zinc-200 bg-zinc-50/50 hover:border-yellow-500/50'}`}
+                                onClick={() => formData.cvFiles.length < 4 ? fileInputRef.current?.click() : null}
+                                className={`w-full border-2 border-dashed rounded-xl p-6 text-center transition-all relative overflow-hidden hover:bg-zinc-50
+                                     ${formData.cvFiles.length > 0 ? 'border-green-500/50 bg-green-50' : 'border-zinc-200 bg-zinc-50/50 hover:border-yellow-500/50'}
+                                     ${formData.cvFiles.length < 4 ? 'cursor-pointer' : 'opacity-80'}`}
                             >
-                                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} className="hidden" />
-                                {formData.cvFile ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <FileText className="text-green-500" size={32} />
-                                        <span className="text-sm font-bold text-zinc-900 truncate w-full px-4">{formData.cvFile.name}</span>
-                                        <span className="text-xs font-semibold text-green-600">{(formData.cvFile.size / 1024 / 1024).toFixed(2)} MB • Clique para trocar</span>
+                                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} className="hidden" multiple={true} />
+                                
+                                {formData.cvFiles.length > 0 ? (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-left">
+                                            {formData.cvFiles.map((file, index) => (
+                                                <div key={index} className="flex items-center justify-between gap-3 bg-white p-3 rounded-lg border border-green-200 shadow-sm relative group">
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <FileText className="text-green-500 shrink-0" size={20} />
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            <span className="text-xs font-bold text-zinc-700 truncate">{file.name}</span>
+                                                            <span className="text-[10px] font-semibold text-zinc-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                                        </div>
+                                                    </div>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const newFiles = [...formData.cvFiles];
+                                                            newFiles.splice(index, 1);
+                                                            setFormData({...formData, cvFiles: newFiles});
+                                                        }}
+                                                        className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {formData.cvFiles.length < 4 && (
+                                            <div className="text-center pt-2 border-t border-green-200/50">
+                                                <span className="text-xs font-bold text-green-700 hover:text-green-800 underline transition-colors">Clique para adicionar mais ficheiros ({formData.cvFiles.length}/4 limit)</span>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center gap-3">
+                                    <div className="flex flex-col items-center gap-3 py-4">
                                         <div className="w-16 h-16 bg-white shadow-sm border border-zinc-100 rounded-full flex items-center justify-center text-zinc-400">
                                             <UploadCloud size={28} />
                                         </div>
-                                        <span className="text-base font-bold text-zinc-700">Anexe ou solte o seu ficheiro PDF</span>
-                                        <span className="text-xs text-zinc-400 font-medium">Tamanho máximo validado: 5MB</span>
+                                        <span className="text-base font-bold text-zinc-700">Anexe ou solte os seus ficheiros</span>
+                                        <span className="text-xs text-zinc-400 font-medium">Pode anexar até 4 ficheiros (PDF, DOC - Max: 5MB/cada)</span>
                                     </div>
                                 )}
                             </div>
@@ -401,7 +473,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                         <div className="pt-8">
                             <button
                                 type="submit"
-                                disabled={isSubmitting || !formData.cvFile}
+                                disabled={isSubmitting || formData.cvFiles.length === 0}
                                 className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-zinc-900 py-6 rounded-xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-xl hover:shadow-yellow-500/20"
                             >
                                 {isSubmitting ? <><RefreshCw className="animate-spin" size={20} /> A gravar candidatura...</> : 'Enviar Candidatura Institucional'}

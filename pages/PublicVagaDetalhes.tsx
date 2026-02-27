@@ -4,6 +4,7 @@ import { RhVaga } from '../types';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Briefcase, FileText, CheckCircle2, ChevronLeft, Building2, UploadCloud, AlertCircle } from 'lucide-react';
 import Logo from '../components/Logo';
+import { enviarEmailCandidatura } from '../src/lib/email';
 
 const PublicVagaDetalhes: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -26,15 +27,20 @@ const PublicVagaDetalhes: React.FC = () => {
         curso: '',
         bi: '',
         estado_civil: '',
+        genero: '',
+        data_nascimento: '',
+        nacionalidade: 'Angolana',
+        carta_conducao: '',
         disponibilidade: '',
         morada: '',
         provincia: '',
         naturalidade: '',
         pretensao_salarial: '',
+        linkedin_url: '',
         expectativa_5_anos: '',
         sobre_mim: '',
         mensagem: '',
-        cvFile: null as File | null
+        cvFiles: [] as File[]
     });
 
     useEffect(() => {
@@ -57,17 +63,32 @@ const PublicVagaDetalhes: React.FC = () => {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            // Validar PDF ou DOC
-            if (!file.type.match(/(pdf|msword|document)/)) {
-                alert('Apenas ficheiros PDF ou Word são permitidos.');
+            const newFiles = Array.from(e.target.files);
+            
+            // Limit to 4 files total
+            if (formData.cvFiles.length + newFiles.length > 4) {
+                alert('Pode anexar no máximo 4 ficheiros.');
                 return;
             }
-            if (file.size > 5 * 1024 * 1024) { // 5MB
-                alert('O ficheiro é demasiado grande. Máximo 5MB.');
-                return;
+
+            const validFiles = newFiles.filter(file => {
+                if (!file.type.match(/(pdf|msword|document)/)) {
+                    alert(`O ficheiro ${file.name} não é válido. Apenas PDF ou Word.`);
+                    return false;
+                }
+                if (file.size > 5 * 1024 * 1024) { // 5MB
+                    alert(`O ficheiro ${file.name} é demasiado grande. Máximo 5MB.`);
+                    return false;
+                }
+                return true;
+            });
+
+            if (validFiles.length > 0) {
+                setFormData(prev => ({ 
+                    ...prev, 
+                    cvFiles: [...prev.cvFiles, ...validFiles].slice(0, 4) 
+                }));
             }
-            setFormData({ ...formData, cvFile: file });
         }
     };
 
@@ -78,28 +99,38 @@ const PublicVagaDetalhes: React.FC = () => {
         setIsSubmitting(true);
         
         try {
-            let cv_path = '';
+            let userAge = null;
+            if (formData.data_nascimento) {
+                const diffTime = Math.abs(new Date().valueOf() - new Date(formData.data_nascimento).valueOf());
+                userAge = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365.25));
+            }
+
+            let cv_paths: string[] = [];
             
-            // 1. Upload do CV para o Storage (Se existir)
-            if (formData.cvFile) {
-                const fileExt = formData.cvFile.name.split('.').pop();
-                const fileName = `cv_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                const filePath = `candidaturas/${fileName}`;
-                
-                // Nota: Requer bucket público ou permissão anon.
-                const { error: uploadError } = await supabase.storage
-                    .from('cvs')
-                    .upload(filePath, formData.cvFile);
+            // 1. Upload dos CVs para o Storage
+            if (formData.cvFiles && formData.cvFiles.length > 0) {
+                for (let i = 0; i < formData.cvFiles.length; i++) {
+                    const file = formData.cvFiles[i];
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `cv_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                    const filePath = `candidaturas/${fileName}`;
                     
-                if (uploadError) {
-                    // Fallback (se bucket não existir, submete na mesma mas sem CV fásico)
-                    console.warn("Storage upload falhou, certifique-se que o bucket 'cvs' existe e permite INSERT para anon.", uploadError);
-                } else {
-                    const { data } = supabase.storage.from('cvs').getPublicUrl(filePath);
-                    cv_path = data.publicUrl;
+                    const { error: uploadError } = await supabase.storage
+                        .from('cvs')
+                        .upload(filePath, file);
+                        
+                    if (uploadError) {
+                        console.warn(`Storage upload falhou para ${file.name}:`, uploadError);
+                    } else {
+                        const { data } = supabase.storage.from('cvs').getPublicUrl(filePath);
+                        cv_paths.push(data.publicUrl);
+                    }
                 }
             }
             
+            // Generate single string for doc_cv from array of URLs
+            const finalCvPath = cv_paths.join(',');
+
             // 2. Gravar Registo na Tabela
             const { error: dbError } = await supabase.from('rh_candidaturas').insert({
                 vaga_id: vaga.id,
@@ -111,20 +142,29 @@ const PublicVagaDetalhes: React.FC = () => {
                 curso: formData.curso,
                 bi: formData.bi,
                 estado_civil: formData.estado_civil,
+                genero: formData.genero,
+                data_nascimento: formData.data_nascimento,
+                idade: userAge,
+                nacionalidade: formData.nacionalidade,
+                carta_conducao: formData.carta_conducao,
                 disponibilidade: formData.disponibilidade,
                 morada: formData.morada,
                 provincia: formData.provincia,
                 naturalidade: formData.naturalidade,
                 pretensao_salarial: formData.pretensao_salarial,
+                linkedin_url: formData.linkedin_url,
                 expectativa_5_anos: formData.expectativa_5_anos,
                 sobre_mim: formData.sobre_mim,
                 mensagem: formData.mensagem,
-                cv_path: cv_path,
+                cv_path: finalCvPath,
                 status: 'pendente'
             });
             
             if (dbError) throw dbError;
             
+            // Notification via email
+            await enviarEmailCandidatura(formData.nome.split(' ')[0] || formData.nome, formData.email, vaga.titulo);
+
             setIsSuccess(true);
             
         } catch (error: any) {
@@ -258,9 +298,14 @@ const PublicVagaDetalhes: React.FC = () => {
                                         <CheckCircle2 size={40} className="text-green-600" />
                                     </div>
                                     <h3 className="text-2xl font-black text-zinc-900 mb-4">Candidatura Enviada!</h3>
-                                    <p className="text-zinc-500 mb-8 font-medium">
-                                        O seu perfil foi encaminhado para a nossa equipa de Recursos Humanos. Entraremos em contacto brevemente.
+                                    <p className="text-zinc-500 mb-6 font-medium">
+                                        O seu perfil foi encaminhado para a nossa equipa de Recursos Humanos.
                                     </p>
+                                    
+                                    <div className="bg-sky-50 text-sky-800 p-5 rounded-2xl mb-8 flex flex-col items-center justify-center border border-sky-100 max-w-md mx-auto">
+                                        <span className="font-black text-lg flex items-center gap-2 mb-1">📬 Verifique o seu Email</span>
+                                        <span className="text-sky-600 text-sm font-medium">Enviamos agora mesmo uma confirmação da sua candidatura.</span>
+                                    </div>
                                     <button 
                                         onClick={() => navigate('/carreiras')}
                                         className="w-full bg-zinc-900 text-white font-bold py-4 rounded-xl hover:bg-zinc-800 transition-colors"
@@ -346,6 +391,56 @@ const PublicVagaDetalhes: React.FC = () => {
                                                 </select>
                                             </div>
                                             <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Género *</label>
+                                                <select 
+                                                    required
+                                                    value={formData.genero}
+                                                    onChange={e => setFormData({...formData, genero: e.target.value})}
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all appearance-none cursor-pointer" 
+                                                >
+                                                    <option value="" disabled>Selecione...</option>
+                                                    <option value="Masculino">Masculino</option>
+                                                    <option value="Feminino">Feminino</option>
+                                                    <option value="Prefiro não dizer">Prefiro não dizer</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Data de Nascimento *</label>
+                                                <input 
+                                                    required
+                                                    type="date" 
+                                                    value={formData.data_nascimento}
+                                                    onChange={e => setFormData({...formData, data_nascimento: e.target.value})}
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Idade (Calculada)</label>
+                                                <input 
+                                                    readOnly
+                                                    type="text" 
+                                                    value={formData.data_nascimento ? Math.floor(Math.abs(new Date().valueOf() - new Date(formData.data_nascimento).valueOf()) / (1000 * 60 * 60 * 24 * 365.25)) : ''}
+                                                    placeholder="Automático"
+                                                    className="w-full bg-zinc-100 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-500 cursor-not-allowed outline-none transition-all" 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nacionalidade *</label>
+                                                <input 
+                                                    required
+                                                    type="text" 
+                                                    value={formData.nacionalidade}
+                                                    onChange={e => setFormData({...formData, nacionalidade: e.target.value})}
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                />
+                                            </div>
+                                            <div>
                                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Naturalidade *</label>
                                                 <input 
                                                     required
@@ -428,6 +523,34 @@ const PublicVagaDetalhes: React.FC = () => {
                                                 />
                                             </div>
                                         </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Carta de Condução *</label>
+                                                <select 
+                                                    required
+                                                    value={formData.carta_conducao}
+                                                    onChange={e => setFormData({...formData, carta_conducao: e.target.value})}
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all appearance-none cursor-pointer" 
+                                                >
+                                                    <option value="" disabled>Selecione...</option>
+                                                    <option value="Nenhuma">Nenhuma</option>
+                                                    <option value="Ligeiro">Ligeiro</option>
+                                                    <option value="Pesado">Pesado</option>
+                                                    <option value="Ambas">Ambas (Ligeiro e Pesado)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">URL do LinkedIn (Opcional)</label>
+                                                <input 
+                                                    type="url" 
+                                                    value={formData.linkedin_url}
+                                                    onChange={e => setFormData({...formData, linkedin_url: e.target.value})}
+                                                    placeholder="https://linkedin.com/in/exemplo"
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
+                                                />
+                                            </div>
+                                        </div>
                                         <div>
                                             <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Disponibilidade de início *</label>
                                             <input 
@@ -473,11 +596,15 @@ const PublicVagaDetalhes: React.FC = () => {
 
                                         {/* UPLOAD CV */}
                                         <div>
-                                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Currículo (PDF/DOC) *</label>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest">Currículo e Anexos (PDF/DOC) *</label>
+                                                <span className="text-[10px] font-bold text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-full">Até 4 arquivos</span>
+                                            </div>
                                             <div 
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className={`w-full border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all
-                                                    ${formData.cvFile ? 'border-green-400 bg-green-50' : 'border-zinc-200 bg-zinc-50 hover:border-yellow-400 hover:bg-yellow-50/10'}`}
+                                                onClick={() => formData.cvFiles.length < 4 ? fileInputRef.current?.click() : null}
+                                                className={`w-full border-2 border-dashed rounded-xl p-6 transition-all relative overflow-hidden
+                                                    ${formData.cvFiles.length > 0 ? 'border-green-400 bg-green-50' : 'border-zinc-200 bg-zinc-50'}
+                                                    ${formData.cvFiles.length < 4 ? 'cursor-pointer hover:border-yellow-400 hover:bg-yellow-50/10' : 'opacity-80'}`}
                                             >
                                                 <input 
                                                     ref={fileInputRef}
@@ -485,20 +612,51 @@ const PublicVagaDetalhes: React.FC = () => {
                                                     accept=".pdf,.doc,.docx"
                                                     onChange={handleFileChange}
                                                     className="hidden"
+                                                    multiple={true}
                                                 />
-                                                {formData.cvFile ? (
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <FileText className="text-green-500" size={32} />
-                                                        <span className="text-sm font-bold text-green-700 truncate w-full px-4">{formData.cvFile.name}</span>
-                                                        <span className="text-xs font-semibold text-green-600/70">{(formData.cvFile.size / 1024 / 1024).toFixed(2)} MB • Clique para trocar</span>
+                                                
+                                                {formData.cvFiles.length > 0 ? (
+                                                    <div className="space-y-3">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                            {formData.cvFiles.map((file, index) => (
+                                                                <div key={index} className="flex items-center justify-between gap-3 bg-white p-3 rounded-lg border border-green-200 shadow-sm relative group">
+                                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                                        <FileText className="text-green-500 shrink-0" size={20} />
+                                                                        <div className="flex flex-col overflow-hidden">
+                                                                            <span className="text-xs font-bold text-zinc-700 truncate">{file.name}</span>
+                                                                            <span className="text-[10px] font-semibold text-zinc-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const newFiles = [...formData.cvFiles];
+                                                                            newFiles.splice(index, 1);
+                                                                            setFormData({...formData, cvFiles: newFiles});
+                                                                        }}
+                                                                        className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
+                                                                    >
+                                                                        ×
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {formData.cvFiles.length < 4 && (
+                                                            <div className="text-center pt-2 border-t border-green-200/50">
+                                                                <span className="text-xs font-bold text-green-700 hover:text-green-800 underline transition-colors">Clique para adicionar mais ficheiros ({formData.cvFiles.length}/4 limit)</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ) : (
-                                                    <div className="flex flex-col items-center gap-3">
+                                                    <div className="flex flex-col items-center gap-3 py-4">
                                                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-zinc-100">
                                                             <UploadCloud className="text-zinc-400" size={24} />
                                                         </div>
-                                                        <span className="text-sm font-bold text-zinc-600">Clique para anexar o seu CV</span>
-                                                        <span className="text-xs font-medium text-zinc-400">PDF, DOC (Max: 5MB)</span>
+                                                        <div className="text-center">
+                                                            <span className="block text-sm font-bold text-zinc-600">Clique para anexar o seu CV</span>
+                                                            <span className="block text-xs font-medium text-zinc-400">Pode anexar até 4 ficheiros (PDF, DOC - Max: 5MB/cada)</span>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -518,7 +676,7 @@ const PublicVagaDetalhes: React.FC = () => {
                                         <div className="pt-2">
                                             <button 
                                                 type="submit" 
-                                                disabled={isSubmitting || !formData.cvFile}
+                                                disabled={isSubmitting || formData.cvFiles.length === 0}
                                                 className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed text-yellow-950 px-8 py-5 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-lg shadow-yellow-500/20 flex items-center justify-center gap-3"
                                             >
                                                 {isSubmitting ? (
