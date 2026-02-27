@@ -136,13 +136,12 @@ const PublicCandidaturaEspontaneaForm: React.FC = () => {
 
             // Save Application to DB -> No specific job ID (vaga_id = null)
             const novaCandidatura = {
-                 // vaga_id: is omitted or explicit null (we let DB handle it if nullable, but we must assure rh_candidaturas allows null vaga_id or creates a dummy). 
-                 // If the system strictly demands a vaga_id, the user wants it to just take unsolicited resumes. Let's explicitly set it undefined since DB usually allows it unless explicitly strict NOT NULL.
-                 candidato_nome: formData.nome,
-                 candidato_email: formData.email,
-                 candidato_telefone: formData.telefone,
-                 candidato_telefone_alt: formData.telefone_alternativo,
-                 candidato_bi: formData.bi,
+                 vaga_id: null,
+                 nome: formData.nome,
+                 email: formData.email,
+                 telefone: formData.telefone,
+                 telefone_alternativo: formData.telefone_alternativo,
+                 bi: formData.bi,
                  estado_civil: formData.estado_civil,
                  naturalidade: formData.naturalidade,
                  morada: formData.morada,
@@ -153,9 +152,9 @@ const PublicCandidaturaEspontaneaForm: React.FC = () => {
                  pretensao_salarial: formData.pretensao_salarial,
                  expectativa_5_anos: formData.expectativa_5_anos,
                  sobre_mim: formData.sobre_mim,
-                 mensagem_candidato: formData.mensagem || 'Candidatura Espontânea',
-                 cv_url: cvUrl,
-                 status: 'Pendente' as const
+                 mensagem: formData.mensagem || 'Candidatura Espontânea (Sem Vaga Específica)',
+                 cv_path: cvUrl,
+                 status: 'pendente'
             };
 
             const { error: dbError } = await supabase
