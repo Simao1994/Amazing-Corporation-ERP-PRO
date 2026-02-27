@@ -915,12 +915,20 @@ const CorporateHome: React.FC = () => {
           <div className="md:w-2/3 space-y-8">
             <div className="p-10 md:p-20 bg-zinc-50 rounded-[4rem] relative shadow-inner">
               <Star className="absolute top-8 left-8 text-yellow-500 opacity-20" size={80} />
-              <p className="text-2xl md:text-4xl font-medium text-zinc-700 italic leading-relaxed relative z-10">
-                "{corpInfo.ceo_mensagem}"
-              </p>
+              <div className="font-['Times_New_Roman',_Times,_serif] text-justify relative z-10">
+                <p className="text-xl md:text-2xl font-bold text-zinc-800 mb-4">
+                  A minha filosofia é seguinte:
+                </p>
+                <p className="text-lg md:text-xl font-medium text-zinc-700 italic leading-relaxed">
+                  "Se um dia eu me encontrar no deserto com apenas um bidão de água, darei a ti para saciar a tua sede. Porque em mim carrego a certeza de que seguirei vivo, mas em ti não tenho garantias. E se puder escolher, prefiro ser a razão da tua salvação do que testemunhar a tua queda..."
+                </p>
+                <p className="text-lg md:text-xl font-medium text-zinc-700 font-bold mt-4 text-right">
+                  By: Euclides Nvula - CEO
+                </p>
+              </div>
               <div className="mt-12 pt-12 border-t border-zinc-200">
                 <p className="text-3xl font-black text-zinc-900">{corpInfo.ceo_nome}</p>
-                <p className="text-[12px] font-black text-yellow-600 uppercase tracking-[0.4em] mt-2">Presidente & CEO, Amazing Corporation</p>
+                <p className="text-[12px] font-black text-yellow-600 uppercase tracking-[0.4em] mt-2">CEO/Fundador da Amazing Corporation, Lda</p>
               </div>
             </div>
           </div>
