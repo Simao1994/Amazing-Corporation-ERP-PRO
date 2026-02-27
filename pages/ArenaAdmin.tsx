@@ -285,9 +285,9 @@ const ArenaAdmin: React.FC = () => {
          setShowRankingModal(false);
          setEditingRanking(null);
          fetchData(); // Atualiza a tabela na UI
-      } catch (error) {
+      } catch (error: any) {
          console.error('Erro no recalculo de vitórias:', error);
-         alert('Erro ao salvar e ordenar o ranking global.');
+         alert(`Erro ao salvar e ordenar o ranking global: ${error.message || JSON.stringify(error)}`);
       }
    };
 
@@ -316,9 +316,9 @@ const ArenaAdmin: React.FC = () => {
             }
 
             fetchData();
-         } catch (error) {
+         } catch (error: any) {
             console.error('Erro na deleção de vitória:', error);
-            alert('Erro ao remover do ranking');
+            alert(`Erro ao remover do ranking: ${error.message || JSON.stringify(error)}`);
          }
       }
    };
