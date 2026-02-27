@@ -214,16 +214,19 @@ const ArenaAdmin: React.FC = () => {
 
       try {
          if (isEditing) {
-            await supabase.from('arena_games').update(payload).eq('id', editingGame.id);
+            const { error } = await supabase.from('arena_games').update(payload).eq('id', editingGame.id);
+            if (error) throw error;
          } else {
-            await supabase.from('arena_games').insert([payload]);
+            const { error } = await supabase.from('arena_games').insert([payload]);
+            if (error) throw error;
          }
          setShowGameModal(false);
          setEditingGame(null);
          setImagePreview(null);
          fetchData();
-      } catch (error) {
-         alert('Erro ao salvar jogo');
+      } catch (error: any) {
+         console.error('Erro detalhado ao salvar jogo:', error);
+         alert('Erro ao salvar jogo: ' + (error.message || 'Verifique a consola.'));
       }
    };
 
