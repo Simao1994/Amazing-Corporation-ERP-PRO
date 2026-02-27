@@ -43,6 +43,7 @@ import { AmazingStorage, STORAGE_KEYS } from './utils/storage';
 import { User } from './types';
 import ForgotPasswordPage from './pages/ForgotPassword';
 import ResetPasswordPage from './pages/ResetPassword';
+import PublicCandidaturaEspontanea from './pages/PublicCandidaturaEspontanea';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -166,6 +167,7 @@ const App: React.FC = () => {
             <Route path="/carreiras" element={<PublicVagasSite />} />
             <Route path="/carreiras/estado" element={<PublicCandidaturaStatus />} />
             <Route path="/carreiras/:id" element={<PublicVagaDetalhes />} />
+            <Route path="/candidatura-espontanea" element={<PublicCandidaturaEspontanea />} />
             <Route path="/candidatura" element={<RecruitmentPage isPublic={true} />} />
             <Route path="/arena" element={<ArenaGames />} />
             <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
