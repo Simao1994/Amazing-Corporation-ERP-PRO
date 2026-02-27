@@ -761,14 +761,15 @@ const CorporateHome: React.FC = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-md border-b border-white/5 px-6 md:px-12 py-5 flex items-center justify-between shadow-2xl">
         <Logo className="h-16 md:h-20 cursor-pointer" onClick={() => scrollIntoView('inicio')} />
         <div className="hidden lg:flex items-center gap-10 text-[12px] font-black uppercase tracking-widest text-white">
-          <button onClick={() => scrollIntoView('inicio')} className="hover:text-yellow-500 transition-colors">Início</button>
-          <button onClick={() => scrollIntoView('sectores')} className="hover:text-yellow-500 transition-colors">Sectores</button>
-          <button onClick={() => scrollIntoView('noticias')} className="hover:text-yellow-500 transition-colors">Notícias</button>
+          <button onClick={() => scrollIntoView('inicio')} className="hover:text-yellow-500 transition-colors">INÍCIO</button>
+          <button onClick={() => scrollIntoView('sectores')} className="hover:text-yellow-500 transition-colors">SECTORES</button>
+          <button onClick={() => scrollIntoView('noticias')} className="hover:text-yellow-500 transition-colors">NOTÍCIAS</button>
           <Link to="/arena" className="flex items-center gap-3 text-indigo-400 hover:text-indigo-300 transition-all bg-white/5 px-6 py-3 rounded-full border border-white/10">
-            <Gamepad2 size={18} /> Amazing Arena Gamer
+            <Gamepad2 size={18} /> AMAZING ARENA GAMER
           </Link>
-          <Link to="/candidatura-espontanea" className="hover:text-yellow-500 transition-colors">Candidatura Espontânea</Link>
-          <button onClick={() => scrollIntoView('contactos')} className="hover:text-yellow-500 transition-colors">Contactos</button>
+          <Link to="/carreiras" className="hover:text-yellow-500 transition-colors">VER TODAS AS VAGAS</Link>
+          <Link to="/candidatura-espontanea" className="hover:text-yellow-500 transition-colors">CANDIDATURA ESPONTÂNEA</Link>
+          <button onClick={() => scrollIntoView('contactos')} className="hover:text-yellow-500 transition-colors">CONTACTOS</button>
         </div>
         <Link to="/dashboard" className={`px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${currentUser ? 'bg-white text-zinc-900 hover:bg-zinc-200' : 'bg-white/10 text-zinc-400 hover:bg-white/20'}`}>
           {currentUser ? (
