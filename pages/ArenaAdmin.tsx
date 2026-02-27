@@ -299,15 +299,18 @@ const ArenaAdmin: React.FC = () => {
 
       try {
          if (isEditing) {
-            await supabase.from('arena_tournaments').update(payload).eq('id', editingTournament.id);
+            const { error } = await supabase.from('arena_tournaments').update(payload).eq('id', editingTournament.id);
+            if (error) throw error;
          } else {
-            await supabase.from('arena_tournaments').insert([payload]);
+            const { error } = await supabase.from('arena_tournaments').insert([payload]);
+            if (error) throw error;
          }
          setShowTournamentModal(false);
          setEditingTournament(null);
          fetchData();
-      } catch (error) {
-         alert('Erro ao salvar torneio');
+      } catch (error: any) {
+         console.error('Erro detalhado ao salvar torneio:', error);
+         alert('Erro ao salvar torneio: ' + (error.message || 'Verifique a consola.'));
       }
    };
 
