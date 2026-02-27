@@ -257,9 +257,11 @@ const ArenaAdmin: React.FC = () => {
       try {
          // 1. Guardar ou Atualizar o jogador ativo (posição temporária)
          if (isEditing) {
-            await supabase.from('arena_ranking').update(payload).eq('id', editingRanking.id);
+            const { error: updErr } = await supabase.from('arena_ranking').update(payload).eq('id', editingRanking.id);
+            if (updErr) throw updErr;
          } else {
-            await supabase.from('arena_ranking').insert([{ ...payload, rank: 9999 }]); // Rank temporário no fundo
+            const { error: insErr } = await supabase.from('arena_ranking').insert([{ ...payload, rank: 9999 }]); // Rank temporário no fundo
+            if (insErr) throw insErr;
          }
 
          // 2. Extrair toda a gente para recalcular a matemática do Ranking Global
@@ -293,7 +295,8 @@ const ArenaAdmin: React.FC = () => {
       if (confirm(`Remover "${name}" do Ranking?`)) {
          try {
             // 1. Apagar o jogador
-            await supabase.from('arena_ranking').delete().eq('id', id);
+            const { error: delErr } = await supabase.from('arena_ranking').delete().eq('id', id);
+            if (delErr) throw delErr;
 
             // 2. Extrair os restantes para recalcular a matemática do Ranking Global
             const { data: allPlayers } = await supabase.from('arena_ranking').select('*').order('score', { ascending: false });
