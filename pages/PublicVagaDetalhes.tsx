@@ -422,7 +422,7 @@ const PublicVagaDetalhes: React.FC = () => {
                                                 <input 
                                                     readOnly
                                                     type="text" 
-                                                    value={formData.data_nascimento ? Math.floor(Math.abs(new Date().valueOf() - new Date(formData.data_nascimento).valueOf()) / (1000 * 60 * 60 * 24 * 365.25)) : ''}
+                                                    value={formData.data_nascimento ? `${Math.floor(Math.abs(new Date().valueOf() - new Date(formData.data_nascimento).valueOf()) / (1000 * 60 * 60 * 24 * 365.25))} anos` : ''}
                                                     placeholder="Automático"
                                                     className="w-full bg-zinc-100 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-500 cursor-not-allowed outline-none transition-all" 
                                                 />
@@ -514,13 +514,33 @@ const PublicVagaDetalhes: React.FC = () => {
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Curso / Formação *</label>
-                                                <input 
-                                                    required
-                                                    type="text" 
-                                                    value={formData.curso}
-                                                    onChange={e => setFormData({...formData, curso: e.target.value})}
-                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all" 
-                                                />
+                                                <select 
+                                                    required 
+                                                    value={formData.curso} 
+                                                    onChange={e => setFormData({ ...formData, curso: e.target.value })} 
+                                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-yellow-500 outline-none transition-all appearance-none cursor-pointer"
+                                                >
+                                                    <option value="" disabled>Selecione o Curso ou Área...</option>
+                                                    <option value="Administração e Gestão">Administração e Gestão</option>
+                                                    <option value="Arquitetura e Urbanismo">Arquitetura e Urbanismo</option>
+                                                    <option value="Biologia e Ciências da Vida">Biologia e Ciências da Vida</option>
+                                                    <option value="Ciências Contábeis e Finanças">Ciências Contábeis e Finanças</option>
+                                                    <option value="Direito">Direito</option>
+                                                    <option value="Economia">Economia</option>
+                                                    <option value="Enfermagem">Enfermagem</option>
+                                                    <option value="Engenharia Civil">Engenharia Civil</option>
+                                                    <option value="Engenharia Informática / TI">Engenharia Informática / TI</option>
+                                                    <option value="Engenharia Mecânica">Engenharia Mecânica</option>
+                                                    <option value="Gestão de Recursos Humanos">Gestão de Recursos Humanos</option>
+                                                    <option value="Logística e Transportes">Logística e Transportes</option>
+                                                    <option value="Marketing e Comunicação">Marketing e Comunicação</option>
+                                                    <option value="Medicina">Medicina</option>
+                                                    <option value="Relações Internacionais">Relações Internacionais</option>
+                                                    <option value="Outro (Técnico Profissional)">Outro (Técnico Profissional)</option>
+                                                    <option value="Outro (Ciências Sociais)">Outro (Ciências Sociais)</option>
+                                                    <option value="Outro (Engenharias)">Outro (Engenharias)</option>
+                                                    <option value="Ensino Médio Geral">Ensino Médio Geral</option>
+                                                </select>
                                             </div>
                                         </div>
 

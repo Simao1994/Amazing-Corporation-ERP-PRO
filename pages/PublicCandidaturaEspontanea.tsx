@@ -260,7 +260,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                                 <input 
                                     readOnly
                                     type="text" 
-                                    value={formData.data_nascimento ? Math.floor(Math.abs(new Date().valueOf() - new Date(formData.data_nascimento).valueOf()) / (1000 * 60 * 60 * 24 * 365.25)) : ''}
+                                    value={formData.data_nascimento ? `${Math.floor(Math.abs(new Date().valueOf() - new Date(formData.data_nascimento).valueOf()) / (1000 * 60 * 60 * 24 * 365.25))} anos` : ''}
                                     placeholder="Auto"
                                     className="w-full bg-zinc-100 border border-zinc-200 text-zinc-500 rounded-xl p-4 text-sm font-bold cursor-not-allowed outline-none transition-all" 
                                 />
