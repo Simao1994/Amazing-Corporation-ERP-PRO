@@ -18,6 +18,7 @@ const roleOptions = [
     { value: 'director_hr', label: 'Director Recursos Humanos' },
     { value: 'director_finance', label: 'Director Finanças' },
     { value: 'bibliotecario', label: 'Bibliotecário Institucional' },
+    { value: 'operario', label: 'Operário (Acesso Restrito)' },
 ];
 
 const getRoleLabel = (role: string) => roleOptions.find(r => r.value === role)?.label || role;
@@ -35,6 +36,7 @@ const roleColors: Record<string, string> = {
     director_hr: 'bg-pink-100 text-pink-800 border-pink-300',
     director_finance: 'bg-cyan-100 text-cyan-800 border-cyan-300',
     bibliotecario: 'bg-zinc-100 text-zinc-800 border-zinc-300',
+    operario: 'bg-blue-100 text-blue-800 border-blue-300',
 };
 
 interface Profile {
