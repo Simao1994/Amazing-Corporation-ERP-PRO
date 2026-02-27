@@ -25,6 +25,23 @@ const gerarReferencia = () => {
    return `ARENA-${yy}${mm}${dd}-${rand}`;
 };
 
+// Helper: Calcula o Status do Torneio baseado nas Datas e Vencedor
+export const calculateTournamentStatus = (t: ArenaTournament): 'Inscrições' | 'A decorrer' | 'Finalizado' => {
+   if (t.vencedor) return 'Finalizado';
+   
+   const now = new Date();
+   const inicio = new Date(t.data_inicio);
+   const fim = new Date(t.data_fim);
+   
+   now.setHours(0, 0, 0, 0);
+   inicio.setHours(0, 0, 0, 0);
+   fim.setHours(0, 0, 0, 0);
+
+   if (now < inicio) return 'Inscrições';
+   if (now >= inicio && now <= fim) return 'A decorrer';
+   return 'Finalizado';
+};
+
 const formatPrize = (val: string | number) => {
    if (!val) return 'TBA';
    const asNum = Number(val);
@@ -323,30 +340,33 @@ const ArenaGames: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-                     {tournaments.map(t => (
-                        <div key={t.id} className="bg-[#111216] p-10 rounded-[4rem] border border-white/5 flex flex-col md:flex-row gap-10 group hover:border-yellow-500/30 transition-all shadow-2xl relative overflow-hidden cursor-pointer" onClick={() => setViewingTournament(t)}>
-                           {t.status === 'Finalizado' && <div className="absolute top-0 right-0 p-8 bg-zinc-900/80 backdrop-blur-md flex items-center gap-2"><Medal className="text-yellow-500" size={16} /> <span className="text-[10px] font-black uppercase">Concluído</span></div>}
-                           <div className="md:w-1/2 space-y-8">
-                              <div className="space-y-2">
-                                 <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${t.status === 'Inscrições' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-zinc-800 text-zinc-500'}`}>{t.status}</span>
-                                 <h3 className="text-3xl font-black leading-tight tracking-tight">{t.titulo}</h3>
+                     {tournaments.map(t => {
+                        const status = calculateTournamentStatus(t);
+                        return (
+                           <div key={t.id} className="bg-[#111216] p-10 rounded-[4rem] border border-white/5 flex flex-col md:flex-row gap-10 group hover:border-yellow-500/30 transition-all shadow-2xl relative overflow-hidden cursor-pointer" onClick={() => setViewingTournament(t)}>
+                              {status === 'Finalizado' && <div className="absolute top-0 right-0 p-8 bg-zinc-900/80 backdrop-blur-md flex items-center gap-2"><Medal className="text-yellow-500" size={16} /> <span className="text-[10px] font-black uppercase">Concluído</span></div>}
+                              <div className="md:w-1/2 space-y-8">
+                                 <div className="space-y-2">
+                                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${status === 'Inscrições' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-zinc-800 text-zinc-500'}`}>{status}</span>
+                                    <h3 className="text-3xl font-black leading-tight tracking-tight">{t.titulo}</h3>
+                                 </div>
+                                 <div className="space-y-4">
+                                    <div className="flex items-center gap-3 text-zinc-400 font-bold text-xs"><Calendar size={18} className="text-indigo-500" /> {new Date(t.data_inicio).toLocaleDateString()}</div>
+                                    <div className="flex items-center gap-3 text-zinc-400 font-bold text-xs"><Target size={18} className="text-indigo-500" /> {t.vagas} Vagas Disponíveis</div>
+                                 </div>
                               </div>
-                              <div className="space-y-4">
-                                 <div className="flex items-center gap-3 text-zinc-400 font-bold text-xs"><Calendar size={18} className="text-indigo-500" /> {new Date(t.data_inicio).toLocaleDateString()}</div>
-                                 <div className="flex items-center gap-3 text-zinc-400 font-bold text-xs"><Target size={18} className="text-indigo-500" /> {t.vagas} Vagas Disponíveis</div>
+                              <div className="md:w-1/2 flex flex-col justify-between bg-zinc-900/50 p-8 rounded-[3rem] border border-white/5">
+                                 <div>
+                                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Grande Prémio</p>
+                                    <p className="text-2xl font-black text-yellow-500 tracking-tight">{formatPrize(t.premio)}</p>
+                                 </div>
+                                 <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">
+                                    <Eye size={14} /> Clique para ver detalhes
+                                 </div>
                               </div>
                            </div>
-                           <div className="md:w-1/2 flex flex-col justify-between bg-zinc-900/50 p-8 rounded-[3rem] border border-white/5">
-                              <div>
-                                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Grande Prémio</p>
-                                 <p className="text-2xl font-black text-yellow-500 tracking-tight">{formatPrize(t.premio)}</p>
-                              </div>
-                              <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">
-                                 <Eye size={14} /> Clique para ver detalhes
-                              </div>
-                           </div>
-                        </div>
-                     ))}
+                        );
+                     })}
                   </div>
                </div>
             )}

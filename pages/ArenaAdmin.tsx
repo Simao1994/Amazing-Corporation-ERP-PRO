@@ -47,6 +47,17 @@ const ADMIN_KEY = 'amazing-arena-admin-2026';
 import { supabase } from '../src/lib/supabase';
 import { formatAOA } from '../constants';
 
+const calculateTournamentStatus = (t: ArenaTournament) => {
+   if (t.vencedor_id || t.vencedor_nome) return 'Finalizado';
+   const now = new Date();
+   const start = new Date(t.data_inicio);
+   const end = new Date(t.data_fim);
+
+   if (now < start) return 'Inscrições';
+   if (now >= start && now <= end) return 'A decorrer';
+   return 'Finalizado';
+};
+
 const ArenaAdmin: React.FC = () => {
    const [activeTab, setActiveTab] = useState<'analytics' | 'catalog' | 'tournaments' | 'payments' | 'ranking'>('analytics');
    const [financeView, setFinanceView] = useState<'payments' | 'expenses'>('payments');
@@ -360,7 +371,6 @@ const ArenaAdmin: React.FC = () => {
          data_fim: fd.get('data_fim') as string,
          hora_fim: (fd.get('hora_fim') as string) || null,
          premio: fd.get('premio') as string,
-         status: (fd.get('status') as any) || 'Inscrições',
          vagas: Number(fd.get('vagas')),
          meta_pontos: fd.get('meta_pontos') ? Number(fd.get('meta_pontos')) : null,
          vencedor: fd.get('vencedor') as string || undefined
@@ -899,17 +909,20 @@ const ArenaAdmin: React.FC = () => {
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-zinc-50">
-                        {tournaments.map(t => (
-                           <tr key={t.id} className="hover:bg-zinc-50/50 transition-all">
-                              <td className="px-10 py-5"><p className="font-black text-zinc-900 text-sm">{t.titulo}</p><p className="text-[9px] font-bold text-zinc-400">{new Date(t.data_inicio).toLocaleDateString()}</p></td>
-                              <td className="px-10 py-5 font-bold text-green-600">{t.premio}</td>
-                              <td className="px-10 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${t.status === 'Inscrições' ? 'bg-indigo-100 text-indigo-700' : 'bg-zinc-100 text-zinc-500'}`}>{t.status}</span></td>
-                              <td className="px-10 py-5 text-right flex justify-end gap-2">
-                                 <button onClick={() => { setEditingTournament(t); setShowTournamentModal(true); }} className="p-3 text-zinc-300 hover:text-indigo-600 transition-colors"><Edit size={18} /></button>
-                                 <button onClick={() => handleDeleteTournament(t.id, t.titulo)} className="p-3 text-zinc-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                              </td>
-                           </tr>
-                        ))}
+                        {tournaments.map(t => {
+                           const status = calculateTournamentStatus(t);
+                           return (
+                              <tr key={t.id} className="hover:bg-zinc-50/50 transition-all">
+                                 <td className="px-10 py-5"><p className="font-black text-zinc-900 text-sm">{t.titulo}</p><p className="text-[9px] font-bold text-zinc-400">{new Date(t.data_inicio).toLocaleDateString()}</p></td>
+                                 <td className="px-10 py-5 font-bold text-green-600">{t.premio}</td>
+                                 <td className="px-10 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${status === 'Inscrições' ? 'bg-indigo-100 text-indigo-700' : 'bg-zinc-100 text-zinc-500'}`}>{status}</span></td>
+                                 <td className="px-10 py-5 text-right flex justify-end gap-2">
+                                    <button onClick={() => { setEditingTournament(t); setShowTournamentModal(true); }} className="p-3 text-zinc-300 hover:text-indigo-600 transition-colors"><Edit size={18} /></button>
+                                    <button onClick={() => handleDeleteTournament(t.id, t.titulo)} className="p-3 text-zinc-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                 </td>
+                              </tr>
+                           );
+                        })}
                      </tbody>
                   </table>
                </div>
