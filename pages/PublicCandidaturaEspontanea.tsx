@@ -227,6 +227,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* IDENTIFICAÇÃO BÁSICA */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nome Completo *</label>
@@ -238,7 +239,8 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                        {/* CONTACTOS E BI */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Telefone *</label>
                                 <input required type="tel" value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" placeholder="+244 9..." />
@@ -251,6 +253,10 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nº de BI *</label>
                                 <input required type="text" value={formData.bi} onChange={e => setFormData({ ...formData, bi: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
                             </div>
+                        </div>
+
+                        {/* DADOS PESSOAIS */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Data de Nasc. *</label>
                                 <input required type="date" value={formData.data_nascimento} onChange={e => setFormData({ ...formData, data_nascimento: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
@@ -265,8 +271,18 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                                     className="w-full bg-zinc-100 border border-zinc-200 text-zinc-500 rounded-xl p-4 text-sm font-bold cursor-not-allowed outline-none transition-all" 
                                 />
                             </div>
+                            <div>
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Género *</label>
+                                <select required value={formData.genero} onChange={e => setFormData({ ...formData, genero: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all appearance-none cursor-pointer">
+                                    <option value="" disabled>Selecione...</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Feminino">Feminino</option>
+                                    <option value="Prefiro não dizer">Prefiro não dizer</option>
+                                </select>
+                            </div>
                         </div>
 
+                        {/* ESTADO CIVIL E DEMOGRAFIA */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Estado Civil *</label>
@@ -278,32 +294,21 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Género *</label>
-                                <select required value={formData.genero} onChange={e => setFormData({ ...formData, genero: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all appearance-none cursor-pointer">
-                                    <option value="" disabled>Selecione...</option>
-                                    <option value="Masculino">Masculino</option>
-                                    <option value="Feminino">Feminino</option>
-                                    <option value="Prefiro não dizer">Prefiro não dizer</option>
-                                </select>
-                            </div>
-                            <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nacionalidade *</label>
                                 <input required type="text" value={formData.nacionalidade} onChange={e => setFormData({ ...formData, nacionalidade: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Naturalidade *</label>
                                 <input required type="text" value={formData.naturalidade} onChange={e => setFormData({ ...formData, naturalidade: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
                             </div>
+                        </div>
+
+                        {/* MORADA */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Morada Actual *</label>
                                 <input required type="text" value={formData.morada} onChange={e => setFormData({ ...formData, morada: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Província Actual *</label>
                                 <select required value={formData.provincia} onChange={e => setFormData({ ...formData, provincia: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all appearance-none cursor-pointer">
@@ -332,6 +337,10 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                                     <option value="Exterior">Exterior</option>
                                 </select>
                             </div>
+                        </div>
+
+                        {/* EDUCAÇÃO */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Grau Académico *</label>
                                 <select required value={formData.nivel_academico} onChange={e => setFormData({ ...formData, nivel_academico: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all appearance-none cursor-pointer">
@@ -369,6 +378,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* EXTRAS */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Carta de Condução *</label>
