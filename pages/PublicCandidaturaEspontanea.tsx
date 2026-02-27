@@ -18,14 +18,19 @@ const PublicCandidaturaEspontanea: React.FC = () => {
         telefone_alternativo: '',
         bi: '',
         estado_civil: '',
+        genero: '',
+        data_nascimento: '',
+        nacionalidade: 'Angolana',
         naturalidade: '',
         morada: '',
         provincia: '',
         nivel_academico: '',
         curso: '',
+        carta_conducao: '',
         disponibilidade: '',
         pretensao_salarial: '',
         expectativa_5_anos: '',
+        linkedin_url: '',
         sobre_mim: '',
         mensagem: '',
         cvFile: null as File | null
@@ -94,6 +99,18 @@ const PublicCandidaturaEspontanea: React.FC = () => {
             const restoNome = parts.slice(1).join(' ') || '';
             const generatedId = Math.random().toString(36).substr(2, 6).toUpperCase();
 
+            // Calcular a idade com base na data de nascimento
+            let idadeCalculada = 0;
+            if (formData.data_nascimento) {
+                const hoje = new Date();
+                const nasc = new Date(formData.data_nascimento);
+                idadeCalculada = hoje.getFullYear() - nasc.getFullYear();
+                const m = hoje.getMonth() - nasc.getMonth();
+                if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) {
+                    idadeCalculada--;
+                }
+            }
+
             // Save Application to DB -> No specific job ID (vaga_id = null)
             const novaCandidatura = {
                 short_id: generatedId,
@@ -103,13 +120,19 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                 telefone: formData.telefone,
                 bi_numero: formData.bi,
                 estado_civil: formData.estado_civil,
+                genero: formData.genero,
+                data_nascimento: formData.data_nascimento || null,
+                idade: idadeCalculada,
+                nacionalidade: formData.nacionalidade,
                 naturalidade: formData.naturalidade,
                 morada: formData.morada,
                 provincia: formData.provincia,
                 escolaridade: formData.nivel_academico,
                 curso: formData.curso,
+                carta_conducao: formData.carta_conducao,
                 disponibilidade: formData.disponibilidade,
                 pretensao_salarial: Number(formData.pretensao_salarial.replace(/[^0-9]/g, '')) || 0,
+                linkedin_url: formData.linkedin_url,
                 notas_internas: `Pretensões (5 Anos): ${formData.expectativa_5_anos}\n\nSobre mim: ${formData.sobre_mim}\n\nMensagem: ${formData.mensagem || 'Candidatura Espontânea (Sem Vaga Específica)'}`,
                 experiencia: `Telefone Alternativo: ${formData.telefone_alternativo}`,
                 doc_cv: cvUrl,
@@ -185,7 +208,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Telefone *</label>
                                 <input required type="tel" value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" placeholder="+244 9..." />
@@ -197,6 +220,10 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nº de BI *</label>
                                 <input required type="text" value={formData.bi} onChange={e => setFormData({ ...formData, bi: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Data de Nasc. *</label>
+                                <input required type="date" value={formData.data_nascimento} onChange={e => setFormData({ ...formData, data_nascimento: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
                             </div>
                         </div>
 
@@ -210,6 +237,22 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                                     <option value="Divorciado(a)">Divorciado(a)</option>
                                 </select>
                             </div>
+                            <div>
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Género *</label>
+                                <select required value={formData.genero} onChange={e => setFormData({ ...formData, genero: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all appearance-none cursor-pointer">
+                                    <option value="" disabled>Selecione...</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Feminino">Feminino</option>
+                                    <option value="Prefiro não dizer">Prefiro não dizer</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nacionalidade *</label>
+                                <input required type="text" value={formData.nacionalidade} onChange={e => setFormData({ ...formData, nacionalidade: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Naturalidade *</label>
                                 <input required type="text" value={formData.naturalidade} onChange={e => setFormData({ ...formData, naturalidade: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" />
@@ -286,6 +329,32 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Carta de Condução *</label>
+                                <select required value={formData.carta_conducao} onChange={e => setFormData({ ...formData, carta_conducao: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all appearance-none cursor-pointer">
+                                    <option value="" disabled>Selecione...</option>
+                                    <option value="Nenhuma">Nenhuma</option>
+                                    <option value="Ligeiro">Passageiros (Ligeiro)</option>
+                                    <option value="Pesado">Carga (Pesado)</option>
+                                    <option value="Ambas">Ambas</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Pretensão Salarial Mínima *</label>
+                                <input required type="text" value={formData.pretensao_salarial} onChange={e => setFormData({ ...formData, pretensao_salarial: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" placeholder="Ex. 150.000 Kz" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Disponibilidade *</label>
+                                <select required value={formData.disponibilidade} onChange={e => setFormData({ ...formData, disponibilidade: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all appearance-none cursor-pointer">
+                                    <option value="" disabled>Selecione...</option>
+                                    <option value="Imediata">Imediata</option>
+                                    <option value="15 Dias">Em 15 Dias</option>
+                                    <option value="30 Dias">Em 30 Dias</option>
+                                </select>
+                            </div>
+                        </div>
+
                         {/* TextAreas */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -298,15 +367,9 @@ const PublicCandidaturaEspontanea: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Pretensão Salarial Mínima *</label>
-                                <input required type="text" value={formData.pretensao_salarial} onChange={e => setFormData({ ...formData, pretensao_salarial: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" placeholder="Ex. 150.000 Kz" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Disponibilidade Imediata? *</label>
-                                <input required type="text" value={formData.disponibilidade} onChange={e => setFormData({ ...formData, disponibilidade: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" placeholder="Imediata ou a partir de..." />
-                            </div>
+                        <div>
+                            <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">URL do LinkedIn (Opcional)</label>
+                            <input type="url" value={formData.linkedin_url} onChange={e => setFormData({ ...formData, linkedin_url: e.target.value })} className="w-full bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-xl p-4 text-sm font-bold focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 outline-none transition-all placeholder:font-normal" placeholder="https://linkedin.com/in/o-seu-perfil" />
                         </div>
 
                         <div className="pt-4 border-t border-zinc-100">
