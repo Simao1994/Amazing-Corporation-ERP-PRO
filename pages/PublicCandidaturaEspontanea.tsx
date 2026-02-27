@@ -135,7 +135,7 @@ const PublicCandidaturaEspontanea: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-100 text-zinc-900 font-['Times_New_Roman',_Times,_serif] relative overflow-x-hidden">
+        <div className="min-h-screen bg-zinc-200 text-zinc-900 font-['Times_New_Roman',_Times,_serif] relative overflow-x-hidden">
             {/* Premium Black Header */}
             <div className="fixed top-0 left-0 w-full bg-zinc-950 py-3 px-4 md:px-12 shadow-xl z-50 border-b border-zinc-800">
                 <div className="w-full flex justify-between items-center">
