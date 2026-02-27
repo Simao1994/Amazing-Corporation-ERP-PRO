@@ -86,6 +86,9 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
 
   // Bibliotecário - Gestão da Biblioteca
   bibliotecario: ['home', 'dashboard', 'biblioteca', 'solicitacoes', 'blog'],
+
+  // Operário - Acesso limitado a Galeria, Biblioteca, Home e Dashboard
+  operario: ['home', 'dashboard', 'galeria_corp', 'biblioteca'],
 };
 
 export const formatAOA = (value: number) => {

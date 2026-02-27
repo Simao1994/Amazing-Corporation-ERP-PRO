@@ -15,7 +15,8 @@ export type UserRole =
   | 'manager_inventory'
   | 'director_hr'
   | 'director_finance'
-  | 'bibliotecario';
+  | 'bibliotecario'
+  | 'operario';
 
 export interface User {
   id: string;

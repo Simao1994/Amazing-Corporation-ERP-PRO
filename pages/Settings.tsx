@@ -49,6 +49,7 @@ const SettingsPage: React.FC = () => {
     { value: 'maintenance_director', label: 'Director da Manutenção' },
     { value: 'accounting', label: 'Contabilidade' },
     { value: 'inventory', label: 'Inventários' },
+    { value: 'operario', label: 'Operário (Acesso Restrito)' },
   ];
 
   const downloadBackup = async () => {
@@ -231,6 +232,24 @@ const SettingsPage: React.FC = () => {
                     </p>
                     <p className="flex items-center gap-2 text-red-600 font-bold text-xs">
                       <Shield size={14} /> Bloqueado: Recursos Humanos, Manutenção.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Feedback Visual de Permissões para Operário */}
+              {inviteForm.role === 'operario' && (
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-sm animate-in fade-in">
+                  <div className="flex items-center gap-2 mb-2 font-black text-blue-900 uppercase text-[10px] tracking-widest">
+                    <Lock size={14} className="text-blue-600" />
+                    Acesso Operário Simplificado
+                  </div>
+                  <div className="text-zinc-600 space-y-2">
+                    <p className="flex items-center gap-2 text-green-700 font-bold text-xs">
+                      <CheckCircle2 size={14} /> Acesso: Home, Dashboard, Galeria Corp, Biblioteca.
+                    </p>
+                    <p className="flex items-center gap-2 text-red-600 font-bold text-xs">
+                      <Shield size={14} /> Bloqueado: Todas as outras áreas administrativas.
                     </p>
                   </div>
                 </div>
