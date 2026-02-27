@@ -44,7 +44,10 @@ import {
   Image as ImageIcon,
   Sparkles,
   User as UserMini,
-  ChevronRight
+  ChevronRight,
+  UploadCloud,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
@@ -52,6 +55,284 @@ import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { CorporateSettings, Solicitacao, User, BlogPost, RhVaga } from '../types';
 import { supabase } from '../src/lib/supabase';
+
+const PublicCandidaturaEspontaneaForm: React.FC = () => {
+    const [formData, setFormData] = useState({
+        nome: '',
+        email: '',
+        telefone: '',
+        telefone_alternativo: '',
+        bi: '',
+        estado_civil: '',
+        naturalidade: '',
+        morada: '',
+        provincia: '',
+        nivel_academico: '',
+        curso: '',
+        disponibilidade: '',
+        pretensao_salarial: '',
+        expectativa_5_anos: '',
+        sobre_mim: '',
+        mensagem: '',
+        cvFile: null as File | null
+    });
+    
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                alert('O tamanho do ficheiro não deve exceder 5MB.');
+                return;
+            }
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Apenas formatos PDF ou Word (.doc, .docx) são permitidos.');
+                return;
+            }
+            setFormData({ ...formData, cvFile: file });
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!formData.cvFile) {
+            alert('Por favor, anexe o seu Currículo profissional.');
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            let cvUrl = '';
+            
+            // Upload to Supabase Storage 'cvs' bucket
+            const fileExt = formData.cvFile.name.split('.').pop();
+            const fileName = `espontanea_${formData.bi.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError, data } = await supabase.storage
+                .from('cvs')
+                .upload(filePath, formData.cvFile);
+
+            if (uploadError) {
+                console.error("Erro no upload do CV:", uploadError);
+                throw new Error('Falha ao armazenar o Currículo. Tente novamente mais tarde.');
+            }
+
+            const { data: publicUrlData } = supabase.storage
+                .from('cvs')
+                .getPublicUrl(filePath);
+                
+            cvUrl = publicUrlData.publicUrl;
+
+            // Save Application to DB -> No specific job ID (vaga_id = null)
+            const novaCandidatura = {
+                 // vaga_id: is omitted or explicit null (we let DB handle it if nullable, but we must assure rh_candidaturas allows null vaga_id or creates a dummy). 
+                 // If the system strictly demands a vaga_id, the user wants it to just take unsolicited resumes. Let's explicitly set it undefined since DB usually allows it unless explicitly strict NOT NULL.
+                 candidato_nome: formData.nome,
+                 candidato_email: formData.email,
+                 candidato_telefone: formData.telefone,
+                 candidato_telefone_alt: formData.telefone_alternativo,
+                 candidato_bi: formData.bi,
+                 estado_civil: formData.estado_civil,
+                 naturalidade: formData.naturalidade,
+                 morada: formData.morada,
+                 provincia: formData.provincia,
+                 nivel_academico: formData.nivel_academico,
+                 curso: formData.curso,
+                 disponibilidade: formData.disponibilidade,
+                 pretensao_salarial: formData.pretensao_salarial,
+                 expectativa_5_anos: formData.expectativa_5_anos,
+                 sobre_mim: formData.sobre_mim,
+                 mensagem_candidato: formData.mensagem || 'Candidatura Espontânea',
+                 cv_url: cvUrl,
+                 status: 'Pendente' as const
+            };
+
+            const { error: dbError } = await supabase
+                .from('rh_candidaturas')
+                .insert([novaCandidatura]);
+
+            if (dbError) {
+                console.error("DB Insert Error", dbError);
+                throw new Error("Erro ao guardar a candidatura spontânea na base de dados.");
+            }
+
+            setIsSuccess(true);
+        } catch (err: any) {
+            console.error(err);
+            alert(err.message || 'Houve um impedimento técnico. Por favor, tente de novo.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (isSuccess) {
+         return (
+            <div className="w-full max-w-4xl mx-auto bg-zinc-950/80 p-8 md:p-12 rounded-[3rem] border border-white/5 backdrop-blur-md shadow-2xl mt-24 text-center">
+                <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 size={40} className="text-green-500" />
+                </div>
+                <h3 className="text-3xl font-black text-white mb-4">Candidatura Recebida!</h3>
+                <p className="text-zinc-400 font-medium">O seu perfil foi registado na nossa base de talentos para oportunidades futuras na corporação.</p>
+            </div>
+         );
+    }
+
+    return (
+        <div className="w-full max-w-4xl mx-auto bg-zinc-950/80 p-8 md:p-12 rounded-[3rem] border border-white/5 backdrop-blur-md shadow-2xl mt-24 text-left">
+             <div className="border-b border-white/10 pb-6 mb-8">
+                 <h3 className="text-3xl font-black text-white">Candidatura Espontânea</h3>
+                 <p className="text-zinc-400 font-medium mt-2">Envie-nos o seu currículo a qualquer momento. Analisaremos o seu perfil para funções corporativas que venham a surgir e que combinem com a sua experiência.</p>
+             </div>
+             
+             <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nome Completo *</label>
+                        <input required type="text" value={formData.nome} onChange={e => setFormData({...formData, nome: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" placeholder="Primeiro e Último Nome" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Email *</label>
+                        <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" placeholder="o-seu-email@exemplo.com" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Telefone *</label>
+                        <input required type="tel" value={formData.telefone} onChange={e => setFormData({...formData, telefone: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" placeholder="+244 9..." />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Alternativo *</label>
+                        <input required type="tel" value={formData.telefone_alternativo} onChange={e => setFormData({...formData, telefone_alternativo: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Nº de BI *</label>
+                        <input required type="text" value={formData.bi} onChange={e => setFormData({...formData, bi: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Estado Civil *</label>
+                        <select required value={formData.estado_civil} onChange={e => setFormData({...formData, estado_civil: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all appearance-none cursor-pointer">
+                            <option value="" disabled>Selecione...</option>
+                            <option value="Solteiro(a)">Solteiro(a)</option>
+                            <option value="Casado(a)">Casado(a)</option>
+                            <option value="Divorciado(a)">Divorciado(a)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Naturalidade *</label>
+                        <input required type="text" value={formData.naturalidade} onChange={e => setFormData({...formData, naturalidade: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Morada Actual *</label>
+                        <input required type="text" value={formData.morada} onChange={e => setFormData({...formData, morada: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Província Actual *</label>
+                        <select required value={formData.provincia} onChange={e => setFormData({...formData, provincia: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all appearance-none cursor-pointer">
+                            <option value="" disabled>Selecione...</option>
+                            <option value="Benguela">Benguela</option>
+                            <option value="Luanda">Luanda</option>
+                            <option value="Huíla">Huíla</option>
+                            <option value="Bié">Bié</option>
+                            <option value="Cabinda">Cabinda</option>
+                            <option value="Outra">Outra</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Grau Académico *</label>
+                        <select required value={formData.nivel_academico} onChange={e => setFormData({...formData, nivel_academico: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all appearance-none cursor-pointer">
+                            <option value="" disabled>Selecione...</option>
+                            <option value="Ensino Médio">Ensino Médio</option>
+                            <option value="Ensino Superior / Bacharel">Ensino Superior / Licenciatura</option>
+                            <option value="Mestrado">Mestrado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Formação Predominante *</label>
+                        <input required type="text" value={formData.curso} onChange={e => setFormData({...formData, curso: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" placeholder="Ex: Informática, RH..." />
+                    </div>
+                </div>
+
+                {/* TextAreas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Sobre as tuas expectativas (5 Anos) *</label>
+                        <textarea required rows={3} value={formData.expectativa_5_anos} onChange={e => setFormData({...formData, expectativa_5_anos: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm focus:border-yellow-500 outline-none transition-all resize-none" ></textarea>
+                    </div>
+                    <div>
+                         <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Resume a tua paixão e perfil *</label>
+                         <textarea required rows={3} value={formData.sobre_mim} onChange={e => setFormData({...formData, sobre_mim: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm focus:border-yellow-500 outline-none transition-all resize-none" ></textarea>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Pretensão Salarial Mínima *</label>
+                        <input required type="text" value={formData.pretensao_salarial} onChange={e => setFormData({...formData, pretensao_salarial: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" placeholder="Ex. 150.000 Kz" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Disponibilidade Imediata? *</label>
+                        <input required type="text" value={formData.disponibilidade} onChange={e => setFormData({...formData, disponibilidade: e.target.value})} className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-4 text-sm font-bold focus:border-yellow-500 outline-none transition-all placeholder:font-normal" placeholder="Imediata ou a partir de..." />
+                    </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/10">
+                     <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-4">Anexar Ficheiro do Currículo *</label>
+                     <div 
+                         onClick={() => fileInputRef.current?.click()}
+                         className={`w-full border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
+                             ${formData.cvFile ? 'border-green-500/50 bg-green-500/10' : 'border-white/20 bg-white/5 hover:border-yellow-500/50 hover:bg-yellow-500/5'}`}
+                     >
+                         <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} className="hidden" />
+                         {formData.cvFile ? (
+                             <div className="flex flex-col items-center gap-2">
+                                 <FileText className="text-green-500" size={32} />
+                                 <span className="text-sm font-bold text-white truncate w-full px-4">{formData.cvFile.name}</span>
+                                 <span className="text-xs font-semibold text-green-400/80">{(formData.cvFile.size / 1024 / 1024).toFixed(2)} MB • Clique para trocar</span>
+                             </div>
+                         ) : (
+                             <div className="flex flex-col items-center gap-3">
+                                 <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center text-zinc-300">
+                                     <UploadCloud size={24} />
+                                 </div>
+                                 <span className="text-sm font-bold text-white">Anexe ou solte o seu ficheiro PDF</span>
+                                 <span className="text-xs text-zinc-400">Tamanho máximo: 5MB</span>
+                             </div>
+                         )}
+                     </div>
+                </div>
+
+                <div className="pt-6">
+                    <button 
+                         type="submit" 
+                         disabled={isSubmitting || !formData.cvFile}
+                         className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-zinc-900 py-5 rounded-xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-xl"
+                    >
+                         {isSubmitting ? <><RefreshCw className="animate-spin" size={20}/> A gravar candidatura...</> : 'Enviar Candidatura Institucional'}
+                    </button>
+                    <p className="text-[10px] text-zinc-500 text-center mt-4">Ao submeter, os seus dados estarão seguros de acordo com a nossa directriz de confidencialidade.</p>
+                </div>
+             </form>
+        </div>
+    );
+};
 
 const PublicNewsGrid: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -990,6 +1271,10 @@ const CorporateHome: React.FC = () => {
         </div>
 
         <PublicVagasGrid />
+
+        <div className="w-full relative z-10 font-['Times_New_Roman',_Times,_serif]">
+            <PublicCandidaturaEspontaneaForm />
+        </div>
       </section>
 
       {/* CONTACTS & MAP - 100% WIDTH */}
