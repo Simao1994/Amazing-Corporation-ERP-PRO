@@ -417,7 +417,7 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                   <Logo className="h-12" />
                   <div className="text-right">
                      <h1 className="text-3xl font-black uppercase">Ficha de Candidato</h1>
-                     <p className="text-zinc-500 font-bold uppercase tracking-widest">Candidatura Online v2026</p>
+                     <p className="text-zinc-500 font-bold uppercase tracking-widest">Candidatura Espontânea v2026</p>
                      <p className="text-xs font-black text-yellow-600">ID: {printingCandidato.id}</p>
                   </div>
                </div>
@@ -475,7 +475,7 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                      <BriefcaseBusiness className="text-yellow-500" size={28} />
                   </div>
                   <div>
-                     <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase">Candidatura <span className="text-yellow-500">Online</span></h1>
+                     <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase">Candidatura <span className="text-yellow-500">Espontânea</span></h1>
                      <p className="text-zinc-500 font-bold flex items-center gap-2 mt-1">
                         <ShieldCheck size={14} className="text-green-600" /> Painel de Triagem e Auditoria de Talentos
                      </p>
