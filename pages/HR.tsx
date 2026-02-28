@@ -194,8 +194,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const currentFiscalYear = new Date().getFullYear();
 
    const fetchHRData = async () => {
-      // 1. Background fetch for all keys
-      const keys = [STORAGE_KEYS.FUNCIONARIOS, STORAGE_KEYS.RECIBOS, STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS, STORAGE_KEYS.CORPORATE_INFO];
+      // 1. Background fetch for all keys (excluding RECIBOS which is now a dedicated table)
+      const keys = [STORAGE_KEYS.FUNCIONARIOS, STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS, STORAGE_KEYS.CORPORATE_INFO];
       await AmazingStorage.loadSpecificKeys(keys);
 
       // 2. Update states from fresh cache
@@ -233,7 +233,21 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       }
 
       setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
-      setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
+
+      // 3. Fetch Receipts from dedicated table instead of erp_data JSON
+      const { data: dbRecibos, error: recError } = await supabase
+         .from('hr_recibos')
+         .select('*')
+         .order('data_emissao', { ascending: false });
+
+      if (!recError && dbRecibos) {
+         setRecibos(dbRecibos);
+         // Update local cache for offline/fast access
+         localStorage.setItem(STORAGE_KEYS.RECIBOS, JSON.stringify(dbRecibos));
+      } else {
+         setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
+      }
+
       setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
       setCorporateInfo(AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
    };
