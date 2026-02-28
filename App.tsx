@@ -44,6 +44,7 @@ import { User } from './types';
 import ForgotPasswordPage from './pages/ForgotPassword';
 import ResetPasswordPage from './pages/ResetPassword';
 import PublicCandidaturaEspontanea from './pages/PublicCandidaturaEspontanea';
+import AutoLogout from './components/AutoLogout';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -139,6 +140,7 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <HashRouter>
         <div className="relative">
+          <AutoLogout user={user} onLogout={handleLogout} />
           {isSyncing && (
             <div className="fixed bottom-6 left-6 z-[100] bg-zinc-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-yellow-500/50 animate-bounce">
               <div className="w-2 h-2 bg-yellow-500 rounded-full animate-ping"></div>
