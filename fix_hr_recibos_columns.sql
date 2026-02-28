@@ -2,9 +2,10 @@
 -- Execute este script no SQL Editor do seu Supabase Dashboard
 
 DO $$ 
+DECLARE 
+    pol record;
 BEGIN
     -- 1. Corrigir Relacionamento do Funcionário (MUITO IMPORTANTE)
-    -- O erro de não aparecer no histórico era devido ao vínculo estar na tabela errada.
     IF EXISTS (
         SELECT 1 FROM information_schema.table_constraints 
         WHERE constraint_name = 'hr_recibos_funcionario_id_fkey' 
@@ -119,34 +120,25 @@ BEGIN
         ALTER TABLE public.hr_recibos ADD COLUMN data_emissao timestamp with time zone DEFAULT now();
     END IF;
 
-    -- 6. RESET TOTAL DE RLS (Para garantir que NADA bloqueia a inserção)
-    -- Remover ABSOLUTAMENTE TODAS as políticas existentes para evitar conflitos
-    DO $$ 
-    DECLARE 
-        pol record;
-    BEGIN
-        FOR pol IN (SELECT policyname FROM pg_policies WHERE tablename = 'hr_recibos') LOOP
-            EXECUTE format('DROP POLICY IF EXISTS %I ON public.hr_recibos', pol.policyname);
-        END LOOP;
-    END $$;
+    -- 6. RESET TOTAL DE RLS
+    -- Remover políticas existentes para evitar conflitos
+    FOR pol IN (SELECT policyname FROM pg_policies WHERE tablename = 'hr_recibos') LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON public.hr_recibos', pol.policyname);
+    END LOOP;
     
     -- Forçar RLS ativo
     ALTER TABLE public.hr_recibos ENABLE ROW LEVEL SECURITY;
 
-    -- Criar política "NUCLEAR": Permite TUDO para qualquer utilizador autenticado
-    -- (Isto elimina qualquer dúvida sobre a regra de segurança)
-    CREATE POLICY "Super_Permissao_RH" 
-    ON public.hr_recibos FOR ALL 
-    USING (true)
-    WITH CHECK (true);
-
-    -- 7. Grant total e absoluto
-    GRANT ALL ON public.hr_recibos TO authenticated;
-    GRANT ALL ON public.hr_recibos TO service_role;
-    GRANT ALL ON public.hr_recibos TO anon;
-
-    -- Garantir que a sequência/permissão de schema está correta
-    GRANT USAGE ON SCHEMA public TO authenticated;
-    GRANT USAGE ON SCHEMA public TO anon;
+    -- Criar política nuclear
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'hr_recibos' AND policyname = 'Super_Permissao_RH') THEN
+        CREATE POLICY "Super_Permissao_RH" ON public.hr_recibos FOR ALL USING (true) WITH CHECK (true);
+    END IF;
 
 END $$;
+
+-- 7. Grant total e absoluto (Fora do bloco DO por segurança de sintaxe)
+GRANT ALL ON public.hr_recibos TO authenticated;
+GRANT ALL ON public.hr_recibos TO service_role;
+GRANT ALL ON public.hr_recibos TO anon;
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA public TO anon;
