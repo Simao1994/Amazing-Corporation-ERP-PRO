@@ -324,11 +324,10 @@ const SettingsPage: React.FC = () => {
             <p className="text-zinc-400 text-xs leading-relaxed font-medium">
               Sua infraestrutura de dados local utiliza encriptação nativa do navegador. Para migrar para uma solução multi-utilizador em nuvem, contacte o suporte técnico.
             </p>
-          </div>
-        </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default SettingsPage;
