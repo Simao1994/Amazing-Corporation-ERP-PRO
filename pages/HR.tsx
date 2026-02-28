@@ -1679,14 +1679,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   </div>
 
                   <div className="flex-1 px-16 py-8 print:px-12">
-                     {/* LINHA DE TÃTULO */}
-                     <div className="border-b-[4px] border-zinc-900 pb-10 mb-8 grid grid-cols-3 items-center">
+                     {/* LINHA DE TÍTULO - REESTRUTURADA (CENTRO E LOGO À ESQUERDA) */}
+                     <div className="border-b-[4px] border-zinc-900 pb-10 mb-8 grid grid-cols-3 items-end">
                         {/* ESQUERDA: LOGO + INFO ACTUALIZADA (NIF: 50002181797) */}
-                        <div className="flex items-center gap-5">
-                           <div className="w-20 h-20 bg-zinc-50 rounded-2xl flex items-center justify-center p-2 border border-zinc-100 shadow-sm print:border-none">
-                              <Logo className="h-16" />
+                        <div className="flex items-end gap-5">
+                           <div className="w-32 h-32 bg-zinc-50 rounded-2xl flex items-center justify-center p-3 border border-zinc-100 shadow-sm print:border-none">
+                              <Logo className="h-24" />
                            </div>
-                           <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400">
+                           <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400 mb-2">
                               <span className="text-zinc-900 font-black text-[11px] mb-1">NIF: 50002181797</span>
                               <span>Endereço: Benguela/Angola</span>
                               <span>Bairro Massangarala</span>
@@ -1695,16 +1695,16 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            </div>
                         </div>
 
-                        {/* CENTRO: TÍTULO E PERÍODO */}
-                        <div className="text-center">
-                           <h2 className="text-4xl font-black text-zinc-900 uppercase tracking-tighter leading-none">Folha de Salário</h2>
+                        {/* CENTRO: TÍTULO E PERÍODO - DESLOCADO PARA BAIXO/ALINHADO */}
+                        <div className="text-center pb-2">
+                           <h2 className="text-4xl font-black text-zinc-900 uppercase tracking-tighter leading-none mt-12">Folha de Salário</h2>
                            <div className="mt-3 inline-block bg-zinc-900 text-white px-4 py-1.5 rounded-full">
                               <p className="text-[11px] font-black uppercase tracking-widest">Período: {viewingRecibo.mes} {viewingRecibo.ano}</p>
                            </div>
                         </div>
 
                         {/* DIREITA: Nº DOCUMENTO */}
-                        <div className="text-right">
+                        <div className="text-right pb-2">
                            <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Nº Documento</p>
                            <p className="text-2xl font-black text-zinc-900 tabular-nums uppercase">#{viewingRecibo.numero_documento || viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
                         </div>
