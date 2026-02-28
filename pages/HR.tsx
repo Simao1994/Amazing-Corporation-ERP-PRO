@@ -1589,7 +1589,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          {/* MODAL RECIBO PROFISSIONAL (ESTILO CANVA) */}
          {viewingRecibo && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10 print:static print:p-0 print:bg-white print:block">
-               <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-full min-h-[1120px] flex flex-col overflow-hidden">
+               <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:mx-auto min-h-[1120px] flex flex-col overflow-hidden">
 
                   {/* DESIGN GEOMÉTRICO SUPERIOR (TEMPLATE) */}
                   <div className="relative h-56 w-full print:h-56 overflow-hidden bg-white border-b-4 border-zinc-900">
@@ -1683,7 +1683,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <div className="border-b-[4px] border-zinc-900 pb-8 mb-8 flex justify-between items-center">
                         {/* ESQUERDA: LOGO + INFO (TAMANHO AJUSTADO) */}
                         <div className="flex items-center gap-6">
-                           <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center p-2 border border-zinc-100 shadow-sm print:border-none print:shadow-none">
+                           <div className="w-48 h-24 bg-zinc-50 rounded-2xl flex items-center justify-center p-3 border border-zinc-200 shadow-sm print:border-none print:shadow-none">
                               <Logo className="h-16 w-auto" />
                            </div>
                            <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400">
@@ -1848,11 +1848,16 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)' }}
                      ></div>
 
-                     <div className="absolute bottom-8 left-12 z-10 flex items-center gap-6">
-                        <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em]">Amazing ERP • Sistema Inteligente</p>
-                        <div className="h-4 w-[1px] bg-white/10"></div>
-                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Pág. 01 / 01</p>
-                     </div>
+                                           <div className='absolute bottom-8 left-12 z-10 flex flex-col gap-1'>
+                         <div className='flex items-center gap-6'>
+                            <p className='text-[10px] font-black text-white/50 uppercase tracking-[0.3em] font-sans'>Amazing ERP • Sistema Inteligente</p>
+                            <div className='h-4 w-[1px] bg-white/10'></div>
+                            <p className='text-[8px] font-bold text-white/30 uppercase tracking-widest'>Pág. 01 / 01</p>
+                         </div>
+                         <p className='text-[9px] font-bold text-white/40 uppercase tracking-widest italic'>
+                            Folha de Salário processada pelo Computador em 28/02/2026 22:31:50
+                         </p>
+                      </div>
                   </div>
                </div>
             </div>
@@ -1942,3 +1947,4 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 };
 
 export default HRPage;
+
