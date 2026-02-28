@@ -228,8 +228,23 @@ const SettingsPage: React.FC = () => {
                 onClick={() => {
                   const name = prompt('Nome do novo cargo:');
                   if (name) {
-                    const key = name.toLowerCase().replace(/\s+/g, '_');
-                    handleSaveRole({ role_key: key, label: name, allowed_modules: ['home', 'dashboard'], is_system: false });
+                    // Normalização robusta do key (slugify)
+                    const key = name
+                      .toLowerCase()
+                      .normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+                      .replace(/[^a-z0-9]/g, '_')      // Substitui tudo que não é alfanumérico por underscore
+                      .replace(/_+/g, '_')            // Remove underscores duplicados
+                      .replace(/^_|_$/g, '');         // Remove underscores no início/fim
+                      
+                    if (key) {
+                      handleSaveRole({ 
+                        role_key: key, 
+                        label: name, 
+                        allowed_modules: ['home', 'dashboard'], 
+                        is_system: false 
+                      });
+                    }
                   }
                 }} 
                 className="p-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-all shadow-lg"

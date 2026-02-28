@@ -29,6 +29,13 @@ USING (
         WHERE profiles.id = auth.uid() 
         AND profiles.role = 'admin'
     )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM public.profiles 
+        WHERE profiles.id = auth.uid() 
+        AND profiles.role = 'admin'
+    )
 );
 
 -- 4. Inserir cargos existentes como base (Seed)
