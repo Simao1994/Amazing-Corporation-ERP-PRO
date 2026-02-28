@@ -9,6 +9,7 @@ import {
   LogOut,
   Search
 } from '../constants';
+import { supabase } from '../src/lib/supabase';
 import { Menu } from 'lucide-react';
 import {
   MessageCircle,

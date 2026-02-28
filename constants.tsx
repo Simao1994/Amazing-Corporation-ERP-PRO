@@ -8,7 +8,6 @@ import {
   UserPlus, Gamepad2, Files
 } from 'lucide-react';
 import { UserRole } from './types';
-import { supabase } from './src/lib/supabase';
 
 let dynamicRoles: Record<string, string[]> = {};
 
