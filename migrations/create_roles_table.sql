@@ -40,19 +40,20 @@ WITH CHECK (
     )
 );
 
--- 4. Garantir que o SEU utilizador atual é ADMIN (Opcional, mas necessário para RLS)
--- Passo A: Veja a lista abaixo para encontrar o seu ID ou EMAIL exato
--- SELECT id, email, nome, role FROM public.profiles;
-
--- Passo B: Atualize o seu perfil usando o seu EMAIL ou ID (Substitua abaixo)
+-- 4. Garantir que o SEU utilizador atual é ADMIN
+-- NOTA: Use trim() e ILIKE para ignorar espaços e letras maiúsculas/minúsculas.
 UPDATE public.profiles 
 SET role = 'admin' 
-WHERE email = 'SEU_EMAIL_AQUI' -- Ex: 'simaopa@gmail.com'
-   OR id = 'SEU_ID_AQUI';      -- Ex: '123e4567-e89b-12d3-a456-426614174000'
+WHERE trim(email) ILIKE 'simaopambo94@gmail.com'; 
 
--- --- DIAGNÓSTICO DE SEGURANÇA ---
--- SELECT id, email, role FROM public.profiles WHERE role = 'admin';
--- SELECT * FROM public.app_roles;
+-- --- OPÇÃO NUCLEAR (Bypass de Segurança para testes) ---
+-- Se continuar a dar erro "violates RLS", execute a linha abaixo para permitir a TODOS:
+-- DROP POLICY IF EXISTS "Apenas admin pode modificar cargos" ON public.app_roles;
+-- CREATE POLICY "Apenas admin pode modificar cargos" ON public.app_roles FOR ALL TO authenticated USING (true);
+
+-- --- DIAGNÓSTICO ---
+-- SELECT count(*) as total_admins FROM public.profiles WHERE role = 'admin';
+-- SELECT id, email, role FROM public.profiles WHERE email ILIKE '%simao%';
 
 -- 5. Inserir cargos existentes como base (Seed)
 INSERT INTO public.app_roles (role_key, label, allowed_modules, is_system)
