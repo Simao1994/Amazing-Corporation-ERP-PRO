@@ -9,7 +9,8 @@ import {
    Settings, Layers, DollarSign, Clock, PlusCircle, LogOut, Target,
    Image as ImageIcon, Eye, Calculator, MapPinOff, UserCheck, FileCheck,
    FileSpreadsheet, FileDown, ClipboardList, GraduationCap, Home,
-   Coins, Ban, Percent, Timer, CalendarDays, ScanBarcode, PieChart as PieIcon, Landmark
+   Coins, Ban, Percent, Timer, CalendarDays, ScanBarcode, PieChart as PieIcon, Landmark,
+   MessageCircle, Mail, ArrowLeft
 } from 'lucide-react';
 import {
    ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -205,6 +206,24 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const [showPayrollSheetModal, setShowPayrollSheetModal] = useState(false);
    const [historyFuncionario, setHistoryFuncionario] = useState<Funcionario | null>(null);
    const [modalActiveTab, setModalActiveTab] = useState<'geral' | 'contas'>('geral');
+   const [showShareOptions, setShowShareOptions] = useState(false);
+   const [customWhatsApp, setCustomWhatsApp] = useState('');
+
+   const handleWhatsAppShare = () => {
+      if (!viewingRecibo) return;
+      const phone = customWhatsApp.replace(/\D/g, '');
+      if (!phone) return alert("Por favor, insira um número de WhatsApp válido.");
+
+      const message = encodeURIComponent(`*Amazing Corporation - Folha de Salário*\n\nOlá, segue o resumo do seu recibo de ${viewingRecibo.mes}/${viewingRecibo.ano}:\n\n👤 *Funcionário:* ${viewingRecibo.nome}\n📅 *Período:* ${viewingRecibo.mes} ${viewingRecibo.ano}\n💰 *Líquido a Receber:* ${formatAOA(viewingRecibo.liquido)}\n\n_Documento Interno: #${viewingRecibo.id.substring(0, 8).toUpperCase()}_`);
+      window.open(`https://wa.me/${phone.startsWith('244') ? phone : '244' + phone}?text=${message}`, '_blank');
+   };
+
+   const handleEmailShare = () => {
+      if (!viewingRecibo) return;
+      const subject = encodeURIComponent(`Folha de Salário - ${viewingRecibo.mes} ${viewingRecibo.ano}`);
+      const body = encodeURIComponent(`Olá,\n\nSegue o resumo da sua folha de salário:\n\nFuncionário: ${viewingRecibo.nome}\nPeríodo: ${viewingRecibo.mes} ${viewingRecibo.ano}\nValor Líquido: ${formatAOA(viewingRecibo.liquido)}\n\nAtenciosamente,\nAmazing Corporation`);
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+   };
 
    // Estados locais do formulário para controlo dinÃ¢mico
    const [formState, setFormState] = useState({
@@ -227,6 +246,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    // --- ESTADO PARA PROCESSAMENTO DE FOLHA ---
    const [payrollInputs, setPayrollInputs] = useState<Record<string, PayrollInput>>({});
+
+   useEffect(() => {
+      if (viewingRecibo) {
+         const funcionario = funcionarios.find(f => f.id === viewingRecibo.funcionario_id);
+         setCustomWhatsApp(funcionario?.telefone || '');
+         setShowShareOptions(false);
+      }
+   }, [viewingRecibo, funcionarios]);
    const [payrollDocNumber, setPayrollDocNumber] = useState(`DOC-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
 
    const currentMonthName = new Date().toLocaleString('pt-PT', { month: 'long' });
@@ -1586,9 +1613,69 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      </div>
                   </div>
 
-                  <div className="absolute top-6 right-6 flex gap-3 print:hidden z-20">
-                     <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"><Printer size={20} /></button>
-                     <button onClick={() => setViewingRecibo(null)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all"><X size={24} /></button>
+                  <div className="absolute top-6 right-6 flex items-center gap-3 print:hidden z-20">
+                     <button
+                        onClick={() => setViewingRecibo(null)}
+                        className="flex items-center gap-2 px-6 py-4 bg-zinc-100 text-zinc-600 rounded-2xl font-black uppercase text-[10px] hover:bg-zinc-200 transition-all"
+                     >
+                        <ArrowLeft size={18} /> Voltar
+                     </button>
+
+                     <div className="h-10 w-[1px] bg-zinc-200 mx-1"></div>
+
+                     <div className="relative">
+                        <button
+                           onClick={() => setShowShareOptions(!showShareOptions)}
+                           title="Partilhar no WhatsApp"
+                           className={`p-4 rounded-2xl transition-all shadow-xl ${showShareOptions ? 'bg-green-600 text-white' : 'bg-zinc-900 text-white hover:bg-green-600'}`}
+                        >
+                           <MessageCircle size={20} />
+                        </button>
+
+                        {showShareOptions && (
+                           <div className="absolute top-16 right-0 bg-white border border-zinc-100 shadow-2xl p-6 rounded-[2rem] w-80 animate-in fade-in duration-300 slide-in-from-top-4 z-[210]">
+                              <div className="flex justify-between items-center mb-4">
+                                 <h4 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Configurar WhatsApp</h4>
+                                 <button onClick={() => setShowShareOptions(false)} className="text-zinc-300 hover:text-zinc-900"><X size={16} /></button>
+                              </div>
+                              <div className="space-y-4">
+                                 <div className="flex flex-col gap-1.5">
+                                    <label className="text-[9px] font-black uppercase text-zinc-900 ml-1">Nº do Telefone (Funcionário)</label>
+                                    <input
+                                       type="text"
+                                       value={customWhatsApp}
+                                       onChange={(e) => setCustomWhatsApp(e.target.value)}
+                                       className="w-full px-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                                       placeholder="Ex: 931116696"
+                                    />
+                                    <p className="text-[8px] text-zinc-400 italic">O prefixo +244 será adicionado automaticamente.</p>
+                                 </div>
+                                 <button
+                                    onClick={() => { handleWhatsAppShare(); setShowShareOptions(false); }}
+                                    className="w-full py-4 bg-zinc-900 text-white rounded-xl font-black uppercase text-[10px] hover:bg-green-600 transition-all shadow-lg flex items-center justify-center gap-2"
+                                 >
+                                    <MessageCircle size={16} /> Enviar p/ WhatsApp
+                                 </button>
+                              </div>
+                           </div>
+                        )}
+                     </div>
+
+                     <button
+                        onClick={handleEmailShare}
+                        title="Enviar por Email"
+                        className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-sky-600 transition-all shadow-xl"
+                     >
+                        <Mail size={20} />
+                     </button>
+
+                     <button
+                        onClick={() => window.print()}
+                        title="Imprimir / Exportar PDF"
+                        className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+                     >
+                        <Printer size={20} />
+                     </button>
                   </div>
 
                   <div className="flex-1 px-16 py-8 print:px-12">
