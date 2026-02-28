@@ -232,64 +232,51 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const currentFiscalYear = new Date().getFullYear();
 
    const fetchHRData = async () => {
-      // 1. Background fetch for static/generic keys
+      // 1. Load basic keys from local storage/meta if needed
       const keys = [STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS, STORAGE_KEYS.CORPORATE_INFO];
       await AmazingStorage.loadSpecificKeys(keys);
 
-      // 2. Fetch Employees from dedicated table
-      const { data: dbFuncs, error: funcError } = await supabase
-         .from('funcionarios')
-         .select('*')
-         .order('nome', { ascending: true });
+      // 2. Fetch everything in PARALLEL to avoid waterfalls
+      const [funcsRes, presRes, recRes, metasRes] = await Promise.allSettled([
+         supabase.from('funcionarios').select('*').order('nome', { ascending: true }),
+         supabase.from('hr_presencas').select('*').order('data', { ascending: false }).limit(200),
+         supabase.from('hr_recibos').select('*').order('data_emissao', { ascending: false }).limit(200),
+         supabase.from('hr_metas').select('*').order('status', { ascending: true })
+      ]);
 
-      if (!funcError && dbFuncs) {
-         setFuncionarios(dbFuncs.map(mapFuncionario));
-         // Update local cache so initial useEffect can use it
-         localStorage.setItem(STORAGE_KEYS.FUNCIONARIOS, JSON.stringify(dbFuncs));
+      // --- PROCESS EMPLOYEES ---
+      if (funcsRes.status === 'fulfilled' && !funcsRes.value.error && funcsRes.value.data) {
+         const data = funcsRes.value.data;
+         setFuncionarios(data.map(mapFuncionario));
+         localStorage.setItem(STORAGE_KEYS.FUNCIONARIOS, JSON.stringify(data));
       } else {
-         // Fallback to local cache if DB fails
-         const funcData = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
-         if (funcData.length > 0) {
-            setFuncionarios(funcData.map(mapFuncionario));
-         }
+         const cached = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
+         if (cached.length > 0) setFuncionarios(cached.map(mapFuncionario));
       }
 
-      // 3. Fetch Attendance from dedicated table
-      const { data: dbPresencas, error: presError } = await supabase
-         .from('hr_presencas')
-         .select('*')
-         .order('data', { ascending: false });
-
-      if (!presError && dbPresencas) {
-         setPresencas(dbPresencas as any);
-         localStorage.setItem(STORAGE_KEYS.PRESENCA, JSON.stringify(dbPresencas));
+      // --- PROCESS PRESENCES ---
+      if (presRes.status === 'fulfilled' && !presRes.value.error && presRes.value.data) {
+         const data = presRes.value.data;
+         setPresencas(data as any);
+         localStorage.setItem(STORAGE_KEYS.PRESENCA, JSON.stringify(data));
       } else {
          setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
       }
 
-      // 4. Fetch Receipts from dedicated table instead of erp_data JSON
-      const { data: dbRecibos, error: recError } = await supabase
-         .from('hr_recibos')
-         .select('*')
-         .order('data_emissao', { ascending: false });
-
-      if (!recError && dbRecibos) {
-         setRecibos(dbRecibos);
-         // Update local cache for offline/fast access
-         localStorage.setItem(STORAGE_KEYS.RECIBOS, JSON.stringify(dbRecibos));
+      // --- PROCESS RECEIPTS ---
+      if (recRes.status === 'fulfilled' && !recRes.value.error && recRes.value.data) {
+         const data = recRes.value.data;
+         setRecibos(data);
+         localStorage.setItem(STORAGE_KEYS.RECIBOS, JSON.stringify(data));
       } else {
          setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
       }
 
-      // 5. Fetch Performance Goals from dedicated table
-      const { data: dbMetas, error: metaError } = await supabase
-         .from('hr_metas')
-         .select('*')
-         .order('status', { ascending: true });
-
-      if (!metaError && dbMetas) {
-         setMetas(dbMetas as any);
-         localStorage.setItem(STORAGE_KEYS.METAS, JSON.stringify(dbMetas));
+      // --- PROCESS METAS ---
+      if (metasRes.status === 'fulfilled' && !metasRes.value.error && metasRes.value.data) {
+         const data = metasRes.value.data;
+         setMetas(data as any);
+         localStorage.setItem(STORAGE_KEYS.METAS, JSON.stringify(data));
       } else {
          setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
       }
