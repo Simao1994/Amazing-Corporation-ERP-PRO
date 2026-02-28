@@ -296,27 +296,30 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    };
 
    useEffect(() => {
-      // 1. Initial UI unblock with local storage
-      const localStaff = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
-      if (localStaff.length > 0) {
-         setFuncionarios(localStaff.map(mapFuncionario));
-         setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
-         setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
-         setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
-         setLoading(false);
-      } else {
-         setLoading(true);
-      }
-
       // 2. Initial background sync
       fetchHRData().finally(() => setLoading(false));
 
-      // 3. Automatic Updates Polling (cada 30 seg)
-      const poll = setInterval(() => {
-         fetchHRData();
-      }, 30000);
+      // 3. Real-time Subscriptions (Ensures automatic updates)
+      const channels = [
+         supabase.channel('hr_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'funcionarios' }, () => fetchHRData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_presencas' }, () => fetchHRData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_recibos' }, () => fetchHRData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_metas' }, () => fetchHRData())
+            .subscribe(),
 
-      return () => clearInterval(poll);
+         // Fallback polling (cada 60 seg para garantir se Realtime falhar)
+         setInterval(() => {
+            fetchHRData();
+         }, 60000)
+      ];
+
+      return () => {
+         channels.forEach(c => {
+            if (typeof c === 'number') clearInterval(c);
+            else supabase.removeChannel(c);
+         });
+      };
    }, []);
 
    // Atualiza idade quando data de nascimento muda
@@ -555,7 +558,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       const ativos = funcionarios.filter(f => f.status === 'ativo');
       if (ativos.length === 0) return alert("Não existem colaboradores activos.");
 
-      // 1. Hard check for session with refresh attempt
+      // 1. Transparent session check (no more alerts)
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       let session = currentSession;
 
@@ -563,8 +566,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
          session = refreshedSession;
       }
-
-      if (!session) return alert("Sessão expirada. Por favor, faça login novamente.");
+      // If still no session, let the insert/select fail and handle via catch, avoiding the early alert.
 
       // Verificar se já existe processamento para este mês
       const { data: existing } = await supabase.from('hr_recibos').select('id').eq('mes', currentMonthName).eq('ano', currentFiscalYear);
