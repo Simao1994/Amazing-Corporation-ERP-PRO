@@ -6,6 +6,7 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { supabase } from '../src/lib/supabase';
 import { MENU_ITEMS, ROLE_ACCESS, getMergedPermissions, setDynamicRoles } from '../constants';
+import { UserRole } from '../types';
 
 const SettingsPage: React.FC = () => {
   const [cloudStatus, setCloudStatus] = useState<'checking' | 'connected' | 'error'>('checking');
@@ -179,42 +180,52 @@ const SettingsPage: React.FC = () => {
               </button>
             </div>
             <div className="p-8 space-y-6">
-              {Object.entries(ROLE_ACCESS).map(([key, staticModules]) => {
+              {allRoleOptions.map((roleOpt) => {
+                const key = roleOpt.value;
                 const isEditing = editingRole === key;
+                const permissions = getMergedPermissions(key);
+                const isSystem = !!ROLE_ACCESS[key as UserRole] || key === 'admin';
+                
                 return (
                   <div key={key} className="p-6 rounded-[2rem] border border-zinc-100 bg-zinc-50/30 hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h4 className="font-black text-zinc-900 text-sm flex items-center gap-2">
-                          {key === 'admin' ? 'Administrador' : roles.find(r => r.value === key)?.label || key}
-                          {key === 'admin' && <span className="text-[8px] bg-zinc-900 text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Sistema</span>}
+                          {roleOpt.label}
+                          {isSystem && <span className="text-[8px] bg-zinc-900 text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Sistema</span>}
                         </h4>
                         <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
-                          {getMergedPermissions(key).length} Módulos Activos
+                          {permissions.length} Módulos Activos
                         </p>
                       </div>
-                      {key !== 'admin' && (
-                        <div className="flex gap-2">
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setEditingRole(isEditing ? null : key)}
+                          className={`p-2 rounded-lg transition-all ${isEditing ? 'bg-yellow-500 text-white' : 'bg-white border border-sky-100 text-sky-600 hover:bg-sky-50'}`}
+                        >
+                          <Edit size={14} />
+                        </button>
+                        {/* Só permite apagar se não for sistema */}
+                        {!isSystem && (
                           <button 
-                            onClick={() => setEditingRole(isEditing ? null : key)}
-                            className={`p-2 rounded-lg transition-all ${isEditing ? 'bg-yellow-500 text-white' : 'bg-white border border-sky-100 text-sky-600 hover:bg-sky-50'}`}
+                            onClick={async () => {
+                              if (confirm('Tem a certeza que deseja eliminar este cargo?')) {
+                                await supabase.from('app_roles').delete().eq('role_key', key);
+                                fetchDynamicRoles();
+                              }
+                            }}
+                            className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"
                           >
-                            <Edit size={14} />
+                            <Trash2 size={14} />
                           </button>
-                          {/* Só permite apagar se não for sistema */}
-                          {!ROLE_ACCESS[key as any] && (
-                            <button className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all">
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
                     {isEditing && (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4 border-t border-zinc-100 animate-in fade-in slide-in-from-top-2">
                         {MENU_ITEMS.map(item => {
-                          const isAllowed = getMergedPermissions(key).includes(item.id) || getMergedPermissions(key).includes('all');
+                          const isAllowed = permissions.includes(item.id) || permissions.includes('all');
                           return (
                             <label key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-white bg-white/50 cursor-pointer hover:border-yellow-200 transition-all group">
                               <input 
@@ -225,7 +236,7 @@ const SettingsPage: React.FC = () => {
                                 className="w-4 h-4 rounded border-zinc-300 text-yellow-500 focus:ring-yellow-500/20"
                               />
                               <div className="text-zinc-400 group-hover:text-yellow-600 transition-colors">
-                                {React.cloneElement(item.icon as React.ReactElement, { size: 14 })}
+                                {item.icon && React.isValidElement(item.icon) ? React.cloneElement(item.icon as React.ReactElement, { size: 14 }) : null}
                               </div>
                               <span className="text-[11px] font-bold text-zinc-600 truncate">{item.label}</span>
                             </label>

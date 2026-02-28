@@ -103,6 +103,8 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     }
   }, []);
 
+  const [rolesLoaded, setRolesLoaded] = useState(false);
+  
   // --- DYNAMIC ROLES FETCH ---
   useEffect(() => {
     const fetchDynamicRoles = async () => {
@@ -132,7 +134,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     fetchDynamicRoles();
   }, []);
 
-  const [rolesLoaded, setRolesLoaded] = useState(false);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
