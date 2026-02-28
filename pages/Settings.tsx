@@ -54,11 +54,15 @@ const SettingsPage: React.FC = () => {
 
   const handleSaveRole = async (role: any) => {
     try {
-      const { error } = await supabase.from('app_roles').upsert(role);
+      const { error } = await supabase
+        .from('app_roles')
+        .upsert(role, { onConflict: 'role_key' });
+      
       if (error) throw error;
       fetchDynamicRoles();
-    } catch (err) {
-      alert('Erro ao guardar cargo.');
+    } catch (err: any) {
+      console.error('Error saving role:', err);
+      alert(`Erro ao guardar cargo: ${err.message || 'Erro desconhecido'}`);
     }
   };
 
@@ -68,7 +72,14 @@ const SettingsPage: React.FC = () => {
       ? current.filter(id => id !== moduleId)
       : [...current, moduleId];
     
-    handleSaveRole({ role_key: roleKey, allowed_modules: updated });
+    // Buscar label existente para não perder no upsert
+    const existingLabel = allRoleOptions.find(r => r.value === roleKey)?.label || roleKey;
+    
+    handleSaveRole({ 
+      role_key: roleKey, 
+      label: existingLabel,
+      allowed_modules: updated 
+    });
   };
 
   useEffect(() => {
