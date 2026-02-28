@@ -145,17 +145,18 @@ const calculateTimeStats = (start: string, end: string, dateStr: string) => {
 const mapFuncionario = (f: any): Funcionario => ({
    id: f.id,
    nome: f.nome,
-   data_nascimento: f.notas?.match(/Nascimento: (.*?)(?:$|\n)/)?.[1] || '',
+   // Fallback para o regex caso os campos novos estejam vazios (dados antigos)
+   data_nascimento: f.data_nascimento || f.notas?.match(/Nascimento: (.*?)(?:$|\n)/)?.[1] || '',
    funcao: f.cargo || f.funcao,
    bilhete: f.bi || f.bilhete,
    telefone: f.telefone,
-   morada: f.notas?.match(/Morada: (.*?)(?:$|\n)/)?.[1] || f.morada || '',
+   morada: f.morada || f.notas?.match(/Morada: (.*?)(?:$|\n)/)?.[1] || '',
    departamento_id: f.departamento || f.departamento_id,
    data_admissao: f.data_admissao,
-   tipo_contrato: f.notas?.match(/Contrato: (.*?)(?:$|\n)/)?.[1] || f.tipo_contrato || 'Efectivo',
+   tipo_contrato: f.tipo_contrato || f.notas?.match(/Contrato: (.*?)(?:$|\n)/)?.[1] || 'Efectivo',
    status: f.status as any,
-   nivel_escolaridade: f.notas?.match(/Escolaridade: (.*?)(?:$|\n)/)?.[1] || f.nivel_escolaridade || '',
-   area_formacao: f.notas?.match(/Curso: (.*?)(?:$|\n)/)?.[1] || f.area_formacao || '',
+   nivel_escolaridade: f.nivel_escolaridade || f.notas?.match(/Escolaridade: (.*?)(?:$|\n)/)?.[1] || '',
+   area_formacao: f.area_formacao || f.notas?.match(/Curso: (.*?)(?:$|\n)/)?.[1] || '',
    salario_base: Number(f.salario || f.salario_base) || 0,
    subsidio_alimentacao: Number(f.subsidio_alimentacao) || 0,
    subsidio_transporte: Number(f.subsidio_transporte) || 0,
@@ -164,12 +165,12 @@ const mapFuncionario = (f: any): Funcionario => ({
    foto_url: f.foto_url,
    documentos: f.documentos || [],
    historico_alteracoes: f.historico_alteracoes || [],
-   tempo_contrato: f.notas?.match(/Tempo: (.*?)(?:$|\n)/)?.[1] || f.tempo_contrato || '',
-   provincia: f.notas?.match(/Provincia: (.*?)(?:$|\n)/)?.[1] || f.provincia || 'Benguela',
-   municipio: f.notas?.match(/Municipio: (.*?)(?:$|\n)/)?.[1] || f.municipio || '',
-   nome_pai: f.notas?.match(/Pai: (.*?)(?:$|\n)/)?.[1] || f.nome_pai || '',
-   nome_mae: f.notas?.match(/Mae: (.*?)(?:$|\n)/)?.[1] || f.nome_mae || '',
-   telefone_alternativo: f.notas?.match(/TelAlt: (.*?)(?:$|\n)/)?.[1] || f.telefone_alternativo || ''
+   tempo_contrato: f.tempo_contrato || f.notas?.match(/Tempo: (.*?)(?:$|\n)/)?.[1] || '',
+   provincia: f.provincia || f.notas?.match(/Provincia: (.*?)(?:$|\n)/)?.[1] || 'Benguela',
+   municipio: f.municipio || f.notas?.match(/Municipio: (.*?)(?:$|\n)/)?.[1] || '',
+   nome_pai: f.nome_pai || f.notas?.match(/Pai: (.*?)(?:$|\n)/)?.[1] || '',
+   nome_mae: f.nome_mae || f.notas?.match(/Mae: (.*?)(?:$|\n)/)?.[1] || '',
+   telefone_alternativo: f.telefone_alternativo || f.notas?.match(/TelAlt: (.*?)(?:$|\n)/)?.[1] || ''
 });
 
 // --- TIPOS LOCAIS PARA PROCESSAMENTO ---
@@ -289,25 +290,21 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       fetchHRData().finally(() => setLoading(false));
 
       // 3. Real-time Subscriptions (Ensures automatic updates)
-      const channels = [
-         supabase.channel('hr_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'funcionarios' }, () => fetchHRData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_presencas' }, () => fetchHRData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_recibos' }, () => fetchHRData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_metas' }, () => fetchHRData())
-            .subscribe(),
+      const channel = supabase.channel('hr_changes')
+         .on('postgres_changes', { event: '*', schema: 'public', table: 'funcionarios' }, () => fetchHRData())
+         .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_presencas' }, () => fetchHRData())
+         .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_recibos' }, () => fetchHRData())
+         .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_metas' }, () => fetchHRData())
+         .subscribe();
 
-         // Fallback polling (cada 60 seg para garantir se Realtime falhar)
-         setInterval(() => {
-            fetchHRData();
-         }, 60000)
-      ];
+      // Fallback polling (cada 60 seg para garantir se Realtime falhar)
+      const interval = setInterval(() => {
+         fetchHRData();
+      }, 60000);
 
       return () => {
-         channels.forEach(c => {
-            if (typeof c === 'number') clearInterval(c);
-            else supabase.removeChannel(c);
-         });
+         supabase.removeChannel(channel);
+         clearInterval(interval);
       };
    }, []);
 
@@ -742,7 +739,19 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          outros_bonus: Number(fd.get('outros_bonus')) || 0,
          foto_url: photoPreview || `https://ui-avatars.com/api/?name=${fd.get('nome')}&background=random`,
          notas: notes,
-         updated_at: new Date().toISOString()
+         updated_at: new Date().toISOString(),
+         // Novos campos persistidos diretamente
+         data_nascimento: formState.nascimento,
+         provincia: formState.provincia,
+         municipio: formState.municipio,
+         nome_pai: formState.nome_pai,
+         nome_mae: formState.nome_mae,
+         telefone_alternativo: fd.get('telefone_alternativo') as string,
+         nivel_escolaridade: formState.escolaridade,
+         area_formacao: formState.curso,
+         tempo_contrato: fd.get('tempo') as string,
+         tipo_contrato: fd.get('tipo_contrato') as string,
+         morada: fd.get('morada') as string
       };
 
       try {
@@ -1615,81 +1624,87 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </table>
                      </div>
 
-                     {/* TABELA DE RENDIMENTOS E DESCONTOS */}
-                     <div className="grid grid-cols-2 gap-12 mb-12">
-                        {/* COLUNA RENDIMENTOS */}
-                        <div>
-                           <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                              <div className="w-2 h-2 bg-sky-500 rounded-full"></div> Rendimentos (+)
-                           </h3>
-                           <div className="space-y-4">
-                              <div className="flex justify-between border-b border-zinc-50 pb-2">
-                                 <span className="text-sm font-medium text-zinc-500">Vencimento Base</span>
-                                 <span className="text-sm font-black text-zinc-900">{formatAOA(viewingRecibo.base)}</span>
-                              </div>
+                     {/* TABELA DE RENDIMENTOS E DESCONTOS - UNIFICADA */}
+                     <div className="mb-12">
+                        <table className="w-full text-left border-collapse" style={{ fontFamily: 'Times New Roman', fontSize: '14px' }}>
+                           <thead>
+                              <tr className="border-b-2 border-zinc-900 bg-zinc-50/50">
+                                 <th className="py-3 px-4 text-zinc-900 font-black uppercase text-[11px] w-1/2">Descrição</th>
+                                 <th className="py-3 px-4 text-right text-zinc-900 font-black uppercase text-[11px]">Rendimentos (+)</th>
+                                 <th className="py-3 px-4 text-right text-zinc-900 font-black uppercase text-[11px]">Descontos (-)</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-zinc-100">
+                              {/* RENDIMENTOS */}
+                              <tr>
+                                 <td className="py-2 px-4 text-zinc-700 font-bold">Vencimento Base</td>
+                                 <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.base)}</td>
+                                 <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                              </tr>
                               {viewingRecibo.subsidio_alimentacao > 0 && (
-                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
-                                    <span className="text-sm font-medium text-zinc-500">Subsídio de Alimentação</span>
-                                    <span className="text-sm font-black text-zinc-900">{formatAOA(viewingRecibo.subsidio_alimentacao)}</span>
-                                 </div>
+                                 <tr>
+                                    <td className="py-2 px-4 text-zinc-700">Subsídio de Alimentação</td>
+                                    <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.subsidio_alimentacao)}</td>
+                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                 </tr>
                               )}
                               {viewingRecibo.subsidio_transporte > 0 && (
-                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
-                                    <span className="text-sm font-medium text-zinc-500">Subsídio de Transporte</span>
-                                    <span className="text-sm font-black text-zinc-900">{formatAOA(viewingRecibo.subsidio_transporte)}</span>
-                                 </div>
+                                 <tr>
+                                    <td className="py-2 px-4 text-zinc-700">Subsídio de Transporte</td>
+                                    <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.subsidio_transporte)}</td>
+                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                 </tr>
                               )}
-                              {(viewingRecibo.horas_extras_valor > 0 || (viewingRecibo.bonus_premios && viewingRecibo.bonus_premios > 0)) && (
-                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
-                                    <span className="text-sm font-medium text-zinc-500">Horas Extras / Bónus</span>
-                                    <span className="text-sm font-black text-zinc-900">{formatAOA((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0))}</span>
-                                 </div>
+                              {((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0)) > 0 && (
+                                 <tr>
+                                    <td className="py-2 px-4 text-zinc-700">Horas Extras / Bónus</td>
+                                    <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0))}</td>
+                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                 </tr>
                               )}
-                           </div>
-                        </div>
 
-                        {/* COLUNA DESCONTOS */}
-                        <div>
-                           <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                              <div className="w-2 h-2 bg-red-500 rounded-full"></div> Descontos (-)
-                           </h3>
-                           <div className="space-y-4">
-                              <div className="flex justify-between border-b border-zinc-50 pb-2">
-                                 <span className="text-sm font-medium text-zinc-500">Segurança Social (3%)</span>
-                                 <span className="text-sm font-black text-red-500">-{formatAOA(viewingRecibo.inss_trabalhador)}</span>
-                              </div>
-                              <div className="flex justify-between border-b border-zinc-50 pb-2">
-                                 <span className="text-sm font-medium text-zinc-500">I.R.T.</span>
-                                 <span className="text-sm font-black text-red-500">-{formatAOA(viewingRecibo.irt)}</span>
-                              </div>
+                              {/* DESCONTOS */}
+                              {viewingRecibo.inss_trabalhador > 0 && (
+                                 <tr>
+                                    <td className="py-2 px-4 text-zinc-700">Segurança Social (3%)</td>
+                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                    <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.inss_trabalhador)}</td>
+                                 </tr>
+                              )}
+                              {viewingRecibo.irt > 0 && (
+                                 <tr>
+                                    <td className="py-2 px-4 text-zinc-700">I.R.T.</td>
+                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                    <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.irt)}</td>
+                                 </tr>
+                              )}
                               {viewingRecibo.adiantamentos > 0 && (
-                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
-                                    <span className="text-sm font-medium text-zinc-500">Adiantamentos</span>
-                                    <span className="text-sm font-black text-red-500">-{formatAOA(viewingRecibo.adiantamentos)}</span>
-                                 </div>
+                                 <tr>
+                                    <td className="py-2 px-4 text-zinc-700">Adiantamentos / Empréstimos</td>
+                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                    <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.adiantamentos)}</td>
+                                 </tr>
                               )}
                               {viewingRecibo.faltas_desconto > 0 && (
-                                 <div className="flex justify-between border-b border-zinc-50 pb-2">
-                                    <span className="text-sm font-medium text-zinc-500">Faltas / Atrasos</span>
-                                    <span className="text-sm font-black text-red-500">-{formatAOA(viewingRecibo.faltas_desconto)}</span>
-                                 </div>
+                                 <tr>
+                                    <td className="py-2 px-4 text-zinc-700">Faltas / Atrasos</td>
+                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                    <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.faltas_desconto)}</td>
+                                 </tr>
                               )}
-                           </div>
-                        </div>
+                           </tbody>
+                        </table>
                      </div>
 
-                     {/* RESUMO TOTAL */}
-                     <div className="mt-12 bg-zinc-900 text-white rounded-[2.5rem] p-12 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"></div>
-                        <div className="flex justify-between items-center relative z-10">
-                           <div className="space-y-1">
-                              <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.4em]">Total Bruto</p>
-                              <p className="text-2xl font-bold opacity-30">{formatAOA(viewingRecibo.bruto || 0)}</p>
-                           </div>
-                           <div className="text-right">
-                              <p className="text-[12px] font-black text-white/50 uppercase tracking-[0.5em] mb-2">Líquido a Receber</p>
-                              <p className="text-6xl font-black">{formatAOA(viewingRecibo.liquido)}</p>
-                           </div>
+                     {/* RESUMO TOTAL - DESIGN LIMPO */}
+                     <div className="mt-12 flex flex-col gap-3" style={{ fontFamily: 'Times New Roman', fontSize: '18px' }}>
+                        <div className="flex justify-start gap-4 text-zinc-900">
+                           <span className="font-bold uppercase text-[16px] text-zinc-500 w-48">Total Bruto:</span>
+                           <span className="font-bold">{formatAOA(viewingRecibo.bruto || 0)}</span>
+                        </div>
+                        <div className="flex justify-start gap-4 text-zinc-900">
+                           <span className="font-black uppercase text-[16px] text-zinc-900 w-48">Líquido a Receber:</span>
+                           <span className="font-black text-2xl border-b-2 border-zinc-900">{formatAOA(viewingRecibo.liquido)}</span>
                         </div>
                      </div>
 
@@ -1702,10 +1717,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            </div>
                         </div>
                         <div className="flex flex-col items-center">
-                           <div className="p-3 border-2 border-zinc-50 rounded-2xl mb-4 bg-white shadow-sm">
-                              <QrCode size={48} className="text-zinc-900" />
-                           </div>
-                           <p className="text-[8px] font-bold text-zinc-300 uppercase">Verificado Digitalmente</p>
+                           {/* Espaço para Carimbo ou Selo Físico conforme solicitado (Remoção de Ícones Digitais) */}
+                           <div className="h-24"></div>
                         </div>
                         <div className="text-center">
                            <div className="h-16"></div>
