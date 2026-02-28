@@ -40,16 +40,19 @@ WITH CHECK (
     )
 );
 
--- 4. Garantir que o SEU utilizador atual é ADMIN
--- NOTA: auth.uid() não funciona no SQL Editor sem "impersonate".
--- Use o seu email real abaixo (Ex: 'admin@amazing.com')
+-- 4. Garantir que o SEU utilizador atual é ADMIN (Opcional, mas necessário para RLS)
+-- Passo A: Veja a lista abaixo para encontrar o seu ID ou EMAIL exato
+-- SELECT id, email, nome, role FROM public.profiles;
+
+-- Passo B: Atualize o seu perfil usando o seu EMAIL ou ID (Substitua abaixo)
 UPDATE public.profiles 
 SET role = 'admin' 
-WHERE email = 'SEU_EMAIL_AQUI'; 
+WHERE email = 'SEU_EMAIL_AQUI' -- Ex: 'simaopa@gmail.com'
+   OR id = 'SEU_ID_AQUI';      -- Ex: '123e4567-e89b-12d3-a456-426614174000'
 
--- --- DIAGNÓSTICO (Opcional: Execute para verificar o seu estado) ---
+-- --- DIAGNÓSTICO DE SEGURANÇA ---
 -- SELECT id, email, role FROM public.profiles WHERE role = 'admin';
--- SELECT role_key, label FROM public.app_roles;
+-- SELECT * FROM public.app_roles;
 
 -- 5. Inserir cargos existentes como base (Seed)
 INSERT INTO public.app_roles (role_key, label, allowed_modules, is_system)
