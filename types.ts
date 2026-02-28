@@ -206,6 +206,7 @@ export interface ReciboSalarial {
   bruto: number;
   liquido: number;
   data_emissao: string;
+  numero_documento?: string;
 }
 
 export interface MetaDesempenho {

@@ -183,6 +183,7 @@ interface PayrollInput {
    subNatal?: number;
    emprestimos?: number;
    outrosDesc?: number;
+   numeroDocumento?: string;
 }
 
 interface HRPageProps {
@@ -225,6 +226,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    // --- ESTADO PARA PROCESSAMENTO DE FOLHA ---
    const [payrollInputs, setPayrollInputs] = useState<Record<string, PayrollInput>>({});
+   const [payrollDocNumber, setPayrollDocNumber] = useState(`DOC-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
 
    const currentMonthName = new Date().toLocaleString('pt-PT', { month: 'long' });
    const currentFiscalYear = new Date().getFullYear();
@@ -611,7 +613,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                outros_descontos: Number((calc.outrosDesc || 0).toFixed(2)),
                bruto: Number((calc.bruto || 0).toFixed(2)),
                liquido: Number((calc.liquido || 0).toFixed(2)),
-               data_emissao: new Date().toISOString()
+               data_emissao: new Date().toISOString(),
+               numero_documento: payrollDocNumber
             };
          });
 
@@ -988,7 +991,17 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <p className="text-zinc-400 font-medium">Ciclo: {currentMonthName} {currentFiscalYear}</p>
                      <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest font-bold">Introduza variáveis antes de processar</p>
                   </div>
-                  <div className="flex flex-col md:flex-row gap-4 relative z-10">
+                  <div className="flex flex-col md:flex-row gap-4 relative z-10 items-center">
+                     <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-black uppercase text-zinc-500 ml-4">Nº Documento</label>
+                        <input
+                           type="text"
+                           value={payrollDocNumber}
+                           onChange={e => setPayrollDocNumber(e.target.value)}
+                           className="px-6 py-4 bg-white/5 border border-white/10 rounded-[2rem] text-white font-bold text-sm focus:border-yellow-500 transition-all outline-none min-w-[200px]"
+                           placeholder="Ex: DOC-2024-001"
+                        />
+                     </div>
                      <button
                         onClick={handleProcessPayroll}
                         disabled={isProcessing}
@@ -1240,7 +1253,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   <div className="p-8 border-b border-zinc-100 flex justify-between items-center print-hidden">
                      <div>
                         <h2 className="text-2xl font-black uppercase text-zinc-900">Folha de Salário - {currentMonthName} {currentFiscalYear}</h2>
-                        <p className="text-zinc-500 font-medium">Relatório Geral de Processamento</p>
+                        <p className="text-zinc-500 font-medium tracking-tight uppercase text-[10px]">Documento Nº: <span className="text-zinc-900 font-black">{payrollDocNumber}</span></p>
+                        <p className="text-zinc-400 text-[9px] font-bold">Relatório Geral de Processamento</p>
                      </div>
                      <div className="flex gap-3">
                         <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 transition-all flex items-center gap-2 font-bold uppercase text-[10px]">
@@ -1590,7 +1604,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                         <div className="text-right">
                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nº Documento</p>
-                           <p className="text-xl font-black text-zinc-900 tabular-nums">#{viewingRecibo.id.split('-').pop()}</p>
+                           <p className="text-xl font-black text-zinc-900 tabular-nums">{viewingRecibo.numero_documento || `#${viewingRecibo.id.split('-').pop()}`}</p>
                         </div>
                      </div>
 
