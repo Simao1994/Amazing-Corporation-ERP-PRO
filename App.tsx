@@ -72,26 +72,31 @@ const App: React.FC = () => {
           AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]),
           AmazingStorage.loadAllFromCloud()
         ]).then(([{ data: profile }]) => {
+          // Check if profile exists in DB, otherwise use metadata/fallback
           const userData: User = {
             id: session.user.id,
             email: session.user.email || '',
             nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
-            role: profile?.role || 'admin',
+            role: profile?.role || (session.user.email === 'simaopambo94@gmail.com' ? 'admin' : 'operario'),
           };
+
           setUser(userData);
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
           setIsInitializing(false);
+
+          // If profile is missing but user is logged in, we might want to notify or log
+          if (!profile && session.user.email === 'simaopambo94@gmail.com') {
+            console.warn("Profile missing for admin user. Ensure SQL fix is applied.");
+          }
         }).catch(err => {
           console.error("Background initialization error:", err);
-          // Fallback if not already set
-          if (!user) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              nome: 'Utilizador',
-              role: 'admin'
-            });
-          }
+          const fallbackUser: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            nome: session.user.user_metadata?.nome || 'Utilizador',
+            role: session.user.email === 'simaopambo94@gmail.com' ? 'admin' : 'operario'
+          };
+          setUser(fallbackUser);
           setIsInitializing(false);
         });
       } else {
