@@ -2,7 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { User, UserRole } from '../types';
-import { ROLE_ACCESS, MENU_ITEMS } from '../constants';
+import { getMergedPermissions, MENU_ITEMS } from '../constants';
 
 interface ProtectedRouteProps {
   user: User | null;
@@ -33,7 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, children, path })
   }
 
   // 4. Verificar permissões baseadas no cargo
-  const allowedMenus = ROLE_ACCESS[user.role as UserRole] || [];
+  const allowedMenus = getMergedPermissions(user.role);
 
   // Se menuItem existe e o ID dele está na lista de permitidos
   if (menuItem && allowedMenus.includes(menuItem.id)) {
