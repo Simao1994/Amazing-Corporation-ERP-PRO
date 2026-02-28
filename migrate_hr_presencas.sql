@@ -31,3 +31,7 @@ CREATE POLICY "Authenticated Update hr_presencas" ON public.hr_presencas
 -- Note: This might already exist or need adjustment dependind on how "saida" is handled
 -- But registrarPonto already checks for existing entry.
 -- CREATE UNIQUE INDEX IF NOT EXISTS unique_daily_attendance ON hr_presencas (funcionario_id, data);
+-- 5. Grant permissions
+GRANT ALL ON public.hr_presencas TO authenticated;
+GRANT ALL ON public.hr_presencas TO anon;
+GRANT ALL ON public.hr_presencas TO service_role;
