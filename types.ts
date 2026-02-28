@@ -163,6 +163,11 @@ export interface Funcionario {
   documentos: string[];
   historico_alteracoes: { data: string; usuario: string; acao: string; }[];
   tempo_contrato: string;
+  provincia?: string;
+  municipio?: string;
+  nome_pai?: string;
+  nome_mae?: string;
+  telefone_alternativo?: string;
 }
 
 export interface RegistroPresenca {

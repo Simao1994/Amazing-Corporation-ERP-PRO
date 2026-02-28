@@ -141,6 +141,37 @@ const calculateTimeStats = (start: string, end: string, dateStr: string) => {
    };
 };
 
+// --- HELPER DE MAPEAMENTO DE DADOS DO BANCO PARA O ESTADO ---
+const mapFuncionario = (f: any): Funcionario => ({
+   id: f.id,
+   nome: f.nome,
+   data_nascimento: f.notas?.match(/Nascimento: (.*?)(?:$|\n)/)?.[1] || '',
+   funcao: f.cargo || f.funcao,
+   bilhete: f.bi || f.bilhete,
+   telefone: f.telefone,
+   morada: f.notas?.match(/Morada: (.*?)(?:$|\n)/)?.[1] || f.morada || '',
+   departamento_id: f.departamento || f.departamento_id,
+   data_admissao: f.data_admissao,
+   tipo_contrato: f.notas?.match(/Contrato: (.*?)(?:$|\n)/)?.[1] || f.tipo_contrato || 'Efectivo',
+   status: f.status as any,
+   nivel_escolaridade: f.notas?.match(/Escolaridade: (.*?)(?:$|\n)/)?.[1] || f.nivel_escolaridade || '',
+   area_formacao: f.notas?.match(/Curso: (.*?)(?:$|\n)/)?.[1] || f.area_formacao || '',
+   salario_base: Number(f.salario || f.salario_base) || 0,
+   subsidio_alimentacao: Number(f.subsidio_alimentacao) || 0,
+   subsidio_transporte: Number(f.subsidio_transporte) || 0,
+   bonus_assiduidade: 0,
+   outros_bonus: Number(f.outros_bonus) || 0,
+   foto_url: f.foto_url,
+   documentos: f.documentos || [],
+   historico_alteracoes: f.historico_alteracoes || [],
+   tempo_contrato: f.notas?.match(/Tempo: (.*?)(?:$|\n)/)?.[1] || f.tempo_contrato || '',
+   provincia: f.notas?.match(/Provincia: (.*?)(?:$|\n)/)?.[1] || f.provincia || 'Benguela',
+   municipio: f.notas?.match(/Municipio: (.*?)(?:$|\n)/)?.[1] || f.municipio || '',
+   nome_pai: f.notas?.match(/Pai: (.*?)(?:$|\n)/)?.[1] || f.nome_pai || '',
+   nome_mae: f.notas?.match(/Mae: (.*?)(?:$|\n)/)?.[1] || f.nome_mae || '',
+   telefone_alternativo: f.notas?.match(/TelAlt: (.*?)(?:$|\n)/)?.[1] || f.telefone_alternativo || ''
+});
+
 // --- TIPOS LOCAIS PARA PROCESSAMENTO ---
 interface PayrollInput {
    horasExtras: number; // em horas
@@ -199,42 +230,26 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const currentFiscalYear = new Date().getFullYear();
 
    const fetchHRData = async () => {
-      // 1. Background fetch for all keys (excluding RECIBOS which is now a dedicated table)
-      const keys = [STORAGE_KEYS.FUNCIONARIOS, STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS, STORAGE_KEYS.CORPORATE_INFO];
+      // 1. Background fetch for static/generic keys
+      const keys = [STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS, STORAGE_KEYS.CORPORATE_INFO];
       await AmazingStorage.loadSpecificKeys(keys);
 
-      // 2. Update states from fresh cache
-      const funcData = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
-      if (funcData.length > 0) {
-         setFuncionarios(funcData.map((f: any) => ({
-            id: f.id,
-            nome: f.nome,
-            data_nascimento: f.notas?.match(/Nascimento: (.*?)(?:$|\n)/)?.[1] || '',
-            funcao: f.cargo,
-            bilhete: f.bi,
-            telefone: f.telefone,
-            morada: f.notas?.match(/Morada: (.*?)(?:$|\n)/)?.[1] || '',
-            departamento_id: f.departamento,
-            data_admissao: f.data_admissao,
-            tipo_contrato: f.notas?.match(/Contrato: (.*?)(?:$|\n)/)?.[1] || 'Efectivo',
-            status: f.status as any,
-            nivel_escolaridade: f.notas?.match(/Escolaridade: (.*?)(?:$|\n)/)?.[1] || '',
-            area_formacao: f.notas?.match(/Curso: (.*?)(?:$|\n)/)?.[1] || '',
-            salario_base: Number(f.salario) || 0,
-            subsidio_alimentacao: Number(f.subsidio_alimentacao) || 0,
-            subsidio_transporte: Number(f.subsidio_transporte) || 0,
-            bonus_assiduidade: 0,
-            outros_bonus: Number(f.outros_bonus) || 0,
-            foto_url: f.foto_url,
-            documentos: [],
-            historico_alteracoes: [],
-            tempo_contrato: f.notas?.match(/Tempo: (.*?)(?:$|\n)/)?.[1] || '',
-            provincia: f.notas?.match(/Provincia: (.*?)(?:$|\n)/)?.[1] || 'Benguela',
-            municipio: f.notas?.match(/Municipio: (.*?)(?:$|\n)/)?.[1] || '',
-            nome_pai: f.notas?.match(/Pai: (.*?)(?:$|\n)/)?.[1] || '',
-            nome_mae: f.notas?.match(/Mae: (.*?)(?:$|\n)/)?.[1] || '',
-            telefone_alternativo: f.notas?.match(/TelAlt: (.*?)(?:$|\n)/)?.[1] || ''
-         })));
+      // 2. Fetch Employees from dedicated table
+      const { data: dbFuncs, error: funcError } = await supabase
+         .from('funcionarios')
+         .select('*')
+         .order('nome', { ascending: true });
+
+      if (!funcError && dbFuncs) {
+         setFuncionarios(dbFuncs.map(mapFuncionario));
+         // Update local cache so initial useEffect can use it
+         localStorage.setItem(STORAGE_KEYS.FUNCIONARIOS, JSON.stringify(dbFuncs));
+      } else {
+         // Fallback to local cache if DB fails
+         const funcData = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
+         if (funcData.length > 0) {
+            setFuncionarios(funcData.map(mapFuncionario));
+         }
       }
 
       setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
@@ -261,11 +276,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       // 1. Initial UI unblock with local storage
       const localStaff = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
       if (localStaff.length > 0) {
-         // This map is repetitive, but necessary for immediate UI if cache exists
-         setFuncionarios(localStaff.map((f: any) => ({
-            ...f,
-            salario_base: Number(f.salario || f.salario_base) || 0
-         })));
+         setFuncionarios(localStaff.map(mapFuncionario));
          setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
          setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
          setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
