@@ -1,14 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { Shield, UserPlus, Trash2, AlertCircle, Database, Download, HardDrive, RefreshCw, CheckCircle2, Send, Lock, Cloud, Wifi, ShieldCheck } from 'lucide-react';
+import { Shield, UserPlus, Trash2, AlertCircle, Database, Download, HardDrive, RefreshCw, CheckCircle2, Send, Lock, Cloud, Wifi, ShieldCheck, Plus, Edit } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { supabase } from '../src/lib/supabase';
+import { MENU_ITEMS, ROLE_ACCESS, getMergedPermissions, setDynamicRoles } from '../constants';
 
 const SettingsPage: React.FC = () => {
   const [cloudStatus, setCloudStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [dbTableCount, setDbTableCount] = useState(0);
+  const [editingRole, setEditingRole] = useState<string | null>(null);
+  const [dynamicRolesLocal, setDynamicRolesLocal] = useState<Record<string, string[]>>({});
 
   const checkCloudStatus = async () => {
     setCloudStatus('checking');
@@ -33,15 +36,50 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const fetchDynamicRoles = async () => {
+    try {
+      const { data, error } = await supabase.from('app_roles').select('*');
+      if (error) throw error;
+      if (data) {
+        const map: Record<string, string[]> = {};
+        data.forEach(r => { map[r.role_key] = r.allowed_modules; });
+        setDynamicRolesLocal(map);
+        setDynamicRoles(map);
+      }
+    } catch (err) {
+      console.error('Error fetching roles:', err);
+    }
+  };
+
+  const handleSaveRole = async (role: any) => {
+    try {
+      const { error } = await supabase.from('app_roles').upsert(role);
+      if (error) throw error;
+      fetchDynamicRoles();
+    } catch (err) {
+      alert('Erro ao guardar cargo.');
+    }
+  };
+
+  const togglePermission = (roleKey: string, moduleId: string) => {
+    const current = getMergedPermissions(roleKey);
+    const updated = current.includes(moduleId)
+      ? current.filter(id => id !== moduleId)
+      : [...current, moduleId];
+    
+    handleSaveRole({ role_key: roleKey, allowed_modules: updated });
+  };
+
   useEffect(() => {
     checkCloudStatus();
+    fetchDynamicRoles();
   }, []);
 
   const [inviteForm, setInviteForm] = useState({ nome: '', email: '', role: 'manager' });
   const [isInviting, setIsInviting] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(false);
 
-  const roles = [
+  const [staticRoles] = useState([
     { value: 'admin', label: 'Administrador (Acesso Total)' },
     { value: 'hr', label: 'Gestor de RH' },
     { value: 'finance', label: 'Financeiro' },
@@ -50,6 +88,16 @@ const SettingsPage: React.FC = () => {
     { value: 'accounting', label: 'Contabilidade' },
     { value: 'inventory', label: 'Inventários' },
     { value: 'operario', label: 'Operário (Acesso Restrito)' },
+  ]);
+
+  const allRoleOptions = [
+    ...staticRoles,
+    ...Object.entries(dynamicRolesLocal)
+      .filter(([key]) => !staticRoles.find(r => r.value === key))
+      .map(([key, modules]) => ({
+        value: key,
+        label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      }))
   ];
 
   const downloadBackup = async () => {
@@ -109,60 +157,88 @@ const SettingsPage: React.FC = () => {
       </div>
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          {/* Cloud Status Monitor */}
+        <div className="space-y-8">
+          {/* Gestão de Cargos Dinâmicos */}
           <div className="bg-white rounded-[2rem] shadow-sm border border-sky-100 overflow-hidden">
             <div className="p-8 border-b border-zinc-50 flex items-center justify-between bg-zinc-50/50">
               <h2 className="font-black text-zinc-900 text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
-                <Cloud size={18} className="text-sky-500" />
-                Estado da Infraestrutura Cloud
+                <ShieldCheck size={18} className="text-yellow-500" />
+                Gestão de Cargos e Permissões
               </h2>
-              <button onClick={checkCloudStatus} className="text-zinc-400 hover:text-zinc-600 transition-colors"><RefreshCw size={16} /></button>
+              <button 
+                onClick={() => {
+                  const name = prompt('Nome do novo cargo:');
+                  if (name) {
+                    const key = name.toLowerCase().replace(/\s+/g, '_');
+                    handleSaveRole({ role_key: key, label: name, allowed_modules: ['home', 'dashboard'], is_system: false });
+                  }
+                }} 
+                className="p-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-all shadow-lg"
+              >
+                <Plus size={16} />
+              </button>
             </div>
-            <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`p-6 rounded-2xl border-2 flex flex-col items-center text-center gap-3 transition-all ${cloudStatus === 'connected' ? 'bg-green-50 border-green-200' :
-                cloudStatus === 'error' ? 'bg-red-50 border-red-200' : 'bg-zinc-50 border-zinc-100'
-                }`}>
-                {cloudStatus === 'checking' ? <RefreshCw size={28} className="text-zinc-400 animate-spin" /> :
-                  cloudStatus === 'connected' ? <Wifi size={28} className="text-green-600" /> :
-                    <AlertCircle size={28} className="text-red-600" />}
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Supabase</p>
-                <p className={`text-xs font-bold ${cloudStatus === 'connected' ? 'text-green-700' :
-                  cloudStatus === 'error' ? 'text-red-700' : 'text-zinc-500'
-                  }`}>
-                  {cloudStatus === 'checking' ? 'A verificar...' : cloudStatus === 'connected' ? 'Ligado' : 'Sem Ligação'}
-                </p>
-              </div>
-              <div className="p-6 rounded-2xl border-2 bg-blue-50 border-blue-200 flex flex-col items-center text-center gap-3">
-                <Database size={28} className="text-blue-600" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tabelas Activas</p>
-                <p className="text-2xl font-black text-blue-700">{dbTableCount}+</p>
-              </div>
-              <div className="p-6 rounded-2xl border-2 bg-purple-50 border-purple-200 flex flex-col items-center text-center gap-3">
-                <ShieldCheck size={28} className="text-purple-600" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Encriptação</p>
-                <p className="text-xs font-black text-purple-700">TLS 1.3 / AES-256</p>
-              </div>
+            <div className="p-8 space-y-6">
+              {Object.entries(ROLE_ACCESS).map(([key, staticModules]) => {
+                const isEditing = editingRole === key;
+                return (
+                  <div key={key} className="p-6 rounded-[2rem] border border-zinc-100 bg-zinc-50/30 hover:shadow-md transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="font-black text-zinc-900 text-sm flex items-center gap-2">
+                          {key === 'admin' ? 'Administrador' : roles.find(r => r.value === key)?.label || key}
+                          {key === 'admin' && <span className="text-[8px] bg-zinc-900 text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Sistema</span>}
+                        </h4>
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                          {getMergedPermissions(key).length} Módulos Activos
+                        </p>
+                      </div>
+                      {key !== 'admin' && (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setEditingRole(isEditing ? null : key)}
+                            className={`p-2 rounded-lg transition-all ${isEditing ? 'bg-yellow-500 text-white' : 'bg-white border border-sky-100 text-sky-600 hover:bg-sky-50'}`}
+                          >
+                            <Edit size={14} />
+                          </button>
+                          {/* Só permite apagar se não for sistema */}
+                          {!ROLE_ACCESS[key as any] && (
+                            <button className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {isEditing && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4 border-t border-zinc-100 animate-in fade-in slide-in-from-top-2">
+                        {MENU_ITEMS.map(item => {
+                          const isAllowed = getMergedPermissions(key).includes(item.id) || getMergedPermissions(key).includes('all');
+                          return (
+                            <label key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-white bg-white/50 cursor-pointer hover:border-yellow-200 transition-all group">
+                              <input 
+                                type="checkbox" 
+                                checked={isAllowed}
+                                disabled={key === 'admin'}
+                                onChange={() => togglePermission(key, item.id)}
+                                className="w-4 h-4 rounded border-zinc-300 text-yellow-500 focus:ring-yellow-500/20"
+                              />
+                              <div className="text-zinc-400 group-hover:text-yellow-600 transition-colors">
+                                {React.cloneElement(item.icon as React.ReactElement, { size: 14 })}
+                              </div>
+                              <span className="text-[11px] font-bold text-zinc-600 truncate">{item.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Painel de status correcto - Supabase Cloud */}
-          <div className="bg-green-50 p-8 rounded-[2rem] border border-green-100 flex items-start gap-6">
-            <div className="p-4 bg-green-100 rounded-2xl text-green-600 shrink-0">
-              <ShieldCheck size={28} />
-            </div>
-            <div>
-              <p className="text-sm font-black text-green-900 uppercase tracking-widest mb-1">Dados Protegidos na Nuvem</p>
-              <p className="text-xs text-green-700 font-medium leading-relaxed">
-                Este ERP armazena todos os dados no <strong>Supabase Cloud</strong> com encriptação AES-256 e backups automáticos diários.
-                Os seus dados estão seguros mesmo que limpe o cache do navegador. O backup manual é opcional e serve apenas para exportações locais.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-8">
           <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-sky-100 relative overflow-hidden">
             {inviteSuccess && (
               <div className="absolute inset-0 z-10 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in zoom-in text-center p-6">
@@ -196,64 +272,29 @@ const SettingsPage: React.FC = () => {
               />
               <Select
                 label="Privilégios de Acesso"
-                options={roles}
+                options={allRoleOptions}
                 value={inviteForm.role}
                 onChange={e => setInviteForm({ ...inviteForm, role: e.target.value })}
               />
 
-              {/* Feedback Visual de Permissões para RH */}
-              {inviteForm.role === 'hr' && (
-                <div className="bg-red-50 rounded-xl p-4 border border-red-100 text-sm animate-in fade-in">
-                  <div className="flex items-center gap-2 mb-2 font-black text-red-900 uppercase text-[10px] tracking-widest">
-                    <Lock size={14} className="text-red-600" />
-                    Restrições Aplicadas ao Cargo
-                  </div>
-                  <div className="text-zinc-600 space-y-2">
-                    <p className="flex items-center gap-2 text-green-700 font-bold text-xs">
-                      <CheckCircle2 size={14} /> Acesso: Recursos Humanos, Comunicação, Galeria.
-                    </p>
-                    <p className="flex items-center gap-2 text-red-600 font-bold text-xs">
-                      <Shield size={14} /> Bloqueado: Frota, Manutenção.
-                    </p>
-                  </div>
+              {/* Feedback Visual de Permissões Dinâmico */}
+              <div className="p-6 rounded-[2rem] bg-zinc-50 border border-zinc-100 space-y-4">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Módulos permitidos para este cargo:</p>
+                <div className="flex flex-wrap gap-2">
+                  {getMergedPermissions(inviteForm.role).map(modId => {
+                    const item = MENU_ITEMS.find(m => m.id === modId);
+                    if (!item && modId !== 'all') return null;
+                    return (
+                      <span key={modId} className="px-4 py-1.5 bg-white border border-zinc-200 rounded-full text-[10px] font-black text-zinc-600 flex items-center gap-3 shadow-sm uppercase tracking-wider transition-all hover:border-yellow-200 group">
+                        <div className="text-yellow-500 group-hover:scale-110 transition-transform">
+                          {modId === 'all' ? <Shield size={12} /> : React.cloneElement(item?.icon as React.ReactElement, { size: 12 })}
+                        </div>
+                        {modId === 'all' ? 'CONTROLO TOTAL' : item?.label}
+                      </span>
+                    );
+                  })}
                 </div>
-              )}
-
-              {/* Feedback Visual de Permissões para Director de Frota */}
-              {inviteForm.role === 'manager' && (
-                <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100 text-sm animate-in fade-in">
-                  <div className="flex items-center gap-2 mb-2 font-black text-yellow-900 uppercase text-[10px] tracking-widest">
-                    <Lock size={14} className="text-yellow-600" />
-                    Perfil Operacional Restrito
-                  </div>
-                  <div className="text-zinc-600 space-y-2">
-                    <p className="flex items-center gap-2 text-green-700 font-bold text-xs">
-                      <CheckCircle2 size={14} /> Acesso: Frota, Dashboard, Fornecedores, Parceiros, Subsidiárias.
-                    </p>
-                    <p className="flex items-center gap-2 text-red-600 font-bold text-xs">
-                      <Shield size={14} /> Bloqueado: Recursos Humanos, Manutenção.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Feedback Visual de Permissões para Operário */}
-              {inviteForm.role === 'operario' && (
-                <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-sm animate-in fade-in">
-                  <div className="flex items-center gap-2 mb-2 font-black text-blue-900 uppercase text-[10px] tracking-widest">
-                    <Lock size={14} className="text-blue-600" />
-                    Acesso Operário Simplificado
-                  </div>
-                  <div className="text-zinc-600 space-y-2">
-                    <p className="flex items-center gap-2 text-green-700 font-bold text-xs">
-                      <CheckCircle2 size={14} /> Acesso: Home, Dashboard, Galeria Corp, Biblioteca.
-                    </p>
-                    <p className="flex items-center gap-2 text-red-600 font-bold text-xs">
-                      <Shield size={14} /> Bloqueado: Todas as outras áreas administrativas.
-                    </p>
-                  </div>
-                </div>
-              )}
+              </div>
 
               <button
                 type="submit"

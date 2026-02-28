@@ -8,6 +8,13 @@ import {
   UserPlus, Gamepad2, Files
 } from 'lucide-react';
 import { UserRole } from './types';
+import { supabase } from './src/lib/supabase';
+
+let dynamicRoles: Record<string, string[]> = {};
+
+export const setDynamicRoles = (roles: Record<string, string[]>) => {
+  dynamicRoles = roles;
+};
 
 export { LogOut, Bell, Search };
 
@@ -96,4 +103,14 @@ export const formatAOA = (value: number) => {
     style: 'currency',
     currency: 'AOA',
   }).format(value);
+};
+
+export const getMergedPermissions = (role: string): string[] => {
+  // 1. Check dynamic roles from DB
+  if (dynamicRoles[role]) {
+    return dynamicRoles[role];
+  }
+  
+  // 2. Fallback to static ROLE_ACCESS
+  return (ROLE_ACCESS[role as UserRole] || []) as string[];
 };

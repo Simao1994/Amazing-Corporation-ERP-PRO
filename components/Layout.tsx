@@ -4,6 +4,8 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   MENU_ITEMS,
   ROLE_ACCESS,
+  getMergedPermissions,
+  setDynamicRoles,
   LogOut,
   Search
 } from '../constants';
@@ -100,6 +102,37 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     }
   }, []);
 
+  // --- DYNAMIC ROLES FETCH ---
+  useEffect(() => {
+    const fetchDynamicRoles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_roles')
+          .select('role_key, allowed_modules');
+
+        if (error) throw error;
+
+        if (data) {
+          const rolesMap: Record<string, string[]> = {};
+          data.forEach(r => {
+            rolesMap[r.role_key] = r.allowed_modules;
+          });
+          setDynamicRoles(rolesMap);
+          // Trigger a re-render by updating a local state if needed, 
+          // but since MENU_ITEMS filter uses user.role which is stable, 
+          // we might need a signal state.
+          setRolesLoaded(true);
+        }
+      } catch (err) {
+        console.error('Error fetching dynamic roles:', err);
+      }
+    };
+
+    fetchDynamicRoles();
+  }, []);
+
+  const [rolesLoaded, setRolesLoaded] = useState(false);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeChat, isChatOpen]);
@@ -195,7 +228,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
   const allowedMenuItems = MENU_ITEMS.filter(item => {
     if (user.role === 'admin') return true;
-    const userPermissions = (ROLE_ACCESS[user.role as UserRole] || []) as string[];
+    const userPermissions = getMergedPermissions(user.role);
     return userPermissions.includes(item.id) || userPermissions.includes('all');
   });
 
