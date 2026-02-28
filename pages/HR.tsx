@@ -1616,57 +1616,10 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   <div className="absolute top-6 right-6 flex items-center gap-3 print:hidden z-20">
                      <button
                         onClick={() => setViewingRecibo(null)}
-                        className="flex items-center gap-2 px-6 py-4 bg-zinc-100 text-zinc-600 rounded-2xl font-black uppercase text-[10px] hover:bg-zinc-200 transition-all"
+                        title="Fechar"
+                        className="p-4 bg-zinc-100 text-zinc-600 rounded-2xl hover:bg-zinc-200 transition-all shadow-xl"
                      >
-                        <ArrowLeft size={18} /> Voltar
-                     </button>
-
-                     <div className="h-10 w-[1px] bg-zinc-200 mx-1"></div>
-
-                     <div className="relative">
-                        <button
-                           onClick={() => setShowShareOptions(!showShareOptions)}
-                           title="Partilhar no WhatsApp"
-                           className={`p-4 rounded-2xl transition-all shadow-xl ${showShareOptions ? 'bg-green-600 text-white' : 'bg-zinc-900 text-white hover:bg-green-600'}`}
-                        >
-                           <MessageCircle size={20} />
-                        </button>
-
-                        {showShareOptions && (
-                           <div className="absolute top-16 right-0 bg-white border border-zinc-100 shadow-2xl p-6 rounded-[2rem] w-80 animate-in fade-in duration-300 slide-in-from-top-4 z-[210]">
-                              <div className="flex justify-between items-center mb-4">
-                                 <h4 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Configurar WhatsApp</h4>
-                                 <button onClick={() => setShowShareOptions(false)} className="text-zinc-300 hover:text-zinc-900"><X size={16} /></button>
-                              </div>
-                              <div className="space-y-4">
-                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-[9px] font-black uppercase text-zinc-900 ml-1">Nº do Telefone (Funcionário)</label>
-                                    <input
-                                       type="text"
-                                       value={customWhatsApp}
-                                       onChange={(e) => setCustomWhatsApp(e.target.value)}
-                                       className="w-full px-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-green-500 outline-none transition-all"
-                                       placeholder="Ex: 931116696"
-                                    />
-                                    <p className="text-[8px] text-zinc-400 italic">O prefixo +244 será adicionado automaticamente.</p>
-                                 </div>
-                                 <button
-                                    onClick={() => { handleWhatsAppShare(); setShowShareOptions(false); }}
-                                    className="w-full py-4 bg-zinc-900 text-white rounded-xl font-black uppercase text-[10px] hover:bg-green-600 transition-all shadow-lg flex items-center justify-center gap-2"
-                                 >
-                                    <MessageCircle size={16} /> Enviar p/ WhatsApp
-                                 </button>
-                              </div>
-                           </div>
-                        )}
-                     </div>
-
-                     <button
-                        onClick={handleEmailShare}
-                        title="Enviar por Email"
-                        className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-sky-600 transition-all shadow-xl"
-                     >
-                        <Mail size={20} />
+                        <X size={20} />
                      </button>
 
                      <button
@@ -1817,9 +1770,9 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      {/* ASSINATURAS E VALIDAÇÃO */}
                      <div className="mt-20 grid grid-cols-3 gap-12 items-end">
                         <div className="text-center">
-                           <div className="h-16 flex items-center justify-center opacity-40 italic font-serif">Amazing Corporation</div>
-                           <div className="border-t border-zinc-200 mt-4 pt-2">
-                              <p className="text-[9px] font-black uppercase text-zinc-400">Entidade Empregadora</p>
+                           <div className="h-16 flex items-center justify-center opacity-40 italic font-serif"></div>
+                           <div className="border-t-2 border-zinc-900 mt-4 pt-2">
+                              <p className="text-[12px] font-black uppercase text-zinc-900" style={{ fontFamily: 'Times New Roman' }}>Entidade Empregadora</p>
                            </div>
                         </div>
                         <div className="flex flex-col items-center">
@@ -1828,8 +1781,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                         <div className="text-center">
                            <div className="h-16"></div>
-                           <div className="border-t border-zinc-200 mt-4 pt-2">
-                              <p className="text-[9px] font-black uppercase text-zinc-400">Assinatura do Colaborador</p>
+                           <div className="border-t-2 border-zinc-900 mt-4 pt-2">
+                              <p className="text-[14px] font-bold text-zinc-900" style={{ fontFamily: 'Times New Roman' }}>Assinatura do Colaborador</p>
                            </div>
                         </div>
                      </div>
