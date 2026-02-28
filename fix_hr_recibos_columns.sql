@@ -1,19 +1,51 @@
--- SCRIPT PARA CORRIGIR COLUNAS EM FALTA NA TABELA hr_recibos
+-- SCRIPT DEFINITIVO PARA CORRIGIR TODAS AS COLUNAS DA TABELA hr_recibos
 -- Execute este script no SQL Editor do seu Supabase Dashboard
 
 DO $$ 
 BEGIN
-    -- Adicionar coluna 'cargo' se não existir
+    -- Lista de todas as colunas necessárias com seus tipos
+    -- 1. Identificação e Metadados
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='funcionario_id') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN funcionario_id uuid REFERENCES public.profiles(id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='nome') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN nome text;
+    END IF;
+
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='cargo') THEN
         ALTER TABLE public.hr_recibos ADD COLUMN cargo text;
     END IF;
 
-    -- Adicionar coluna 'bilhete' se não existir
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='bilhete') THEN
         ALTER TABLE public.hr_recibos ADD COLUMN bilhete text;
     END IF;
 
-    -- Garantir que as outras colunas de subsídios também existem (caso tenham falhado em migrações anteriores)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='mes') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN mes text;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='ano') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN ano integer;
+    END IF;
+
+    -- 2. Valores Financeiros (Proventos)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='base') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN base numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='subsidios') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN subsidios numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='subsidio_alimentacao') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN subsidio_alimentacao numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='subsidio_transporte') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN subsidio_transporte numeric DEFAULT 0;
+    END IF;
+
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='subsidio_ferias') THEN
         ALTER TABLE public.hr_recibos ADD COLUMN subsidio_ferias numeric DEFAULT 0;
     END IF;
@@ -22,16 +54,50 @@ BEGIN
         ALTER TABLE public.hr_recibos ADD COLUMN subsidio_natal numeric DEFAULT 0;
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='faltas_desconto') THEN
-        ALTER TABLE public.hr_recibos ADD COLUMN faltas_desconto numeric DEFAULT 0;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='horas_extras_valor') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN horas_extras_valor numeric DEFAULT 0;
     END IF;
 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='bonus_premios') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN bonus_premios numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='total_proventos') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN total_proventos numeric DEFAULT 0;
+    END IF;
+
+    -- 3. Descontos e Impostos
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='inss_trabalhador') THEN
         ALTER TABLE public.hr_recibos ADD COLUMN inss_trabalhador numeric DEFAULT 0;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='irt') THEN
         ALTER TABLE public.hr_recibos ADD COLUMN irt numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='faltas_desconto') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN faltas_desconto numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='adiantamentos') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN adiantamentos numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='emprestimos') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN emprestimos numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='outros_descontos') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN outros_descontos numeric DEFAULT 0;
+    END IF;
+
+    -- 4. Totais e Datas
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='bruto') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN bruto numeric DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='liquido') THEN
+        ALTER TABLE public.hr_recibos ADD COLUMN liquido numeric DEFAULT 0;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='hr_recibos' AND column_name='data_emissao') THEN
