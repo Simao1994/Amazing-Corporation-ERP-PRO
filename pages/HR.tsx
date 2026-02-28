@@ -232,12 +232,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const currentMonthName = new Date().toLocaleString('pt-PT', { month: 'long' });
    const currentFiscalYear = new Date().getFullYear();
 
+   const lastFetchRef = React.useRef<number>(0);
    const fetchHRData = async () => {
-      // 1. Load basic keys from local storage/meta if needed
-      const keys = [STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS, STORAGE_KEYS.CORPORATE_INFO];
-      await AmazingStorage.loadSpecificKeys(keys);
+      // Debounce: evitar múltiplas chamadas em menos de 2 segundos (muito comum com Realtime postgres_changes)
+      const now = Date.now();
+      if (now - lastFetchRef.current < 2000) return;
+      lastFetchRef.current = now;
 
-      // 2. Fetch everything in PARALLEL to avoid waterfalls
+      // 1. Fetch everything in PARALLEL to avoid waterfalls
       const [funcsRes, presRes, recRes, metasRes] = await Promise.allSettled([
          supabase.from('funcionarios').select('*').order('nome', { ascending: true }),
          supabase.from('hr_presencas').select('*').order('data', { ascending: false }).limit(200),
@@ -770,6 +772,21 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    };
 
    const COLORS_PIE = ['#eab308', '#22c55e', '#3b82f6', '#ef4444', '#a855f7'];
+
+   if (loading && funcionarios.length === 0) {
+      return (
+         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-500">
+            <div className="relative">
+               <div className="w-24 h-24 border-4 border-sky-100 rounded-full animate-pulse"></div>
+               <div className="absolute inset-0 border-t-4 border-yellow-500 rounded-full animate-spin"></div>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+               <h3 className="text-zinc-900 font-black uppercase text-[12px] tracking-[0.3em]">Sincronizando Talentos</h3>
+               <p className="text-zinc-400 text-[10px] font-bold animate-pulse">A carregar informações da nuvem Amazing...</p>
+            </div>
+         </div>
+      );
+   }
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-20">

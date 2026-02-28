@@ -124,7 +124,7 @@ const App: React.FC = () => {
     AmazingStorage.loadAllFromCloud().finally(() => setIsSyncing(false));
 
     AmazingStorage.logAction('Login', 'Sessão', `Utilizador ${userData.nome} acedeu ao sistema`);
-    window.location.hash = '#/';
+    // Removed window.location.hash = '#/' to prevent flickering/jumpy transition
   };
 
   const handleLogout = async () => {
