@@ -98,10 +98,11 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
 };
 
 export const formatAOA = (value: number) => {
+  const safeValue = isNaN(value) || value === null || value === undefined ? 0 : value;
   return new Intl.NumberFormat('pt-AO', {
     style: 'currency',
     currency: 'AOA',
-  }).format(value);
+  }).format(safeValue);
 };
 
 export const getMergedPermissions = (role: string): string[] => {
@@ -109,7 +110,7 @@ export const getMergedPermissions = (role: string): string[] => {
   if (dynamicRoles[role]) {
     return dynamicRoles[role];
   }
-  
+
   // 2. Fallback to static ROLE_ACCESS
   return (ROLE_ACCESS[role as UserRole] || []) as string[];
 };

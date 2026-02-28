@@ -220,11 +220,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             status: f.status as any,
             nivel_escolaridade: f.notas?.match(/Escolaridade: (.*?)(?:$|\n)/)?.[1] || '',
             area_formacao: f.notas?.match(/Curso: (.*?)(?:$|\n)/)?.[1] || '',
-            salario_base: Number(f.salario),
-            subsidio_alimentacao: f.subsidio_alimentacao || 0,
-            subsidio_transporte: f.subsidio_transporte || 0,
+            salario_base: Number(f.salario) || 0,
+            subsidio_alimentacao: Number(f.subsidio_alimentacao) || 0,
+            subsidio_transporte: Number(f.subsidio_transporte) || 0,
             bonus_assiduidade: 0,
-            outros_bonus: f.outros_bonus || 0,
+            outros_bonus: Number(f.outros_bonus) || 0,
             foto_url: f.foto_url,
             documentos: [],
             historico_alteracoes: [],
@@ -264,7 +264,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          // This map is repetitive, but necessary for immediate UI if cache exists
          setFuncionarios(localStaff.map((f: any) => ({
             ...f,
-            salario_base: Number(f.salario || f.salario_base)
+            salario_base: Number(f.salario || f.salario_base) || 0
          })));
          setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
          setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
@@ -402,11 +402,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    // --- ATUALIZAÇÃO DE VARIÃVEIS DE FOLHA ---
    const updatePayrollInput = (id: string, field: keyof PayrollInput, value: number) => {
+      const numericValue = isNaN(value) ? 0 : value;
       setPayrollInputs(prev => ({
          ...prev,
          [id]: {
             ...(prev[id] || { horasExtras: 0, faltas: 0, bonus: 0, adiantamento: 0, premios: 0, subFerias: 0, subNatal: 0, emprestimos: 0, outrosDesc: 0 }),
-            [field]: value
+            [field]: numericValue
          }
       }));
    };
@@ -679,10 +680,10 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          departamento: fd.get('departamento') as string,
          data_admissao: fd.get('admissao') as string,
          status: (fd.get('status') as string) || 'ativo',
-         salario: Number(fd.get('salario_base')),
-         subsidio_alimentacao: Number(fd.get('sub_alim')),
-         subsidio_transporte: Number(fd.get('sub_trans')),
-         outros_bonus: Number(fd.get('outros_bonus')),
+         salario: Number(fd.get('salario_base')) || 0,
+         subsidio_alimentacao: Number(fd.get('sub_alim')) || 0,
+         subsidio_transporte: Number(fd.get('sub_trans')) || 0,
+         outros_bonus: Number(fd.get('outros_bonus')) || 0,
          foto_url: photoPreview || `https://ui-avatars.com/api/?name=${fd.get('nome')}&background=random`,
          notas: notes,
          updated_at: new Date().toISOString()
