@@ -1679,34 +1679,34 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   </div>
 
                   <div className="flex-1 px-16 py-8 print:px-12">
-                     {/* LINHA DE TÍTULO - REESTRUTURADA (CENTRO E LOGO À ESQUERDA) */}
-                     <div className="border-b-[4px] border-zinc-900 pb-10 mb-8 grid grid-cols-3 items-end">
-                        {/* ESQUERDA: LOGO + INFO ACTUALIZADA (NIF: 50002181797) */}
-                        <div className="flex items-end gap-5">
-                           <div className="w-32 h-32 bg-zinc-50 rounded-2xl flex items-center justify-center p-3 border border-zinc-100 shadow-sm print:border-none">
-                              <Logo className="h-24" />
+                     {/* LINHA DE TÍTULO - REESTRUTURADA (LOGOTIPO GRANDE E TÍTULO ALINHADO ABAIXO) */}
+                     <div className="border-b-[6px] border-zinc-900 pb-12 mb-10 grid grid-cols-3 items-end">
+                        {/* ESQUERDA: LOGO REALMENTE GRANDE + INFO */}
+                        <div className="flex items-end gap-6">
+                           <div className="w-48 h-48 bg-white rounded-3xl flex items-center justify-center p-4 border-2 border-zinc-100 shadow-xl print:border-none print:shadow-none">
+                              <Logo className="h-40 w-auto" />
                            </div>
-                           <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400 mb-2">
-                              <span className="text-zinc-900 font-black text-[11px] mb-1">NIF: 50002181797</span>
+                           <div className="flex flex-col text-[11px] leading-tight font-black uppercase text-zinc-400 mb-4">
+                              <span className="text-zinc-900 font-black text-[13px] mb-2 underline decoration-sky-500 decoration-2 underline-offset-4">NIF: 50002181797</span>
                               <span>Endereço: Benguela/Angola</span>
                               <span>Bairro Massangarala</span>
-                              <span className="text-zinc-700 mt-1">Contacto: +244 931 116 696</span>
-                              <span className="lowercase text-sky-600 font-bold">Email: geral.amazingcorporation@gmail.com</span>
+                              <span className="text-zinc-800 mt-2 font-bold">Contacto: +244 931 116 696</span>
+                              <span className="lowercase text-sky-600 font-black text-[12px]">Email: geral.amazingcorporation@gmail.com</span>
                            </div>
                         </div>
 
-                        {/* CENTRO: TÍTULO E PERÍODO - DESLOCADO PARA BAIXO/ALINHADO */}
-                        <div className="text-center pb-2">
-                           <h2 className="text-4xl font-black text-zinc-900 uppercase tracking-tighter leading-none mt-12">Folha de Salário</h2>
-                           <div className="mt-3 inline-block bg-zinc-900 text-white px-4 py-1.5 rounded-full">
-                              <p className="text-[11px] font-black uppercase tracking-widest">Período: {viewingRecibo.mes} {viewingRecibo.ano}</p>
+                        {/* CENTRO: TÍTULO E PERÍODO - POSICIONADO MAIS PARA BAIXO */}
+                        <div className="text-center pb-4">
+                           <h2 className="text-5xl font-black text-zinc-900 uppercase tracking-tighter leading-none mt-20">Folha de Salário</h2>
+                           <div className="mt-4 inline-block bg-zinc-900 text-white px-6 py-2 rounded-full shadow-lg">
+                              <p className="text-[12px] font-black uppercase tracking-[0.2em]">Período: {viewingRecibo.mes} {viewingRecibo.ano}</p>
                            </div>
                         </div>
 
                         {/* DIREITA: Nº DOCUMENTO */}
-                        <div className="text-right pb-2">
-                           <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Nº Documento</p>
-                           <p className="text-2xl font-black text-zinc-900 tabular-nums uppercase">#{viewingRecibo.numero_documento || viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
+                        <div className="text-right pb-4">
+                           <p className="text-[12px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-1">Nº Documento</p>
+                           <p className="text-3xl font-black text-zinc-900 tabular-nums uppercase">#{viewingRecibo.numero_documento || viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
                         </div>
                      </div>
 
