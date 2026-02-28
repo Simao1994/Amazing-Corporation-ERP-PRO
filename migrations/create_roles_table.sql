@@ -14,12 +14,14 @@ CREATE TABLE IF NOT EXISTS public.app_roles (
 -- 2. Habilitar RLS
 ALTER TABLE public.app_roles ENABLE ROW LEVEL SECURITY;
 
--- 3. Políticas de Acesso
+-- 3. Políticas de Acesso (Seguro para re-executar)
+DROP POLICY IF EXISTS "Leitura pública para utilizadores autenticados" ON public.app_roles;
 CREATE POLICY "Leitura pública para utilizadores autenticados" 
 ON public.app_roles FOR SELECT 
 TO authenticated 
 USING (true);
 
+DROP POLICY IF EXISTS "Apenas admin pode modificar cargos" ON public.app_roles;
 CREATE POLICY "Apenas admin pode modificar cargos" 
 ON public.app_roles FOR ALL 
 TO authenticated 
@@ -38,7 +40,13 @@ WITH CHECK (
     )
 );
 
--- 4. Inserir cargos existentes como base (Seed)
+-- 4. Garantir que o SEU utilizador atual é ADMIN (Caso contrário o RLS bloqueia)
+-- Execute isto para não ter o erro "new row violates row-level security policy"
+UPDATE public.profiles 
+SET role = 'admin' 
+WHERE id = auth.uid();
+
+-- 5. Inserir cargos existentes como base (Seed)
 INSERT INTO public.app_roles (role_key, label, allowed_modules, is_system)
 VALUES 
     ('admin', 'Administrador', ARRAY['all'], true),
