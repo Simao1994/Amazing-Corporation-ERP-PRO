@@ -158,6 +158,53 @@ const SettingsPage: React.FC = () => {
       </div>
 
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-sky-100 flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+            cloudStatus === 'connected' ? 'bg-green-100 text-green-600' : 
+            cloudStatus === 'error' ? 'bg-red-100 text-red-600' : 'bg-sky-100 text-sky-600'
+          }`}>
+            <Cloud size={24} />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Estado da Cloud</p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-black text-zinc-900">
+                {cloudStatus === 'connected' ? 'Supabase Conectado' : 
+                 cloudStatus === 'error' ? 'Erro de Ligação' : 'A verificar...'}
+              </h3>
+              <div className={`w-2 h-2 rounded-full ${
+                cloudStatus === 'connected' ? 'bg-green-500 animate-pulse' : 
+                cloudStatus === 'error' ? 'bg-red-500' : 'bg-sky-400 animate-bounce'
+              }`}></div>
+            </div>
+          </div>
+          <button onClick={checkCloudStatus} className="p-2 hover:bg-zinc-50 rounded-lg text-zinc-400 transition-all">
+            <RefreshCw size={16} className={cloudStatus === 'checking' ? 'animate-spin' : ''} />
+          </button>
+        </div>
+
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-sky-100 flex items-center gap-4">
+          <div className="w-12 h-12 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center">
+            <Database size={24} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Dados do Sistema</p>
+            <h3 className="text-sm font-black text-zinc-900">{dbTableCount} Tabelas Activas</h3>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-sky-100 flex items-center gap-4">
+          <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center">
+            <ShieldCheck size={24} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Segurança Integrada</p>
+            <h3 className="text-sm font-black text-zinc-900">RLS Activa & Logs</h3>
+          </div>
+        </div>
+      </div>
+
         <div className="space-y-8">
           {/* Gestão de Cargos Dinâmicos */}
           <div className="bg-white rounded-[2rem] shadow-sm border border-sky-100 overflow-hidden">
