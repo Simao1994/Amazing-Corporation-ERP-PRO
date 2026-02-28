@@ -40,11 +40,16 @@ WITH CHECK (
     )
 );
 
--- 4. Garantir que o SEU utilizador atual é ADMIN (Caso contrário o RLS bloqueia)
--- Execute isto para não ter o erro "new row violates row-level security policy"
+-- 4. Garantir que o SEU utilizador atual é ADMIN
+-- NOTA: auth.uid() não funciona no SQL Editor sem "impersonate".
+-- Use o seu email real abaixo (Ex: 'admin@amazing.com')
 UPDATE public.profiles 
 SET role = 'admin' 
-WHERE id = auth.uid();
+WHERE email = 'SEU_EMAIL_AQUI'; 
+
+-- --- DIAGNÓSTICO (Opcional: Execute para verificar o seu estado) ---
+-- SELECT id, email, role FROM public.profiles WHERE role = 'admin';
+-- SELECT role_key, label FROM public.app_roles;
 
 -- 5. Inserir cargos existentes como base (Seed)
 INSERT INTO public.app_roles (role_key, label, allowed_modules, is_system)
