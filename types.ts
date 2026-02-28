@@ -176,7 +176,7 @@ export interface RegistroPresenca {
   data: string;
   entrada: string;
   saida?: string;
-  status: 'Presente' | 'Ausente' | 'Falta Justificada';
+  status: 'Presente' | 'Ausente' | 'Falta Justificada' | 'Atraso';
   horas_extras: number;
 }
 

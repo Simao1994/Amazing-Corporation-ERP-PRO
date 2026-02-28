@@ -252,9 +252,20 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          }
       }
 
-      setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
+      // 3. Fetch Attendance from dedicated table
+      const { data: dbPresencas, error: presError } = await supabase
+         .from('hr_presencas')
+         .select('*')
+         .order('data', { ascending: false });
 
-      // 3. Fetch Receipts from dedicated table instead of erp_data JSON
+      if (!presError && dbPresencas) {
+         setPresencas(dbPresencas as any);
+         localStorage.setItem(STORAGE_KEYS.PRESENCA, JSON.stringify(dbPresencas));
+      } else {
+         setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
+      }
+
+      // 4. Fetch Receipts from dedicated table instead of erp_data JSON
       const { data: dbRecibos, error: recError } = await supabase
          .from('hr_recibos')
          .select('*')
@@ -369,14 +380,20 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
       try {
          if (tipo === 'entrada') {
-            const { data: existing } = await supabase.from('hr_presencas').select('*').eq('funcionario_id', funcId).eq('data', hoje).single();
+            const { data: existing, error: checkErr } = await supabase
+               .from('hr_presencas')
+               .select('*')
+               .eq('funcionario_id', funcId)
+               .eq('data', hoje)
+               .maybeSingle();
+
             if (existing) return alert("Já registou entrada hoje.");
 
             const [h, m] = agora.split(':').map(Number);
             const entryDate = new Date(); entryDate.setHours(h, m, 0);
             const scheduleDate = new Date(); scheduleDate.setHours(WORK_RULES.startHour, WORK_RULES.startMinute, 0);
 
-            let status = 'Presente';
+            let status: any = 'Presente';
             if (entryDate > scheduleDate) {
                const diffMins = (entryDate.getTime() - scheduleDate.getTime()) / 60000;
                if (diffMins > WORK_RULES.toleranceMinutes) status = 'Atraso';
@@ -388,12 +405,20 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                entrada: agora,
                status: status
             }]);
+
             if (error) throw error;
-            fetchHRData();
+            await fetchHRData();
             AmazingStorage.logAction('Ponto', 'RH', `Check-in: ${func?.nome} (${status})`);
          } else {
-            const { data: ponto, error: fetchErr } = await supabase.from('hr_presencas').select('*').eq('funcionario_id', funcId).eq('data', hoje).is('saida', null).single();
-            if (fetchErr || !ponto) return alert("Registo de entrada não localizado.");
+            const { data: ponto, error: fetchErr } = await supabase
+               .from('hr_presencas')
+               .select('*')
+               .eq('funcionario_id', funcId)
+               .eq('data', hoje)
+               .is('saida', null)
+               .maybeSingle();
+
+            if (fetchErr || !ponto) return alert("Registo de entrada ativo não localizado para hoje.");
 
             const stats = calculateTimeStats(ponto.entrada, agora, hoje);
 
@@ -401,13 +426,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                saida: agora,
                horas_extras: stats.extra
             }).eq('id', ponto.id);
+
             if (updErr) throw updErr;
 
-            fetchHRData();
+            await fetchHRData();
             AmazingStorage.logAction('Ponto', 'RH', `Check-out: ${func?.nome}`);
          }
-      } catch (err) {
-         alert('Erro ao registar ponto');
+      } catch (err: any) {
+         console.error("Erro no ponto:", err);
+         alert(`Erro ao registar ponto: ${err.message || 'Verifique a ligação'}`);
       }
    };
 
