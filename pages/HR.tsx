@@ -279,7 +279,19 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
       }
 
-      setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
+      // 5. Fetch Performance Goals from dedicated table
+      const { data: dbMetas, error: metaError } = await supabase
+         .from('hr_metas')
+         .select('*')
+         .order('status', { ascending: true });
+
+      if (!metaError && dbMetas) {
+         setMetas(dbMetas as any);
+         localStorage.setItem(STORAGE_KEYS.METAS, JSON.stringify(dbMetas));
+      } else {
+         setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
+      }
+
       setCorporateInfo(AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
    };
 
@@ -296,8 +308,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          setLoading(true);
       }
 
-      // 2. Background sync
+      // 2. Initial background sync
       fetchHRData().finally(() => setLoading(false));
+
+      // 3. Automatic Updates Polling (cada 30 seg)
+      const poll = setInterval(() => {
+         fetchHRData();
+      }, 30000);
+
+      return () => clearInterval(poll);
    }, []);
 
    // Atualiza idade quando data de nascimento muda
@@ -536,9 +555,16 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       const ativos = funcionarios.filter(f => f.status === 'ativo');
       if (ativos.length === 0) return alert("Não existem colaboradores activos.");
 
-      // 1. Hard check for session to avoid 401s
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return alert("Sessão expirada. Reinicie a aplicação.");
+      // 1. Hard check for session with refresh attempt
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      let session = currentSession;
+
+      if (!session) {
+         const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+         session = refreshedSession;
+      }
+
+      if (!session) return alert("Sessão expirada. Por favor, faça login novamente.");
 
       // Verificar se já existe processamento para este mês
       const { data: existing } = await supabase.from('hr_recibos').select('id').eq('mes', currentMonthName).eq('ano', currentFiscalYear);
