@@ -179,6 +179,8 @@ export interface ReciboSalarial {
   id: string;
   funcionario_id: string;
   nome: string;
+  cargo?: string;
+  bilhete?: string;
   mes: string;
   ano: number;
   base: number;
@@ -760,7 +762,7 @@ export interface RhCandidaturaPublica {
   mensagem?: string;
   status: 'pendente' | 'em_analise' | 'aprovado' | 'rejeitado';
   data_envio: string;
-  
+
   // Novos campos exigidos no formulário completo:
   nivel_academico?: string;
   curso?: string;

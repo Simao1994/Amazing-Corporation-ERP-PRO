@@ -48,18 +48,13 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
           localStorage.removeItem('amazing_remember_email');
         }
 
-        // Fetch role and name from profiles table in DB
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
+        // NO-WAIT: call onLogin immediately with fallback data.
+        // App.tsx auth listener handles background enrichment.
         onLogin({
           id: data.user.id,
           email: data.user.email,
-          role: profile?.role || 'admin',
-          nome: profile?.nome || data.user.user_metadata?.nome || email.split('@')[0],
+          role: data.user.email === 'simaopambo94@gmail.com' ? 'admin' : 'operario',
+          nome: data.user.user_metadata?.nome || email.split('@')[0],
         });
       }
     } catch (error: any) {

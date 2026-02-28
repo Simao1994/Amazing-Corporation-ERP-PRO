@@ -113,6 +113,9 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogin = (userData: User) => {
+    // Show feedback immediately for a "premium" feel
+    showToast("Login realizado com sucesso!");
+
     setUser(userData);
     AmazingStorage.save(STORAGE_KEYS.USER, userData);
 
@@ -121,7 +124,6 @@ const App: React.FC = () => {
     AmazingStorage.loadAllFromCloud().finally(() => setIsSyncing(false));
 
     AmazingStorage.logAction('Login', 'Sessão', `Utilizador ${userData.nome} acedeu ao sistema`);
-    showToast("Login realizado com sucesso!");
     window.location.hash = '#/';
   };
 

@@ -8,7 +8,7 @@ import {
    BarChart4, ArrowUpRight, ArrowDownLeft, FileText, LayoutDashboard,
    Settings, Layers, DollarSign, Clock, PlusCircle, LogOut, Target,
    Image as ImageIcon, Eye, Calculator, MapPinOff, UserCheck, FileCheck,
-   FileSpreadsheet, FileDown,   ClipboardList, GraduationCap, Home,
+   FileSpreadsheet, FileDown, ClipboardList, GraduationCap, Home,
    Coins, Ban, Percent, Timer, CalendarDays, ScanBarcode, PieChart as PieIcon, Landmark
 } from 'lucide-react';
 import {
@@ -184,6 +184,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const [presencas, setPresencas] = useState<RegistroPresenca[]>([]);
    const [recibos, setRecibos] = useState<ReciboSalarial[]>([]);
    const [metas, setMetas] = useState<MetaDesempenho[]>([]);
+   const [corporateInfo, setCorporateInfo] = useState<any>(null);
    const [loading, setLoading] = useState(true);
 
    // --- ESTADO PARA PROCESSAMENTO DE FOLHA ---
@@ -194,7 +195,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    const fetchHRData = async () => {
       // 1. Background fetch for all keys
-      const keys = [STORAGE_KEYS.FUNCIONARIOS, STORAGE_KEYS.RECIBOS, STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS];
+      const keys = [STORAGE_KEYS.FUNCIONARIOS, STORAGE_KEYS.RECIBOS, STORAGE_KEYS.PRESENCA, STORAGE_KEYS.METAS, STORAGE_KEYS.CORPORATE_INFO];
       await AmazingStorage.loadSpecificKeys(keys);
 
       // 2. Update states from fresh cache
@@ -234,6 +235,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
       setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
       setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
+      setCorporateInfo(AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
    };
 
    useEffect(() => {
@@ -492,6 +494,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                id: `REC-${Date.now()}-${f.id.substring(0, 5)}-${Math.random().toString(36).substring(2, 7)}`,
                funcionario_id: f.id,
                nome: f.nome,
+               cargo: f.funcao,
+               bilhete: f.bilhete,
                mes: currentMonthName,
                ano: currentFiscalYear,
                base: f.salario_base || 0,
@@ -1127,14 +1131,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   {/* ABAS DO MODAL */}
                   {editingItem && (
                      <div className="flex border-b border-zinc-100 bg-white px-8 pt-4 gap-6">
-                        <button 
-                           onClick={() => setModalActiveTab('geral')} 
+                        <button
+                           onClick={() => setModalActiveTab('geral')}
                            className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modalActiveTab === 'geral' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
                         >
                            Dados Gerais
                         </button>
-                        <button 
-                           onClick={() => setModalActiveTab('contas')} 
+                        <button
+                           onClick={() => setModalActiveTab('contas')}
                            className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modalActiveTab === 'contas' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
                         >
                            Contas Bancárias
@@ -1166,97 +1170,97 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                                     <div className="md:col-span-4 grid grid-cols-3 gap-4">
-                                 <div className="col-span-2">
-                                    <Input
-                                       name="nascimento" label="Data de Nascimento" type="date" required
-                                       value={formState.nascimento}
-                                       onChange={e => setFormState({ ...formState, nascimento: e.target.value })}
-                                    />
+                                       <div className="col-span-2">
+                                          <Input
+                                             name="nascimento" label="Data de Nascimento" type="date" required
+                                             value={formState.nascimento}
+                                             onChange={e => setFormState({ ...formState, nascimento: e.target.value })}
+                                          />
+                                       </div>
+                                       <Input label="Idade" readOnly value={formState.idade} className="bg-zinc-100 font-bold text-center text-zinc-500 cursor-not-allowed" />
+                                    </div>
+
+                                    <div className="md:col-span-4">
+                                       <Input name="telefone" label="Telemóvel Pessoal" defaultValue={editingItem?.telefone} required placeholder="9xx xxx xxx" />
+                                    </div>
+
+                                    <div className="md:col-span-4">
+                                       <Input name="telefone_alternativo" label="Telefone Alternativo" defaultValue={(editingItem as any)?.telefone_alternativo} placeholder="Opcional" />
+                                    </div>
                                  </div>
-                                 <Input label="Idade" readOnly value={formState.idade} className="bg-zinc-100 font-bold text-center text-zinc-500 cursor-not-allowed" />
-                              </div>
 
-                              <div className="md:col-span-4">
-                                 <Input name="telefone" label="Telemóvel Pessoal" defaultValue={editingItem?.telefone} required placeholder="9xx xxx xxx" />
-                              </div>
-
-                              <div className="md:col-span-4">
-                                 <Input name="telefone_alternativo" label="Telefone Alternativo" defaultValue={(editingItem as any)?.telefone_alternativo} placeholder="Opcional" />
+                                 <div className="w-full">
+                                    <Input name="morada" label="Bairro / Rua / Referência" defaultValue={editingItem?.morada} required />
+                                 </div>
                               </div>
                            </div>
 
-                           <div className="w-full">
-                              <Input name="morada" label="Bairro / Rua / Referência" defaultValue={editingItem?.morada} required />
+                           {/* Secção de Filiação e Origem (NOVO) */}
+                           <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100 space-y-6">
+                              <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Users size={14} /> Origem & Filiação</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                 <Input name="nome_pai" label="Nome do Pai" value={formState.nome_pai} onChange={e => setFormState({ ...formState, nome_pai: e.target.value })} />
+                                 <Input name="nome_mae" label="Nome da Mãe" value={formState.nome_mae} onChange={e => setFormState({ ...formState, nome_mae: e.target.value })} />
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                 <Select
+                                    name="provincia" label="Naturalidade (Província)"
+                                    value={formState.provincia}
+                                    onChange={e => setFormState({ ...formState, provincia: e.target.value })}
+                                    options={PROVINCIAS.map(p => ({ value: p, label: p }))}
+                                 />
+                                 <Input name="municipio" label="Município" value={formState.municipio} onChange={e => setFormState({ ...formState, municipio: e.target.value })} />
+                              </div>
                            </div>
-                        </div>
-                     </div>
 
-                     {/* Secção de Filiação e Origem (NOVO) */}
-                     <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100 space-y-6">
-                        <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Users size={14} /> Origem & Filiação</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <Input name="nome_pai" label="Nome do Pai" value={formState.nome_pai} onChange={e => setFormState({ ...formState, nome_pai: e.target.value })} />
-                           <Input name="nome_mae" label="Nome da Mãe" value={formState.nome_mae} onChange={e => setFormState({ ...formState, nome_mae: e.target.value })} />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <Select
-                              name="provincia" label="Naturalidade (Província)"
-                              value={formState.provincia}
-                              onChange={e => setFormState({ ...formState, provincia: e.target.value })}
-                              options={PROVINCIAS.map(p => ({ value: p, label: p }))}
-                           />
-                           <Input name="municipio" label="Município" value={formState.municipio} onChange={e => setFormState({ ...formState, municipio: e.target.value })} />
-                        </div>
-                     </div>
+                           {/* Secção Académica e Profissional */}
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                              <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
+                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><GraduationCap size={14} /> Habilitações</h3>
+                                 <Select
+                                    name="escolaridade" label="Nível de Escolaridade"
+                                    value={formState.escolaridade}
+                                    onChange={e => setFormState({ ...formState, escolaridade: e.target.value })}
+                                    options={[{ value: 'Ensino Básico', label: 'Ensino Básico' }, { value: 'Ensino Médio', label: 'Ensino Médio' }, { value: 'Licenciatura', label: 'Licenciatura' }, { value: 'Mestrado', label: 'Mestrado' }]}
+                                 />
+                                 <Input name="formacao" label="Curso / Especialidade" value={formState.curso} onChange={e => setFormState({ ...formState, curso: e.target.value })} />
+                              </div>
 
-                     {/* Secção Académica e Profissional */}
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
-                           <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><GraduationCap size={14} /> Habilitações</h3>
-                           <Select
-                              name="escolaridade" label="Nível de Escolaridade"
-                              value={formState.escolaridade}
-                              onChange={e => setFormState({ ...formState, escolaridade: e.target.value })}
-                              options={[{ value: 'Ensino Básico', label: 'Ensino Básico' }, { value: 'Ensino Médio', label: 'Ensino Médio' }, { value: 'Licenciatura', label: 'Licenciatura' }, { value: 'Mestrado', label: 'Mestrado' }]}
-                           />
-                           <Input name="formacao" label="Curso / Especialidade" value={formState.curso} onChange={e => setFormState({ ...formState, curso: e.target.value })} />
-                        </div>
+                              <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
+                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Briefcase size={14} /> Cargo & Função</h3>
+                                 <Input name="funcao" label="Função a Desempenhar" defaultValue={editingItem?.funcao} required />
+                                 <Input name="departamento" label="Departamento" defaultValue={editingItem?.departamento_id} required />
+                              </div>
+                           </div>
 
-                        <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
-                           <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Briefcase size={14} /> Cargo & Função</h3>
-                           <Input name="funcao" label="Função a Desempenhar" defaultValue={editingItem?.funcao} required />
-                           <Input name="departamento" label="Departamento" defaultValue={editingItem?.departamento_id} required />
-                        </div>
-                     </div>
+                           {/* Contrato e Financeiro */}
+                           <div className="bg-zinc-900 p-10 rounded-[3.5rem] text-white space-y-8 border-l-[12px] border-yellow-500 shadow-2xl">
+                              <h3 className="text-xs font-black text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Wallet size={14} /> Dados Contratuais</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                 <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Estágio', label: 'Estágio Remunerado' }]} />
+                                 <Input name="admissao" label="Data de Início" type="date" defaultValue={editingItem?.data_admissao} required className="bg-zinc-800 border-zinc-700 text-white" />
+                                 <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status || 'ativo'} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'ativo', label: 'Activo' }, { value: 'ferias', label: 'Férias' }, { value: 'inativo', label: 'Inactivo' }, { value: 'rescindido', label: 'Rescindido' }]} />
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4 border-t border-white/10">
+                                 <Input name="salario_base" label="Base (AOA)" type="number" defaultValue={editingItem?.salario_base} className="bg-zinc-800 border-zinc-700 text-white font-black" required />
+                                 <Input name="sub_alim" label="Sub. Alim." type="number" defaultValue={editingItem?.subsidio_alimentacao} className="bg-zinc-800 border-zinc-700 text-white" />
+                                 <Input name="sub_trans" label="Sub. Trans." type="number" defaultValue={editingItem?.subsidio_transporte} className="bg-zinc-800 border-zinc-700 text-white" />
+                                 <Input name="outros_bonus" label="Outros Bónus" type="number" defaultValue={editingItem?.outros_bonus} className="bg-zinc-800 border-zinc-700 text-white border-dashed border-2" />
+                              </div>
+                           </div>
 
-                     {/* Contrato e Financeiro */}
-                     <div className="bg-zinc-900 p-10 rounded-[3.5rem] text-white space-y-8 border-l-[12px] border-yellow-500 shadow-2xl">
-                        <h3 className="text-xs font-black text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Wallet size={14} /> Dados Contratuais</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                           <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Estágio', label: 'Estágio Remunerado' }]} />
-                           <Input name="admissao" label="Data de Início" type="date" defaultValue={editingItem?.data_admissao} required className="bg-zinc-800 border-zinc-700 text-white" />
-                           <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status || 'ativo'} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'ativo', label: 'Activo' }, { value: 'ferias', label: 'Férias' }, { value: 'inativo', label: 'Inactivo' }, { value: 'rescindido', label: 'Rescindido' }]} />
+                           <div className="flex justify-end gap-6 pt-6">
+                              <button type="button" onClick={() => setShowModal(false)} className="px-10 py-5 text-[11px] font-black uppercase text-zinc-400">Cancelar</button>
+                              <button type="submit" className="px-16 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[11px] shadow-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-3">
+                                 <Save size={20} /> {editingItem ? 'Actualizar Ficha' : 'Efectivar Admissão'}
+                              </button>
+                           </div>
+                        </form>
+                     ) : (
+                        <div className="p-10 min-h-[500px]">
+                           {editingItem && <BankAccountsTab funcionarioId={editingItem.id} user={user} />}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4 border-t border-white/10">
-                           <Input name="salario_base" label="Base (AOA)" type="number" defaultValue={editingItem?.salario_base} className="bg-zinc-800 border-zinc-700 text-white font-black" required />
-                           <Input name="sub_alim" label="Sub. Alim." type="number" defaultValue={editingItem?.subsidio_alimentacao} className="bg-zinc-800 border-zinc-700 text-white" />
-                           <Input name="sub_trans" label="Sub. Trans." type="number" defaultValue={editingItem?.subsidio_transporte} className="bg-zinc-800 border-zinc-700 text-white" />
-                           <Input name="outros_bonus" label="Outros Bónus" type="number" defaultValue={editingItem?.outros_bonus} className="bg-zinc-800 border-zinc-700 text-white border-dashed border-2" />
-                        </div>
-                     </div>
-
-                     <div className="flex justify-end gap-6 pt-6">
-                        <button type="button" onClick={() => setShowModal(false)} className="px-10 py-5 text-[11px] font-black uppercase text-zinc-400">Cancelar</button>
-                        <button type="submit" className="px-16 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[11px] shadow-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-3">
-                           <Save size={20} /> {editingItem ? 'Actualizar Ficha' : 'Efectivar Admissão'}
-                        </button>
-                     </div>
-                  </form>
-                  ) : (
-                     <div className="p-10 min-h-[500px]">
-                        {editingItem && <BankAccountsTab funcionarioId={editingItem.id} user={user} />}
-                     </div>
-                  )}
+                     )}
                   </div>
                </div>
             </div>
@@ -1302,11 +1306,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                  <Logo className="h-20" />
                               </div>
                               <div className="space-y-1">
-                                 <div className="text-[9px] font-bold text-zinc-500 uppercase leading-tight">
-                                    <p>NIF: 5000218797</p>
-                                    <p>Massangarala, Benguela - Angola</p>
-                                    <p>Telf: (+244) 929 882 067</p>
-                                    <p>Email: geral.amazingcorporatio@gmail.com</p>
+                                 <div className="text-[10px] font-black text-zinc-800 uppercase leading-tight">
+                                    <p className="text-zinc-900 text-sm mb-1">{corporateInfo?.nome || 'Amazing Corporation'}</p>
+                                    <p>NIF: {corporateInfo?.nif || '5000218797'}</p>
+                                    <p>{corporateInfo?.sede_principal || 'Massangarala, Benguela - Angola'}</p>
+                                    <p>Telf: {corporateInfo?.telefone || '(+244) 929 882 067'}</p>
+                                    <p className="lowercase font-bold text-sky-600">Email: {corporateInfo?.email || 'geral.amazingcorporatio@gmail.com'}</p>
                                  </div>
                               </div>
                            </div>
@@ -1338,20 +1343,24 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                      </div>
 
-                     {/* DADOS DO FUNCIONÁRIO */}
-                     <div className="grid grid-cols-3 gap-8 mb-12 bg-zinc-50 p-8 rounded-3xl border border-zinc-100">
-                        <div>
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Colaborador</p>
-                           <p className="text-base font-black text-zinc-900">{viewingRecibo.nome || '---'}</p>
-                        </div>
-                        <div>
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Cargo / Função</p>
-                           <p className="text-base font-black text-zinc-900">{viewingRecibo.cargo}</p>
-                        </div>
-                        <div>
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nº Bilhete</p>
-                           <p className="text-base font-black text-zinc-900">{viewingRecibo.bilhete || '---'}</p>
-                        </div>
+                     {/* DADOS DO FUNCIONÁRIO - TABELA REFINADA */}
+                     <div className="mb-12 overflow-hidden rounded-2xl border border-zinc-200">
+                        <table className="w-full text-sm text-left">
+                           <thead className="bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest">
+                              <tr>
+                                 <th className="px-6 py-3 border-r border-white/10">Nome do Colaborador</th>
+                                 <th className="px-6 py-3 border-r border-white/10">Cargo / Função</th>
+                                 <th className="px-6 py-3">Nº Bilhete</th>
+                              </tr>
+                           </thead>
+                           <tbody className="bg-zinc-50 font-bold text-zinc-900">
+                              <tr>
+                                 <td className="px-6 py-4 border-r border-zinc-200">{viewingRecibo.nome || '---'}</td>
+                                 <td className="px-6 py-4 border-r border-zinc-200">{viewingRecibo.cargo || '---'}</td>
+                                 <td className="px-6 py-4">{viewingRecibo.bilhete || '---'}</td>
+                              </tr>
+                           </tbody>
+                        </table>
                      </div>
 
                      {/* TABELA DE RENDIMENTOS E DESCONTOS */}
