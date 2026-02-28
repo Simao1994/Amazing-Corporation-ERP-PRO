@@ -21,7 +21,7 @@ TO authenticated
 USING (true);
 
 CREATE POLICY "Apenas admin pode modificar cargos" 
-ON public.app_roles ALL 
+ON public.app_roles FOR ALL 
 TO authenticated 
 USING (
     EXISTS (
