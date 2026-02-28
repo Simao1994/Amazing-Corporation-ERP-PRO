@@ -187,12 +187,17 @@ export interface ReciboSalarial {
   subsidios: number; // For backward compatibility
   subsidio_alimentacao: number;
   subsidio_transporte: number;
+  subsidio_ferias: number;
+  subsidio_natal: number;
   horas_extras_valor: number;
   bonus_premios: number;
+  total_proventos: number;
   faltas_desconto: number;
   inss_trabalhador: number;
   irt: number;
-  adiantamentos: number;
+  adiantamentos: number; // For backward compatibility/loans
+  emprestimos: number;
+  outros_descontos: number;
   bruto: number;
   liquido: number;
   data_emissao: string;

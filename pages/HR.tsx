@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useMemo, useEffect } from 'react';
 import {
    Users, UserPlus, Search, Edit, Trash2, Camera, Printer, X, Save,
@@ -30,12 +30,12 @@ import BankAccountsTab from '../components/hr/BankAccountsTab';
 import ContasBancariasPage from './ContasBancariasPage';
 import VagasAdminTab from '../components/hr/VagasAdminTab';
 
-// --- CONFIGURAÇÃO DE HORÁRIO E REGRAS ---
+// --- CONFIGURAÇÃO DE HORÃRIO E REGRAS ---
 const WORK_RULES = {
    startHour: 8, // 08:00
    startMinute: 0,
    endHour: 17, // 17:00
-   toleranceMinutes: 15, // Tolerância de atraso
+   toleranceMinutes: 15, // TolerÃ¢ncia de atraso
    dailyHours: 8,
    overtimeRateNormal: 1.5, // 150% Dias úteis
    overtimeRateSpecial: 2.0 // 200% Fim de semana/Feriados
@@ -51,7 +51,7 @@ const PROVINCIAS = [
    'Namibe', 'Uíge', 'Zaire'
 ];
 
-// --- MOTOR DE CÁLCULO FISCAL ANGOLANO (IRT 2024 - SIMPLIFICADO) ---
+// --- MOTOR DE CÃLCULO FISCAL ANGOLANO (IRT 2024 - SIMPLIFICADO) ---
 const calculateIRT = (baseTributavel: number): number => {
    if (baseTributavel <= 100000) return 0;
    if (baseTributavel <= 150000) return (baseTributavel - 100000) * 0.10;
@@ -147,7 +147,11 @@ interface PayrollInput {
    faltas: number; // em dias
    bonus: number; // valor monetário
    premios: number; // valor monetário
-   adiantamento: number; // valor monetário
+   adiantamento: number; // valor monetário (loans)
+   subFerias?: number;
+   subNatal?: number;
+   emprestimos?: number;
+   outrosDesc?: number;
 }
 
 interface HRPageProps {
@@ -165,10 +169,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
    const [printingPass, setPrintingPass] = useState<Funcionario | null>(null);
    const [viewingRecibo, setViewingRecibo] = useState<ReciboSalarial | null>(null);
+   const [showPayrollSheetModal, setShowPayrollSheetModal] = useState(false);
    const [historyFuncionario, setHistoryFuncionario] = useState<Funcionario | null>(null);
    const [modalActiveTab, setModalActiveTab] = useState<'geral' | 'contas'>('geral');
 
-   // Estados locais do formulário para controlo dinâmico
+   // Estados locais do formulário para controlo dinÃ¢mico
    const [formState, setFormState] = useState({
       nascimento: '',
       idade: 0,
@@ -395,18 +400,18 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       }
    };
 
-   // --- ATUALIZAÇÃO DE VARIÁVEIS DE FOLHA ---
+   // --- ATUALIZAÇÃO DE VARIÃVEIS DE FOLHA ---
    const updatePayrollInput = (id: string, field: keyof PayrollInput, value: number) => {
       setPayrollInputs(prev => ({
          ...prev,
          [id]: {
-            ...(prev[id] || { horasExtras: 0, faltas: 0, bonus: 0, adiantamento: 0, premios: 0 }),
+            ...(prev[id] || { horasExtras: 0, faltas: 0, bonus: 0, adiantamento: 0, premios: 0, subFerias: 0, subNatal: 0, emprestimos: 0, outrosDesc: 0 }),
             [field]: value
          }
       }));
    };
 
-   // --- AGREGAÇÃO AUTOMÁTICA DE DADOS DE PONTO PARA FOLHA ---
+   // --- AGREGAÇÃO AUTOMÃTICA DE DADOS DE PONTO PARA FOLHA ---
    const getAutoPayrollData = (funcId: string): PayrollInput => {
       if (payrollInputs[funcId]) return payrollInputs[funcId];
 
@@ -428,11 +433,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          faltas: 0,
          bonus: 0,
          adiantamento: 0,
-         premios: 0
+         premios: 0,
+         subFerias: 0,
+         subNatal: 0,
+         emprestimos: 0,
+         outrosDesc: 0
       };
    };
 
-   // --- CÁLCULO DE FOLHA INDIVIDUAL (MOTOR DE CÁLCULO) ---
+   // --- CÃLCULO DE FOLHA INDIVIDUAL (MOTOR DE CÃLCULO) ---
    const calculatePayrollForEmployee = (f: Funcionario) => {
       const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
 
@@ -449,32 +458,38 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       const valorHorasExtras = inputs.horasExtras * (valorHora * WORK_RULES.overtimeRateNormal);
       const subAlim = Number(f.subsidio_alimentacao) || 0;
       const subTrans = Number(f.subsidio_transporte) || 0;
-      const subsidiosTotal = subAlim + subTrans;
+      const subFerias = Number(inputs.subFerias) || 0;
+      const subNatal = Number(inputs.subNatal) || 0;
+      const subsidiosTotal = subAlim + subTrans + subFerias + subNatal;
       const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0) + (Number(f.outros_bonus) || 0);
 
-      const bruto = base + valorHorasExtras + premiosBonus + subsidiosTotal;
+      // Total Proventos (Salário Base + Horas Extras + Subsídios + Bónus)
+      const totalProventos = base + valorHorasExtras + subsidiosTotal + premiosBonus;
+      const bruto = totalProventos; // Salário Bruto = Total Proventos
 
       // INSS (Base: Salário Base + Horas Extras + Bónus)
       const baseINSS = base + valorHorasExtras + premiosBonus;
       const inss = baseINSS * INSS_WORKER_RATE;
 
-      // IRT (Base: Bruto - INSS - Subsídios Isentos)
-      // Nota: Subsídios são isentos até EXEMPT_ALLOWANCE_LIMIT cada
+      // IRT (Base: Bruto - INSS - IsençÃµes)
       const exemptSubAlim = Math.min(subAlim, EXEMPT_ALLOWANCE_LIMIT);
       const exemptSubTrans = Math.min(subTrans, EXEMPT_ALLOWANCE_LIMIT);
       const baseIRT = bruto - inss - exemptSubAlim - exemptSubTrans;
 
       const irt = calculateIRT(baseIRT);
 
-      // Descontos Adicionais
+      // Descontos
       const descontoFaltas = (inputs.faltas || 0) * valorDia;
-      const totalDescontos = inss + irt + descontoFaltas + (inputs.adiantamento || 0);
+      const emprestimos = (inputs.emprestimos || 0) + (inputs.adiantamento || 0);
+      const outrosDesc = (inputs.outrosDesc || 0);
+      const totalDescontos = inss + irt + descontoFaltas + emprestimos + outrosDesc;
 
       const liquido = bruto - totalDescontos;
 
       return {
          bruto, inss, irt, descontoFaltas, totalDescontos, liquido,
-         valorHorasExtras, premiosBonus, subsidiosTotal, subAlim, subTrans, inputs
+         valorHorasExtras, premiosBonus, subsidiosTotal, subAlim, subTrans, subFerias, subNatal,
+         totalProventos, emprestimos, outrosDesc, inputs
       };
    };
 
@@ -516,12 +531,17 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                subsidios: Number((calc.subsidiosTotal || 0).toFixed(2)),
                subsidio_alimentacao: Number((calc.subAlim || 0).toFixed(2)),
                subsidio_transporte: Number((calc.subTrans || 0).toFixed(2)),
+               subsidio_ferias: Number((calc.subFerias || 0).toFixed(2)),
+               subsidio_natal: Number((calc.subNatal || 0).toFixed(2)),
                horas_extras_valor: Number((calc.valorHorasExtras || 0).toFixed(2)),
                bonus_premios: Number((calc.premiosBonus || 0).toFixed(2)),
+               total_proventos: Number((calc.totalProventos || 0).toFixed(2)),
                inss_trabalhador: Number((calc.inss || 0).toFixed(2)),
                irt: Number((calc.irt || 0).toFixed(2)),
                faltas_desconto: Number((calc.descontoFaltas || 0).toFixed(2)),
-               adiantamentos: Number((calc.inputs.adiantamento || 0).toFixed(2)),
+               adiantamentos: Number((calc.emprestimos || 0).toFixed(2)),
+               emprestimos: Number((calc.emprestimos || 0).toFixed(2)),
+               outros_descontos: Number((calc.outrosDesc || 0).toFixed(2)),
                bruto: Number((calc.bruto || 0).toFixed(2)),
                liquido: Number((calc.liquido || 0).toFixed(2)),
                data_emissao: new Date().toISOString()
@@ -597,7 +617,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          { name: 'Em Curso', valor: metaStats.pending, fill: '#eab308' }
       ];
 
-      // 4. Notificações de Contratos a Expirar (Próximos 30 dias)
+      // 4. NotificaçÃµes de Contratos a Expirar (Próximos 30 dias)
       const proximosVencimentos = funcionarios.filter(f => {
          if (f.tipo_contrato !== 'Determinado' && f.tipo_contrato !== 'Estágio') return false;
          if (!f.data_admissao || !f.tempo_contrato) return false;
@@ -725,10 +745,10 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          </div>
 
-         {/* DASHBOARD ANALÍTICO */}
+         {/* DASHBOARD ANALÃTICO */}
          {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4">
-               {/* Notificações e Alertas */}
+               {/* NotificaçÃµes e Alertas */}
                {analyticsData.proximosVencimentos.length > 0 && (
                   <div className="bg-red-50 border border-red-100 p-8 rounded-[2.5rem] flex items-center justify-between shadow-sm animate-pulse">
                      <div className="flex items-center gap-6">
@@ -848,7 +868,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <table className="w-full text-left min-w-[600px]">
                         <thead>
                            <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                              <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Função / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Acções</th>
+                              <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Função / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">AcçÃµes</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50 text-sm">
@@ -901,27 +921,36 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <p className="text-zinc-400 font-medium">Ciclo: {currentMonthName} {currentFiscalYear}</p>
                      <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest font-bold">Introduza variáveis antes de processar</p>
                   </div>
-                  <button
-                     onClick={handleProcessPayroll}
-                     disabled={isProcessing}
-                     className="relative z-10 px-12 py-6 bg-yellow-500 text-zinc-900 rounded-[2rem] font-black uppercase text-xs hover:bg-white transition-all shadow-2xl flex items-center gap-3 disabled:opacity-50 active:scale-95"
-                  >
-                     {isProcessing ? <RefreshCw className="animate-spin" /> : <Calculator size={24} />} {isProcessing ? 'Calculando...' : 'Processar Folha Definitiva'}
-                  </button>
+                  <div className="flex flex-col md:flex-row gap-4 relative z-10">
+                     <button
+                        onClick={handleProcessPayroll}
+                        disabled={isProcessing}
+                        className="px-8 py-5 bg-yellow-500 text-zinc-900 rounded-[2rem] font-black uppercase text-[10px] hover:bg-white transition-all shadow-2xl flex items-center gap-3 disabled:opacity-50 active:scale-95"
+                     >
+                        {isProcessing ? <RefreshCw className="animate-spin" size={20} /> : <Calculator size={20} />} {isProcessing ? 'Calculando...' : 'Processar Folha'}
+                     </button>
+                     <button
+                        onClick={() => setShowPayrollSheetModal(true)}
+                        className="px-8 py-5 bg-white/10 text-white border border-white/20 rounded-[2rem] font-black uppercase text-[10px] hover:bg-white hover:text-zinc-900 transition-all flex items-center gap-3 shadow-xl"
+                     >
+                        <FileText size={20} /> Imprimir Folha Geral
+                     </button>
+                  </div>
                </div>
 
-               {/* WORKSPACE DE VARIÁVEIS MENSAIS */}
+               {/* WORKSPACE DE VARIÃVEIS MENSAIS */}
                <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
                   <table className="w-full text-left">
                      <thead>
                         <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                            <th className="px-6 py-4">Colaborador</th>
                            <th className="px-6 py-4">Salário Base</th>
-                           <th className="px-6 py-4">H. Extras (Horas)</th>
-                           <th className="px-6 py-4">Faltas (Dias)</th>
-                           <th className="px-6 py-4">Subsídios (Kz)</th>
-                           <th className="px-6 py-4">Bónus/Prémios (Kz)</th>
-                           <th className="px-6 py-4">Adiantamento (Kz)</th>
+                           <th className="px-6 py-4 text-center">H. Extras</th>
+                           <th className="px-6 py-4 text-center">Faltas</th>
+                           <th className="px-6 py-4">Subsídios (Alim/Trans)</th>
+                           <th className="px-6 py-4">Subs. Extras (Fér/Nat)</th>
+                           <th className="px-6 py-4">Bónus/Prémios</th>
+                           <th className="px-6 py-4">Emprést/Desc</th>
                            <th className="px-6 py-4 text-right">Líquido Est.</th>
                         </tr>
                      </thead>
@@ -947,26 +976,49 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                     />
                                  </td>
                                  <td className="px-6 py-4">
-                                    <div className="text-[10px] font-bold text-zinc-500">
-                                       Alim: {formatAOA(f.subsidio_alimentacao)}<br />
-                                       Trans: {formatAOA(f.subsidio_transporte)}
+                                    <div className="flex flex-col gap-1">
+                                       <input type="number" placeholder="Alim" className="hidden" />
+                                       <div className="text-[10px] font-bold text-zinc-500">
+                                          A: {formatAOA(f.subsidio_alimentacao)} | T: {formatAOA(f.subsidio_transporte)}
+                                       </div>
                                     </div>
                                  </td>
                                  <td className="px-6 py-4">
                                     <div className="flex flex-col gap-1">
-                                       <div className="text-[9px] text-zinc-400 uppercase font-black">Variável / Fixo</div>
+                                       <div className="flex items-center gap-1">
+                                          <span className="text-[8px] font-black text-zinc-400">Fér:</span>
+                                          <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold"
+                                             value={inputs.subFerias} onChange={e => updatePayrollInput(f.id, 'subFerias', Number(e.target.value))} />
+                                       </div>
+                                       <div className="flex items-center gap-1">
+                                          <span className="text-[8px] font-black text-zinc-400">Nat:</span>
+                                          <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold"
+                                             value={inputs.subNatal} onChange={e => updatePayrollInput(f.id, 'subNatal', Number(e.target.value))} />
+                                       </div>
+                                    </div>
+                                 </td>
+                                 <td className="px-6 py-4">
+                                    <div className="flex flex-col gap-1">
                                        <input type="number" min="0" className="w-24 bg-zinc-100 border-none rounded p-1 text-right font-bold text-green-600"
                                           value={inputs.bonus}
                                           onChange={e => updatePayrollInput(f.id, 'bonus', Number(e.target.value))}
                                        />
-                                       <div className="text-[10px] font-bold text-sky-600">Base: {formatAOA(f.outros_bonus)}</div>
+                                       <div className="text-[9px] font-bold text-sky-600">Base: {formatAOA(f.outros_bonus)}</div>
                                     </div>
                                  </td>
                                  <td className="px-6 py-4">
-                                    <input type="number" min="0" className="w-24 bg-zinc-100 border-none rounded p-1 text-right font-bold text-orange-600"
-                                       value={inputs.adiantamento}
-                                       onChange={e => updatePayrollInput(f.id, 'adiantamento', Number(e.target.value))}
-                                    />
+                                    <div className="flex flex-col gap-1">
+                                       <div className="flex items-center gap-1">
+                                          <span className="text-[8px] font-black text-zinc-400">Emp:</span>
+                                          <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold text-orange-600"
+                                             value={inputs.emprestimos} onChange={e => updatePayrollInput(f.id, 'emprestimos', Number(e.target.value))} />
+                                       </div>
+                                       <div className="flex items-center gap-1">
+                                          <span className="text-[8px] font-black text-zinc-400">Out:</span>
+                                          <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold text-red-400"
+                                             value={inputs.outrosDesc} onChange={e => updatePayrollInput(f.id, 'outrosDesc', Number(e.target.value))} />
+                                       </div>
+                                    </div>
                                  </td>
                                  <td className="px-6 py-4 text-right font-black text-zinc-900 text-sm">
                                     {formatAOA(preview.liquido)}
@@ -1088,7 +1140,125 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-         {/* PASSES PVC */}
+         {/* MODAL: FOLHA DE SALÁRIO GERAL (TABELA) */}
+         {showPayrollSheetModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/90 backdrop-blur-xl p-4 md:p-10 print:p-0 print:bg-white print:relative print:block">
+               <div className="bg-white w-full h-full max-w-[95vw] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl print:rounded-none print:shadow-none print:max-w-none">
+                  <style>{`
+                     @media print {
+                        @page { size: landscape; margin: 1cm; }
+                        body * { visibility: hidden; }
+                        #payroll-sheet-print, #payroll-sheet-print * { visibility: visible; }
+                        #payroll-sheet-print { position: absolute; left: 0; top: 0; width: 100%; }
+                        .print-hidden { display: none !important; }
+                     }
+                     .payroll-table {
+                        font-family: "Times New Roman", Times, serif;
+                        font-size: 10pt;
+                        width: 100%;
+                        border-collapse: collapse;
+                     }
+                     .payroll-table th, .payroll-table td {
+                        border: 1px solid black;
+                        padding: 4px 6px;
+                        text-align: center;
+                     }
+                     .payroll-table th {
+                        font-weight: bold;
+                        background-color: #f3f4f6;
+                     }
+                     .highlight-bold { font-weight: bold; }
+                  `}</style>
+
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center print-hidden">
+                     <div>
+                        <h2 className="text-2xl font-black uppercase text-zinc-900">Folha de Salário - {currentMonthName} {currentFiscalYear}</h2>
+                        <p className="text-zinc-500 font-medium">Relatório Geral de Processamento</p>
+                     </div>
+                     <div className="flex gap-3">
+                        <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 transition-all flex items-center gap-2 font-bold uppercase text-[10px]">
+                           <Printer size={20} /> Imprimir Agora
+                        </button>
+                        <button onClick={() => setShowPayrollSheetModal(false)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all">
+                           <X size={24} />
+                        </button>
+                     </div>
+                  </div>
+
+                  <div className="flex-1 overflow-auto p-8 print:p-0" id="payroll-sheet-print">
+                     <div className="mb-6 text-center">
+                        <h1 className="text-xl font-bold uppercase" style={{ fontFamily: 'Times New Roman' }}>Folha de Salário - {corporateInfo?.name || 'Amazing Corporation'}</h1>
+                        <p className="text-sm italic" style={{ fontFamily: 'Times New Roman' }}>Período: {currentMonthName} de {currentFiscalYear}</p>
+                     </div>
+
+                     <table className="payroll-table">
+                        <thead>
+                           <tr>
+                              <th>Nº</th>
+                              <th>Nome</th>
+                              <th>Cargo</th>
+                              <th>Salário Base</th>
+                              <th>Horas Extras</th>
+                              <th>Subs. Alimentação</th>
+                              <th>Subs. Transporte</th>
+                              <th>Subs. Férias</th>
+                              <th>Subs. Natal</th>
+                              <th>Bónus</th>
+                              <th>Total Proventos</th>
+                              <th>INSS</th>
+                              <th>IRT</th>
+                              <th>Faltas</th>
+                              <th>Empréstimos</th>
+                              <th>Outros Desc.</th>
+                              <th>Total Descontos</th>
+                              <th className="highlight-bold">Salário Bruto</th>
+                              <th className="highlight-bold">Salário Líquido</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {funcionarios.filter(f => f.status === 'ativo').map((f, index) => {
+                              const calc = calculatePayrollForEmployee(f);
+                              const proventosTotal = calc.totalProventos;
+                              const descontosTotal = calc.totalDescontos;
+
+                              return (
+                                 <tr key={f.id}>
+                                    <td>{index + 1}</td>
+                                    <td style={{ textAlign: 'left' }}>{f.nome}</td>
+                                    <td style={{ textAlign: 'left' }}>{f.funcao}</td>
+                                    <td>{formatAOA(f.salario_base)}</td>
+                                    <td>{formatAOA(calc.valorHorasExtras)}</td>
+                                    <td>{formatAOA(calc.subAlim)}</td>
+                                    <td>{formatAOA(calc.subTrans)}</td>
+                                    <td>{formatAOA(calc.subFerias)}</td>
+                                    <td>{formatAOA(calc.subNatal)}</td>
+                                    <td>{formatAOA(calc.premiosBonus)}</td>
+                                    <td className="highlight-bold">{formatAOA(proventosTotal)}</td>
+                                    <td>{formatAOA(calc.inss)}</td>
+                                    <td>{formatAOA(calc.irt)}</td>
+                                    <td>{formatAOA(calc.descontoFaltas)}</td>
+                                    <td>{formatAOA(calc.emprestimos)}</td>
+                                    <td>{formatAOA(calc.outrosDesc)}</td>
+                                    <td className="highlight-bold">{formatAOA(descontosTotal)}</td>
+                                    <td className="highlight-bold">{formatAOA(calc.bruto)}</td>
+                                    <td className="highlight-bold bg-yellow-50">{formatAOA(calc.liquido)}</td>
+                                 </tr>
+                              );
+                           })}
+                        </tbody>
+                     </table>
+
+                     <div className="mt-12 text-[10pt] italic" style={{ fontFamily: 'Times New Roman' }}>
+                        <p><strong>Total Proventos:</strong> Salário Base + Horas Extras + Subsídios + Bónus</p>
+                        <p><strong>Salário Bruto:</strong> Total Proventos (antes dos descontos)</p>
+                        <p><strong>Total Descontos:</strong> INSS + IRT + Faltas + Empréstimos + Outros</p>
+                        <p><strong>Salário Líquido:</strong> Salário Bruto - Total Descontos</p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
+
          {activeTab === 'passes' && (
             <div className="space-y-6 animate-in slide-in-from-bottom-4">
                <div className="bg-zinc-50 p-10 rounded-[3rem] border border-sky-100 flex items-center justify-between"><div><h2 className="text-2xl font-black text-zinc-900 uppercase">Identificação Corporativa</h2><p className="text-zinc-500 text-sm font-medium">Emissão e gestão de passes PVC.</p></div><ScanBarcode size={32} className="text-yellow-600" /></div>
@@ -1116,7 +1286,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-         {/* CONTAS BANCÁRIAS (GLOBAL) */}
+         {/* CONTAS BANCÃRIAS (GLOBAL) */}
          {activeTab === 'contas' && (
             <div className="animate-in slide-in-from-bottom-4">
                <ContasBancariasPage user={user} inAppTab={true} />
@@ -1130,7 +1300,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-         {/* MODAL CADASTRO FUNCIONÁRIO (MANTIDO) */}
+         {/* MODAL CADASTRO FUNCIONÃRIO (MANTIDO) */}
          {showModal && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
                <div className="bg-white w-full max-w-6xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[95vh]">
@@ -1230,7 +1400,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            {/* Secção Académica e Profissional */}
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                               <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
-                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><GraduationCap size={14} /> Habilitações</h3>
+                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><GraduationCap size={14} /> HabilitaçÃµes</h3>
                                  <Select
                                     name="escolaridade" label="Nível de Escolaridade"
                                     value={formState.escolaridade}
@@ -1345,7 +1515,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   </div>
 
                   <div className="flex-1 px-16 py-8 print:px-12">
-                     {/* LINHA DE TÍTULO */}
+                     {/* LINHA DE TÃTULO */}
                      <div className="border-b-[4px] border-zinc-900 pb-8 mb-8 flex justify-between items-end">
                         <div>
                            <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Folha de Salário</h2>
@@ -1357,7 +1527,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                      </div>
 
-                     {/* DADOS DO FUNCIONÁRIO - TABELA REFINADA */}
+                     {/* DADOS DO FUNCIONÃRIO - TABELA REFINADA */}
                      <div className="mb-12 overflow-hidden rounded-2xl border border-zinc-200">
                         <table className="w-full text-sm text-left">
                            <thead className="bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest">
