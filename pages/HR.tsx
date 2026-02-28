@@ -1577,28 +1577,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)' }}
                      ></div>
 
-                     <div className="absolute top-0 left-12 p-8 z-10 w-full">
-                        <div className="flex justify-between items-start">
-                           <div className="flex items-center gap-5">
-                              <div className="w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-2">
-                                 <Logo className="h-20" />
-                              </div>
-                              <div className="space-y-1">
-                                 <div className="text-[10px] font-black text-zinc-800 uppercase leading-tight">
-                                    <p className="text-zinc-900 text-sm mb-1">{corporateInfo?.nome || 'Amazing Corporation'}</p>
-                                    <p>NIF: {corporateInfo?.nif || '5000218797'}</p>
-                                    <p>{corporateInfo?.sede_principal || 'Massangarala, Benguela - Angola'}</p>
-                                    <p>Telf: {corporateInfo?.telefone || '(+244) 929 882 067'}</p>
-                                    <p className="lowercase font-bold text-sky-600">Email: {corporateInfo?.email || 'geral.amazingcorporatio@gmail.com'}</p>
-                                 </div>
-                              </div>
-                           </div>
-                           <div className="text-right pr-16 pt-2">
-                              <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10">
-                                 <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Recibo de Salário</p>
-                                 <p className="text-[8px] font-bold text-white/50 uppercase mt-1">Documento Interno # {viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
-                              </div>
-                           </div>
+                     {/* DESIGN GEOMÉTRICO - APENAS VISUAL */}
+                     <div className="absolute top-0 right-12 p-8 z-10 w-full text-right">
+                        <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-xl border border-white/10 inline-block">
+                           <p className="text-[12px] font-black text-white uppercase tracking-[0.3em]">Recibo Oficial</p>
+                           <p className="text-[9px] font-bold text-white/40 uppercase mt-1 tracking-widest italic">Amazing Corp Cloud • ERP</p>
                         </div>
                      </div>
                   </div>
@@ -1610,14 +1593,33 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                   <div className="flex-1 px-16 py-8 print:px-12">
                      {/* LINHA DE TÃTULO */}
-                     <div className="border-b-[4px] border-zinc-900 pb-8 mb-8 flex justify-between items-end">
-                        <div>
-                           <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight">Folha de Salário</h2>
-                           <p className="text-sm font-bold text-zinc-400 mt-1 uppercase">Período: {viewingRecibo.mes} {viewingRecibo.ano}</p>
+                     <div className="border-b-[4px] border-zinc-900 pb-10 mb-8 grid grid-cols-3 items-center">
+                        {/* ESQUERDA: LOGO + INFO ACTUALIZADA (NIF: 50002181797) */}
+                        <div className="flex items-center gap-5">
+                           <div className="w-20 h-20 bg-zinc-50 rounded-2xl flex items-center justify-center p-2 border border-zinc-100 shadow-sm print:border-none">
+                              <Logo className="h-16" />
+                           </div>
+                           <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400">
+                              <span className="text-zinc-900 font-black text-[11px] mb-1">NIF: 50002181797</span>
+                              <span>Endereço: Benguela/Angola</span>
+                              <span>Bairro Massangarala</span>
+                              <span className="text-zinc-700 mt-1">Contacto: +244 931 116 696</span>
+                              <span className="lowercase text-sky-600 font-bold">Email: geral.amazingcorporation@gmail.com</span>
+                           </div>
                         </div>
+
+                        {/* CENTRO: TÍTULO E PERÍODO */}
+                        <div className="text-center">
+                           <h2 className="text-4xl font-black text-zinc-900 uppercase tracking-tighter leading-none">Folha de Salário</h2>
+                           <div className="mt-3 inline-block bg-zinc-900 text-white px-4 py-1.5 rounded-full">
+                              <p className="text-[11px] font-black uppercase tracking-widest">Período: {viewingRecibo.mes} {viewingRecibo.ano}</p>
+                           </div>
+                        </div>
+
+                        {/* DIREITA: Nº DOCUMENTO */}
                         <div className="text-right">
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nº Documento</p>
-                           <p className="text-xl font-black text-zinc-900 tabular-nums">{viewingRecibo.numero_documento || `#${viewingRecibo.id.split('-').pop()}`}</p>
+                           <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Nº Documento</p>
+                           <p className="text-2xl font-black text-zinc-900 tabular-nums uppercase">#{viewingRecibo.numero_documento || viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
                         </div>
                      </div>
 
