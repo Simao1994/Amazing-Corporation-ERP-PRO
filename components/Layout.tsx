@@ -83,9 +83,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     setMessages(allMessages);
 
     // Chat Contacts
-      const mockContacts: ChatContact[] = [
-        { id: 'admin_sys', nome: 'Eng. Simão Puca', role: 'Suporte TI', avatar: '', online: true, lastSeen: new Date().toISOString(), unreadCount: 0 },
-      ];
+    const mockContacts: ChatContact[] = [
+      { id: 'admin_sys', nome: 'Eng. Simão Puca', role: 'Suporte TI', avatar: '', online: true, lastSeen: new Date().toISOString(), unreadCount: 0 },
+    ];
     setContacts(mockContacts);
 
     // Notifications Load (Simulação inicial se vazio)
@@ -104,7 +104,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   }, []);
 
   const [rolesLoaded, setRolesLoaded] = useState(false);
-  
+
   // --- DYNAMIC ROLES FETCH ---
   useEffect(() => {
     const fetchDynamicRoles = async () => {
@@ -281,7 +281,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <header className="h-16 lg:h-20 bg-white/70 backdrop-blur-md border-b border-sky-200 px-4 lg:px-8 flex items-center justify-between z-10 relative">
+        <header className="h-16 lg:h-20 bg-[#020617] border-b border-white/5 px-4 lg:px-8 flex items-center justify-between z-10 relative shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-3">
             {/* Hamburger — mobile only */}
             <button
@@ -292,18 +292,23 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
               <Menu size={22} />
             </button>
             {/* Desktop sidebar toggle */}
-            <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="hidden lg:flex p-2 hover:bg-sky-100 rounded-lg text-slate-600"><Search size={20} /></button>
-            <div className="hidden md:flex flex-col"><span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Amazing Corp ERP</span></div>
+            <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="hidden lg:flex p-2 hover:bg-white/10 rounded-lg text-slate-400 transition-all"><Search size={20} /></button>
+            <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10 ml-2">
+              <div className="scale-90 filter brightness-0 invert opacity-90">
+                <Logo />
+              </div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-sans">Enterprise</span>
+            </div>
           </div>
           <div className="flex items-center gap-6">
             {/* NOTIFICATION BELL */}
             <div className="relative">
               <button
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
-                className={`text-slate-500 hover:text-purple-600 relative p-2 hover:bg-sky-50 rounded-full transition-all ${isNotifOpen ? 'bg-sky-100 text-purple-600' : ''}`}
+                className={`text-slate-400 hover:text-white relative p-2.5 hover:bg-white/10 rounded-xl transition-all ${isNotifOpen ? 'bg-white/20 text-white' : ''}`}
               >
                 <Bell size={22} />
-                {unreadCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>}
+                {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#020617] animate-pulse"></span>}
               </button>
 
               {/* NOTIFICATION DROPDOWN */}
