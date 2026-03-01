@@ -9,7 +9,7 @@ interface AutoLogoutProps {
   onLogout: () => Promise<void>;
 }
 
-const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutos
+const INACTIVITY_LIMIT = 60 * 60 * 1000; // 60 minutos (Aumentado de 5 para 60)
 const WARNING_THRESHOLD = 30 * 1000; // 30 segundos
 const CHECK_INTERVAL = 1000; // 1 segundo para o temporizador visual
 
@@ -44,7 +44,9 @@ const AutoLogout: React.FC<AutoLogoutProps> = ({ user, onLogout }) => {
       'keydown',
       'scroll',
       'touchstart',
-      'click'
+      'click',
+      'wheel',
+      'pointermove'
     ];
 
     const handleActivity = () => resetTimer();
@@ -115,7 +117,7 @@ const AutoLogout: React.FC<AutoLogoutProps> = ({ user, onLogout }) => {
               <Clock size={20} className="text-yellow-500" />
               CONTINUAR TRABALHO
             </button>
-            
+
             <button
               onClick={handleLogout}
               className="w-full bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-100 transition-all flex items-center justify-center gap-2"

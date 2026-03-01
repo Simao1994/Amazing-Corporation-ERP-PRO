@@ -128,10 +128,25 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    AmazingStorage.logAction('Logout', 'Sessão', `Utilizador encerrou sessão`);
-    await supabase.auth.signOut();
-    setUser(null);
-    localStorage.removeItem(STORAGE_KEYS.USER);
+    try {
+      AmazingStorage.logAction('Logout', 'Sessão', `Utilizador encerrou sessão`);
+      // Use a timeout for signOut to prevent hanging
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+
+      await Promise.race([signOutPromise, timeoutPromise]).catch(err => console.warn("SignOut error or timeout:", err));
+    } catch (error) {
+      console.error("Logout process error:", error);
+    } finally {
+      // ALWAYS clear local state regardless of server outcome
+      setUser(null);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      // Force clear specific Supabase keys just in case
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('auth-token')) localStorage.removeItem(key);
+      });
+      showToast("Sessão encerrada.", "info");
+    }
   };
 
   if (isInitializing) {

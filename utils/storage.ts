@@ -96,7 +96,15 @@ export const AmazingStorage = {
     } catch (err) { }
   },
 
-  loadAllFromCloud: async () => {
+  lastLoadAll: 0,
+  loadAllFromCloud: async (force = false) => {
+    const now = Date.now();
+    // Cooldown: only sync everything once every 10 minutes unless forced
+    if (!force && now - AmazingStorage.lastLoadAll < 10 * 60 * 1000) {
+      console.log('Skipping cloud sync (cooldown active)');
+      return true;
+    }
+
     try {
       const { data, error } = await supabase.from('erp_data').select('key_name, json_data');
       if (error) throw error;
@@ -105,6 +113,7 @@ export const AmazingStorage = {
         data.forEach((row: any) => {
           localStorage.setItem(row.key_name, JSON.stringify(row.json_data));
         });
+        AmazingStorage.lastLoadAll = now;
       }
       return true;
     } catch (err) {
