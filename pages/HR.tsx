@@ -1932,7 +1932,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </button>
                      </div>
 
-                     <div className="flex-1 pt-[2cm] px-16 pb-32 print:px-12 flex flex-col relative">
+                     <div className="flex-1 pt-[3cm] px-16 pb-32 print:px-12 flex flex-col relative">
                         {/* LINHA DE TÍTULO - REESTRUTURADA PARA MÁXIMA VISIBILIDADE */}
                         <div className="border-b-[4px] border-zinc-900 pb-6 mb-8 flex justify-between items-center">
                            {/* ESQUERDA: LOGO E INFO (MAIS ROBUSTO) */}
@@ -2103,7 +2103,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)', WebkitPrintColorAdjust: 'exact' }}
                         ></div>
 
-                        <div className='absolute bottom-10 right-12 z-10 flex flex-col gap-1 items-end text-right'>
+                        <div className='absolute bottom-6 right-12 z-10 flex flex-col gap-1 items-end text-right'>
                            <div className='flex items-center gap-6'>
                               <p className='text-[10px] font-bold text-white uppercase tracking-widest'>Pág. 01 / 01</p>
                               <div className='h-4 w-[1px] bg-white/20'></div>
