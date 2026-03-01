@@ -294,10 +294,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             {/* Desktop sidebar toggle */}
             <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="hidden lg:flex p-2 hover:bg-white/10 rounded-lg text-slate-400 transition-all"><Search size={20} /></button>
             <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10 ml-2">
-              <div className="scale-75 filter brightness-0 invert opacity-90 origin-left">
-                <Logo className="h-7" />
+              <div className="scale-110 filter brightness-0 invert opacity-90 origin-left">
+                <Logo className="h-10" />
               </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] font-sans">Enterprise</span>
             </div>
           </div>
           <div className="flex items-center gap-6">
