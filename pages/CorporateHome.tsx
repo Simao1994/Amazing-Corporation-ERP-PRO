@@ -62,6 +62,7 @@ const PublicNewsGrid: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPublicPosts = async () => {
@@ -232,8 +233,16 @@ const PublicNewsGrid: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="h-[400px] w-full overflow-hidden">
-                    <img src={selectedPost.imagem_url} className="w-full h-full object-cover" alt={selectedPost.titulo} />
+                  <div className="h-[400px] w-full overflow-hidden cursor-zoom-in">
+                    <img
+                      src={selectedPost.imagem_url}
+                      className="w-full h-full object-cover"
+                      alt={selectedPost.titulo}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewingImage(selectedPost.imagem_url);
+                      }}
+                    />
                   </div>
                 )}
 
@@ -267,7 +276,14 @@ const PublicNewsGrid: React.FC = () => {
                       <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.5em]">Galeria do Momento</h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {selectedPost.galeria_urls.map((url, i) => (
-                          <div key={i} className="aspect-square rounded-[2rem] overflow-hidden border border-zinc-100 shadow-sm hover:shadow-xl transition-all">
+                          <div
+                            key={i}
+                            className="aspect-square rounded-[2rem] overflow-hidden border border-zinc-100 shadow-sm hover:shadow-xl transition-all cursor-zoom-in"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingImage(url);
+                            }}
+                          >
                             <img src={url} className="w-full h-full object-cover hover:scale-110 transition-all duration-700" alt="Gallery item" />
                           </div>
                         ))}

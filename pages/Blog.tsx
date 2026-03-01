@@ -24,6 +24,7 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [galleryFiles, setGalleryFiles] = useState<FileList | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const headerInputRef = React.useRef<HTMLInputElement>(null);
   const videoInputRef = React.useRef<HTMLInputElement>(null);
   const galleryInputRef = React.useRef<HTMLInputElement>(null);
@@ -261,8 +262,9 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
                   <>
                     <img
                       src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
                       alt={post.titulo}
+                      onClick={() => setViewingImage(post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800')}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800';
@@ -458,6 +460,22 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
         </div>
       )}
 
+      {/* MODAL PARA VER IMAGEM GRANDE */}
+      {viewingImage && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/95 backdrop-blur-xl p-4 cursor-zoom-out animate-in fade-in duration-300"
+          onClick={() => setViewingImage(null)}
+        >
+          <button className="absolute top-8 right-8 text-white/50 hover:text-white transition-all bg-white/10 p-4 rounded-full border border-white/10 hover:rotate-90">
+            <X size={32} />
+          </button>
+          <img
+            src={viewingImage}
+            className="max-w-full max-h-[90vh] rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-500 object-contain border-4 border-white/10"
+            alt="Preview"
+          />
+        </div>
+      )}
     </div>
   );
 };
