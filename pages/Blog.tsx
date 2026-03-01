@@ -463,15 +463,29 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
       {/* MODAL PARA VER IMAGEM GRANDE */}
       {viewingImage && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/95 backdrop-blur-xl p-4 cursor-zoom-out animate-in fade-in duration-300"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/95 backdrop-blur-xl p-4 animate-in fade-in duration-300"
           onClick={() => setViewingImage(null)}
         >
-          <button className="absolute top-8 right-8 text-white/50 hover:text-white transition-all bg-white/10 p-4 rounded-full border border-white/10 hover:rotate-90">
-            <X size={32} />
-          </button>
+          <div className="absolute top-8 right-8 flex gap-4">
+            <a
+              href={viewingImage}
+              download="amazing-corp-blog-image.jpg"
+              onClick={(e) => e.stopPropagation()}
+              className="text-white/50 hover:text-white transition-all bg-white/10 p-4 rounded-full border border-white/10 flex items-center gap-2"
+              title="Baixar Foto"
+            >
+              <Download size={24} />
+            </a>
+            <button
+              className="text-white/50 hover:text-white transition-all bg-white/10 p-4 rounded-full border border-white/10 hover:rotate-90"
+              onClick={() => setViewingImage(null)}
+            >
+              <X size={32} />
+            </button>
+          </div>
           <img
             src={viewingImage}
-            className="max-w-full max-h-[90vh] rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-500 object-contain border-4 border-white/10"
+            className="max-w-full max-h-[90vh] rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-500 object-contain border-4 border-white/10 cursor-zoom-out"
             alt="Preview"
           />
         </div>

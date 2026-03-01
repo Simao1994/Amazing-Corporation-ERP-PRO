@@ -310,15 +310,30 @@ const PublicNewsGrid: React.FC = () => {
       {/* LIGHTBOX PARA IMAGENS */}
       {viewingImage && (
         <div
-          className="fixed inset-0 z-[300] flex items-center justify-center bg-zinc-950/98 backdrop-blur-2xl p-4 cursor-zoom-out animate-in fade-in duration-300"
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-zinc-950/98 backdrop-blur-2xl p-4 animate-in fade-in duration-300"
           onClick={() => setViewingImage(null)}
         >
-          <button className="absolute top-10 right-10 text-white/50 hover:text-white transition-all bg-white/10 p-5 rounded-full border border-white/10 hover:rotate-90">
-            <X size={32} />
-          </button>
+          <div className="absolute top-10 right-10 flex gap-4">
+            <a
+              href={viewingImage}
+              download="amazing-photo.jpg"
+              target="_blank"
+              onClick={(e) => e.stopPropagation()}
+              className="text-white/50 hover:text-white transition-all bg-white/10 p-5 rounded-full border border-white/10 flex items-center gap-2"
+              title="Baixar Foto"
+            >
+              <Download size={24} />
+            </a>
+            <button
+              className="text-white/50 hover:text-white transition-all bg-white/10 p-5 rounded-full border border-white/10 hover:rotate-90"
+              onClick={() => setViewingImage(null)}
+            >
+              <X size={32} />
+            </button>
+          </div>
           <img
             src={viewingImage}
-            className="max-w-full max-h-[90vh] rounded-[3rem] shadow-3xl animate-in zoom-in-95 duration-500 object-contain border-4 border-white/5"
+            className="max-w-full max-h-[90vh] rounded-[3rem] shadow-3xl animate-in zoom-in-95 duration-500 object-contain border-4 border-white/5 cursor-zoom-out"
             alt="Lightbox"
           />
         </div>
