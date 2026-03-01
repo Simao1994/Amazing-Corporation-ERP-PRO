@@ -847,626 +847,627 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                body { background: white !important; }
                .no-print { display: none !important; }
                .print-only { display: block !important; }
-               .fixed { display: none !important; }
                .active-tab-content { padding: 0 !important; margin: 0 !important; }
             }
          `}</style>
 
          {/* ... (MODALS DE RECIBO E FICHA T�CNICA MANTIDOS DO C�DIGO ANTERIOR) ... */}
 
-         {/* HEADER RH */}
-         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-sky-200 print:hidden">
-            <div className="flex items-center gap-3">
-               <div className="p-3 bg-zinc-900 rounded-2xl shadow-xl border border-white/10"><Users className="text-yellow-500" size={28} /></div>
-               <div>
-                  <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Gest�o de <span className="text-yellow-500">Talentos</span></h1>
-                  <p className="text-zinc-500 font-bold flex items-center gap-2 mt-1"><ShieldCheck size={14} className="text-green-600" /> Amazing Corporate Governance</p>
-               </div>
-            </div>
-            <div className="flex flex-wrap gap-2 bg-white/50 p-1.5 rounded-2xl border border-white/20 shadow-xl backdrop-blur-md">
-               {[
-                  { id: 'dashboard', icon: <LayoutDashboard size={18} />, label: 'Resumo' },
-                  { id: 'gente', icon: <Users size={18} />, label: 'Cadastro' },
-                  { id: 'payroll', icon: <Wallet size={18} />, label: 'Folha' },
-                  { id: 'presenca', icon: <Fingerprint size={18} />, label: 'Ponto' },
-                  { id: 'performance', icon: <Award size={18} />, label: 'Metas' },
-                  { id: 'passes', icon: <IdCard size={18} />, label: 'Passes' },
-                  { id: 'vagas', icon: <UserPlus size={18} />, label: 'Vagas' },
-                  { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Banc�rias' }
-               ].filter(tab => isHRAdmin || !['gente', 'payroll', 'contas', 'vagas'].includes(tab.id)).map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'}`}>{tab.icon} {tab.label}</button>
-               ))}
-            </div>
-         </div>
-
-         {/* DASHBOARD ANALÍTICO */}
-         {activeTab === 'dashboard' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-4">
-               {/* Notifica�ões e Alertas */}
-               {analyticsData.proximosVencimentos.length > 0 && (
-                  <div className="bg-red-50 border border-red-100 p-8 rounded-[2.5rem] flex items-center justify-between shadow-sm animate-pulse">
-                     <div className="flex items-center gap-6">
-                        <div className="p-4 bg-red-600 text-white rounded-2xl shadow-lg">
-                           <AlertTriangle size={32} />
-                        </div>
-                        <div>
-                           <h4 className="text-lg font-black text-red-900 uppercase tracking-tight">Alertas de Contrato</h4>
-                           <p className="text-sm font-bold text-red-700">H� {analyticsData.proximosVencimentos.length} colaboradores com contrato a terminar nos pr�ximos 30 dias.</p>
-                        </div>
-                     </div>
-                     <div className="flex -space-x-4">
-                        {analyticsData.proximosVencimentos.slice(0, 5).map(v => (
-                           <div key={v.id} title={`${v.nome} - ${v.vencimento}`} className="w-12 h-12 rounded-full border-4 border-white bg-zinc-200 flex items-center justify-center font-black text-[10px] text-zinc-600 shadow-md">
-                              {v.nome.substring(0, 2).toUpperCase()}
-                           </div>
-                        ))}
-                        {analyticsData.proximosVencimentos.length > 5 && (
-                           <div className="w-12 h-12 rounded-full border-4 border-white bg-zinc-900 text-white flex items-center justify-center font-black text-[10px] shadow-md">
-                              +{analyticsData.proximosVencimentos.length - 5}
-                           </div>
-                        )}
-                     </div>
-                  </div>
-               )}
-
-               {/* KPI Cards */}
-               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Colaboradores</p>
-                     <p className="text-4xl font-black text-zinc-900">{analyticsData.total}</p>
-                     <div className="mt-2 flex items-center gap-2 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit"><CheckCircle2 size={12} /> {analyticsData.ativos} Activos</div>
-                  </div>
-                  <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
-                     <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Custo Mensal (Est)</p>
-                     <p className="text-3xl font-black">{formatAOA(analyticsData.payrollCost)}</p>
-                     <div className="absolute -right-4 -bottom-4 opacity-10"><DollarSign size={80} /></div>
-                  </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Metas Activas</p>
-                     <p className="text-4xl font-black text-zinc-900">{analyticsData.metasTotal}</p>
-                  </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Departamentos</p>
-                     <p className="text-4xl font-black text-zinc-900">{analyticsData.pieData.length}</p>
-                  </div>
-               </div>
-
-               {/* Gr�ficos */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[400px] flex flex-col">
-                     <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2">
-                        <PieIcon className="text-yellow-500" size={20} /> Distribui��o por Departamento
-                     </h3>
-                     <div className="flex-1 w-full min-h-0 relative">
-                        <ResponsiveContainer width="100%" height="100%">
-                           <PieChart>
-                              <Pie
-                                 data={analyticsData.pieData}
-                                 cx="50%" cy="50%"
-                                 innerRadius={60}
-                                 outerRadius={100}
-                                 paddingAngle={5}
-                                 dataKey="value"
-                              >
-                                 {analyticsData.pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} stroke="none" />
-                                 ))}
-                              </Pie>
-                              <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
-                              <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
-                           </PieChart>
-                        </ResponsiveContainer>
-                     </div>
-                  </div>
-
-                  <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[400px] flex flex-col">
-                     <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2">
-                        <TrendingUp className="text-green-600" size={20} /> Evolu��o de Custos (Semestral)
-                     </h3>
-                     <div className="flex-1 w-full min-h-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                           <AreaChart data={analyticsData.chartArea}>
-                              <defs>
-                                 <linearGradient id="colorCusto" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#eab308" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#eab308" stopOpacity={0} />
-                                 </linearGradient>
-                              </defs>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
-                              <YAxis hide />
-                              <Tooltip
-                                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                 formatter={(v: number) => formatAOA(v)}
-                              />
-                              <Area type="monotone" dataKey="custo" stroke="#eab308" strokeWidth={4} fillOpacity={1} fill="url(#colorCusto)" />
-                           </AreaChart>
-                        </ResponsiveContainer>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         )}
-
-         {/* PERFORMANCE / METAS */}
-         {activeTab === 'performance' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               <div className="flex flex-col md:flex-row gap-4 items-center">
-                  <div className="flex-1 bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100 w-full flex items-center">
-                     <Search className="ml-6 text-zinc-300" /><input placeholder="Pesquisar..." className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                  </div>
-                  {isHRAdmin && <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>}
-               </div>
-               <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                     <table className="w-full text-left min-w-[600px]">
-                        <thead>
-                           <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                              <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Funo / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Acões</th>
-                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-50 text-sm">
-                           {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
-                              <tr key={f.id} className="hover:bg-zinc-50/50">
-                                 <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
-                                 <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
-                                 <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
-                                 <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
-                                 <td className="px-8 py-5 text-right flex justify-end gap-2">
-                                    <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histrico Completo"><ClipboardList size={18} /></button>
-                                    {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
-                                    {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
-                                 </td>
-                              </tr>
-                           ))}
-                        </tbody>
-                     </table>
-                  </div>
-               </div>
-            </div>
-         )}
-
-         {/* GENTE / CADASTRO */}
-         {activeTab === 'gente' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               <div className="flex flex-col md:flex-row gap-4 items-center">
-                  <div className="flex-1 bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100 w-full flex items-center">
-                     <Search className="ml-6 text-zinc-300" /><input placeholder="Pesquisar..." className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                  </div>
-                  {isHRAdmin && <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>}
-               </div>
-               <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                     <table className="w-full text-left min-w-[600px]">
-                        <thead>
-                           <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                              <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Fun��o / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Ac�ões</th>
-                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-50 text-sm">
-                           {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
-                              <tr key={f.id} className="hover:bg-zinc-50/50">
-                                 <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
-                                 <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
-                                 <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
-                                 <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
-                                 <td className="px-8 py-5 text-right flex justify-end gap-2">
-                                    <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Hist�rico Completo"><ClipboardList size={18} /></button>
-                                    {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
-                                    {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
-                                 </td>
-                              </tr>
-                           ))}
-                        </tbody>
-                     </table>
-                  </div>
-               </div>
-            </div>
-         )}
-
-         {/* PAYROLL / FOLHA */}
-         {activeTab === 'payroll' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-4">
-               {/* Gr�fico de Tend�ncia Salarial */}
-               <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Custo Total de Pessoal (Proje��o)</h3>
-                  <ResponsiveContainer width="100%" height="85%">
-                     <AreaChart data={analyticsData.chartArea}>
-                        <defs>
-                           <linearGradient id="colorPayroll" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                           </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                        <Tooltip formatter={(v: number) => formatAOA(v)} />
-                        <Area type="monotone" dataKey="custo" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#colorPayroll)" />
-                     </AreaChart>
-                  </ResponsiveContainer>
-               </div>
-
-               <div className="bg-zinc-900 p-12 rounded-[4rem] text-white shadow-3xl overflow-hidden relative flex flex-col md:flex-row justify-between items-center">
-                  <DollarSign className="absolute -right-10 -bottom-10 opacity-10" size={240} />
+         {/* CONTEÚDO PRINCIPAL (OCULTO NA IMPRESSÃO SE MODAL ESTIVER ABERTO) */}
+         <div className={(viewingRecibo || printingPass) ? 'print:hidden' : ''}>
+            {/* HEADER RH */}
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-sky-200 print:hidden">
+               <div className="flex items-center gap-3">
+                  <div className="p-3 bg-zinc-900 rounded-2xl shadow-xl border border-white/10"><Users className="text-yellow-500" size={28} /></div>
                   <div>
-                     <h2 className="text-3xl font-black uppercase text-yellow-500">Mesa de Processamento</h2>
-                     <p className="text-zinc-400 font-medium">Ciclo: {currentMonthName} {currentFiscalYear}</p>
-                     <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest font-bold">Introduza vari�veis antes de processar</p>
-                  </div>
-                  <div className="flex flex-col md:flex-row gap-4 relative z-10 items-center">
-                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black uppercase text-zinc-500 ml-4">N� Documento</label>
-                        <input
-                           type="text"
-                           value={payrollDocNumber}
-                           onChange={e => setPayrollDocNumber(e.target.value)}
-                           className="px-6 py-4 bg-white/5 border border-white/10 rounded-[2rem] text-white font-bold text-sm focus:border-yellow-500 transition-all outline-none min-w-[200px]"
-                           placeholder="Ex: DOC-2024-001"
-                        />
-                     </div>
-                     <button
-                        onClick={handleProcessPayroll}
-                        disabled={isProcessing}
-                        className="px-8 py-5 bg-yellow-500 text-zinc-900 rounded-[2rem] font-black uppercase text-[10px] hover:bg-white transition-all shadow-2xl flex items-center gap-3 disabled:opacity-50 active:scale-95"
-                     >
-                        {isProcessing ? <RefreshCw className="animate-spin" size={20} /> : <Calculator size={20} />} {isProcessing ? 'Calculando...' : 'Processar Folha'}
-                     </button>
-                     <button
-                        onClick={() => setShowPayrollSheetModal(true)}
-                        className="px-8 py-5 bg-white/10 text-white border border-white/20 rounded-[2rem] font-black uppercase text-[10px] hover:bg-white hover:text-zinc-900 transition-all flex items-center gap-3 shadow-xl"
-                     >
-                        <FileText size={20} /> Imprimir Folha Geral
-                     </button>
+                     <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Gest�o de <span className="text-yellow-500">Talentos</span></h1>
+                     <p className="text-zinc-500 font-bold flex items-center gap-2 mt-1"><ShieldCheck size={14} className="text-green-600" /> Amazing Corporate Governance</p>
                   </div>
                </div>
-
-               {/* WORKSPACE DE VARIÁVEIS MENSAIS */}
-               <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
-                  <table className="w-full text-left">
-                     <thead>
-                        <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                           <th className="px-6 py-4">Colaborador</th>
-                           <th className="px-6 py-4">Sal�rio Base</th>
-                           <th className="px-6 py-4 text-center">H. Extras</th>
-                           <th className="px-6 py-4 text-center">Faltas</th>
-                           <th className="px-6 py-4">Subs�dios (Alim/Trans)</th>
-                           <th className="px-6 py-4">Subs. Extras (F�r/Nat)</th>
-                           <th className="px-6 py-4">B�nus/Pr�mios</th>
-                           <th className="px-6 py-4">Empr�st/Desc</th>
-                           <th className="px-6 py-4 text-right">L�quido Est.</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-zinc-50 text-xs">
-                        {funcionarios.filter(f => f.status === 'ativo').map(f => {
-                           const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
-                           const preview = calculatePayrollForEmployee(f);
-
-                           return (
-                              <tr key={f.id} className="hover:bg-zinc-50/50 transition-all">
-                                 <td className="px-6 py-4 font-bold text-zinc-900">{f.nome}</td>
-                                 <td className="px-6 py-4 text-zinc-500">{formatAOA(f.salario_base)}</td>
-                                 <td className="px-6 py-4">
-                                    <input type="number" min="0" step="0.5" className="w-16 bg-zinc-100 border-none rounded p-1 text-center font-bold"
-                                       value={inputs.horasExtras}
-                                       onChange={e => updatePayrollInput(f.id, 'horasExtras', Number(e.target.value))}
-                                    />
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    <input type="number" min="0" className="w-16 bg-zinc-100 border-none rounded p-1 text-center font-bold text-red-500"
-                                       value={inputs.faltas}
-                                       onChange={e => updatePayrollInput(f.id, 'faltas', Number(e.target.value))}
-                                    />
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    <div className="flex flex-col gap-1">
-                                       <input type="number" placeholder="Alim" className="hidden" />
-                                       <div className="text-[10px] font-bold text-zinc-500">
-                                          A: {formatAOA(f.subsidio_alimentacao)} | T: {formatAOA(f.subsidio_transporte)}
-                                       </div>
-                                    </div>
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    <div className="flex flex-col gap-1">
-                                       <div className="flex items-center gap-1">
-                                          <span className="text-[8px] font-black text-zinc-400">F�r:</span>
-                                          <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold"
-                                             value={inputs.subFerias} onChange={e => updatePayrollInput(f.id, 'subFerias', Number(e.target.value))} />
-                                       </div>
-                                       <div className="flex items-center gap-1">
-                                          <span className="text-[8px] font-black text-zinc-400">Nat:</span>
-                                          <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold"
-                                             value={inputs.subNatal} onChange={e => updatePayrollInput(f.id, 'subNatal', Number(e.target.value))} />
-                                       </div>
-                                    </div>
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    <div className="flex flex-col gap-1">
-                                       <input type="number" min="0" className="w-24 bg-zinc-100 border-none rounded p-1 text-right font-bold text-green-600"
-                                          value={inputs.bonus}
-                                          onChange={e => updatePayrollInput(f.id, 'bonus', Number(e.target.value))}
-                                       />
-                                       <div className="text-[9px] font-bold text-sky-600">Base: {formatAOA(f.outros_bonus)}</div>
-                                    </div>
-                                 </td>
-                                 <td className="px-6 py-4">
-                                    <div className="flex flex-col gap-1">
-                                       <div className="flex items-center gap-1">
-                                          <span className="text-[8px] font-black text-zinc-400">Emp:</span>
-                                          <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold text-orange-600"
-                                             value={inputs.emprestimos} onChange={e => updatePayrollInput(f.id, 'emprestimos', Number(e.target.value))} />
-                                       </div>
-                                       <div className="flex items-center gap-1">
-                                          <span className="text-[8px] font-black text-zinc-400">Out:</span>
-                                          <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold text-red-400"
-                                             value={inputs.outrosDesc} onChange={e => updatePayrollInput(f.id, 'outrosDesc', Number(e.target.value))} />
-                                       </div>
-                                    </div>
-                                 </td>
-                                 <td className="px-6 py-4 text-right font-black text-zinc-900 text-sm">
-                                    {formatAOA(preview.liquido)}
-                                 </td>
-                              </tr>
-                           );
-                        })}
-                     </tbody>
-                  </table>
-               </div>
-
-               {/* LISTA DE RECIBOS GERADOS */}
-               <div className="grid grid-cols-1 gap-4">
-                  <h3 className="text-lg font-black text-zinc-900 uppercase ml-4">Hist�rico de Recibos Emitidos</h3>
-                  {recibos.length > 0 ? recibos.map(r => (
-                     <div key={r.id} className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex items-center justify-between group hover:shadow-xl transition-all">
-                        <div className="flex items-center gap-6"><div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all"><FileText size={28} /></div><div><h4 className="font-black text-zinc-900 text-lg">{r.nome}</h4><p className="text-[10px] font-black text-zinc-400 uppercase">{r.mes} / {r.ano}</p></div></div>
-                        <div className="text-right">
-                           <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">L�quido</p>
-                           <p className="text-2xl font-black text-zinc-900">{formatAOA(r.liquido)}</p>
-                        </div>
-                        <div className="flex gap-2 ml-6">
-                           <button onClick={() => setViewingRecibo(r)} className="p-3 bg-zinc-50 text-zinc-400 hover:bg-zinc-900 hover:text-white rounded-xl transition-all"><Eye size={20} /></button>
-                           <button onClick={() => { setViewingRecibo(r); setTimeout(() => window.print(), 300); }} className="p-3 bg-zinc-50 text-zinc-400 hover:bg-sky-600 hover:text-white rounded-xl transition-all"><Printer size={20} /></button>
-                        </div>
-                     </div>
-                  )) : (
-                     <div className="py-20 text-center bg-white rounded-[3rem] border border-dashed border-sky-200"><AlertTriangle className="mx-auto text-sky-100 mb-4" size={48} /><p className="text-zinc-400 font-bold italic">Sem recibos neste ciclo.</p></div>
-                  )}
+               <div className="flex flex-wrap gap-2 bg-white/50 p-1.5 rounded-2xl border border-white/20 shadow-xl backdrop-blur-md">
+                  {[
+                     { id: 'dashboard', icon: <LayoutDashboard size={18} />, label: 'Resumo' },
+                     { id: 'gente', icon: <Users size={18} />, label: 'Cadastro' },
+                     { id: 'payroll', icon: <Wallet size={18} />, label: 'Folha' },
+                     { id: 'presenca', icon: <Fingerprint size={18} />, label: 'Ponto' },
+                     { id: 'performance', icon: <Award size={18} />, label: 'Metas' },
+                     { id: 'passes', icon: <IdCard size={18} />, label: 'Passes' },
+                     { id: 'vagas', icon: <UserPlus size={18} />, label: 'Vagas' },
+                     { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Banc�rias' }
+                  ].filter(tab => isHRAdmin || !['gente', 'payroll', 'contas', 'vagas'].includes(tab.id)).map(tab => (
+                     <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'}`}>{tab.icon} {tab.label}</button>
+                  ))}
                </div>
             </div>
-         )}
 
-         {/* PONTO / PRESENÇA */}
-         {activeTab === 'presenca' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-4">
-               {/* BANNER INFORMATIVO: TERMINAL DE PONTO */}
-               <div className="bg-zinc-900 p-10 rounded-[3rem] shadow-2xl text-white flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
-                  <Fingerprint className="absolute -left-6 -bottom-6 opacity-10 text-yellow-500" size={200} />
-                  <div className="relative z-10">
-                     <div className="flex items-center gap-3 mb-2">
-                        <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase rounded-full">Sistema Ativo</span>
-                        <span className="text-zinc-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><Clock size={10} /> 08:00 - 17:00</span>
-                     </div>
-                     <h3 className="text-3xl font-black uppercase text-white tracking-tighter">Terminal de <span className="text-yellow-500">Ponto Digital</span></h3>
-                     <p className="text-zinc-400 text-sm font-medium">Controlo Biométrico Virtual & Gestão de Assiduidade</p>
-                  </div>
-                  <div className="flex gap-4 relative z-10">
-                     <div className="bg-white/5 px-8 py-5 rounded-[2rem] border border-white/10 text-center backdrop-blur-md">
-                        <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">Mês de Referência</p>
-                        <p className="text-xl font-black uppercase text-yellow-500">{currentMonthName}</p>
-                     </div>
-                     <div className="bg-white/5 px-8 py-5 rounded-[2rem] border border-white/10 text-center backdrop-blur-md">
-                        <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">Data de Hoje</p>
-                        <p className="text-xl font-black">{new Date().toLocaleDateString('pt-PT')}</p>
-                     </div>
-                  </div>
-               </div>
-
-               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  {/* COLUNA ESQUERDA: RESUMO E CALENDÁRIO */}
-                  <div className="lg:col-span-8 space-y-8">
-                     {/* RESUMO MENSAL PARA RH */}
-                     {isHRAdmin && (
-                        <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden transition-all hover:shadow-xl">
-                           <div className="flex items-center justify-between mb-8">
-                              <div>
-                                 <h3 className="text-lg font-black text-zinc-900 uppercase">Assiduidade do Ciclo</h3>
-                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest">Resumo Consolidado (Base: 22 Dias Úteis)</p>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                    <span className="text-[10px] font-black text-zinc-500 uppercase">Faltas</span>
-                                 </div>
-                                 <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 bg-yellow-500 rounded-lg flex items-center justify-center text-zinc-900"><Timer size={10} /></div>
-                                    <span className="text-[10px] font-black text-zinc-500 uppercase">H. Extras</span>
-                                 </div>
-                              </div>
+            {/* DASHBOARD ANALÍTICO */}
+            {activeTab === 'dashboard' && (
+               <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                  {/* Notifica�ões e Alertas */}
+                  {analyticsData.proximosVencimentos.length > 0 && (
+                     <div className="bg-red-50 border border-red-100 p-8 rounded-[2.5rem] flex items-center justify-between shadow-sm animate-pulse">
+                        <div className="flex items-center gap-6">
+                           <div className="p-4 bg-red-600 text-white rounded-2xl shadow-lg">
+                              <AlertTriangle size={32} />
                            </div>
-                           <div className="overflow-x-auto">
-                              <table className="w-full text-left">
-                                 <thead>
-                                    <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                                       <th className="px-6 py-4">Colaborador</th>
-                                       <th className="px-6 py-4 text-center">Status</th>
-                                       <th className="px-6 py-4 text-center">Presenças</th>
-                                       <th className="px-6 py-4 text-center">Faltas</th>
-                                       <th className="px-6 py-4 text-center">H. Extras</th>
-                                       <th className="px-6 py-4 text-right">Aproveitamento</th>
-                                    </tr>
-                                 </thead>
-                                 <tbody className="divide-y divide-zinc-50 text-xs">
-                                    {funcionarios.filter(f => f.status === 'ativo').map(f => {
-                                       const stats = getAutoPayrollData(f.id);
-                                       const pontoHoje = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
-                                       const presencasMes = presencas.filter(p => p.funcionario_id === f.id && p.data.startsWith(new Date().toISOString().slice(0, 7))).length;
-                                       const attendanceRate = Math.round((presencasMes / 22) * 100);
-
-                                       return (
-                                          <tr key={f.id} className="hover:bg-zinc-50/50 transition-all group">
-                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                   <img src={f.foto_url} className="w-8 h-8 rounded-lg object-cover shadow-sm grayscale group-hover:grayscale-0 transition-all" />
-                                                   <span className="font-bold text-zinc-900 group-hover:text-yellow-600 transition-colors">{f.nome}</span>
-                                                </div>
-                                             </td>
-                                             <td className="px-6 py-4 text-center">
-                                                <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase ${pontoHoje ? (pontoHoje.saida ? 'bg-zinc-100 text-zinc-400' : 'bg-green-500 text-white shadow-sm animate-pulse') : 'bg-red-50 text-red-400'}`}>
-                                                   {pontoHoje ? (pontoHoje.saida ? 'Concluído' : 'Presente') : 'Pendente'}
-                                                </span>
-                                             </td>
-                                             <td className="px-6 py-4 text-center font-bold text-zinc-500">{presencasMes}</td>
-                                             <td className="px-6 py-4 text-center font-black text-red-600">{stats.faltas}</td>
-                                             <td className="px-6 py-4 text-center font-black text-yellow-600">+{stats.horasExtras}h</td>
-                                             <td className="px-6 py-4">
-                                                <div className="flex items-center justify-end gap-3">
-                                                   <div className="w-20 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                                                      <div className={`h-full rounded-full ${attendanceRate > 80 ? 'bg-green-500' : attendanceRate > 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(100, attendanceRate)}%` }}></div>
-                                                   </div>
-                                                   <span className="text-[10px] font-black text-zinc-400">{attendanceRate}%</span>
-                                                </div>
-                                             </td>
-                                          </tr>
-                                       );
-                                    })}
-                                 </tbody>
-                              </table>
+                           <div>
+                              <h4 className="text-lg font-black text-red-900 uppercase tracking-tight">Alertas de Contrato</h4>
+                              <p className="text-sm font-bold text-red-700">H� {analyticsData.proximosVencimentos.length} colaboradores com contrato a terminar nos pr�ximos 30 dias.</p>
                            </div>
                         </div>
-                     )}
-
-                     {/* GRID DE CARTÕES DE PONTO */}
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {funcionarios.filter(f => f.status === 'ativo').map(f => {
-                           const ponto = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
-                           return (
-                              <div key={f.id} className={`bg-white p-6 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all group ${ponto?.saida ? 'opacity-60 grayscale-[0.5]' : ''}`}>
-                                 <div className="flex items-center gap-4 mb-6">
-                                    <div className="relative">
-                                       <img src={f.foto_url} className="w-14 h-14 rounded-2xl object-cover shadow-md" />
-                                       <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${ponto ? (ponto.saida ? 'bg-zinc-400' : 'bg-green-500 animate-pulse') : 'bg-red-500'}`}></div>
-                                    </div>
-                                    <div>
-                                       <h4 className="font-black text-zinc-900 uppercase text-sm">{f.nome.split(' ')[0]}</h4>
-                                       <p className="text-[9px] font-bold text-zinc-400 uppercase">{f.funcao}</p>
-                                    </div>
-                                 </div>
-                                 <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-2 text-[9px] font-black uppercase text-zinc-400 bg-zinc-50 p-3 rounded-2xl">
-                                       <div className="text-center"><p className="mb-1">Entrada</p><p className="text-xs text-zinc-900 font-black">{ponto?.entrada || '--:--'}</p></div>
-                                       <div className="text-center border-l border-zinc-200"><p className="mb-1">Saída</p><p className="text-xs text-zinc-900 font-black">{ponto?.saida || '--:--'}</p></div>
-                                    </div>
-                                    {!ponto ? (
-                                       <button onClick={() => registrarPonto(f.id, 'entrada')} className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black uppercase text-[10px] hover:bg-green-600 transition-all flex items-center justify-center gap-2"><Clock size={14} /> Check-in</button>
-                                    ) : !ponto.saida ? (
-                                       <button onClick={() => registrarPonto(f.id, 'saida')} className="w-full py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><LogOut size={14} /> Check-out</button>
-                                    ) : <div className="w-full py-4 bg-zinc-100 text-zinc-400 rounded-2xl text-center font-black uppercase text-[10px]">Jornada Concluída</div>}
-                                 </div>
-                              </div>
-                           );
-                        })}
-                     </div>
-                  </div>
-
-                  {/* COLUNA DIREITA: CALENDÁRIO E FEED */}
-                  <div className="lg:col-span-4 space-y-8">
-                     {/* CALENDÁRIO DE FERIADOS */}
-                     <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm">
-                        <div className="flex items-center gap-3 mb-6">
-                           <CalendarDays className="text-yellow-600" size={24} />
-                           <h3 className="text-lg font-black text-zinc-900 uppercase">Feriados {currentMonthName}</h3>
-                        </div>
-                        <div className="space-y-4">
-                           {Object.entries(HOLIDAYS_ANGOLA).filter(([md]) => md.startsWith(String(new Date().getMonth() + 1).padStart(2, '0'))).map(([md, name]) => (
-                              <div key={md} className="flex items-start gap-4 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                                 <div className="w-12 h-12 rounded-xl bg-white flex flex-col items-center justify-center shadow-sm">
-                                    <span className="text-[8px] font-black text-zinc-400 uppercase">{currentMonthName.slice(0, 3)}</span>
-                                    <span className="text-lg font-black text-zinc-900">{md.split('-')[1]}</span>
-                                 </div>
-                                 <div className="flex-1">
-                                    <h4 className="font-black text-xs text-zinc-900">{name}</h4>
-                                    <p className="text-[9px] font-bold text-zinc-400 uppercase">Feriado Nacional</p>
-                                 </div>
+                        <div className="flex -space-x-4">
+                           {analyticsData.proximosVencimentos.slice(0, 5).map(v => (
+                              <div key={v.id} title={`${v.nome} - ${v.vencimento}`} className="w-12 h-12 rounded-full border-4 border-white bg-zinc-200 flex items-center justify-center font-black text-[10px] text-zinc-600 shadow-md">
+                                 {v.nome.substring(0, 2).toUpperCase()}
                               </div>
                            ))}
-                           {Object.entries(HOLIDAYS_ANGOLA).filter(([md]) => md.startsWith(String(new Date().getMonth() + 1).padStart(2, '0'))).length === 0 && (
-                              <p className="text-zinc-400 text-xs italic text-center py-4">Sem feriados para o mês atual.</p>
+                           {analyticsData.proximosVencimentos.length > 5 && (
+                              <div className="w-12 h-12 rounded-full border-4 border-white bg-zinc-900 text-white flex items-center justify-center font-black text-[10px] shadow-md">
+                                 +{analyticsData.proximosVencimentos.length - 5}
+                              </div>
                            )}
                         </div>
                      </div>
+                  )}
 
-                     {/* FEED DE ATIVIDADE */}
-                     <div className="bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-                        <Layers className="absolute -right-8 -top-8 opacity-10" size={150} />
-                        <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-3"><Zap className="text-yellow-500" size={16} /> Últimos Movimentos</h3>
-                        <div className="space-y-6 relative z-10">
-                           {presencas.slice(-5).reverse().map((p, idx) => {
-                              const func = funcionarios.find(f => f.id === p.funcionario_id);
+                  {/* KPI Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                     <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
+                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Colaboradores</p>
+                        <p className="text-4xl font-black text-zinc-900">{analyticsData.total}</p>
+                        <div className="mt-2 flex items-center gap-2 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit"><CheckCircle2 size={12} /> {analyticsData.ativos} Activos</div>
+                     </div>
+                     <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
+                        <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Custo Mensal (Est)</p>
+                        <p className="text-3xl font-black">{formatAOA(analyticsData.payrollCost)}</p>
+                        <div className="absolute -right-4 -bottom-4 opacity-10"><DollarSign size={80} /></div>
+                     </div>
+                     <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
+                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Metas Activas</p>
+                        <p className="text-4xl font-black text-zinc-900">{analyticsData.metasTotal}</p>
+                     </div>
+                     <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
+                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Departamentos</p>
+                        <p className="text-4xl font-black text-zinc-900">{analyticsData.pieData.length}</p>
+                     </div>
+                  </div>
+
+                  {/* Gr�ficos */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                     <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[400px] flex flex-col">
+                        <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2">
+                           <PieIcon className="text-yellow-500" size={20} /> Distribui��o por Departamento
+                        </h3>
+                        <div className="flex-1 w-full min-h-0 relative">
+                           <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                 <Pie
+                                    data={analyticsData.pieData}
+                                    cx="50%" cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                 >
+                                    {analyticsData.pieData.map((entry, index) => (
+                                       <Cell key={`cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} stroke="none" />
+                                    ))}
+                                 </Pie>
+                                 <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
+                                 <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                              </PieChart>
+                           </ResponsiveContainer>
+                        </div>
+                     </div>
+
+                     <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[400px] flex flex-col">
+                        <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2">
+                           <TrendingUp className="text-green-600" size={20} /> Evolu��o de Custos (Semestral)
+                        </h3>
+                        <div className="flex-1 w-full min-h-0">
+                           <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={analyticsData.chartArea}>
+                                 <defs>
+                                    <linearGradient id="colorCusto" x1="0" y1="0" x2="0" y2="1">
+                                       <stop offset="5%" stopColor="#eab308" stopOpacity={0.3} />
+                                       <stop offset="95%" stopColor="#eab308" stopOpacity={0} />
+                                    </linearGradient>
+                                 </defs>
+                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
+                                 <YAxis hide />
+                                 <Tooltip
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                    formatter={(v: number) => formatAOA(v)}
+                                 />
+                                 <Area type="monotone" dataKey="custo" stroke="#eab308" strokeWidth={4} fillOpacity={1} fill="url(#colorCusto)" />
+                              </AreaChart>
+                           </ResponsiveContainer>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            {/* PERFORMANCE / METAS */}
+            {activeTab === 'performance' && (
+               <div className="space-y-6 animate-in slide-in-from-bottom-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                     <div className="flex-1 bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100 w-full flex items-center">
+                        <Search className="ml-6 text-zinc-300" /><input placeholder="Pesquisar..." className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                     </div>
+                     {isHRAdmin && <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>}
+                  </div>
+                  <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
+                     <div className="overflow-x-auto">
+                        <table className="w-full text-left min-w-[600px]">
+                           <thead>
+                              <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                 <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Funo / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Acões</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-zinc-50 text-sm">
+                              {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
+                                 <tr key={f.id} className="hover:bg-zinc-50/50">
+                                    <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
+                                    <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
+                                    <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
+                                    <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
+                                    <td className="px-8 py-5 text-right flex justify-end gap-2">
+                                       <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histrico Completo"><ClipboardList size={18} /></button>
+                                       {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
+                                       {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
+                                    </td>
+                                 </tr>
+                              ))}
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            {/* GENTE / CADASTRO */}
+            {activeTab === 'gente' && (
+               <div className="space-y-6 animate-in slide-in-from-bottom-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                     <div className="flex-1 bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100 w-full flex items-center">
+                        <Search className="ml-6 text-zinc-300" /><input placeholder="Pesquisar..." className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                     </div>
+                     {isHRAdmin && <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>}
+                  </div>
+                  <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
+                     <div className="overflow-x-auto">
+                        <table className="w-full text-left min-w-[600px]">
+                           <thead>
+                              <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                 <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Fun��o / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Ac�ões</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-zinc-50 text-sm">
+                              {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
+                                 <tr key={f.id} className="hover:bg-zinc-50/50">
+                                    <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
+                                    <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
+                                    <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
+                                    <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
+                                    <td className="px-8 py-5 text-right flex justify-end gap-2">
+                                       <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Hist�rico Completo"><ClipboardList size={18} /></button>
+                                       {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
+                                       {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
+                                    </td>
+                                 </tr>
+                              ))}
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            {/* PAYROLL / FOLHA */}
+            {activeTab === 'payroll' && (
+               <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                  {/* Gr�fico de Tend�ncia Salarial */}
+                  <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
+                     <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Custo Total de Pessoal (Proje��o)</h3>
+                     <ResponsiveContainer width="100%" height="85%">
+                        <AreaChart data={analyticsData.chartArea}>
+                           <defs>
+                              <linearGradient id="colorPayroll" x1="0" y1="0" x2="0" y2="1">
+                                 <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                                 <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                              </linearGradient>
+                           </defs>
+                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                           <Tooltip formatter={(v: number) => formatAOA(v)} />
+                           <Area type="monotone" dataKey="custo" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#colorPayroll)" />
+                        </AreaChart>
+                     </ResponsiveContainer>
+                  </div>
+
+                  <div className="bg-zinc-900 p-12 rounded-[4rem] text-white shadow-3xl overflow-hidden relative flex flex-col md:flex-row justify-between items-center">
+                     <DollarSign className="absolute -right-10 -bottom-10 opacity-10" size={240} />
+                     <div>
+                        <h2 className="text-3xl font-black uppercase text-yellow-500">Mesa de Processamento</h2>
+                        <p className="text-zinc-400 font-medium">Ciclo: {currentMonthName} {currentFiscalYear}</p>
+                        <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest font-bold">Introduza vari�veis antes de processar</p>
+                     </div>
+                     <div className="flex flex-col md:flex-row gap-4 relative z-10 items-center">
+                        <div className="flex flex-col gap-2">
+                           <label className="text-[10px] font-black uppercase text-zinc-500 ml-4">N� Documento</label>
+                           <input
+                              type="text"
+                              value={payrollDocNumber}
+                              onChange={e => setPayrollDocNumber(e.target.value)}
+                              className="px-6 py-4 bg-white/5 border border-white/10 rounded-[2rem] text-white font-bold text-sm focus:border-yellow-500 transition-all outline-none min-w-[200px]"
+                              placeholder="Ex: DOC-2024-001"
+                           />
+                        </div>
+                        <button
+                           onClick={handleProcessPayroll}
+                           disabled={isProcessing}
+                           className="px-8 py-5 bg-yellow-500 text-zinc-900 rounded-[2rem] font-black uppercase text-[10px] hover:bg-white transition-all shadow-2xl flex items-center gap-3 disabled:opacity-50 active:scale-95"
+                        >
+                           {isProcessing ? <RefreshCw className="animate-spin" size={20} /> : <Calculator size={20} />} {isProcessing ? 'Calculando...' : 'Processar Folha'}
+                        </button>
+                        <button
+                           onClick={() => setShowPayrollSheetModal(true)}
+                           className="px-8 py-5 bg-white/10 text-white border border-white/20 rounded-[2rem] font-black uppercase text-[10px] hover:bg-white hover:text-zinc-900 transition-all flex items-center gap-3 shadow-xl"
+                        >
+                           <FileText size={20} /> Imprimir Folha Geral
+                        </button>
+                     </div>
+                  </div>
+
+                  {/* WORKSPACE DE VARIÁVEIS MENSAIS */}
+                  <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
+                     <table className="w-full text-left">
+                        <thead>
+                           <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                              <th className="px-6 py-4">Colaborador</th>
+                              <th className="px-6 py-4">Sal�rio Base</th>
+                              <th className="px-6 py-4 text-center">H. Extras</th>
+                              <th className="px-6 py-4 text-center">Faltas</th>
+                              <th className="px-6 py-4">Subs�dios (Alim/Trans)</th>
+                              <th className="px-6 py-4">Subs. Extras (F�r/Nat)</th>
+                              <th className="px-6 py-4">B�nus/Pr�mios</th>
+                              <th className="px-6 py-4">Empr�st/Desc</th>
+                              <th className="px-6 py-4 text-right">L�quido Est.</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-50 text-xs">
+                           {funcionarios.filter(f => f.status === 'ativo').map(f => {
+                              const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
+                              const preview = calculatePayrollForEmployee(f);
+
                               return (
-                                 <div key={p.id} className="flex gap-4 items-start">
-                                    <img src={func?.foto_url} className="w-8 h-8 rounded-lg object-cover grayscale" />
-                                    <div className="flex-1 border-b border-white/5 pb-3">
-                                       <p className="text-[10px] font-black text-zinc-400 uppercase"><span className="text-white">{func?.nome.split(' ')[0]}</span> • {p.data.split('-').reverse().join('/')}</p>
-                                       <p className="text-[10px] font-bold text-yellow-500">{p.saida ? 'Check-out às ' + p.saida : 'Check-in às ' + p.entrada}</p>
+                                 <tr key={f.id} className="hover:bg-zinc-50/50 transition-all">
+                                    <td className="px-6 py-4 font-bold text-zinc-900">{f.nome}</td>
+                                    <td className="px-6 py-4 text-zinc-500">{formatAOA(f.salario_base)}</td>
+                                    <td className="px-6 py-4">
+                                       <input type="number" min="0" step="0.5" className="w-16 bg-zinc-100 border-none rounded p-1 text-center font-bold"
+                                          value={inputs.horasExtras}
+                                          onChange={e => updatePayrollInput(f.id, 'horasExtras', Number(e.target.value))}
+                                       />
+                                    </td>
+                                    <td className="px-6 py-4">
+                                       <input type="number" min="0" className="w-16 bg-zinc-100 border-none rounded p-1 text-center font-bold text-red-500"
+                                          value={inputs.faltas}
+                                          onChange={e => updatePayrollInput(f.id, 'faltas', Number(e.target.value))}
+                                       />
+                                    </td>
+                                    <td className="px-6 py-4">
+                                       <div className="flex flex-col gap-1">
+                                          <input type="number" placeholder="Alim" className="hidden" />
+                                          <div className="text-[10px] font-bold text-zinc-500">
+                                             A: {formatAOA(f.subsidio_alimentacao)} | T: {formatAOA(f.subsidio_transporte)}
+                                          </div>
+                                       </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                       <div className="flex flex-col gap-1">
+                                          <div className="flex items-center gap-1">
+                                             <span className="text-[8px] font-black text-zinc-400">F�r:</span>
+                                             <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold"
+                                                value={inputs.subFerias} onChange={e => updatePayrollInput(f.id, 'subFerias', Number(e.target.value))} />
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                             <span className="text-[8px] font-black text-zinc-400">Nat:</span>
+                                             <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold"
+                                                value={inputs.subNatal} onChange={e => updatePayrollInput(f.id, 'subNatal', Number(e.target.value))} />
+                                          </div>
+                                       </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                       <div className="flex flex-col gap-1">
+                                          <input type="number" min="0" className="w-24 bg-zinc-100 border-none rounded p-1 text-right font-bold text-green-600"
+                                             value={inputs.bonus}
+                                             onChange={e => updatePayrollInput(f.id, 'bonus', Number(e.target.value))}
+                                          />
+                                          <div className="text-[9px] font-bold text-sky-600">Base: {formatAOA(f.outros_bonus)}</div>
+                                       </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                       <div className="flex flex-col gap-1">
+                                          <div className="flex items-center gap-1">
+                                             <span className="text-[8px] font-black text-zinc-400">Emp:</span>
+                                             <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold text-orange-600"
+                                                value={inputs.emprestimos} onChange={e => updatePayrollInput(f.id, 'emprestimos', Number(e.target.value))} />
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                             <span className="text-[8px] font-black text-zinc-400">Out:</span>
+                                             <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold text-red-400"
+                                                value={inputs.outrosDesc} onChange={e => updatePayrollInput(f.id, 'outrosDesc', Number(e.target.value))} />
+                                          </div>
+                                       </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-right font-black text-zinc-900 text-sm">
+                                       {formatAOA(preview.liquido)}
+                                    </td>
+                                 </tr>
+                              );
+                           })}
+                        </tbody>
+                     </table>
+                  </div>
+
+                  {/* LISTA DE RECIBOS GERADOS */}
+                  <div className="grid grid-cols-1 gap-4">
+                     <h3 className="text-lg font-black text-zinc-900 uppercase ml-4">Hist�rico de Recibos Emitidos</h3>
+                     {recibos.length > 0 ? recibos.map(r => (
+                        <div key={r.id} className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex items-center justify-between group hover:shadow-xl transition-all">
+                           <div className="flex items-center gap-6"><div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all"><FileText size={28} /></div><div><h4 className="font-black text-zinc-900 text-lg">{r.nome}</h4><p className="text-[10px] font-black text-zinc-400 uppercase">{r.mes} / {r.ano}</p></div></div>
+                           <div className="text-right">
+                              <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">L�quido</p>
+                              <p className="text-2xl font-black text-zinc-900">{formatAOA(r.liquido)}</p>
+                           </div>
+                           <div className="flex gap-2 ml-6">
+                              <button onClick={() => setViewingRecibo(r)} className="p-3 bg-zinc-50 text-zinc-400 hover:bg-zinc-900 hover:text-white rounded-xl transition-all"><Eye size={20} /></button>
+                              <button onClick={() => { setViewingRecibo(r); setTimeout(() => window.print(), 300); }} className="p-3 bg-zinc-50 text-zinc-400 hover:bg-sky-600 hover:text-white rounded-xl transition-all"><Printer size={20} /></button>
+                           </div>
+                        </div>
+                     )) : (
+                        <div className="py-20 text-center bg-white rounded-[3rem] border border-dashed border-sky-200"><AlertTriangle className="mx-auto text-sky-100 mb-4" size={48} /><p className="text-zinc-400 font-bold italic">Sem recibos neste ciclo.</p></div>
+                     )}
+                  </div>
+               </div>
+            )}
+
+            {/* PONTO / PRESENÇA */}
+            {activeTab === 'presenca' && (
+               <div className="space-y-8 animate-in slide-in-from-bottom-4">
+                  {/* BANNER INFORMATIVO: TERMINAL DE PONTO */}
+                  <div className="bg-zinc-900 p-10 rounded-[3rem] shadow-2xl text-white flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+                     <Fingerprint className="absolute -left-6 -bottom-6 opacity-10 text-yellow-500" size={200} />
+                     <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2">
+                           <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase rounded-full">Sistema Ativo</span>
+                           <span className="text-zinc-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><Clock size={10} /> 08:00 - 17:00</span>
+                        </div>
+                        <h3 className="text-3xl font-black uppercase text-white tracking-tighter">Terminal de <span className="text-yellow-500">Ponto Digital</span></h3>
+                        <p className="text-zinc-400 text-sm font-medium">Controlo Biométrico Virtual & Gestão de Assiduidade</p>
+                     </div>
+                     <div className="flex gap-4 relative z-10">
+                        <div className="bg-white/5 px-8 py-5 rounded-[2rem] border border-white/10 text-center backdrop-blur-md">
+                           <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">Mês de Referência</p>
+                           <p className="text-xl font-black uppercase text-yellow-500">{currentMonthName}</p>
+                        </div>
+                        <div className="bg-white/5 px-8 py-5 rounded-[2rem] border border-white/10 text-center backdrop-blur-md">
+                           <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">Data de Hoje</p>
+                           <p className="text-xl font-black">{new Date().toLocaleDateString('pt-PT')}</p>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                     {/* COLUNA ESQUERDA: RESUMO E CALENDÁRIO */}
+                     <div className="lg:col-span-8 space-y-8">
+                        {/* RESUMO MENSAL PARA RH */}
+                        {isHRAdmin && (
+                           <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden transition-all hover:shadow-xl">
+                              <div className="flex items-center justify-between mb-8">
+                                 <div>
+                                    <h3 className="text-lg font-black text-zinc-900 uppercase">Assiduidade do Ciclo</h3>
+                                    <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest">Resumo Consolidado (Base: 22 Dias Úteis)</p>
+                                 </div>
+                                 <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                       <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                       <span className="text-[10px] font-black text-zinc-500 uppercase">Faltas</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                       <div className="w-4 h-4 bg-yellow-500 rounded-lg flex items-center justify-center text-zinc-900"><Timer size={10} /></div>
+                                       <span className="text-[10px] font-black text-zinc-500 uppercase">H. Extras</span>
+                                    </div>
+                                 </div>
+                              </div>
+                              <div className="overflow-x-auto">
+                                 <table className="w-full text-left">
+                                    <thead>
+                                       <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                          <th className="px-6 py-4">Colaborador</th>
+                                          <th className="px-6 py-4 text-center">Status</th>
+                                          <th className="px-6 py-4 text-center">Presenças</th>
+                                          <th className="px-6 py-4 text-center">Faltas</th>
+                                          <th className="px-6 py-4 text-center">H. Extras</th>
+                                          <th className="px-6 py-4 text-right">Aproveitamento</th>
+                                       </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-50 text-xs">
+                                       {funcionarios.filter(f => f.status === 'ativo').map(f => {
+                                          const stats = getAutoPayrollData(f.id);
+                                          const pontoHoje = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
+                                          const presencasMes = presencas.filter(p => p.funcionario_id === f.id && p.data.startsWith(new Date().toISOString().slice(0, 7))).length;
+                                          const attendanceRate = Math.round((presencasMes / 22) * 100);
+
+                                          return (
+                                             <tr key={f.id} className="hover:bg-zinc-50/50 transition-all group">
+                                                <td className="px-6 py-4">
+                                                   <div className="flex items-center gap-3">
+                                                      <img src={f.foto_url} className="w-8 h-8 rounded-lg object-cover shadow-sm grayscale group-hover:grayscale-0 transition-all" />
+                                                      <span className="font-bold text-zinc-900 group-hover:text-yellow-600 transition-colors">{f.nome}</span>
+                                                   </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                   <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase ${pontoHoje ? (pontoHoje.saida ? 'bg-zinc-100 text-zinc-400' : 'bg-green-500 text-white shadow-sm animate-pulse') : 'bg-red-50 text-red-400'}`}>
+                                                      {pontoHoje ? (pontoHoje.saida ? 'Concluído' : 'Presente') : 'Pendente'}
+                                                   </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center font-bold text-zinc-500">{presencasMes}</td>
+                                                <td className="px-6 py-4 text-center font-black text-red-600">{stats.faltas}</td>
+                                                <td className="px-6 py-4 text-center font-black text-yellow-600">+{stats.horasExtras}h</td>
+                                                <td className="px-6 py-4">
+                                                   <div className="flex items-center justify-end gap-3">
+                                                      <div className="w-20 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                                                         <div className={`h-full rounded-full ${attendanceRate > 80 ? 'bg-green-500' : attendanceRate > 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(100, attendanceRate)}%` }}></div>
+                                                      </div>
+                                                      <span className="text-[10px] font-black text-zinc-400">{attendanceRate}%</span>
+                                                   </div>
+                                                </td>
+                                             </tr>
+                                          );
+                                       })}
+                                    </tbody>
+                                 </table>
+                              </div>
+                           </div>
+                        )}
+
+                        {/* GRID DE CARTÕES DE PONTO */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           {funcionarios.filter(f => f.status === 'ativo').map(f => {
+                              const ponto = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
+                              return (
+                                 <div key={f.id} className={`bg-white p-6 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all group ${ponto?.saida ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                                    <div className="flex items-center gap-4 mb-6">
+                                       <div className="relative">
+                                          <img src={f.foto_url} className="w-14 h-14 rounded-2xl object-cover shadow-md" />
+                                          <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${ponto ? (ponto.saida ? 'bg-zinc-400' : 'bg-green-500 animate-pulse') : 'bg-red-500'}`}></div>
+                                       </div>
+                                       <div>
+                                          <h4 className="font-black text-zinc-900 uppercase text-sm">{f.nome.split(' ')[0]}</h4>
+                                          <p className="text-[9px] font-bold text-zinc-400 uppercase">{f.funcao}</p>
+                                       </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                       <div className="grid grid-cols-2 gap-2 text-[9px] font-black uppercase text-zinc-400 bg-zinc-50 p-3 rounded-2xl">
+                                          <div className="text-center"><p className="mb-1">Entrada</p><p className="text-xs text-zinc-900 font-black">{ponto?.entrada || '--:--'}</p></div>
+                                          <div className="text-center border-l border-zinc-200"><p className="mb-1">Saída</p><p className="text-xs text-zinc-900 font-black">{ponto?.saida || '--:--'}</p></div>
+                                       </div>
+                                       {!ponto ? (
+                                          <button onClick={() => registrarPonto(f.id, 'entrada')} className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black uppercase text-[10px] hover:bg-green-600 transition-all flex items-center justify-center gap-2"><Clock size={14} /> Check-in</button>
+                                       ) : !ponto.saida ? (
+                                          <button onClick={() => registrarPonto(f.id, 'saida')} className="w-full py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><LogOut size={14} /> Check-out</button>
+                                       ) : <div className="w-full py-4 bg-zinc-100 text-zinc-400 rounded-2xl text-center font-black uppercase text-[10px]">Jornada Concluída</div>}
                                     </div>
                                  </div>
                               );
                            })}
                         </div>
                      </div>
-                  </div>
-               </div>
-            </div>
-         )}
 
-         {/* PERFORMANCE / METAS */}
-         {activeTab === 'performance' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               {/* Chart Metas */}
-               <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Aproveitamento de KPIs</h3>
-                  <ResponsiveContainer width="100%" height="85%">
-                     <BarChart data={analyticsData.barData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                        <XAxis type="number" hide />
-                        <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
-                        <Tooltip cursor={{ fill: 'transparent' }} />
-                        <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={20}>
-                           {analyticsData.barData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                           ))}
-                        </Bar>
-                     </BarChart>
-                  </ResponsiveContainer>
-               </div>
-
-               <div className="flex justify-between items-center bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-                  <Target className="absolute -right-8 -bottom-8 opacity-10" size={200} />
-                  <div><h2 className="text-3xl font-black uppercase">Desempenho</h2><p className="text-zinc-400 font-medium">Acompanhamento de KPIs</p></div>
-                  <button onClick={() => setShowMetaModal(true)} className="px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-white transition-all flex items-center gap-3 relative z-10"><PlusCircle size={20} /> Atribuir Meta</button>
-               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {metas.map(m => {
-                     const func = funcionarios.find(f => f.id === m.funcionario_id);
-                     return (
-                        <div key={m.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm space-y-6 hover:shadow-xl transition-all">
-                           <div className="flex justify-between items-start"><div className="flex items-center gap-3"><img src={func?.foto_url} className="w-10 h-10 rounded-xl object-cover grayscale" /><h4 className="font-black text-zinc-900 text-sm">{func?.nome.split(' ')[0]}</h4></div><span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${m.status === 'Concluída' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{m.status}</span></div>
-                           <h3 className="text-base font-black text-zinc-900 mb-4">{m.titulo}</h3>
-                           <div className="space-y-2">
-                              <input type="range" min="0" max="100" value={m.progresso} onChange={(e) => updateMetaProgresso(m.id, Number(e.target.value))} className="w-full h-2 bg-zinc-100 rounded-full appearance-none cursor-pointer accent-yellow-500" />
-                              <p className="text-right text-[10px] font-black text-zinc-900">{m.progresso}%</p>
+                     {/* COLUNA DIREITA: CALENDÁRIO E FEED */}
+                     <div className="lg:col-span-4 space-y-8">
+                        {/* CALENDÁRIO DE FERIADOS */}
+                        <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm">
+                           <div className="flex items-center gap-3 mb-6">
+                              <CalendarDays className="text-yellow-600" size={24} />
+                              <h3 className="text-lg font-black text-zinc-900 uppercase">Feriados {currentMonthName}</h3>
+                           </div>
+                           <div className="space-y-4">
+                              {Object.entries(HOLIDAYS_ANGOLA).filter(([md]) => md.startsWith(String(new Date().getMonth() + 1).padStart(2, '0'))).map(([md, name]) => (
+                                 <div key={md} className="flex items-start gap-4 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                                    <div className="w-12 h-12 rounded-xl bg-white flex flex-col items-center justify-center shadow-sm">
+                                       <span className="text-[8px] font-black text-zinc-400 uppercase">{currentMonthName.slice(0, 3)}</span>
+                                       <span className="text-lg font-black text-zinc-900">{md.split('-')[1]}</span>
+                                    </div>
+                                    <div className="flex-1">
+                                       <h4 className="font-black text-xs text-zinc-900">{name}</h4>
+                                       <p className="text-[9px] font-bold text-zinc-400 uppercase">Feriado Nacional</p>
+                                    </div>
+                                 </div>
+                              ))}
+                              {Object.entries(HOLIDAYS_ANGOLA).filter(([md]) => md.startsWith(String(new Date().getMonth() + 1).padStart(2, '0'))).length === 0 && (
+                                 <p className="text-zinc-400 text-xs italic text-center py-4">Sem feriados para o mês atual.</p>
+                              )}
                            </div>
                         </div>
-                     );
-                  })}
-               </div>
-            </div>
-         )}
 
-         {/* MODAL: FOLHA DE SALÁRIO GERAL (TABELA) */}
-         {showPayrollSheetModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/90 backdrop-blur-xl p-4 md:p-10 print:p-0 print:bg-white print:relative print:block">
-               <div className="bg-white w-full h-full max-w-[95vw] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl print:rounded-none print:shadow-none print:max-w-none">
-                  <style>{`
+                        {/* FEED DE ATIVIDADE */}
+                        <div className="bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+                           <Layers className="absolute -right-8 -top-8 opacity-10" size={150} />
+                           <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-3"><Zap className="text-yellow-500" size={16} /> Últimos Movimentos</h3>
+                           <div className="space-y-6 relative z-10">
+                              {presencas.slice(-5).reverse().map((p, idx) => {
+                                 const func = funcionarios.find(f => f.id === p.funcionario_id);
+                                 return (
+                                    <div key={p.id} className="flex gap-4 items-start">
+                                       <img src={func?.foto_url} className="w-8 h-8 rounded-lg object-cover grayscale" />
+                                       <div className="flex-1 border-b border-white/5 pb-3">
+                                          <p className="text-[10px] font-black text-zinc-400 uppercase"><span className="text-white">{func?.nome.split(' ')[0]}</span> • {p.data.split('-').reverse().join('/')}</p>
+                                          <p className="text-[10px] font-bold text-yellow-500">{p.saida ? 'Check-out às ' + p.saida : 'Check-in às ' + p.entrada}</p>
+                                       </div>
+                                    </div>
+                                 );
+                              })}
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            {/* PERFORMANCE / METAS */}
+            {activeTab === 'performance' && (
+               <div className="space-y-6 animate-in slide-in-from-bottom-4">
+                  {/* Chart Metas */}
+                  <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
+                     <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Aproveitamento de KPIs</h3>
+                     <ResponsiveContainer width="100%" height="85%">
+                        <BarChart data={analyticsData.barData} layout="vertical">
+                           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                           <XAxis type="number" hide />
+                           <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
+                           <Tooltip cursor={{ fill: 'transparent' }} />
+                           <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={20}>
+                              {analyticsData.barData.map((entry, index) => (
+                                 <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                           </Bar>
+                        </BarChart>
+                     </ResponsiveContainer>
+                  </div>
+
+                  <div className="flex justify-between items-center bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+                     <Target className="absolute -right-8 -bottom-8 opacity-10" size={200} />
+                     <div><h2 className="text-3xl font-black uppercase">Desempenho</h2><p className="text-zinc-400 font-medium">Acompanhamento de KPIs</p></div>
+                     <button onClick={() => setShowMetaModal(true)} className="px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-white transition-all flex items-center gap-3 relative z-10"><PlusCircle size={20} /> Atribuir Meta</button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     {metas.map(m => {
+                        const func = funcionarios.find(f => f.id === m.funcionario_id);
+                        return (
+                           <div key={m.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm space-y-6 hover:shadow-xl transition-all">
+                              <div className="flex justify-between items-start"><div className="flex items-center gap-3"><img src={func?.foto_url} className="w-10 h-10 rounded-xl object-cover grayscale" /><h4 className="font-black text-zinc-900 text-sm">{func?.nome.split(' ')[0]}</h4></div><span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${m.status === 'Concluída' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{m.status}</span></div>
+                              <h3 className="text-base font-black text-zinc-900 mb-4">{m.titulo}</h3>
+                              <div className="space-y-2">
+                                 <input type="range" min="0" max="100" value={m.progresso} onChange={(e) => updateMetaProgresso(m.id, Number(e.target.value))} className="w-full h-2 bg-zinc-100 rounded-full appearance-none cursor-pointer accent-yellow-500" />
+                                 <p className="text-right text-[10px] font-black text-zinc-900">{m.progresso}%</p>
+                              </div>
+                           </div>
+                        );
+                     })}
+                  </div>
+               </div>
+            )}
+
+            {/* MODAL: FOLHA DE SALÁRIO GERAL (TABELA) */}
+            {showPayrollSheetModal && (
+               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/90 backdrop-blur-xl p-4 md:p-10 print:p-0 print:bg-white print:relative print:block">
+                  <div className="bg-white w-full h-full max-w-[95vw] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl print:rounded-none print:shadow-none print:max-w-none">
+                     <style>{`
                      @media print {
                         @page { size: landscape; margin: 1cm; }
                         body * { visibility: hidden; }
@@ -1492,136 +1493,138 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      .highlight-bold { font-weight: bold; }
                   `}</style>
 
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center print-hidden">
-                     <div>
-                        <h2 className="text-2xl font-black uppercase text-zinc-900">Folha de Salário - {currentMonthName} {currentFiscalYear}</h2>
-                        <p className="text-zinc-500 font-medium tracking-tight uppercase text-[10px]">Documento Nº: <span className="text-zinc-900 font-black">{payrollDocNumber}</span></p>
-                        <p className="text-zinc-400 text-[9px] font-bold">Relatório Geral de Processamento</p>
-                     </div>
-                     <div className="flex gap-3">
-                        <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 transition-all flex items-center gap-2 font-bold uppercase text-[10px]">
-                           <Printer size={20} /> Imprimir Agora
-                        </button>
-                        <button onClick={() => setShowPayrollSheetModal(false)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all">
-                           <X size={24} />
-                        </button>
-                     </div>
-                  </div>
-
-                  <div className="flex-1 overflow-auto p-8 print:p-0" id="payroll-sheet-print">
-                     <div className="mb-6 text-center">
-                        <h1 className="text-xl font-bold uppercase" style={{ fontFamily: 'Times New Roman' }}>Folha de Salário - {corporateInfo?.name || 'Amazing Corporation'}</h1>
-                        <p className="text-sm italic" style={{ fontFamily: 'Times New Roman' }}>Período: {currentMonthName} de {currentFiscalYear}</p>
-                     </div>
-
-                     <table className="payroll-table">
-                        <thead>
-                           <tr>
-                              <th>Nº</th>
-                              <th>Nome</th>
-                              <th>Cargo</th>
-                              <th>Salário Base</th>
-                              <th>Horas Extras</th>
-                              <th>Subs. Alimentação</th>
-                              <th>Subs. Transporte</th>
-                              <th>Subs. Férias</th>
-                              <th>Subs. Natal</th>
-                              <th>Bônus</th>
-                              <th>Total Proventos</th>
-                              <th>INSS</th>
-                              <th>IRT</th>
-                              <th>Faltas</th>
-                              <th>Empréstimos</th>
-                              <th>Outros Desc.</th>
-                              <th>Total Descontos</th>
-                              <th className="highlight-bold">Salário Bruto</th>
-                              <th className="highlight-bold">Salário Líquido</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           {funcionarios.filter(f => f.status === 'ativo').map((f, index) => {
-                              const calc = calculatePayrollForEmployee(f);
-                              const proventosTotal = calc.totalProventos;
-                              const descontosTotal = calc.totalDescontos;
-
-                              return (
-                                 <tr key={f.id}>
-                                    <td>{index + 1}</td>
-                                    <td style={{ textAlign: 'left' }}>{f.nome}</td>
-                                    <td style={{ textAlign: 'left' }}>{f.funcao}</td>
-                                    <td>{formatAOA(f.salario_base)}</td>
-                                    <td>{formatAOA(calc.valorHorasExtras)}</td>
-                                    <td>{formatAOA(calc.subAlim)}</td>
-                                    <td>{formatAOA(calc.subTrans)}</td>
-                                    <td>{formatAOA(calc.subFerias)}</td>
-                                    <td>{formatAOA(calc.subNatal)}</td>
-                                    <td>{formatAOA(calc.premiosBonus)}</td>
-                                    <td className="highlight-bold">{formatAOA(proventosTotal)}</td>
-                                    <td>{formatAOA(calc.inss)}</td>
-                                    <td>{formatAOA(calc.irt)}</td>
-                                    <td>{formatAOA(calc.descontoFaltas)}</td>
-                                    <td>{formatAOA(calc.emprestimos)}</td>
-                                    <td>{formatAOA(calc.outrosDesc)}</td>
-                                    <td className="highlight-bold">{formatAOA(descontosTotal)}</td>
-                                    <td className="highlight-bold">{formatAOA(calc.bruto)}</td>
-                                    <td className="highlight-bold bg-yellow-50">{formatAOA(calc.liquido)}</td>
-                                 </tr>
-                              );
-                           })}
-                        </tbody>
-                     </table>
-
-                     <div className="mt-12 text-[10pt] italic" style={{ fontFamily: 'Times New Roman' }}>
-                        <p><strong>Total Proventos:</strong> Salário Base + Horas Extras + Subsídios + Bônus</p>
-                        <p><strong>Salário Bruto:</strong> Total Proventos (antes dos descontos)</p>
-                        <p><strong>Total Descontos:</strong> INSS + IRT + Faltas + Empréstimos + Outros</p>
-                        <p><strong>Salário Líquido:</strong> Salário Bruto - Total Descontos</p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         )}
-
-         {activeTab === 'passes' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               <div className="bg-zinc-50 p-10 rounded-[3rem] border border-sky-100 flex items-center justify-between"><div><h2 className="text-2xl font-black text-zinc-900 uppercase">Identificao Corporativa</h2><p className="text-zinc-500 text-sm font-medium">Emisso e gesto de passes PVC.</p></div><ScanBarcode size={32} className="text-yellow-600" /></div>
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {funcionarios.map(f => (
-                     <div key={f.id} className="bg-white p-6 rounded-[2.5rem] border border-sky-50 shadow-sm flex flex-col items-center text-center group hover:shadow-2xl transition-all">
-                        <div className="relative mb-4"><img src={f.foto_url} className="w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-xl group-hover:scale-105 transition-transform" /><div className="absolute -bottom-2 -right-2 p-2 bg-yellow-500 text-zinc-900 rounded-xl shadow-lg"><QrCode size={14} /></div></div>
-                        <h3 className="font-black text-zinc-900 text-sm truncate w-full px-4">{f.nome}</h3>
-                        <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mt-1 mb-6">{f.funcao}</p>
-
-                        <div className="flex gap-2 w-full mt-auto">
-                           <button onClick={() => setPrintingPass(f)} className="flex-1 py-3 bg-zinc-900 text-white rounded-xl font-black text-[9px] uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-2" title="Visualizar / Re-emitir">
-                              <Eye size={14} /> Visualizar
+                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center print-hidden">
+                        <div>
+                           <h2 className="text-2xl font-black uppercase text-zinc-900">Folha de Salário - {currentMonthName} {currentFiscalYear}</h2>
+                           <p className="text-zinc-500 font-medium tracking-tight uppercase text-[10px]">Documento Nº: <span className="text-zinc-900 font-black">{payrollDocNumber}</span></p>
+                           <p className="text-zinc-400 text-[9px] font-bold">Relatório Geral de Processamento</p>
+                        </div>
+                        <div className="flex gap-3">
+                           <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 transition-all flex items-center gap-2 font-bold uppercase text-[10px]">
+                              <Printer size={20} /> Imprimir Agora
                            </button>
-                           <button onClick={() => handleOpenModal(f)} className="p-3 bg-zinc-100 text-zinc-400 rounded-xl hover:bg-zinc-200 transition-all" title="Editar Dados">
-                              <Edit size={14} />
-                           </button>
-                           <button onClick={() => { if (confirm('Excluir este colaborador e o seu passe permanentemente?')) setFuncionarios(funcionarios.filter(x => x.id !== f.id)) }} className="p-3 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all" title="Excluir">
-                              <Trash2 size={14} />
+                           <button onClick={() => setShowPayrollSheetModal(false)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all">
+                              <X size={24} />
                            </button>
                         </div>
                      </div>
-                  ))}
+
+                     <div className="flex-1 overflow-auto p-8 print:p-0" id="payroll-sheet-print">
+                        <div className="mb-6 text-center">
+                           <h1 className="text-xl font-bold uppercase" style={{ fontFamily: 'Times New Roman' }}>Folha de Salário - {corporateInfo?.name || 'Amazing Corporation'}</h1>
+                           <p className="text-sm italic" style={{ fontFamily: 'Times New Roman' }}>Período: {currentMonthName} de {currentFiscalYear}</p>
+                        </div>
+
+                        <table className="payroll-table">
+                           <thead>
+                              <tr>
+                                 <th>Nº</th>
+                                 <th>Nome</th>
+                                 <th>Cargo</th>
+                                 <th>Salário Base</th>
+                                 <th>Horas Extras</th>
+                                 <th>Subs. Alimentação</th>
+                                 <th>Subs. Transporte</th>
+                                 <th>Subs. Férias</th>
+                                 <th>Subs. Natal</th>
+                                 <th>Bônus</th>
+                                 <th>Total Proventos</th>
+                                 <th>INSS</th>
+                                 <th>IRT</th>
+                                 <th>Faltas</th>
+                                 <th>Empréstimos</th>
+                                 <th>Outros Desc.</th>
+                                 <th>Total Descontos</th>
+                                 <th className="highlight-bold">Salário Bruto</th>
+                                 <th className="highlight-bold">Salário Líquido</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              {funcionarios.filter(f => f.status === 'ativo').map((f, index) => {
+                                 const calc = calculatePayrollForEmployee(f);
+                                 const proventosTotal = calc.totalProventos;
+                                 const descontosTotal = calc.totalDescontos;
+
+                                 return (
+                                    <tr key={f.id}>
+                                       <td>{index + 1}</td>
+                                       <td style={{ textAlign: 'left' }}>{f.nome}</td>
+                                       <td style={{ textAlign: 'left' }}>{f.funcao}</td>
+                                       <td>{formatAOA(f.salario_base)}</td>
+                                       <td>{formatAOA(calc.valorHorasExtras)}</td>
+                                       <td>{formatAOA(calc.subAlim)}</td>
+                                       <td>{formatAOA(calc.subTrans)}</td>
+                                       <td>{formatAOA(calc.subFerias)}</td>
+                                       <td>{formatAOA(calc.subNatal)}</td>
+                                       <td>{formatAOA(calc.premiosBonus)}</td>
+                                       <td className="highlight-bold">{formatAOA(proventosTotal)}</td>
+                                       <td>{formatAOA(calc.inss)}</td>
+                                       <td>{formatAOA(calc.irt)}</td>
+                                       <td>{formatAOA(calc.descontoFaltas)}</td>
+                                       <td>{formatAOA(calc.emprestimos)}</td>
+                                       <td>{formatAOA(calc.outrosDesc)}</td>
+                                       <td className="highlight-bold">{formatAOA(descontosTotal)}</td>
+                                       <td className="highlight-bold">{formatAOA(calc.bruto)}</td>
+                                       <td className="highlight-bold bg-yellow-50">{formatAOA(calc.liquido)}</td>
+                                    </tr>
+                                 );
+                              })}
+                           </tbody>
+                        </table>
+
+                        <div className="mt-12 text-[10pt] italic" style={{ fontFamily: 'Times New Roman' }}>
+                           <p><strong>Total Proventos:</strong> Salário Base + Horas Extras + Subsídios + Bônus</p>
+                           <p><strong>Salário Bruto:</strong> Total Proventos (antes dos descontos)</p>
+                           <p><strong>Total Descontos:</strong> INSS + IRT + Faltas + Empréstimos + Outros</p>
+                           <p><strong>Salário Líquido:</strong> Salário Bruto - Total Descontos</p>
+                        </div>
+                     </div>
+                  </div>
                </div>
-            </div>
-         )}
+            )}
 
-         {/* CONTAS BANCÁRIAS (GLOBAL) */}
-         {activeTab === 'contas' && (
-            <div className="animate-in slide-in-from-bottom-4">
-               <ContasBancariasPage user={user} inAppTab={true} />
-            </div>
-         )}
+            {activeTab === 'passes' && (
+               <div className="space-y-6 animate-in slide-in-from-bottom-4">
+                  <div className="bg-zinc-50 p-10 rounded-[3rem] border border-sky-100 flex items-center justify-between"><div><h2 className="text-2xl font-black text-zinc-900 uppercase">Identificao Corporativa</h2><p className="text-zinc-500 text-sm font-medium">Emisso e gesto de passes PVC.</p></div><ScanBarcode size={32} className="text-yellow-600" /></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                     {funcionarios.map(f => (
+                        <div key={f.id} className="bg-white p-6 rounded-[2.5rem] border border-sky-50 shadow-sm flex flex-col items-center text-center group hover:shadow-2xl transition-all">
+                           <div className="relative mb-4"><img src={f.foto_url} className="w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-xl group-hover:scale-105 transition-transform" /><div className="absolute -bottom-2 -right-2 p-2 bg-yellow-500 text-zinc-900 rounded-xl shadow-lg"><QrCode size={14} /></div></div>
+                           <h3 className="font-black text-zinc-900 text-sm truncate w-full px-4">{f.nome}</h3>
+                           <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mt-1 mb-6">{f.funcao}</p>
 
-         {/* VAGAS DE EMPREGO (RECRUTAMENTO) */}
-         {activeTab === 'vagas' && (
-            <div className="animate-in slide-in-from-bottom-4">
-               <VagasAdminTab />
-            </div>
-         )}
+                           <div className="flex gap-2 w-full mt-auto">
+                              <button onClick={() => setPrintingPass(f)} className="flex-1 py-3 bg-zinc-900 text-white rounded-xl font-black text-[9px] uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-2" title="Visualizar / Re-emitir">
+                                 <Eye size={14} /> Visualizar
+                              </button>
+                              <button onClick={() => handleOpenModal(f)} className="p-3 bg-zinc-100 text-zinc-400 rounded-xl hover:bg-zinc-200 transition-all" title="Editar Dados">
+                                 <Edit size={14} />
+                              </button>
+                              <button onClick={() => { if (confirm('Excluir este colaborador e o seu passe permanentemente?')) setFuncionarios(funcionarios.filter(x => x.id !== f.id)) }} className="p-3 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all" title="Excluir">
+                                 <Trash2 size={14} />
+                              </button>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            )}
+
+            {/* CONTAS BANCÁRIAS (GLOBAL) */}
+            {activeTab === 'contas' && (
+               <div className="animate-in slide-in-from-bottom-4">
+                  <ContasBancariasPage user={user} inAppTab={true} />
+               </div>
+            )}
+
+            {/* VAGAS DE EMPREGO (RECRUTAMENTO) */}
+            {activeTab === 'vagas' && (
+               <div className="animate-in slide-in-from-bottom-4">
+                  <VagasAdminTab />
+               </div>
+            )}
+
+         </div>
 
          {/* MODAL CADASTRO FUNCIONÁRIO (MANTIDO) */}
          {
