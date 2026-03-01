@@ -1827,25 +1827,26 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             <>
                <style>{`
                   @media print {
-                     @page {size: A4; margin: 0; }
-                  body {margin: 0; padding: 0; }
+                     @page { size: A4; margin: 0; }
+                     body { margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                     .print-bg-fix { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                   }
                `}</style>
 
                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10 print:static print:p-0 print:bg-white print:block">
-                  <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:mx-auto min-h-[1120px] flex flex-col overflow-hidden">
+                  <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:mx-auto min-h-[296mm] flex flex-col overflow-hidden">
 
-                     {/* DESIGN GEOMÉTRICO SUPERIOR (TEMPLATE) */}
-                     <div className="relative h-56 w-full print:h-56 overflow-hidden bg-white border-b-4 border-zinc-900">
+                     {/* DESIGN GEOMÉTRICO SUPERIOR (POLÍGONOS FORÇADOS PARA PRINT) */}
+                     <div className="relative h-48 w-full print:h-48 overflow-hidden bg-white border-b-4 border-zinc-900 print-bg-fix">
                         {/* Blue Polygon */}
                         <div
-                           className="absolute top-0 right-0 w-[65%] h-full bg-sky-600 origin-top-right print:bg-sky-600"
-                           style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}
+                           className="absolute top-0 right-0 w-[65%] h-full bg-sky-600 origin-top-right print:bg-sky-600 print-bg-fix"
+                           style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)', WebkitPrintColorAdjust: 'exact' }}
                         ></div>
                         {/* Black Polygon */}
                         <div
-                           className="absolute top-0 right-0 w-[55%] h-[85%] bg-zinc-900 origin-top-right print:bg-zinc-900"
-                           style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)' }}
+                           className="absolute top-0 right-0 w-[55%] h-[85%] bg-zinc-900 origin-top-right print:bg-zinc-900 print-bg-fix"
+                           style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)', WebkitPrintColorAdjust: 'exact' }}
                         ></div>
 
                         {/* DESIGN GEOMÉTRICO - APENAS VISUAL */}
@@ -1931,20 +1932,22 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </button>
                      </div>
 
-                     <div className="flex-1 px-16 py-8 print:px-12">
-                        {/* LINHA DE TÍTULO - REESTRUTURADA (LOGO E TÍTULO 18PX NA MESMA LINHA) */}
-                        <div className="border-b-[4px] border-zinc-900 pb-8 mb-8 flex justify-between items-center">
-                           {/* ESQUERDA: LOGO + INFO (TAMANHO AJUSTADO) */}
+                     <div className="flex-1 px-16 py-8 print:px-12 flex flex-col">
+                        {/* LINHA DE TÍTULO - REESTRUTURADA PARA MÁXIMA VISIBILIDADE */}
+                        <div className="border-b-[4px] border-zinc-900 pb-6 mb-8 flex justify-between items-center">
+                           {/* ESQUERDA: LOGO E INFO (MAIS ROBUSTO) */}
                            <div className="flex items-center gap-6">
-                              <div className="w-48 h-24 bg-zinc-50 rounded-2xl flex items-center justify-center p-3 border border-zinc-200 shadow-sm print:border-none print:shadow-none">
-                                 <Logo className="h-16 w-auto" />
+                              <div className="w-40 h-20 bg-zinc-50 rounded-xl flex items-center justify-center p-2 border border-zinc-100 print:border-none print-bg-fix">
+                                 <Logo className="h-14 w-auto" />
+                                 {/* Fallback text se o logo falhar */}
+                                 <span className="sr-only">Amazing Corporation</span>
                               </div>
-                              <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400">
-                                 <span className="text-zinc-900 font-black text-[11px] mb-1">NIF: 50002181797</span>
-                                 <span>Endereço: Benguela/Angola</span>
-                                 <span>Bairro Massangarala</span>
-                                 <span className="text-zinc-800 mt-1 font-bold">Contacto: +244 931 116 696</span>
-                                 <span className="lowercase text-sky-600 font-bold">Email: geral.amazingcorporation@gmail.com</span>
+                              <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-500">
+                                 <span className="text-zinc-900 font-black text-[12px] mb-1 tracking-tighter italic">Amazing Corporation</span>
+                                 <span className="text-zinc-800">NIF: 50002181797</span>
+                                 <span>Benguela/Angola • Massangarala</span>
+                                 <span className="text-zinc-800 mt-0.5 font-bold">Tel: +244 931 116 696</span>
+                                 <span className="lowercase text-sky-600 font-black">Email: geral.amazingcorporation@gmail.com</span>
                               </div>
                            </div>
 
@@ -2088,17 +2091,17 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                      </div>
 
-                     {/* DESIGN GEOMÉTRICO INFERIOR (TEMPLATE) */}
-                     <div className="relative h-32 w-full mt-auto mb-[-1px] overflow-hidden bg-white">
+                     {/* DESIGN GEOMÉTRICO INFERIOR (FORCE PRINT COLORS) */}
+                     <div className="relative h-24 w-full mt-auto mb-[-1px] overflow-hidden bg-white print-bg-fix">
                         {/* Light Blue Polygon */}
                         <div
-                           className="absolute bottom-0 left-0 w-[60%] h-full bg-sky-600 origin-bottom-left print:bg-sky-600"
-                           style={{ clipPath: 'polygon(0 0, 85% 100%, 0 100%)' }}
+                           className="absolute bottom-0 left-0 w-[60%] h-full bg-sky-600 origin-bottom-left print:bg-sky-600 print-bg-fix"
+                           style={{ clipPath: 'polygon(0 0, 85% 100%, 0 100%)', WebkitPrintColorAdjust: 'exact' }}
                         ></div>
                         {/* Black Polygon */}
                         <div
-                           className="absolute bottom-0 left-0 w-[50%] h-[75%] bg-zinc-900 origin-bottom-left print:bg-zinc-900"
-                           style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)' }}
+                           className="absolute bottom-0 left-0 w-[50%] h-[75%] bg-zinc-900 origin-bottom-left print:bg-zinc-900 print-bg-fix"
+                           style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)', WebkitPrintColorAdjust: 'exact' }}
                         ></div>
 
                         <div className='absolute bottom-8 right-12 z-10 flex flex-col gap-1 items-end text-right'>
