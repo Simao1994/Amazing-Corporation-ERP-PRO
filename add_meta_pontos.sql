@@ -20,4 +20,20 @@ CREATE TABLE IF NOT EXISTS public.hr_metas (
 );
 
 GRANT ALL ON public.hr_metas TO anon, authenticated, service_role;
+
+-- 4. CONFIGURAR RLS (Row Level Security)
+-- Isto é o que impede o erro "new row violates row-level security policy"
+ALTER TABLE public.hr_metas ENABLE ROW LEVEL SECURITY;
+
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'hr_metas' AND policyname = 'Permitir tudo para autenticados') THEN
+        CREATE POLICY "Permitir tudo para autenticados" 
+        ON public.hr_metas FOR ALL 
+        TO authenticated 
+        USING (true) 
+        WITH CHECK (true);
+    END IF;
+END $$;
+
 NOTIFY pgrst, 'reload schema';
