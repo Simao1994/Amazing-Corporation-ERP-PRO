@@ -42,9 +42,17 @@ const WORK_RULES = {
    overtimeRateSpecial: 2.0 // 200% Fim de semana/Feriados
 };
 
-const HOLIDAYS_ANGOLA = [
-   '01-01', '02-04', '03-08', '04-04', '05-01', '09-17', '11-02', '11-11', '12-25'
-];
+const HOLIDAYS_ANGOLA: Record<string, string> = {
+   '01-01': 'Ano Novo',
+   '02-04': 'Dia do Início da Luta Armada',
+   '03-08': 'Dia Internacional da Mulher',
+   '04-04': 'Dia da Paz e Reconciliação Nacional',
+   '05-01': 'Dia Internacional do Trabalhador',
+   '09-17': 'Dia do Herói Nacional',
+   '11-02': 'Dia dos Finados',
+   '11-11': 'Dia da Independência Nacional',
+   '12-25': 'Natal'
+};
 
 const PROVINCIAS = [
    'Bengo', 'Benguela', 'Bi�', 'Cabinda', 'Cuando Cubango', 'Cuanza Norte', 'Cuanza Sul',
@@ -83,10 +91,11 @@ const isSpecialDay = (dateStr: string) => {
    const day = date.getDay();
    const md = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-   const isWeekend = day === 0 || day === 6; // Domingo ou S�bado
-   const isHoliday = HOLIDAYS_ANGOLA.includes(md);
+   const isWeekend = day === 0 || day === 6; // Domingo ou Sbado
+   const holidayName = HOLIDAYS_ANGOLA[md];
+   const isHoliday = !!holidayName;
 
-   return { isWeekend, isHoliday, isSpecial: isWeekend || isHoliday };
+   return { isWeekend, isHoliday, holidayName, isSpecial: isWeekend || isHoliday };
 };
 
 const calculateTimeStats = (start: string, end: string, dateStr: string) => {
@@ -1227,111 +1236,224 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
          {/* PONTO / PRESENÇA */}
          {activeTab === 'presenca' && (
-            <div className='space-y-8 animate-in slide-in-from-bottom-4'>
-               <div className='bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white flex items-center justify-between'>
-                  <div><h3 className='text-xl font-black uppercase text-yellow-500'>Terminal de Ponto</h3><p className='text-zinc-400 text-sm font-medium'>Controlo Biométrico Virtual</p></div>
-                  <div className='flex gap-4'>
-                     <div className='bg-white/5 px-6 py-4 rounded-3xl border border-white/10 text-center'><p className='text-[10px] font-black text-zinc-500 uppercase'>Mês</p><p className='text-xl font-black uppercase'>{currentMonthName}</p></div>
-                     <div className='bg-white/5 px-6 py-4 rounded-3xl border border-white/10 text-center'><p className='text-[10px] font-black text-zinc-500 uppercase'>Hoje</p><p className='text-xl font-black'>{new Date().toLocaleDateString('pt-PT')}</p></div>
+            <div className="space-y-8 animate-in slide-in-from-bottom-4">
+               {/* BANNER INFORMATIVO: TERMINAL DE PONTO */}
+               <div className="bg-zinc-900 p-10 rounded-[3rem] shadow-2xl text-white flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+                  <Fingerprint className="absolute -left-6 -bottom-6 opacity-10 text-yellow-500" size={200} />
+                  <div className="relative z-10">
+                     <div className="flex items-center gap-3 mb-2">
+                        <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase rounded-full">Sistema Ativo</span>
+                        <span className="text-zinc-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><Clock size={10} /> 08:00 - 17:00</span>
+                     </div>
+                     <h3 className="text-3xl font-black uppercase text-white tracking-tighter">Terminal de <span className="text-yellow-500">Ponto Digital</span></h3>
+                     <p className="text-zinc-400 text-sm font-medium">Controlo Biométrico Virtual & Gestão de Assiduidade</p>
+                  </div>
+                  <div className="flex gap-4 relative z-10">
+                     <div className="bg-white/5 px-8 py-5 rounded-[2rem] border border-white/10 text-center backdrop-blur-md">
+                        <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">Mês de Referência</p>
+                        <p className="text-xl font-black uppercase text-yellow-500">{currentMonthName}</p>
+                     </div>
+                     <div className="bg-white/5 px-8 py-5 rounded-[2rem] border border-white/10 text-center backdrop-blur-md">
+                        <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">Data de Hoje</p>
+                        <p className="text-xl font-black">{new Date().toLocaleDateString('pt-PT')}</p>
+                     </div>
                   </div>
                </div>
 
-               {/* RESUMO MENSAL PARA RH */}
-               {isHRAdmin && (
-                  <div className='bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden animate-in fade-in duration-700'>
-                     <div className='flex items-center justify-between mb-8'>
-                        <div>
-                           <h3 className='text-lg font-black text-zinc-900 uppercase'>Resumo Mensal de Assiduidade</h3>
-                           <p className='text-xs text-zinc-400 font-bold uppercase tracking-widest'>Controlo de Faltas e Horas Extras</p>
-                        </div>
-                        <div className='flex items-center gap-4'>
-                           <div className='flex items-center gap-2'><div className='w-3 h-3 bg-red-500 rounded-full'></div><span className='text-[10px] font-black text-zinc-500 uppercase'>Faltas</span></div>
-                           <div className='flex items-center gap-2'><div className='w-3 h-3 bg-yellow-500 rounded-full'></div><span className='text-[10px] font-black text-zinc-500 uppercase'>Horas Extras</span></div>
-                        </div>
-                     </div>
-                     <div className='overflow-x-auto'>
-                        <table className='w-full text-left'>
-                           <thead>
-                              <tr className='bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest'>
-                                 <th className='px-6 py-4'>Colaborador</th>
-                                 <th className='px-6 py-4'>Status Hoje</th>
-                                 <th className='px-6 py-4 text-center'>Presen�as</th>
-                                 <th className='px-6 py-4 text-center'>Faltas</th>
-                                 <th className='px-6 py-4 text-center'>H. Extras Acum.</th>
-                                 <th className='px-6 py-4 text-right'>Progresso (22d)</th>
-                              </tr>
-                           </thead>
-                           <tbody className='divide-y divide-zinc-50 text-xs'>
-                              {funcionarios.filter(f => f.status === 'ativo').map(f => {
-                                 const stats = getAutoPayrollData(f.id);
-                                 const pontoHoje = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
-                                 const presencasMes = presencas.filter(p => p.funcionario_id === f.id && p.data.startsWith(new Date().toISOString().slice(0, 7))).length;
-                                 
-                                 return (
-                                    <tr key={f.id} className='hover:bg-zinc-50/50 transition-all'>
-                                       <td className='px-6 py-4'>
-                                          <div className='flex items-center gap-3'>
-                                             <img src={f.foto_url} className='w-8 h-8 rounded-lg object-cover shadow-sm' />
-                                             <span className='font-bold text-zinc-900'>{f.nome}</span>
-                                          </div>
-                                       </td>
-                                       <td className='px-6 py-4'>
-                                          <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase ${pontoHoje ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-500'}`}>
-                                             {pontoHoje ? (pontoHoje.saida ? 'Conclu�do' : 'Presente') : 'Pendente'}
-                                          </span>
-                                       </td>
-                                       <td className='px-6 py-4 text-center font-bold text-zinc-600'>{presencasMes}</td>
-                                       <td className='px-6 py-4 text-center font-black text-red-600'>{stats.faltas}</td>
-                                       <td className='px-6 py-4 text-center font-black text-yellow-600'>+{stats.horasExtras}h</td>
-                                       <td className='px-6 py-4'>
-                                          <div className='flex items-center justify-end gap-3'>
-                                             <div className='w-24 h-1.5 bg-zinc-100 rounded-full overflow-hidden'>
-                                                <div 
-                                                   className='h-full bg-zinc-900 rounded-full' 
-                                                   style={{ width: `${Math.min(100, (presencasMes / 22) * 100)}%` }}
-                                                ></div>
-                                             </div>
-                                             <span className='text-[10px] font-black text-zinc-400'>{Math.round((presencasMes / 22) * 100)}%</span>
-                                          </div>
-                                       </td>
-                                    </tr>
-                                 );
-                              })}
-                           </tbody>
-                        </table>
-                     </div>
-                  </div>
-               )}
-               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {funcionarios.filter(f => f.status === 'ativo').map(f => {
-                     const ponto = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
-                     const isLate = ponto?.status === 'Atraso';
-
-                     return (
-                        <div key={f.id} className={`bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all ${ponto?.saida ? 'bg-zinc-50/50 grayscale opacity-60' : ''}`}>
-                           <div className="flex items-center gap-4 mb-8">
-                              <div className="relative">
-                                 <img src={f.foto_url} className="w-16 h-16 rounded-2xl object-cover shadow-md" />
-                                 <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${ponto ? (ponto.saida ? 'bg-zinc-400' : 'bg-green-500 animate-pulse') : 'bg-red-500'}`}></div>
-                              </div>
+               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* COLUNA ESQUERDA: RESUMO E CALENDÁRIO */}
+                  <div className="lg:col-span-8 space-y-8">
+                     {/* RESUMO MENSAL PARA RH */}
+                     {isHRAdmin && (
+                        <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden transition-all hover:shadow-xl">
+                           <div className="flex items-center justify-between mb-8">
                               <div>
-                                 <h4 className="font-black text-zinc-900">{f.nome.split(' ')[0]}</h4>
-                                 <p className="text-[10px] font-bold text-zinc-400 uppercase">{f.funcao}</p>
-                                 {isLate && <span className="text-[9px] text-red-500 font-black uppercase bg-red-50 px-2 py-0.5 rounded mt-1 inline-block">Atraso Registo</span>}
+                                 <h3 className="text-lg font-black text-zinc-900 uppercase">Assiduidade do Ciclo</h3>
+                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest">Resumo Consolidado (Base: 22 Dias Úteis)</p>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                 <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                    <span className="text-[10px] font-black text-zinc-500 uppercase">Faltas</span>
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-yellow-500 rounded-lg flex items-center justify-center text-zinc-900"><Timer size={10} /></div>
+                                    <span className="text-[10px] font-black text-zinc-500 uppercase">H. Extras</span>
+                                 </div>
                               </div>
                            </div>
-                           <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-2 text-[10px] font-black uppercase text-zinc-400 bg-zinc-50 p-4 rounded-2xl">
-                                 <div className="text-center"><p className="mb-1">Entrada</p><p className="text-sm text-zinc-900 font-black">{ponto?.entrada || '--:--'}</p></div>
-                                 <div className="text-center border-l border-zinc-200"><p className="mb-1">Sa�da</p><p className="text-sm text-zinc-900 font-black">{ponto?.saida || '--:--'}</p></div>
+                           <div className="overflow-x-auto">
+                              <table className="w-full text-left">
+                                 <thead>
+                                    <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                       <th className="px-6 py-4">Colaborador</th>
+                                       <th className="px-6 py-4 text-center">Status</th>
+                                       <th className="px-6 py-4 text-center">Presenças</th>
+                                       <th className="px-6 py-4 text-center">Faltas</th>
+                                       <th className="px-6 py-4 text-center">H. Extras</th>
+                                       <th className="px-6 py-4 text-right">Aproveitamento</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-zinc-50 text-xs">
+                                    {funcionarios.filter(f => f.status === 'ativo').map(f => {
+                                       const stats = getAutoPayrollData(f.id);
+                                       const pontoHoje = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
+                                       const presencasMes = presencas.filter(p => p.funcionario_id === f.id && p.data.startsWith(new Date().toISOString().slice(0, 7))).length;
+                                       const attendanceRate = Math.round((presencasMes / 22) * 100);
+
+                                       return (
+                                          <tr key={f.id} className="hover:bg-zinc-50/50 transition-all group">
+                                             <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                   <img src={f.foto_url} className="w-8 h-8 rounded-lg object-cover shadow-sm grayscale group-hover:grayscale-0 transition-all" />
+                                                   <span className="font-bold text-zinc-900 group-hover:text-yellow-600 transition-colors">{f.nome}</span>
+                                                </div>
+                                             </td>
+                                             <td className="px-6 py-4 text-center">
+                                                <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase ${pontoHoje ? (pontoHoje.saida ? 'bg-zinc-100 text-zinc-400' : 'bg-green-500 text-white shadow-sm animate-pulse') : 'bg-red-50 text-red-400'}`}>
+                                                   {pontoHoje ? (pontoHoje.saida ? 'Concluído' : 'Presente') : 'Pendente'}
+                                                </span>
+                                             </td>
+                                             <td className="px-6 py-4 text-center font-bold text-zinc-500">{presencasMes}</td>
+                                             <td className="px-6 py-4 text-center font-black text-red-600">{stats.faltas}</td>
+                                             <td className="px-6 py-4 text-center font-black text-yellow-600">+{stats.horasExtras}h</td>
+                                             <td className="px-6 py-4">
+                                                <div className="flex items-center justify-end gap-3">
+                                                   <div className="w-20 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                                                      <div className={`h-full rounded-full ${attendanceRate > 80 ? 'bg-green-500' : attendanceRate > 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(100, attendanceRate)}%` }}></div>
+                                                   </div>
+                                                   <span className="text-[10px] font-black text-zinc-400">{attendanceRate}%</span>
+                                                </div>
+                                             </td>
+                                          </tr>
+                                       );
+                                    })}
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+                     )}
+
+                     {/* GRID DE CARTÕES DE PONTO */}
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {funcionarios.filter(f => f.status === 'ativo').map(f => {
+                           const ponto = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
+                           return (
+                              <div key={f.id} className={`bg-white p-6 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all group ${ponto?.saida ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                                 <div className="flex items-center gap-4 mb-6">
+                                    <div className="relative">
+                                       <img src={f.foto_url} className="w-14 h-14 rounded-2xl object-cover shadow-md" />
+                                       <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${ponto ? (ponto.saida ? 'bg-zinc-400' : 'bg-green-500 animate-pulse') : 'bg-red-500'}`}></div>
+                                    </div>
+                                    <div>
+                                       <h4 className="font-black text-zinc-900 uppercase text-sm">{f.nome.split(' ')[0]}</h4>
+                                       <p className="text-[9px] font-bold text-zinc-400 uppercase">{f.funcao}</p>
+                                    </div>
+                                 </div>
+                                 <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-2 text-[9px] font-black uppercase text-zinc-400 bg-zinc-50 p-3 rounded-2xl">
+                                       <div className="text-center"><p className="mb-1">Entrada</p><p className="text-xs text-zinc-900 font-black">{ponto?.entrada || '--:--'}</p></div>
+                                       <div className="text-center border-l border-zinc-200"><p className="mb-1">Saída</p><p className="text-xs text-zinc-900 font-black">{ponto?.saida || '--:--'}</p></div>
+                                    </div>
+                                    {!ponto ? (
+                                       <button onClick={() => registrarPonto(f.id, 'entrada')} className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black uppercase text-[10px] hover:bg-green-600 transition-all flex items-center justify-center gap-2"><Clock size={14} /> Check-in</button>
+                                    ) : !ponto.saida ? (
+                                       <button onClick={() => registrarPonto(f.id, 'saida')} className="w-full py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><LogOut size={14} /> Check-out</button>
+                                    ) : <div className="w-full py-4 bg-zinc-100 text-zinc-400 rounded-2xl text-center font-black uppercase text-[10px]">Jornada Concluída</div>}
+                                 </div>
                               </div>
-                              {ponto?.saida && ponto.horas_extras > 0 && <div className="flex justify-between items-center px-4 py-2 bg-yellow-50 rounded-xl border border-yellow-100"><span className="text-[9px] font-black text-yellow-700 uppercase">H. Extras</span><span className="text-sm font-black text-zinc-900">+{ponto.horas_extras}h</span></div>}
-                              {!ponto ? (
-                                 <button onClick={() => registrarPonto(f.id, 'entrada')} className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black uppercase text-[11px] hover:bg-green-600 transition-all flex items-center justify-center gap-2"><Clock size={16} /> Check-in</button>
-                              ) : !ponto.saida ? (
-                                 <button onClick={() => registrarPonto(f.id, 'saida')} className="w-full py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[11px] hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><LogOut size={16} /> Check-out</button>
-                              ) : <div className="w-full py-4 bg-zinc-100 text-zinc-400 rounded-2xl text-center font-black uppercase text-[11px]">Jornada Conclu�da</div>}
+                           );
+                        })}
+                     </div>
+                  </div>
+
+                  {/* COLUNA DIREITA: CALENDÁRIO E FEED */}
+                  <div className="lg:col-span-4 space-y-8">
+                     {/* CALENDÁRIO DE FERIADOS */}
+                     <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-6">
+                           <CalendarDays className="text-yellow-600" size={24} />
+                           <h3 className="text-lg font-black text-zinc-900 uppercase">Feriados {currentMonthName}</h3>
+                        </div>
+                        <div className="space-y-4">
+                           {Object.entries(HOLIDAYS_ANGOLA).filter(([md]) => md.startsWith(String(new Date().getMonth() + 1).padStart(2, '0'))).map(([md, name]) => (
+                              <div key={md} className="flex items-start gap-4 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                                 <div className="w-12 h-12 rounded-xl bg-white flex flex-col items-center justify-center shadow-sm">
+                                    <span className="text-[8px] font-black text-zinc-400 uppercase">{currentMonthName.slice(0, 3)}</span>
+                                    <span className="text-lg font-black text-zinc-900">{md.split('-')[1]}</span>
+                                 </div>
+                                 <div className="flex-1">
+                                    <h4 className="font-black text-xs text-zinc-900">{name}</h4>
+                                    <p className="text-[9px] font-bold text-zinc-400 uppercase">Feriado Nacional</p>
+                                 </div>
+                              </div>
+                           ))}
+                           {Object.entries(HOLIDAYS_ANGOLA).filter(([md]) => md.startsWith(String(new Date().getMonth() + 1).padStart(2, '0'))).length === 0 && (
+                              <p className="text-zinc-400 text-xs italic text-center py-4">Sem feriados para o mês atual.</p>
+                           )}
+                        </div>
+                     </div>
+
+                     {/* FEED DE ATIVIDADE */}
+                     <div className="bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+                        <Layers className="absolute -right-8 -top-8 opacity-10" size={150} />
+                        <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-3"><Zap className="text-yellow-500" size={16} /> Últimos Movimentos</h3>
+                        <div className="space-y-6 relative z-10">
+                           {presencas.slice(-5).reverse().map((p, idx) => {
+                              const func = funcionarios.find(f => f.id === p.funcionario_id);
+                              return (
+                                 <div key={p.id} className="flex gap-4 items-start">
+                                    <img src={func?.foto_url} className="w-8 h-8 rounded-lg object-cover grayscale" />
+                                    <div className="flex-1 border-b border-white/5 pb-3">
+                                       <p className="text-[10px] font-black text-zinc-400 uppercase"><span className="text-white">{func?.nome.split(' ')[0]}</span> • {p.data.split('-').reverse().join('/')}</p>
+                                       <p className="text-[10px] font-bold text-yellow-500">{p.saida ? 'Check-out às ' + p.saida : 'Check-in às ' + p.entrada}</p>
+                                    </div>
+                                 </div>
+                              );
+                           })}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
+
+         {/* PERFORMANCE / METAS */}
+         {activeTab === 'performance' && (
+            <div className="space-y-6 animate-in slide-in-from-bottom-4">
+               {/* Chart Metas */}
+               <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Aproveitamento de KPIs</h3>
+                  <ResponsiveContainer width="100%" height="85%">
+                     <BarChart data={analyticsData.barData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
+                        <Tooltip cursor={{ fill: 'transparent' }} />
+                        <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={20}>
+                           {analyticsData.barData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                           ))}
+                        </Bar>
+                     </BarChart>
+                  </ResponsiveContainer>
+               </div>
+
+               <div className="flex justify-between items-center bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+                  <Target className="absolute -right-8 -bottom-8 opacity-10" size={200} />
+                  <div><h2 className="text-3xl font-black uppercase">Desempenho</h2><p className="text-zinc-400 font-medium">Acompanhamento de KPIs</p></div>
+                  <button onClick={() => setShowMetaModal(true)} className="px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-white transition-all flex items-center gap-3 relative z-10"><PlusCircle size={20} /> Atribuir Meta</button>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {metas.map(m => {
+                     const func = funcionarios.find(f => f.id === m.funcionario_id);
+                     return (
+                        <div key={m.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm space-y-6 hover:shadow-xl transition-all">
+                           <div className="flex justify-between items-start"><div className="flex items-center gap-3"><img src={func?.foto_url} className="w-10 h-10 rounded-xl object-cover grayscale" /><h4 className="font-black text-zinc-900 text-sm">{func?.nome.split(' ')[0]}</h4></div><span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${m.status === 'Concluída' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{m.status}</span></div>
+                           <h3 className="text-base font-black text-zinc-900 mb-4">{m.titulo}</h3>
+                           <div className="space-y-2">
+                              <input type="range" min="0" max="100" value={m.progresso} onChange={(e) => updateMetaProgresso(m.id, Number(e.target.value))} className="w-full h-2 bg-zinc-100 rounded-full appearance-none cursor-pointer accent-yellow-500" />
+                              <p className="text-right text-[10px] font-black text-zinc-900">{m.progresso}%</p>
                            </div>
                         </div>
                      );
@@ -1340,56 +1462,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-{/* PERFORMANCE / METAS */ }
-         {activeTab === 'performance' && (
-         <div className="space-y-6 animate-in slide-in-from-bottom-4">
-            {/* Chart Metas */}
-            <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
-               <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Aproveitamento de KPIs</h3>
-               <ResponsiveContainer width="100%" height="85%">
-                  <BarChart data={analyticsData.barData} layout="vertical">
-                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                     <XAxis type="number" hide />
-                     <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
-                     <Tooltip cursor={{ fill: 'transparent' }} />
-                     <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={20}>
-                        {analyticsData.barData.map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                     </Bar>
-                  </BarChart>
-               </ResponsiveContainer>
-            </div>
-
-            <div className="flex justify-between items-center bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-               <Target className="absolute -right-8 -bottom-8 opacity-10" size={200} />
-               <div><h2 className="text-3xl font-black uppercase">Desempenho</h2><p className="text-zinc-400 font-medium">Acompanhamento de KPIs</p></div>
-               <button onClick={() => setShowMetaModal(true)} className="px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-white transition-all flex items-center gap-3 relative z-10"><PlusCircle size={20} /> Atribuir Meta</button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {metas.map(m => {
-                  const func = funcionarios.find(f => f.id === m.funcionario_id);
-                  return (
-                     <div key={m.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm space-y-6 hover:shadow-xl transition-all">
-                        <div className="flex justify-between items-start"><div className="flex items-center gap-3"><img src={func?.foto_url} className="w-10 h-10 rounded-xl object-cover grayscale" /><h4 className="font-black text-zinc-900 text-sm">{func?.nome.split(' ')[0]}</h4></div><span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${m.status === 'Conclu�da' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{m.status}</span></div>
-                        <h3 className="text-base font-black text-zinc-900 mb-4">{m.titulo}</h3>
-                        <div className="space-y-2">
-                           <input type="range" min="0" max="100" value={m.progresso} onChange={(e) => updateMetaProgresso(m.id, Number(e.target.value))} className="w-full h-2 bg-zinc-100 rounded-full appearance-none cursor-pointer accent-yellow-500" />
-                           <p className="text-right text-[10px] font-black text-zinc-900">{m.progresso}%</p>
-                        </div>
-                     </div>
-                  );
-               })}
-            </div>
-         </div>
-      )}
-
-{/* MODAL: FOLHA DE SAL�RIO GERAL (TABELA) */ }
-{
-   showPayrollSheetModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/90 backdrop-blur-xl p-4 md:p-10 print:p-0 print:bg-white print:relative print:block">
-         <div className="bg-white w-full h-full max-w-[95vw] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl print:rounded-none print:shadow-none print:max-w-none">
-            <style>{`
+         {/* MODAL: FOLHA DE SALÁRIO GERAL (TABELA) */}
+         {showPayrollSheetModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/90 backdrop-blur-xl p-4 md:p-10 print:p-0 print:bg-white print:relative print:block">
+               <div className="bg-white w-full h-full max-w-[95vw] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl print:rounded-none print:shadow-none print:max-w-none">
+                  <style>{`
                      @media print {
                         @page { size: landscape; margin: 1cm; }
                         body * { visibility: hidden; }
@@ -1415,98 +1492,99 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      .highlight-bold { font-weight: bold; }
                   `}</style>
 
-            <div className="p-8 border-b border-zinc-100 flex justify-between items-center print-hidden">
-               <div>
-                  <h2 className="text-2xl font-black uppercase text-zinc-900">Folha de Sal�rio - {currentMonthName} {currentFiscalYear}</h2>
-                  <p className="text-zinc-500 font-medium tracking-tight uppercase text-[10px]">Documento N�: <span className="text-zinc-900 font-black">{payrollDocNumber}</span></p>
-                  <p className="text-zinc-400 text-[9px] font-bold">Relat�rio Geral de Processamento</p>
-               </div>
-               <div className="flex gap-3">
-                  <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 transition-all flex items-center gap-2 font-bold uppercase text-[10px]">
-                     <Printer size={20} /> Imprimir Agora
-                  </button>
-                  <button onClick={() => setShowPayrollSheetModal(false)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all">
-                     <X size={24} />
-                  </button>
-               </div>
-            </div>
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center print-hidden">
+                     <div>
+                        <h2 className="text-2xl font-black uppercase text-zinc-900">Folha de Salário - {currentMonthName} {currentFiscalYear}</h2>
+                        <p className="text-zinc-500 font-medium tracking-tight uppercase text-[10px]">Documento Nº: <span className="text-zinc-900 font-black">{payrollDocNumber}</span></p>
+                        <p className="text-zinc-400 text-[9px] font-bold">Relatório Geral de Processamento</p>
+                     </div>
+                     <div className="flex gap-3">
+                        <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 transition-all flex items-center gap-2 font-bold uppercase text-[10px]">
+                           <Printer size={20} /> Imprimir Agora
+                        </button>
+                        <button onClick={() => setShowPayrollSheetModal(false)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all">
+                           <X size={24} />
+                        </button>
+                     </div>
+                  </div>
 
-            <div className="flex-1 overflow-auto p-8 print:p-0" id="payroll-sheet-print">
-               <div className="mb-6 text-center">
-                  <h1 className="text-xl font-bold uppercase" style={{ fontFamily: 'Times New Roman' }}>Folha de Sal�rio - {corporateInfo?.name || 'Amazing Corporation'}</h1>
-                  <p className="text-sm italic" style={{ fontFamily: 'Times New Roman' }}>Per�odo: {currentMonthName} de {currentFiscalYear}</p>
-               </div>
+                  <div className="flex-1 overflow-auto p-8 print:p-0" id="payroll-sheet-print">
+                     <div className="mb-6 text-center">
+                        <h1 className="text-xl font-bold uppercase" style={{ fontFamily: 'Times New Roman' }}>Folha de Salário - {corporateInfo?.name || 'Amazing Corporation'}</h1>
+                        <p className="text-sm italic" style={{ fontFamily: 'Times New Roman' }}>Período: {currentMonthName} de {currentFiscalYear}</p>
+                     </div>
 
-               <table className="payroll-table">
-                  <thead>
-                     <tr>
-                        <th>N�</th>
-                        <th>Nome</th>
-                        <th>Cargo</th>
-                        <th>Sal�rio Base</th>
-                        <th>Horas Extras</th>
-                        <th>Subs. Alimenta��o</th>
-                        <th>Subs. Transporte</th>
-                        <th>Subs. F�rias</th>
-                        <th>Subs. Natal</th>
-                        <th>B�nus</th>
-                        <th>Total Proventos</th>
-                        <th>INSS</th>
-                        <th>IRT</th>
-                        <th>Faltas</th>
-                        <th>Empr�stimos</th>
-                        <th>Outros Desc.</th>
-                        <th>Total Descontos</th>
-                        <th className="highlight-bold">Sal�rio Bruto</th>
-                        <th className="highlight-bold">Sal�rio L�quido</th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     {funcionarios.filter(f => f.status === 'ativo').map((f, index) => {
-                        const calc = calculatePayrollForEmployee(f);
-                        const proventosTotal = calc.totalProventos;
-                        const descontosTotal = calc.totalDescontos;
-
-                        return (
-                           <tr key={f.id}>
-                              <td>{index + 1}</td>
-                              <td style={{ textAlign: 'left' }}>{f.nome}</td>
-                              <td style={{ textAlign: 'left' }}>{f.funcao}</td>
-                              <td>{formatAOA(f.salario_base)}</td>
-                              <td>{formatAOA(calc.valorHorasExtras)}</td>
-                              <td>{formatAOA(calc.subAlim)}</td>
-                              <td>{formatAOA(calc.subTrans)}</td>
-                              <td>{formatAOA(calc.subFerias)}</td>
-                              <td>{formatAOA(calc.subNatal)}</td>
-                              <td>{formatAOA(calc.premiosBonus)}</td>
-                              <td className="highlight-bold">{formatAOA(proventosTotal)}</td>
-                              <td>{formatAOA(calc.inss)}</td>
-                              <td>{formatAOA(calc.irt)}</td>
-                              <td>{formatAOA(calc.descontoFaltas)}</td>
-                              <td>{formatAOA(calc.emprestimos)}</td>
-                              <td>{formatAOA(calc.outrosDesc)}</td>
-                              <td className="highlight-bold">{formatAOA(descontosTotal)}</td>
-                              <td className="highlight-bold">{formatAOA(calc.bruto)}</td>
-                              <td className="highlight-bold bg-yellow-50">{formatAOA(calc.liquido)}</td>
+                     <table className="payroll-table">
+                        <thead>
+                           <tr>
+                              <th>Nº</th>
+                              <th>Nome</th>
+                              <th>Cargo</th>
+                              <th>Salário Base</th>
+                              <th>Horas Extras</th>
+                              <th>Subs. Alimentação</th>
+                              <th>Subs. Transporte</th>
+                              <th>Subs. Férias</th>
+                              <th>Subs. Natal</th>
+                              <th>Bônus</th>
+                              <th>Total Proventos</th>
+                              <th>INSS</th>
+                              <th>IRT</th>
+                              <th>Faltas</th>
+                              <th>Empréstimos</th>
+                              <th>Outros Desc.</th>
+                              <th>Total Descontos</th>
+                              <th className="highlight-bold">Salário Bruto</th>
+                              <th className="highlight-bold">Salário Líquido</th>
                            </tr>
-                        );
-                     })}
-                  </tbody>
-               </table>
+                        </thead>
+                        <tbody>
+                           {funcionarios.filter(f => f.status === 'ativo').map((f, index) => {
+                              const calc = calculatePayrollForEmployee(f);
+                              const proventosTotal = calc.totalProventos;
+                              const descontosTotal = calc.totalDescontos;
 
-               <div className="mt-12 text-[10pt] italic" style={{ fontFamily: 'Times New Roman' }}>
-                  <p><strong>Total Proventos:</strong> Sal�rio Base + Horas Extras + Subs�dios + B�nus</p>
-                  <p><strong>Sal�rio Bruto:</strong> Total Proventos (antes dos descontos)</p>
-                  <p><strong>Total Descontos:</strong> INSS + IRT + Faltas + Empr�stimos + Outros</p>
-                  <p><strong>Sal�rio L�quido:</strong> Sal�rio Bruto - Total Descontos</p>
+                              return (
+                                 <tr key={f.id}>
+                                    <td>{index + 1}</td>
+                                    <td style={{ textAlign: 'left' }}>{f.nome}</td>
+                                    <td style={{ textAlign: 'left' }}>{f.funcao}</td>
+                                    <td>{formatAOA(f.salario_base)}</td>
+                                    <td>{formatAOA(calc.valorHorasExtras)}</td>
+                                    <td>{formatAOA(calc.subAlim)}</td>
+                                    <td>{formatAOA(calc.subTrans)}</td>
+                                    <td>{formatAOA(calc.subFerias)}</td>
+                                    <td>{formatAOA(calc.subNatal)}</td>
+                                    <td>{formatAOA(calc.premiosBonus)}</td>
+                                    <td className="highlight-bold">{formatAOA(proventosTotal)}</td>
+                                    <td>{formatAOA(calc.inss)}</td>
+                                    <td>{formatAOA(calc.irt)}</td>
+                                    <td>{formatAOA(calc.descontoFaltas)}</td>
+                                    <td>{formatAOA(calc.emprestimos)}</td>
+                                    <td>{formatAOA(calc.outrosDesc)}</td>
+                                    <td className="highlight-bold">{formatAOA(descontosTotal)}</td>
+                                    <td className="highlight-bold">{formatAOA(calc.bruto)}</td>
+                                    <td className="highlight-bold bg-yellow-50">{formatAOA(calc.liquido)}</td>
+                                 </tr>
+                              );
+                           })}
+                        </tbody>
+                     </table>
+
+                     <div className="mt-12 text-[10pt] italic" style={{ fontFamily: 'Times New Roman' }}>
+                        <p><strong>Total Proventos:</strong> Salário Base + Horas Extras + Subsídios + Bônus</p>
+                        <p><strong>Salário Bruto:</strong> Total Proventos (antes dos descontos)</p>
+                        <p><strong>Total Descontos:</strong> INSS + IRT + Faltas + Empréstimos + Outros</p>
+                        <p><strong>Salário Líquido:</strong> Salário Bruto - Total Descontos</p>
+                     </div>
+                  </div>
                </div>
             </div>
-         </div>
          )}
 
          {activeTab === 'passes' && (
             <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               <div className="bg-zinc-50 p-10 rounded-[3rem] border border-sky-100 flex items-center justify-between"><div><h2 className="text-2xl font-black text-zinc-900 uppercase">Identifica��o Corporativa</h2><p className="text-zinc-500 text-sm font-medium">Emiss�o e gest�o de passes PVC.</p></div><ScanBarcode size={32} className="text-yellow-600" /></div>
+               <div className="bg-zinc-50 p-10 rounded-[3rem] border border-sky-100 flex items-center justify-between"><div><h2 className="text-2xl font-black text-zinc-900 uppercase">Identificao Corporativa</h2><p className="text-zinc-500 text-sm font-medium">Emisso e gesto de passes PVC.</p></div><ScanBarcode size={32} className="text-yellow-600" /></div>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {funcionarios.map(f => (
                      <div key={f.id} className="bg-white p-6 rounded-[2.5rem] border border-sky-50 shadow-sm flex flex-col items-center text-center group hover:shadow-2xl transition-all">
@@ -1531,7 +1609,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-         {/* CONTAS BANC�RIAS (GLOBAL) */}
+         {/* CONTAS BANCÁRIAS (GLOBAL) */}
          {activeTab === 'contas' && (
             <div className="animate-in slide-in-from-bottom-4">
                <ContasBancariasPage user={user} inAppTab={true} />
@@ -1553,7 +1631,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
                         <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
                            {editingItem ? <Edit className="text-yellow-500" /> : <UserPlus className="text-yellow-500" />}
-                           {editingItem ? 'Ficha do Colaborador' : 'Nova Admiss�o'}
+                           {editingItem ? 'Ficha do Colaborador' : 'Nova Admissão'}
                         </h2>
                         <button onClick={() => setShowModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><X size={28} /></button>
                      </div>
@@ -1563,21 +1641,21 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         <div className="flex border-b border-zinc-100 bg-white px-8 pt-4 gap-6">
                            <button
                               onClick={() => setModalActiveTab('geral')}
-                              className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modal{activeTab === 'geral' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
+                              className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modalActiveTab === 'geral' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
                            >
                               Dados Gerais
                            </button>
                            <button
                               onClick={() => setModalActiveTab('contas')}
-                              className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modal{activeTab === 'contas' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
+                              className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modalActiveTab === 'contas' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
                            >
-                              Contas Banc�rias
+                              Contas Bancárias
                            </button>
                         </div>
                      )}
 
                      <div className="overflow-y-auto w-full h-full p-0">
-                        {modal{activeTab === 'geral' ? (
+                        {modalActiveTab === 'geral' ? (
                            <form onSubmit={handleSubmitFuncionario} className="p-10 space-y-8">
                               <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                                  {/* Coluna da Foto */}
@@ -1591,11 +1669,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                                  {/* Dados Pessoais Principais */}
                                  <div className="md:col-span-9 space-y-6">
-                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><UserCheck size={14} /> Identifica��o & Contactos</h3>
+                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><UserCheck size={14} /> Identificação & Contactos</h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <Input name="nome" label="Nome Completo" defaultValue={editingItem?.nome} required />
-                                       <Input name="bilhete" label="N� BI / Identidade" defaultValue={editingItem?.bilhete} required />
+                                       <Input name="bilhete" label="Nº BI / Identidade" defaultValue={editingItem?.bilhete} required />
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -1611,7 +1689,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                        </div>
 
                                        <div className="md:col-span-4">
-                                          <Input name="telefone" label="Telem�vel Pessoal" defaultValue={editingItem?.telefone} required placeholder="9xx xxx xxx" />
+                                          <Input name="telefone" label="Telemóvel Pessoal" defaultValue={editingItem?.telefone} required placeholder="9xx xxx xxx" />
                                        </div>
 
                                        <div className="md:col-span-4">
@@ -1620,45 +1698,45 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                     </div>
 
                                     <div className="w-full">
-                                       <Input name="morada" label="Bairro / Rua / Refer�ncia" defaultValue={editingItem?.morada} required />
+                                       <Input name="morada" label="Bairro / Rua / Referência" defaultValue={editingItem?.morada} required />
                                     </div>
                                  </div>
                               </div>
 
-                              {/* Sec��o de Filia��o e Origem (NOVO) */}
+                              {/* Secção de Filiação e Origem (NOVO) */}
                               <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100 space-y-6">
-                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Users size={14} /> Origem & Filia��o</h3>
+                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Users size={14} /> Origem & Filiação</h3>
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <Input name="nome_pai" label="Nome do Pai" value={formState.nome_pai} onChange={e => setFormState({ ...formState, nome_pai: e.target.value })} />
-                                    <Input name="nome_mae" label="Nome da M�e" value={formState.nome_mae} onChange={e => setFormState({ ...formState, nome_mae: e.target.value })} />
+                                    <Input name="nome_mae" label="Nome da Mãe" value={formState.nome_mae} onChange={e => setFormState({ ...formState, nome_mae: e.target.value })} />
                                  </div>
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <Select
-                                       name="provincia" label="Naturalidade (Prov�ncia)"
+                                       name="provincia" label="Naturalidade (Província)"
                                        value={formState.provincia}
                                        onChange={e => setFormState({ ...formState, provincia: e.target.value })}
                                        options={PROVINCIAS.map(p => ({ value: p, label: p }))}
                                     />
-                                    <Input name="municipio" label="Munic�pio" value={formState.municipio} onChange={e => setFormState({ ...formState, municipio: e.target.value })} />
+                                    <Input name="municipio" label="Município" value={formState.municipio} onChange={e => setFormState({ ...formState, municipio: e.target.value })} />
                                  </div>
                               </div>
 
-                              {/* Sec��o Acad�mica e Profissional */}
+                              {/* Secção Académica e Profissional */}
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                  <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
-                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><GraduationCap size={14} /> Habilita�ões</h3>
+                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><GraduationCap size={14} /> Habilitações</h3>
                                     <Select
-                                       name="escolaridade" label="N�vel de Escolaridade"
+                                       name="escolaridade" label="Nível de Escolaridade"
                                        value={formState.escolaridade}
                                        onChange={e => setFormState({ ...formState, escolaridade: e.target.value })}
-                                       options={[{ value: 'Ensino B�sico', label: 'Ensino B�sico' }, { value: 'Ensino M�dio', label: 'Ensino M�dio' }, { value: 'Licenciatura', label: 'Licenciatura' }, { value: 'Mestrado', label: 'Mestrado' }]}
+                                       options={[{ value: 'Ensino Básico', label: 'Ensino Básico' }, { value: 'Ensino Médio', label: 'Ensino Médio' }, { value: 'Licenciatura', label: 'Licenciatura' }, { value: 'Mestrado', label: 'Mestrado' }]}
                                     />
                                     <Input name="formacao" label="Curso / Especialidade" value={formState.curso} onChange={e => setFormState({ ...formState, curso: e.target.value })} />
                                  </div>
 
                                  <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
-                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Briefcase size={14} /> Cargo & Fun��o</h3>
-                                    <Input name="funcao" label="Fun��o a Desempenhar" defaultValue={editingItem?.funcao} required />
+                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Briefcase size={14} /> Cargo & Função</h3>
+                                    <Input name="funcao" label="Função a Desempenhar" defaultValue={editingItem?.funcao} required />
                                     <Input name="departamento" label="Departamento" defaultValue={editingItem?.departamento_id} required />
                                  </div>
                               </div>
@@ -1667,22 +1745,22 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               <div className="bg-zinc-900 p-10 rounded-[3.5rem] text-white space-y-8 border-l-[12px] border-yellow-500 shadow-2xl">
                                  <h3 className="text-xs font-black text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Wallet size={14} /> Dados Contratuais</h3>
                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Est�gio', label: 'Est�gio Remunerado' }]} />
-                                    <Input name="admissao" label="Data de In�cio" type="date" defaultValue={editingItem?.data_admissao} required className="bg-zinc-800 border-zinc-700 text-white" />
-                                    <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status || 'ativo'} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'ativo', label: 'Activo' }, { value: 'ferias', label: 'F�rias' }, { value: 'inativo', label: 'Inactivo' }, { value: 'rescindido', label: 'Rescindido' }]} />
+                                    <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Estágio', label: 'Estágio Remunerado' }]} />
+                                    <Input name="admissao" label="Data de Início" type="date" defaultValue={editingItem?.data_admissao} required className="bg-zinc-800 border-zinc-700 text-white" />
+                                    <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status || 'ativo'} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'ativo', label: 'Activo' }, { value: 'ferias', label: 'Férias' }, { value: 'inativo', label: 'Inactivo' }, { value: 'rescindido', label: 'Rescindido' }]} />
                                  </div>
                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4 border-t border-white/10">
                                     <Input name="salario_base" label="Base (AOA)" type="number" defaultValue={editingItem?.salario_base} className="bg-zinc-800 border-zinc-700 text-white font-black" required />
                                     <Input name="sub_alim" label="Sub. Alim." type="number" defaultValue={editingItem?.subsidio_alimentacao} className="bg-zinc-800 border-zinc-700 text-white" />
                                     <Input name="sub_trans" label="Sub. Trans." type="number" defaultValue={editingItem?.subsidio_transporte} className="bg-zinc-800 border-zinc-700 text-white" />
-                                    <Input name="outros_bonus" label="Outros B�nus" type="number" defaultValue={editingItem?.outros_bonus} className="bg-zinc-800 border-zinc-700 text-white border-dashed border-2" />
+                                    <Input name="outros_bonus" label="Outros Bónus" type="number" defaultValue={editingItem?.outros_bonus} className="bg-zinc-800 border-zinc-700 text-white border-dashed border-2" />
                                  </div>
                               </div>
 
                               <div className="flex justify-end gap-6 pt-6">
                                  <button type="button" onClick={() => setShowModal(false)} className="px-10 py-5 text-[11px] font-black uppercase text-zinc-400">Cancelar</button>
                                  <button type="submit" className="px-16 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[11px] shadow-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-3">
-                                    <Save size={20} /> {editingItem ? 'Actualizar Ficha' : 'Efectivar Admiss�o'}
+                                    <Save size={20} /> {editingItem ? 'Actualizar Ficha' : 'Efectivar Admissão'}
                                  </button>
                               </div>
                            </form>
@@ -1693,389 +1771,391 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         )}
                      </div>
                   </div>
+               </div>
+            )}
+
+         {/* MODAL METAS */}
+         {showMetaModal && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50"><h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase"><Target className="text-yellow-500" /> Nova Meta de Performance</h2><button onClick={() => setShowMetaModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button></div>
+                  <form onSubmit={handleAddMeta} className="p-8 space-y-6">
+                     <Select name="func_id" label="Responsável" required options={funcionarios.map(f => ({ value: f.id, label: f.nome }))} />
+                     <Input name="titulo" label="KPI / Objectivo" required placeholder="Ex: Reduzir custos de frota em 10%" />
+                     <Input name="prazo" label="Prazo Final" type="date" required defaultValue={new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]} />
+                     <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] hover:bg-yellow-500 transition-all shadow-xl"><Save size={18} /> Efectivar Atribuição</button>
+                  </form>
+               </div>
+            </div>
          )}
 
-                  {/* MODAL METAS */}
-                  {showMetaModal && (
-                     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in">
-                        <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
-                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50"><h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase"><Target className="text-yellow-500" /> Nova Meta de Performance</h2><button onClick={() => setShowMetaModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button></div>
-                           <form onSubmit={handleAddMeta} className="p-8 space-y-6">
-                              <Select name="func_id" label="Respons�vel" required options={funcionarios.map(f => ({ value: f.id, label: f.nome }))} />
-                              <Input name="titulo" label="KPI / Objectivo" required placeholder="Ex: Reduzir custos de frota em 10%" />
-                              <Input name="prazo" label="Prazo Final" type="date" required defaultValue={new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]} />
-                              <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] hover:bg-yellow-500 transition-all shadow-xl"><Save size={18} /> Efectivar Atribui��o</button>
-                           </form>
-                        </div>
-         )}
+         {/* MODAL RECIBO PROFISSIONAL (ESTILO CANVA) */}
+         {viewingRecibo && (
+            <>
+               <style>{`
+                  @media print {
+                     @page {size: A4; margin: 0; }
+                  body {margin: 0; padding: 0; }
+                  }
+               `}</style>
 
-                        {/* MODAL RECIBO PROFISSIONAL (ESTILO CANVA) */}
-                        {viewingRecibo && (
-                  <style>{`
-                     @media print {
-                        @page { size: A4; margin: 0; }
-                        body { margin: 0; padding: 0; }
-                     }
-                  `}</style>
+               <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10 print:static print:p-0 print:bg-white print:block">
+                  <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:mx-auto min-h-[1120px] flex flex-col overflow-hidden">
 
-            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10 print:static print:p-0 print:bg-white print:block">
-               <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:mx-auto min-h-[1120px] flex flex-col overflow-hidden">
+                     {/* DESIGN GEOMÉTRICO SUPERIOR (TEMPLATE) */}
+                     <div className="relative h-56 w-full print:h-56 overflow-hidden bg-white border-b-4 border-zinc-900">
+                        {/* Blue Polygon */}
+                        <div
+                           className="absolute top-0 right-0 w-[65%] h-full bg-sky-600 origin-top-right print:bg-sky-600"
+                           style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}
+                        ></div>
+                        {/* Black Polygon */}
+                        <div
+                           className="absolute top-0 right-0 w-[55%] h-[85%] bg-zinc-900 origin-top-right print:bg-zinc-900"
+                           style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)' }}
+                        ></div>
 
-                  {/* DESIGN GEOM�TRICO SUPERIOR (TEMPLATE) */}
-                  <div className="relative h-56 w-full print:h-56 overflow-hidden bg-white border-b-4 border-zinc-900">
-                     {/* Blue Polygon */}
-                     <div
-                        className="absolute top-0 right-0 w-[65%] h-full bg-sky-600 origin-top-right print:bg-sky-600"
-                        style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}
-                     ></div>
-                     {/* Black Polygon */}
-                     <div
-                        className="absolute top-0 right-0 w-[55%] h-[85%] bg-zinc-900 origin-top-right print:bg-zinc-900"
-                        style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)' }}
-                     ></div>
-
-                     {/* DESIGN GEOM�TRICO - APENAS VISUAL */}
-                     <div className="absolute top-0 right-12 p-8 z-10 w-full text-right">
-                        <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-xl border border-white/10 inline-block">
-                           <p className="text-[12px] font-black text-white uppercase tracking-[0.3em]">Recibo Oficial</p>
-                           <p className="text-[9px] font-bold text-white/40 uppercase mt-1 tracking-widest italic">Amazing Corp Cloud � ERP</p>
+                        {/* DESIGN GEOMÉTRICO - APENAS VISUAL */}
+                        <div className="absolute top-0 right-12 p-8 z-10 w-full text-right">
+                           <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-xl border border-white/10 inline-block">
+                              <p className="text-[12px] font-black text-white uppercase tracking-[0.3em]">Recibo Oficial</p>
+                              <p className="text-[9px] font-bold text-white/40 uppercase mt-1 tracking-widest italic">Amazing Corp Cloud – ERP</p>
+                           </div>
                         </div>
                      </div>
-                  </div>
 
-                  <div className="fixed top-12 right-12 flex items-center gap-3 print:hidden z-[250] bg-white/90 backdrop-blur-xl p-4 rounded-[2.5rem] shadow-2xl border border-zinc-100 animate-in slide-in-from-right-10 duration-500">
-                     <button
-                        onClick={() => setViewingRecibo(null)}
-                        className="flex items-center gap-2 px-6 py-4 bg-zinc-100 text-zinc-600 rounded-2xl font-black uppercase text-[10px] hover:bg-zinc-200 transition-all shadow-xl"
-                     >
-                        <ArrowLeft size={18} /> Voltar
-                     </button>
-
-                     <div className="h-10 w-[1px] bg-zinc-200 mx-1"></div>
-
-                     <div className="relative">
+                     <div className="fixed top-12 right-12 flex items-center gap-3 print:hidden z-[250] bg-white/90 backdrop-blur-xl p-4 rounded-[2.5rem] shadow-2xl border border-zinc-100 animate-in slide-in-from-right-10 duration-500">
                         <button
-                           onClick={() => setShowShareOptions(!showShareOptions)}
-                           title="Partilhar no WhatsApp"
-                           className={`p-4 rounded-2xl transition-all shadow-xl ${showShareOptions ? 'bg-green-600 text-white' : 'bg-zinc-900 text-white hover:bg-green-600'}`}
+                           onClick={() => setViewingRecibo(null)}
+                           className="flex items-center gap-2 px-6 py-4 bg-zinc-100 text-zinc-600 rounded-2xl font-black uppercase text-[10px] hover:bg-zinc-200 transition-all shadow-xl"
                         >
-                           <MessageCircle size={20} />
+                           <ArrowLeft size={18} /> Voltar
                         </button>
 
-                        {showShareOptions && (
-                           <div className="absolute top-16 right-0 bg-white border border-zinc-100 shadow-2xl p-6 rounded-[2rem] w-80 animate-in fade-in duration-300 slide-in-from-top-4 z-[210]">
-                              <div className="flex justify-between items-center mb-4">
-                                 <h4 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Configurar WhatsApp</h4>
-                                 <button onClick={() => setShowShareOptions(false)} className="text-zinc-300 hover:text-zinc-900"><X size={16} /></button>
-                              </div>
-                              <div className="space-y-4">
-                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-[9px] font-black uppercase text-zinc-900 ml-1">N� do Telefone (Funcion�rio)</label>
-                                    <input
-                                       type="text"
-                                       value={customWhatsApp}
-                                       onChange={(e) => setCustomWhatsApp(e.target.value)}
-                                       className="w-full px-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-green-500 outline-none transition-all"
-                                       placeholder="Ex: 931116696"
-                                    />
-                                    <p className="text-[8px] text-zinc-400 italic">O prefixo +244 ser� adicionado automaticamente.</p>
+                        <div className="h-10 w-[1px] bg-zinc-200 mx-1"></div>
+
+                        <div className="relative">
+                           <button
+                              onClick={() => setShowShareOptions(!showShareOptions)}
+                              title="Partilhar no WhatsApp"
+                              className={`p-4 rounded-2xl transition-all shadow-xl ${showShareOptions ? 'bg-green-600 text-white' : 'bg-zinc-900 text-white hover:bg-green-600'}`}
+                           >
+                              <MessageCircle size={20} />
+                           </button>
+
+                           {showShareOptions && (
+                              <div className="absolute top-16 right-0 bg-white border border-zinc-100 shadow-2xl p-6 rounded-[2rem] w-80 animate-in fade-in duration-300 slide-in-from-top-4 z-[210]">
+                                 <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Configurar WhatsApp</h4>
+                                    <button onClick={() => setShowShareOptions(false)} className="text-zinc-300 hover:text-zinc-900"><X size={16} /></button>
                                  </div>
-                                 <button
-                                    onClick={() => { handleWhatsAppShare(); setShowShareOptions(false); }}
-                                    className="w-full py-4 bg-zinc-900 text-white rounded-xl font-black uppercase text-[10px] hover:bg-green-600 transition-all shadow-lg flex items-center justify-center gap-2"
-                                 >
-                                    <MessageCircle size={16} /> Enviar p/ WhatsApp
-                                 </button>
+                                 <div className="space-y-4">
+                                    <div className="flex flex-col gap-1.5">
+                                       <label className="text-[9px] font-black uppercase text-zinc-900 ml-1">Nº do Telefone (Funcionário)</label>
+                                       <input
+                                          type="text"
+                                          value={customWhatsApp}
+                                          onChange={(e) => setCustomWhatsApp(e.target.value)}
+                                          className="w-full px-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                                          placeholder="Ex: 931116696"
+                                       />
+                                       <p className="text-[8px] text-zinc-400 italic">O prefixo +244 será adicionado automaticamente.</p>
+                                    </div>
+                                    <button
+                                       onClick={() => { handleWhatsAppShare(); setShowShareOptions(false); }}
+                                       className="w-full py-4 bg-zinc-900 text-white rounded-xl font-black uppercase text-[10px] hover:bg-green-600 transition-all shadow-lg flex items-center justify-center gap-2"
+                                    >
+                                       <MessageCircle size={16} /> Enviar p/ WhatsApp
+                                    </button>
+                                 </div>
+                              </div>
+                           )}
+                        </div>
+
+                        <button
+                           onClick={handleEmailShare}
+                           title="Enviar por Email"
+                           className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-sky-600 transition-all shadow-xl"
+                        >
+                           <Mail size={20} />
+                        </button>
+
+                        <button
+                           onClick={() => window.print()}
+                           title="Imprimir / Exportar PDF"
+                           className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
+                        >
+                           <Printer size={20} />
+                        </button>
+                     </div>
+
+                     <div className="flex-1 px-16 py-8 print:px-12">
+                        {/* LINHA DE TÍTULO - REESTRUTURADA (LOGO E TÍTULO 18PX NA MESMA LINHA) */}
+                        <div className="border-b-[4px] border-zinc-900 pb-8 mb-8 flex justify-between items-center">
+                           {/* ESQUERDA: LOGO + INFO (TAMANHO AJUSTADO) */}
+                           <div className="flex items-center gap-6">
+                              <div className="w-48 h-24 bg-zinc-50 rounded-2xl flex items-center justify-center p-3 border border-zinc-200 shadow-sm print:border-none print:shadow-none">
+                                 <Logo className="h-16 w-auto" />
+                              </div>
+                              <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400">
+                                 <span className="text-zinc-900 font-black text-[11px] mb-1">NIF: 50002181797</span>
+                                 <span>Endereço: Benguela/Angola</span>
+                                 <span>Bairro Massangarala</span>
+                                 <span className="text-zinc-800 mt-1 font-bold">Contacto: +244 931 116 696</span>
+                                 <span className="lowercase text-sky-600 font-bold">Email: geral.amazingcorporation@gmail.com</span>
                               </div>
                            </div>
-                        )}
-                     </div>
 
-                     <button
-                        onClick={handleEmailShare}
-                        title="Enviar por Email"
-                        className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-sky-600 transition-all shadow-xl"
-                     >
-                        <Mail size={20} />
-                     </button>
-
-                     <button
-                        onClick={() => window.print()}
-                        title="Imprimir / Exportar PDF"
-                        className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl"
-                     >
-                        <Printer size={20} />
-                     </button>
-                  </div>
-
-                  <div className="flex-1 px-16 py-8 print:px-12">
-                     {/* LINHA DE T�TULO - REESTRUTURADA (LOGO E T�TULO 18PX NA MESMA LINHA) */}
-                     <div className="border-b-[4px] border-zinc-900 pb-8 mb-8 flex justify-between items-center">
-                        {/* ESQUERDA: LOGO + INFO (TAMANHO AJUSTADO) */}
-                        <div className="flex items-center gap-6">
-                           <div className="w-48 h-24 bg-zinc-50 rounded-2xl flex items-center justify-center p-3 border border-zinc-200 shadow-sm print:border-none print:shadow-none">
-                              <Logo className="h-16 w-auto" />
+                           {/* CENTRO: TÍTULO 18PX - NA MESMA LINHA */}
+                           <div className="text-center">
+                              <h2 className="text-[18px] font-black text-zinc-900 uppercase tracking-tight leading-none">Folha de Salário</h2>
+                              <div className="mt-2 inline-block bg-zinc-900 text-white px-4 py-1 rounded-full">
+                                 <p className="text-[10px] font-black uppercase tracking-widest">Período: {viewingRecibo.mes} {viewingRecibo.ano}</p>
+                              </div>
                            </div>
-                           <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400">
-                              <span className="text-zinc-900 font-black text-[11px] mb-1">NIF: 50002181797</span>
-                              <span>Endere�o: Benguela/Angola</span>
-                              <span>Bairro Massangarala</span>
-                              <span className="text-zinc-800 mt-1 font-bold">Contacto: +244 931 116 696</span>
-                              <span className="lowercase text-sky-600 font-bold">Email: geral.amazingcorporation@gmail.com</span>
+
+                           {/* DIREITA: Nº DOCUMENTO */}
+                           <div className="text-right">
+                              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nº Documento</p>
+                              <p className="text-xl font-black text-zinc-900 tabular-nums uppercase">#{viewingRecibo.numero_documento || viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
                            </div>
                         </div>
 
-                        {/* CENTRO: T�TULO 18PX - NA MESMA LINHA */}
-                        <div className="text-center">
-                           <h2 className="text-[18px] font-black text-zinc-900 uppercase tracking-tight leading-none">Folha de Sal�rio</h2>
-                           <div className="mt-2 inline-block bg-zinc-900 text-white px-4 py-1 rounded-full">
-                              <p className="text-[10px] font-black uppercase tracking-widest">Per�odo: {viewingRecibo.mes} {viewingRecibo.ano}</p>
+                        {/* DADOS DO FUNCIONÁRIO - TABELA REFINADA */}
+                        <div className="mb-12 overflow-hidden rounded-2xl border border-zinc-200">
+                           <table className="w-full text-sm text-left">
+                              <thead className="bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest">
+                                 <tr>
+                                    <th className="px-6 py-3 border-r border-white/10">Nome do Colaborador</th>
+                                    <th className="px-6 py-3 border-r border-white/10">Cargo / Função</th>
+                                    <th className="px-6 py-3">Nº Bilhete</th>
+                                 </tr>
+                              </thead>
+                              <tbody className="bg-zinc-50 font-bold text-zinc-900">
+                                 <tr>
+                                    <td className="px-6 py-4 border-r border-zinc-200">{viewingRecibo.nome || '---'}</td>
+                                    <td className="px-6 py-4 border-r border-zinc-200">{viewingRecibo.cargo || '---'}</td>
+                                    <td className="px-6 py-4">{viewingRecibo.bilhete || '---'}</td>
+                                 </tr>
+                              </tbody>
+                           </table>
+                        </div>
+
+                        {/* TABELA DE RENDIMENTOS E DESCONTOS - UNIFICADA */}
+                        <div className="mb-12">
+                           <table className="w-full text-left border-collapse" style={{ fontFamily: 'Times New Roman', fontSize: '14px' }}>
+                              <thead>
+                                 <tr className="border-b-2 border-zinc-900 bg-zinc-50/50">
+                                    <th className="py-3 px-4 text-zinc-900 font-black uppercase text-[11px] w-1/2">Descrição</th>
+                                    <th className="py-3 px-4 text-right text-zinc-900 font-black uppercase text-[11px]">Rendimentos (+)</th>
+                                    <th className="py-3 px-4 text-right text-zinc-900 font-black uppercase text-[11px]">Descontos (-)</th>
+                                 </tr>
+                              </thead>
+                              <tbody className="divide-y divide-zinc-100">
+                                 {/* RENDIMENTOS */}
+                                 <tr>
+                                    <td className="py-2 px-4 text-zinc-700 font-bold">Vencimento Base</td>
+                                    <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.base)}</td>
+                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                 </tr>
+                                 {viewingRecibo.subsidio_alimentacao > 0 && (
+                                    <tr>
+                                       <td className="py-2 px-4 text-zinc-700">Subsídio de Alimentação</td>
+                                       <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.subsidio_alimentacao)}</td>
+                                       <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                    </tr>
+                                 )}
+                                 {viewingRecibo.subsidio_transporte > 0 && (
+                                    <tr>
+                                       <td className="py-2 px-4 text-zinc-700">Subsídio de Transporte</td>
+                                       <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.subsidio_transporte)}</td>
+                                       <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                    </tr>
+                                 )}
+                                 {((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0)) > 0 && (
+                                    <tr>
+                                       <td className="py-2 px-4 text-zinc-700">Horas Extras / Bónus</td>
+                                       <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0))}</td>
+                                       <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                    </tr>
+                                 )}
+
+                                 {/* DESCONTOS */}
+                                 {viewingRecibo.inss_trabalhador > 0 && (
+                                    <tr>
+                                       <td className="py-2 px-4 text-zinc-700">Segurança Social (3%)</td>
+                                       <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                       <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.inss_trabalhador)}</td>
+                                    </tr>
+                                 )}
+                                 {viewingRecibo.irt > 0 && (
+                                    <tr>
+                                       <td className="py-2 px-4 text-zinc-700">I.R.T.</td>
+                                       <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                       <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.irt)}</td>
+                                    </tr>
+                                 )}
+                                 {viewingRecibo.adiantamentos > 0 && (
+                                    <tr>
+                                       <td className="py-2 px-4 text-zinc-700">Adiantamentos / Empréstimos</td>
+                                       <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                       <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.adiantamentos)}</td>
+                                    </tr>
+                                 )}
+                                 {viewingRecibo.faltas_desconto > 0 && (
+                                    <tr>
+                                       <td className="py-2 px-4 text-zinc-700">Faltas / Atrasos</td>
+                                       <td className="py-2 px-4 text-right text-zinc-300">---</td>
+                                       <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.faltas_desconto)}</td>
+                                    </tr>
+                                 )}
+                              </tbody>
+                           </table>
+                        </div>
+
+                        {/* RESUMO TOTAL - DESIGN LIMPO */}
+                        <div className="mt-12 flex flex-col gap-3" style={{ fontFamily: 'Times New Roman', fontSize: '18px' }}>
+                           <div className="flex justify-start gap-4 text-zinc-900">
+                              <span className="font-bold uppercase text-[16px] text-zinc-500 w-48">Total Bruto:</span>
+                              <span className="font-bold">{formatAOA(viewingRecibo.bruto || 0)}</span>
+                           </div>
+                           <div className="flex justify-start gap-4 text-zinc-900">
+                              <span className="font-black uppercase text-[16px] text-zinc-900 w-48">Líquido a Receber:</span>
+                              <span className="font-black text-2xl border-b-2 border-zinc-900">{formatAOA(viewingRecibo.liquido)}</span>
                            </div>
                         </div>
 
-                        {/* DIREITA: N� DOCUMENTO */}
-                        <div className="text-right">
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">N� Documento</p>
-                           <p className="text-xl font-black text-zinc-900 tabular-nums uppercase">#{viewingRecibo.numero_documento || viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
-                        </div>
-                     </div>
-
-                     {/* DADOS DO FUNCIONÁRIO - TABELA REFINADA */}
-                     <div className="mb-12 overflow-hidden rounded-2xl border border-zinc-200">
-                        <table className="w-full text-sm text-left">
-                           <thead className="bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest">
-                              <tr>
-                                 <th className="px-6 py-3 border-r border-white/10">Nome do Colaborador</th>
-                                 <th className="px-6 py-3 border-r border-white/10">Cargo / Fun��o</th>
-                                 <th className="px-6 py-3">N� Bilhete</th>
-                              </tr>
-                           </thead>
-                           <tbody className="bg-zinc-50 font-bold text-zinc-900">
-                              <tr>
-                                 <td className="px-6 py-4 border-r border-zinc-200">{viewingRecibo.nome || '---'}</td>
-                                 <td className="px-6 py-4 border-r border-zinc-200">{viewingRecibo.cargo || '---'}</td>
-                                 <td className="px-6 py-4">{viewingRecibo.bilhete || '---'}</td>
-                              </tr>
-                           </tbody>
-                        </table>
-                     </div>
-
-                     {/* TABELA DE RENDIMENTOS E DESCONTOS - UNIFICADA */}
-                     <div className="mb-12">
-                        <table className="w-full text-left border-collapse" style={{ fontFamily: 'Times New Roman', fontSize: '14px' }}>
-                           <thead>
-                              <tr className="border-b-2 border-zinc-900 bg-zinc-50/50">
-                                 <th className="py-3 px-4 text-zinc-900 font-black uppercase text-[11px] w-1/2">Descri��o</th>
-                                 <th className="py-3 px-4 text-right text-zinc-900 font-black uppercase text-[11px]">Rendimentos (+)</th>
-                                 <th className="py-3 px-4 text-right text-zinc-900 font-black uppercase text-[11px]">Descontos (-)</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-zinc-100">
-                              {/* RENDIMENTOS */}
-                              <tr>
-                                 <td className="py-2 px-4 text-zinc-700 font-bold">Vencimento Base</td>
-                                 <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.base)}</td>
-                                 <td className="py-2 px-4 text-right text-zinc-300">---</td>
-                              </tr>
-                              {viewingRecibo.subsidio_alimentacao > 0 && (
-                                 <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Subs�dio de Alimenta��o</td>
-                                    <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.subsidio_alimentacao)}</td>
-                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
-                                 </tr>
-                              )}
-                              {viewingRecibo.subsidio_transporte > 0 && (
-                                 <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Subs�dio de Transporte</td>
-                                    <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.subsidio_transporte)}</td>
-                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
-                                 </tr>
-                              )}
-                              {((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0)) > 0 && (
-                                 <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Horas Extras / B�nus</td>
-                                    <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0))}</td>
-                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
-                                 </tr>
-                              )}
-
-                              {/* DESCONTOS */}
-                              {viewingRecibo.inss_trabalhador > 0 && (
-                                 <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Seguran�a Social (3%)</td>
-                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
-                                    <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.inss_trabalhador)}</td>
-                                 </tr>
-                              )}
-                              {viewingRecibo.irt > 0 && (
-                                 <tr>
-                                    <td className="py-2 px-4 text-zinc-700">I.R.T.</td>
-                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
-                                    <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.irt)}</td>
-                                 </tr>
-                              )}
-                              {viewingRecibo.adiantamentos > 0 && (
-                                 <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Adiantamentos / Empr�stimos</td>
-                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
-                                    <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.adiantamentos)}</td>
-                                 </tr>
-                              )}
-                              {viewingRecibo.faltas_desconto > 0 && (
-                                 <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Faltas / Atrasos</td>
-                                    <td className="py-2 px-4 text-right text-zinc-300">---</td>
-                                    <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.faltas_desconto)}</td>
-                                 </tr>
-                              )}
-                           </tbody>
-                        </table>
-                     </div>
-
-                     {/* RESUMO TOTAL - DESIGN LIMPO */}
-                     <div className="mt-12 flex flex-col gap-3" style={{ fontFamily: 'Times New Roman', fontSize: '18px' }}>
-                        <div className="flex justify-start gap-4 text-zinc-900">
-                           <span className="font-bold uppercase text-[16px] text-zinc-500 w-48">Total Bruto:</span>
-                           <span className="font-bold">{formatAOA(viewingRecibo.bruto || 0)}</span>
-                        </div>
-                        <div className="flex justify-start gap-4 text-zinc-900">
-                           <span className="font-black uppercase text-[16px] text-zinc-900 w-48">L�quido a Receber:</span>
-                           <span className="font-black text-2xl border-b-2 border-zinc-900">{formatAOA(viewingRecibo.liquido)}</span>
-                        </div>
-                     </div>
-
-                     {/* ASSINATURAS E VALIDA��O */}
-                     <div className="mt-20 grid grid-cols-3 gap-12 items-end">
-                        <div className="text-center">
-                           <div className="h-16 flex items-center justify-center opacity-40 italic font-serif"></div>
-                           <div className="border-t-2 border-zinc-900 mt-4 pt-2">
-                              <p className="text-[12px] font-black uppercase text-zinc-900" style={{ fontFamily: 'Times New Roman' }}>Entidade Empregadora</p>
+                        {/* ASSINATURAS E VALIDAÇÃO */}
+                        <div className="mt-20 grid grid-cols-3 gap-12 items-end">
+                           <div className="text-center">
+                              <div className="h-16 flex items-center justify-center opacity-40 italic font-serif"></div>
+                              <div className="border-t-2 border-zinc-900 mt-4 pt-2">
+                                 <p className="text-[12px] font-black uppercase text-zinc-900" style={{ fontFamily: 'Times New Roman' }}>Entidade Empregadora</p>
+                              </div>
                            </div>
-                        </div>
-                        <div className="flex flex-col items-center">
-                           {/* Espa�o para Carimbo ou Selo F�sico conforme solicitado (Remo��o de �cones Digitais) */}
-                           <div className="h-24"></div>
-                        </div>
-                        <div className="text-center">
-                           <div className="h-16"></div>
-                           <div className="border-t-2 border-zinc-900 mt-4 pt-2">
-                              <p className="text-[14px] font-bold text-zinc-900" style={{ fontFamily: 'Times New Roman' }}>Assinatura do Colaborador</p>
+                           <div className="flex flex-col items-center">
+                              {/* Espaço para Carimbo ou Selo Físico conforme solicitado (Remoção de Ícones Digitais) */}
+                              <div className="h-24"></div>
+                           </div>
+                           <div className="text-center">
+                              <div className="h-16"></div>
+                              <div className="border-t-2 border-zinc-900 mt-4 pt-2">
+                                 <p className="text-[14px] font-bold text-zinc-900" style={{ fontFamily: 'Times New Roman' }}>Assinatura do Colaborador</p>
+                              </div>
                            </div>
                         </div>
                      </div>
-                  </div>
 
-                  {/* DESIGN GEOM�TRICO INFERIOR (TEMPLATE) */}
-                  <div className="relative h-32 w-full mt-auto mb-[-1px] overflow-hidden bg-white">
-                     {/* Light Blue Polygon */}
-                     <div
-                        className="absolute bottom-0 left-0 w-[60%] h-full bg-sky-600 origin-bottom-left print:bg-sky-600"
-                        style={{ clipPath: 'polygon(0 0, 85% 100%, 0 100%)' }}
-                     ></div>
-                     {/* Black Polygon */}
-                     <div
-                        className="absolute bottom-0 left-0 w-[50%] h-[75%] bg-zinc-900 origin-bottom-left print:bg-zinc-900"
-                        style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)' }}
-                     ></div>
+                     {/* DESIGN GEOMÉTRICO INFERIOR (TEMPLATE) */}
+                     <div className="relative h-32 w-full mt-auto mb-[-1px] overflow-hidden bg-white">
+                        {/* Light Blue Polygon */}
+                        <div
+                           className="absolute bottom-0 left-0 w-[60%] h-full bg-sky-600 origin-bottom-left print:bg-sky-600"
+                           style={{ clipPath: 'polygon(0 0, 85% 100%, 0 100%)' }}
+                        ></div>
+                        {/* Black Polygon */}
+                        <div
+                           className="absolute bottom-0 left-0 w-[50%] h-[75%] bg-zinc-900 origin-bottom-left print:bg-zinc-900"
+                           style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)' }}
+                        ></div>
 
-                                                                 <div className='absolute bottom-8 right-12 z-10 flex flex-col gap-1 items-end text-right'>
-                         <div className='flex items-center gap-6'>
-                            <p className='text-[8px] font-bold text-white/30 uppercase tracking-widest'>P�g. 01 / 01</p>
-                            <div className='h-4 w-[1px] bg-white/10'></div>
-                            <p className='text-[10px] font-black text-white/50 uppercase tracking-[0.3em] font-sans'>Amazing ERP � Sistema Inteligente</p>
-                         </div>
-                         <p className='text-[9px] font-bold text-white/40 uppercase tracking-widest italic'>
-                            Folha de Sal�rio processada pelo Computador em 28/02/2026 22:43:43
-                         </p>
-                      </div>
+                        <div className='absolute bottom-8 right-12 z-10 flex flex-col gap-1 items-end text-right'>
+                           <div className='flex items-center gap-6'>
+                              <p className='text-[8px] font-bold text-white/30 uppercase tracking-widest'>Pág. 01 / 01</p>
+                              <div className='h-4 w-[1px] bg-white/10'></div>
+                              <p className='text-[10px] font-black text-white/50 uppercase tracking-[0.3em] font-sans'>Amazing ERP – Sistema Inteligente</p>
+                           </div>
+                           <p className='text-[9px] font-bold text-white/40 uppercase tracking-widest italic'>
+                              Folha de Salário processada pelo Computador em 28/02/2026 22:43:43
+                           </p>
+                        </div>
+                     </div>
                   </div>
                </div>
+            </>
          )}
 
          {/* MODAL PASSE PVC (ESCURO - REFINADO) */}
          {printingPass && (
-      <div className="fixed inset-0 z-[250] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in py-10 overflow-y-auto">
-         <div className="bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto">
-            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-               <h2 className="text-xl font-black text-zinc-900 uppercase flex items-center gap-2">
-                  <IdCard className="text-yellow-500" size={24} /> Emiss�o PVC Corporativo
-               </h2>
-               <button onClick={() => setPrintingPass(null)} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
-            </div>
-
-            <div className="p-10 flex flex-col items-center gap-8">
-               {/* Cart�o PVC - Frente (Tema Escuro solicitado pelo Utilizador) */}
-               <div id="pvc-card" className="w-[320px] h-[520px] bg-zinc-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden relative flex flex-col items-center p-0 print:shadow-none border border-white/5">
-
-                  {/* Design superior minimalista */}
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full -translate-y-32 translate-x-32"></div>
-                  <div className="absolute top-0 left-0 w-48 h-48 bg-sky-600/10 rounded-full -translate-y-24 -translate-x-24"></div>
-
-                  {/* Logotipo ajustado (Menor conforme solicitado) */}
-                  <div className="z-10 mt-10 mb-8 flex flex-col items-center">
-                     <div className="scale-75 opacity-90 filter brightness-0 invert">
-                        <Logo />
-                     </div>
-                     <div className="w-8 h-1 bg-yellow-500 rounded-full mt-4"></div>
+            <div className="fixed inset-0 z-[250] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in py-10 overflow-y-auto">
+               <div className="bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto">
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                     <h2 className="text-xl font-black text-zinc-900 uppercase flex items-center gap-2">
+                        <IdCard className="text-yellow-500" size={24} /> Emissão PVC Corporativo
+                     </h2>
+                     <button onClick={() => setPrintingPass(null)} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                   </div>
 
-                  {/* Fotografia */}
-                  <div className="relative mb-8">
-                     <img src={printingPass.foto_url} className="w-32 h-32 rounded-[2.5rem] object-cover border-4 border-zinc-800 shadow-2xl relative z-10" />
-                     <div className="absolute -inset-2 bg-gradient-to-tr from-sky-600/20 to-yellow-500/20 rounded-[2.8rem] blur-xl opacity-50"></div>
-                  </div>
+                  <div className="p-10 flex flex-col items-center gap-8">
+                     {/* Cartão PVC - Frente (Tema Escuro solicitado pelo Utilizador) */}
+                     <div id="pvc-card" className="w-[320px] h-[520px] bg-zinc-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden relative flex flex-col items-center p-0 print:shadow-none border border-white/5">
 
-                  {/* Dados do Funcion�rio */}
-                  <div className="flex-1 w-full flex flex-col items-center px-8 text-center text-white">
-                     <h2 className="text-2xl font-black leading-tight uppercase tracking-tighter mb-1">{printingPass.nome}</h2>
-                     <p className="text-[11px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-8">{printingPass.funcao}</p>
+                        {/* Design superior minimalista */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full -translate-y-32 translate-x-32"></div>
+                        <div className="absolute top-0 left-0 w-48 h-48 bg-sky-600/10 rounded-full -translate-y-24 -translate-x-24"></div>
 
-                     <div className="grid grid-cols-2 gap-3 w-full mb-10">
-                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                           <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">ID Registo</p>
-                           <p className="text-[11px] font-black text-white font-mono tracking-tighter">#{printingPass.id.substring(0, 8).toUpperCase()}</p>
+                        {/* Logotipo ajustado (Menor conforme solicitado) */}
+                        <div className="z-10 mt-10 mb-8 flex flex-col items-center">
+                           <div className="scale-75 opacity-90 filter brightness-0 invert">
+                              <Logo />
+                           </div>
+                           <div className="w-8 h-1 bg-yellow-500 rounded-full mt-4"></div>
                         </div>
-                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                           <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Validade</p>
-                           <p className="text-[11px] font-black text-white">
-                              {(() => {
-                                 const d = new Date();
-                                 d.setFullYear(d.getFullYear() + 2);
-                                 return d.toLocaleDateString('pt-PT');
-                              })()}
-                           </p>
+
+                        {/* Fotografia */}
+                        <div className="relative mb-8">
+                           <img src={printingPass.foto_url} className="w-32 h-32 rounded-[2.5rem] object-cover border-4 border-zinc-800 shadow-2xl relative z-10" />
+                           <div className="absolute -inset-2 bg-gradient-to-tr from-sky-600/20 to-yellow-500/20 rounded-[2.8rem] blur-xl opacity-50"></div>
+                        </div>
+
+                        {/* Dados do Funcionário */}
+                        <div className="flex-1 w-full flex flex-col items-center px-8 text-center text-white">
+                           <h2 className="text-2xl font-black leading-tight uppercase tracking-tighter mb-1">{printingPass.nome}</h2>
+                           <p className="text-[11px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-8">{printingPass.funcao}</p>
+
+                           <div className="grid grid-cols-2 gap-3 w-full mb-10">
+                              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">ID Registo</p>
+                                 <p className="text-[11px] font-black text-white font-mono tracking-tighter">#{printingPass.id.substring(0, 8).toUpperCase()}</p>
+                              </div>
+                              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Validade</p>
+                                 <p className="text-[11px] font-black text-white">
+                                    {(() => {
+                                       const d = new Date();
+                                       d.setFullYear(d.getFullYear() + 2);
+                                       return d.toLocaleDateString('pt-PT');
+                                    })()}
+                                 </p>
+                              </div>
+                           </div>
+
+                           {/* QR Code */}
+                           <div className="mt-auto mb-10 bg-white p-2.5 rounded-[1.2rem] shadow-2xl">
+                              <QrCode size={40} className="text-zinc-900" />
+                           </div>
+                        </div>
+
+                        {/* Accents laterais ou inferiores */}
+                        <div className="absolute bottom-0 left-0 w-full flex h-1.5">
+                           <div className="flex-1 bg-sky-600"></div>
+                           <div className="flex-1 bg-yellow-500"></div>
+                           <div className="flex-1 bg-zinc-900 border-t border-white/10"></div>
                         </div>
                      </div>
 
-                     {/* QR Code */}
-                     <div className="mt-auto mb-10 bg-white p-2.5 rounded-[1.2rem] shadow-2xl">
-                        <QrCode size={40} className="text-zinc-900" />
+                     <div className="flex gap-4 w-full">
+                        <button onClick={() => window.print()} className="flex-1 py-5 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl">
+                           <Printer size={20} /> Emitir Passe PVC
+                        </button>
+                        <button onClick={() => setPrintingPass(null)} className="px-8 py-5 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-xs uppercase hover:bg-zinc-200 transition-all">Sair</button>
                      </div>
-                  </div>
-
-                  {/* Accents laterais ou inferiores */}
-                  <div className="absolute bottom-0 left-0 w-full flex h-1.5">
-                     <div className="flex-1 bg-sky-600"></div>
-                     <div className="flex-1 bg-yellow-500"></div>
-                     <div className="flex-1 bg-zinc-900 border-t border-white/10"></div>
                   </div>
                </div>
-
-               <div className="flex gap-4 w-full">
-                  <button onClick={() => window.print()} className="flex-1 py-5 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl">
-                     <Printer size={20} /> Emitir Passe PVC
-                  </button>
-                  <button onClick={() => setPrintingPass(null)} className="px-8 py-5 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-xs uppercase hover:bg-zinc-200 transition-all">Sair</button>
-               </div>
             </div>
-         </div>
-               )}
-         </div>
+         )}
       </div>
-                        );
+   );
 };
 
-                        export default HRPage;
-
-
-
+export default HRPage;
