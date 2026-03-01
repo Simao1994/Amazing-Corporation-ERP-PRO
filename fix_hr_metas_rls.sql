@@ -1,5 +1,6 @@
 -- Script para resolver de vez o problema das Metas (HR)
--- 1. Criar a tabela se não existir
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- 1. Criar a tabela se não existir ou corrigir a existente
 CREATE TABLE IF NOT EXISTS public.hr_metas (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     funcionario_id uuid REFERENCES public.funcionarios(id) ON DELETE CASCADE,
@@ -9,6 +10,9 @@ CREATE TABLE IF NOT EXISTS public.hr_metas (
     status text DEFAULT 'Em curso',
     created_at timestamp with time zone DEFAULT now()
 );
+
+-- Garantir que a coluna ID tem valor default se foi criada sem ele
+ALTER TABLE public.hr_metas ALTER COLUMN id SET DEFAULT gen_random_uuid();
 
 -- 2. Garantir permissões de acesso
 GRANT ALL ON public.hr_metas TO anon, authenticated, service_role;
