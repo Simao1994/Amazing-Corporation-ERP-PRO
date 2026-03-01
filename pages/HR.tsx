@@ -1834,7 +1834,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                `}</style>
 
                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10 print:static print:p-0 print:bg-white print:block">
-                  <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:mx-auto min-h-[296mm] flex flex-col overflow-hidden">
+                  <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:h-[297mm] print:mx-auto flex flex-col overflow-hidden">
 
                      {/* DESIGN GEOMÉTRICO SUPERIOR (POLÍGONOS FORÇADOS PARA PRINT) */}
                      <div className="relative h-48 w-full print:h-48 overflow-hidden bg-white border-b-4 border-zinc-900 print-bg-fix">
@@ -1932,22 +1932,21 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </button>
                      </div>
 
-                     <div className="flex-1 px-16 py-8 print:px-12 flex flex-col">
+                     <div className="flex-1 px-16 pt-16 pb-32 print:px-12 flex flex-col">
                         {/* LINHA DE TÍTULO - REESTRUTURADA PARA MÁXIMA VISIBILIDADE */}
                         <div className="border-b-[4px] border-zinc-900 pb-6 mb-8 flex justify-between items-center">
                            {/* ESQUERDA: LOGO E INFO (MAIS ROBUSTO) */}
                            <div className="flex items-center gap-6">
-                              <div className="w-40 h-20 bg-zinc-50 rounded-xl flex items-center justify-center p-2 border border-zinc-100 print:border-none print-bg-fix">
-                                 <Logo className="h-14 w-auto" />
-                                 {/* Fallback text se o logo falhar */}
-                                 <span className="sr-only">Amazing Corporation</span>
+                              <div className="w-44 h-24 bg-zinc-50 rounded-xl flex items-center justify-center p-2 border border-zinc-100 print:border-none print-bg-fix relative">
+                                 <Logo className="h-16 w-auto z-10" />
+                                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-zinc-300 uppercase tracking-widest text-center px-4">Amazing Corp</span>
                               </div>
-                              <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-500">
-                                 <span className="text-zinc-900 font-black text-[12px] mb-1 tracking-tighter italic">Amazing Corporation</span>
-                                 <span className="text-zinc-800">NIF: 50002181797</span>
+                              <div className="flex flex-col text-[11px] leading-tight font-black uppercase text-zinc-600">
+                                 <span className="text-zinc-900 font-black text-[14px] mb-1 tracking-tighter italic">Amazing Corporation</span>
+                                 <span className="text-zinc-900 font-bold">NIF: 50002181797</span>
                                  <span>Benguela/Angola • Massangarala</span>
-                                 <span className="text-zinc-800 mt-0.5 font-bold">Tel: +244 931 116 696</span>
-                                 <span className="lowercase text-sky-600 font-black">Email: geral.amazingcorporation@gmail.com</span>
+                                 <span className="text-zinc-900 mt-1 font-black">Tel: +244 931 116 696</span>
+                                 <span className="lowercase text-sky-700 font-black text-xs">Email: geral.amazingcorporation@gmail.com</span>
                               </div>
                            </div>
 
@@ -2091,8 +2090,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                      </div>
 
-                     {/* DESIGN GEOMÉTRICO INFERIOR (FORCE PRINT COLORS) */}
-                     <div className="relative h-24 w-full mt-auto mb-[-1px] overflow-hidden bg-white print-bg-fix">
+                     {/* DESIGN GEOMÉTRICO INFERIOR (PINNED TO BOTTOM) */}
+                     <div className="absolute bottom-0 left-0 w-full h-32 overflow-hidden bg-white print-bg-fix border-t border-zinc-100/50">
                         {/* Light Blue Polygon */}
                         <div
                            className="absolute bottom-0 left-0 w-[60%] h-full bg-sky-600 origin-bottom-left print:bg-sky-600 print-bg-fix"
@@ -2104,13 +2103,13 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)', WebkitPrintColorAdjust: 'exact' }}
                         ></div>
 
-                        <div className='absolute bottom-8 right-12 z-10 flex flex-col gap-1 items-end text-right'>
+                        <div className='absolute bottom-10 right-12 z-10 flex flex-col gap-1 items-end text-right'>
                            <div className='flex items-center gap-6'>
-                              <p className='text-[8px] font-bold text-white/30 uppercase tracking-widest'>Pág. 01 / 01</p>
-                              <div className='h-4 w-[1px] bg-white/10'></div>
-                              <p className='text-[10px] font-black text-white/50 uppercase tracking-[0.3em] font-sans'>Amazing ERP – Sistema Inteligente</p>
+                              <p className='text-[10px] font-bold text-white uppercase tracking-widest'>Pág. 01 / 01</p>
+                              <div className='h-4 w-[1px] bg-white/20'></div>
+                              <p className='text-[12px] font-black text-white uppercase tracking-[0.2em] font-sans'>Amazing ERP – Sistema Inteligente</p>
                            </div>
-                           <p className='text-[9px] font-bold text-white/40 uppercase tracking-widest italic'>
+                           <p className='text-[11px] font-bold text-white/70 uppercase tracking-widest italic'>
                               Folha de Salário processada pelo Computador em {new Date().toLocaleString()}
                            </p>
                         </div>
