@@ -121,9 +121,10 @@ const BlogPage: React.FC = () => {
       setEditingItem(null);
       setHeaderFile(null);
       setVideoFile(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao guardar artigo:', err);
-      alert('Não foi possível publicar o artigo. Verifique se o bucket "blog-media" existe no Supabase.');
+      const isStorageError = err.message?.toLowerCase().includes('storage') || err.statusCode === '404' || err.error === 'Not Found';
+      alert(`Não foi possível publicar o artigo: ${err.message || 'Erro desconhecido'}. ${isStorageError ? 'Verifique se o bucket "blog-media" existe e é público no Supabase.' : ''}`);
     } finally {
       setSaving(false);
     }
