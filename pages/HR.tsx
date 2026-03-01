@@ -217,24 +217,25 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const [modalActiveTab, setModalActiveTab] = useState<'geral' | 'contas'>('geral');
    const [showShareOptions, setShowShareOptions] = useState(false);
    const [customWhatsApp, setCustomWhatsApp] = useState('');
+   const [customMessage, setCustomMessage] = useState('');
 
    const handleWhatsAppShare = () => {
       if (!viewingRecibo) return;
       const phone = customWhatsApp.replace(/\D/g, '');
-      if (!phone) return alert("Por favor, insira um n�mero de WhatsApp v�lido.");
+      if (!phone) return alert("Por favor, insira um nmero de WhatsApp vlido.");
 
-      const message = encodeURIComponent(`*Amazing Corporation - Folha de Sal�rio*\n\nOl�, segue o resumo do seu recibo de ${viewingRecibo.mes}/${viewingRecibo.ano}:\n\n?? *Funcion�rio:* ${viewingRecibo.nome}\n?? *Per�odo:* ${viewingRecibo.mes} ${viewingRecibo.ano}\n?? *L�quido a Receber:* ${formatAOA(viewingRecibo.liquido)}\n\n_Documento Interno: #${viewingRecibo.id.substring(0, 8).toUpperCase()}_`);
+      const message = encodeURIComponent(customMessage);
       window.open(`https://wa.me/${phone.startsWith('244') ? phone : '244' + phone}?text=${message}`, '_blank');
    };
 
    const handleEmailShare = () => {
       if (!viewingRecibo) return;
-      const subject = encodeURIComponent(`Folha de Sal�rio - ${viewingRecibo.mes} ${viewingRecibo.ano}`);
-      const body = encodeURIComponent(`Ol�,\n\nSegue o resumo da sua folha de sal�rio:\n\nFuncion�rio: ${viewingRecibo.nome}\nPer�odo: ${viewingRecibo.mes} ${viewingRecibo.ano}\nValor L�quido: ${formatAOA(viewingRecibo.liquido)}\n\nAtenciosamente,\nAmazing Corporation`);
+      const subject = encodeURIComponent(`Folha de Salrio - ${viewingRecibo.mes} ${viewingRecibo.ano}`);
+      const body = encodeURIComponent(`Ol,\n\nSegue o resumo da sua folha de salrio:\n\nFuncionrio: ${viewingRecibo.nome}\nPerodo: ${viewingRecibo.mes} ${viewingRecibo.ano}\nValor Lquido: ${formatAOA(viewingRecibo.liquido)}\n\nAtenciosamente,\nAmazing Corporation`);
       window.location.href = `mailto:?subject=${subject}&body=${body}`;
    };
 
-   // Estados locais do formul�rio para controlo dinâmico
+   // Estados locais do formulrio para controlo dinâmico
    const [formState, setFormState] = useState({
       nascimento: '',
       idade: 0,
@@ -242,7 +243,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       municipio: '',
       nome_pai: '',
       nome_mae: '',
-      escolaridade: 'Ensino M�dio',
+      escolaridade: 'Ensino Mdio',
       curso: ''
    });
 
@@ -260,6 +261,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       if (viewingRecibo) {
          const funcionario = funcionarios.find(f => f.id === viewingRecibo.funcionario_id);
          setCustomWhatsApp(funcionario?.telefone || '');
+         setCustomMessage(`*Amazing Corporation - Folha de Salário*\n\nOlá, segue o resumo do seu recibo de ${viewingRecibo.mes}/${viewingRecibo.ano}:\n\n👤 *Funcionário:* ${viewingRecibo.nome}\n📅 *Período:* ${viewingRecibo.mes} ${viewingRecibo.ano}\n💰 *Líquido a Receber:* ${formatAOA(viewingRecibo.liquido)}\n\n_Documento Interno: #${viewingRecibo.id.substring(0, 8).toUpperCase()}_`);
          setShowShareOptions(false);
       }
    }, [viewingRecibo, funcionarios]);
@@ -270,7 +272,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    const lastFetchRef = React.useRef<number>(0);
    const fetchHRData = async () => {
-      // Debounce: evitar m�ltiplas chamadas em menos de 2 segundos (muito comum com Realtime postgres_changes)
+      // Debounce: evitar mltiplas chamadas em menos de 2 segundos (muito comum com Realtime postgres_changes)
       const now = Date.now();
       if (now - lastFetchRef.current < 2000) return;
       lastFetchRef.current = now;
@@ -364,7 +366,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             municipio: (func as any).municipio || '',
             nome_pai: (func as any).nome_pai || '',
             nome_mae: (func as any).nome_mae || '',
-            escolaridade: func.nivel_escolaridade || 'Ensino M�dio',
+            escolaridade: func.nivel_escolaridade || 'Ensino Mdio',
             curso: func.area_formacao || ''
          });
       } else {
@@ -375,7 +377,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             municipio: '',
             nome_pai: '',
             nome_mae: '',
-            escolaridade: 'Ensino M�dio',
+            escolaridade: 'Ensino Mdio',
             curso: ''
          });
       }
@@ -410,7 +412,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       try {
          const { error } = await supabase.from('hr_metas').update({
             progresso: novoProgresso,
-            status: novoProgresso === 100 ? 'Conclu�da' : 'Em curso'
+            status: novoProgresso === 100 ? 'Concluda' : 'Em curso'
          }).eq('id', id);
          if (error) throw error;
          fetchHRData();
@@ -433,7 +435,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                .eq('data', hoje)
                .maybeSingle();
 
-            if (existing) return alert("J� registou entrada hoje.");
+            if (existing) return alert("J registou entrada hoje.");
 
             const [h, m] = agora.split(':').map(Number);
             const entryDate = new Date(); entryDate.setHours(h, m, 0);
@@ -464,7 +466,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                .is('saida', null)
                .maybeSingle();
 
-            if (fetchErr || !ponto) return alert("Registo de entrada ativo n�o localizado para hoje.");
+            if (fetchErr || !ponto) return alert("Registo de entrada ativo no localizado para hoje.");
 
             const stats = calculateTimeStats(ponto.entrada, agora, hoje);
 
@@ -480,11 +482,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          }
       } catch (err: any) {
          console.error("Erro no ponto:", err);
-         alert(`Erro ao registar ponto: ${err.message || 'Verifique a liga��o'}`);
+         alert(`Erro ao registar ponto: ${err.message || 'Verifique a ligao'}`);
       }
    };
 
-   // --- ATUALIZA��O DE VARIÁVEIS DE FOLHA ---
+   // --- ATUALIZAO DE VARIÁVEIS DE FOLHA ---
    const updatePayrollInput = (id: string, field: keyof PayrollInput, value: number) => {
       const numericValue = isNaN(value) ? 0 : value;
       setPayrollInputs(prev => ({
@@ -496,7 +498,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       }));
    };
 
-   // --- AGREGA��O AUTOMÁTICA DE DADOS DE PONTO PARA FOLHA ---
+   // --- AGREGAO AUTOMÁTICA DE DADOS DE PONTO PARA FOLHA ---
    const getAutoPayrollData = (funcId: string): PayrollInput => {
       if (payrollInputs[funcId]) return payrollInputs[funcId];
 
@@ -563,15 +565,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       const subsidiosTotal = subAlim + subTrans + subFerias + subNatal;
       const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0) + (Number(f.outros_bonus) || 0);
 
-      // Total Proventos (Sal�rio Base + Horas Extras + Subs�dios + B�nus)
+      // Total Proventos (Salrio Base + Horas Extras + Subsdios + Bnus)
       const totalProventos = base + valorHorasExtras + subsidiosTotal + premiosBonus;
-      const bruto = totalProventos; // Sal�rio Bruto = Total Proventos
+      const bruto = totalProventos; // Salrio Bruto = Total Proventos
 
-      // INSS (Base: Sal�rio Base + Horas Extras + B�nus)
+      // INSS (Base: Salrio Base + Horas Extras + Bnus)
       const baseINSS = base + valorHorasExtras + premiosBonus;
       const inss = baseINSS * INSS_WORKER_RATE;
 
-      // IRT (Base: Bruto - INSS - Isen�ões)
+      // IRT (Base: Bruto - INSS - Isenões)
       const exemptSubAlim = Math.min(subAlim, EXEMPT_ALLOWANCE_LIMIT);
       const exemptSubTrans = Math.min(subTrans, EXEMPT_ALLOWANCE_LIMIT);
       const baseIRT = bruto - inss - exemptSubAlim - exemptSubTrans;
@@ -595,7 +597,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    const handleProcessPayroll = async () => {
       const ativos = funcionarios.filter(f => f.status === 'ativo');
-      if (ativos.length === 0) return alert("N�o existem colaboradores activos.");
+      if (ativos.length === 0) return alert("No existem colaboradores activos.");
 
       // 1. Transparent session check (no more alerts)
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -607,11 +609,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       }
       // If still no session, let the insert/select fail and handle via catch, avoiding the early alert.
 
-      // Verificar se j� existe processamento para este m�s
+      // Verificar se j existe processamento para este ms
       const { data: existing } = await supabase.from('hr_recibos').select('id').eq('mes', currentMonthName).eq('ano', currentFiscalYear);
 
       if (existing && existing.length > 0) {
-         const confirmUpdate = confirm(`A folha de ${currentMonthName}/${currentFiscalYear} j� foi processada (${existing.length} recibos). Deseja ANULAR os anteriores e processar novamente?`);
+         const confirmUpdate = confirm(`A folha de ${currentMonthName}/${currentFiscalYear} j foi processada (${existing.length} recibos). Deseja ANULAR os anteriores e processar novamente?`);
          if (!confirmUpdate) return;
 
          // Eliminar anteriores
@@ -674,10 +676,10 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
          await fetchHRData();
          AmazingStorage.logAction('Payroll', 'RH', `Folha de ${currentMonthName} processada com sucesso.`);
-         alert("Folha de sal�rios processada e fechada com sucesso!");
+         alert("Folha de salrios processada e fechada com sucesso!");
       } catch (error: any) {
          console.error("Critical Payroll Error:", error);
-         alert(`Falha no processamento: ${error.message || 'Erro de rede ou permiss�o'}`);
+         alert(`Falha no processamento: ${error.message || 'Erro de rede ou permisso'}`);
       } finally {
          setIsProcessing(false);
       }
@@ -688,15 +690,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       // 1. Custos por Departamento (Pie Chart)
       const deptCosts: Record<string, number> = {};
       funcionarios.forEach(f => {
-         const dept = f.departamento_id || 'Administra��o';
+         const dept = f.departamento_id || 'Administrao';
          deptCosts[dept] = (deptCosts[dept] || 0) + (f.salario_base || 0);
       });
       const pieData = Object.entries(deptCosts).map(([name, value]) => ({ name, value }));
 
-      // 2. Evolu��o de Custos (Area Chart) - Baseado nos recibos existentes
+      // 2. Evoluo de Custos (Area Chart) - Baseado nos recibos existentes
       const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const monthMap: Record<string, string> = {
-         'janeiro': 'Jan', 'fevereiro': 'Fev', 'mar�o': 'Mar', 'abril': 'Abr', 'maio': 'Mai', 'junho': 'Jun',
+         'janeiro': 'Jan', 'fevereiro': 'Fev', 'maro': 'Mar', 'abril': 'Abr', 'maio': 'Mai', 'junho': 'Jun',
          'julho': 'Jul', 'agosto': 'Ago', 'setembro': 'Set', 'outubro': 'Out', 'novembro': 'Nov', 'dezembro': 'Dez'
       };
 
@@ -716,17 +718,17 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       // 3. Performance de Metas (Bar Chart)
       const metaStats = { completed: 0, pending: 0 };
       metas.forEach(m => {
-         if (m.status === 'Conclu�da') metaStats.completed++;
+         if (m.status === 'Concluda') metaStats.completed++;
          else metaStats.pending++;
       });
       const barData = [
-         { name: 'Conclu�das', valor: metaStats.completed, fill: '#22c55e' },
+         { name: 'Concludas', valor: metaStats.completed, fill: '#22c55e' },
          { name: 'Em Curso', valor: metaStats.pending, fill: '#eab308' }
       ];
 
-      // 4. Notifica�ões de Contratos a Expirar (Pr�ximos 30 dias)
+      // 4. Notificaões de Contratos a Expirar (Prximos 30 dias)
       const proximosVencimentos = funcionarios.filter(f => {
-         if (f.tipo_contrato !== 'Determinado' && f.tipo_contrato !== 'Est�gio') return false;
+         if (f.tipo_contrato !== 'Determinado' && f.tipo_contrato !== 'Estgio') return false;
          if (!f.data_admissao || !f.tempo_contrato) return false;
 
          const meses = parseInt(f.tempo_contrato);
@@ -833,7 +835,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
             <div className="flex flex-col items-center gap-2">
                <h3 className="text-zinc-900 font-black uppercase text-[12px] tracking-[0.3em]">Sincronizando Talentos</h3>
-               <p className="text-zinc-400 text-[10px] font-bold animate-pulse">A carregar informa��es da nuvem Amazing...</p>
+               <p className="text-zinc-400 text-[10px] font-bold animate-pulse">A carregar informaes da nuvem Amazing...</p>
             </div>
          </div>
       );
@@ -851,7 +853,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             }
          `}</style>
 
-         {/* ... (MODALS DE RECIBO E FICHA T�CNICA MANTIDOS DO C�DIGO ANTERIOR) ... */}
+         {/* ... (MODALS DE RECIBO E FICHA TCNICA MANTIDOS DO CDIGO ANTERIOR) ... */}
 
          {/* CONTEÚDO PRINCIPAL (OCULTO NA IMPRESSÃO SE MODAL ESTIVER ABERTO) */}
          <div className={(viewingRecibo || printingPass) ? 'print:hidden' : ''}>
@@ -860,7 +862,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                <div className="flex items-center gap-3">
                   <div className="p-3 bg-zinc-900 rounded-2xl shadow-xl border border-white/10"><Users className="text-yellow-500" size={28} /></div>
                   <div>
-                     <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Gest�o de <span className="text-yellow-500">Talentos</span></h1>
+                     <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Gesto de <span className="text-yellow-500">Talentos</span></h1>
                      <p className="text-zinc-500 font-bold flex items-center gap-2 mt-1"><ShieldCheck size={14} className="text-green-600" /> Amazing Corporate Governance</p>
                   </div>
                </div>
@@ -873,7 +875,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      { id: 'performance', icon: <Award size={18} />, label: 'Metas' },
                      { id: 'passes', icon: <IdCard size={18} />, label: 'Passes' },
                      { id: 'vagas', icon: <UserPlus size={18} />, label: 'Vagas' },
-                     { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Banc�rias' }
+                     { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Bancrias' }
                   ].filter(tab => isHRAdmin || !['gente', 'payroll', 'contas', 'vagas'].includes(tab.id)).map(tab => (
                      <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'}`}>{tab.icon} {tab.label}</button>
                   ))}
@@ -883,7 +885,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             {/* DASHBOARD ANALÍTICO */}
             {activeTab === 'dashboard' && (
                <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                  {/* Notifica�ões e Alertas */}
+                  {/* Notificaões e Alertas */}
                   {analyticsData.proximosVencimentos.length > 0 && (
                      <div className="bg-red-50 border border-red-100 p-8 rounded-[2.5rem] flex items-center justify-between shadow-sm animate-pulse">
                         <div className="flex items-center gap-6">
@@ -892,7 +894,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            </div>
                            <div>
                               <h4 className="text-lg font-black text-red-900 uppercase tracking-tight">Alertas de Contrato</h4>
-                              <p className="text-sm font-bold text-red-700">H� {analyticsData.proximosVencimentos.length} colaboradores com contrato a terminar nos pr�ximos 30 dias.</p>
+                              <p className="text-sm font-bold text-red-700">H {analyticsData.proximosVencimentos.length} colaboradores com contrato a terminar nos prximos 30 dias.</p>
                            </div>
                         </div>
                         <div className="flex -space-x-4">
@@ -932,11 +934,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      </div>
                   </div>
 
-                  {/* Gr�ficos */}
+                  {/* Grficos */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                      <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[400px] flex flex-col">
                         <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2">
-                           <PieIcon className="text-yellow-500" size={20} /> Distribui��o por Departamento
+                           <PieIcon className="text-yellow-500" size={20} /> Distribuio por Departamento
                         </h3>
                         <div className="flex-1 w-full min-h-0 relative">
                            <ResponsiveContainer width="100%" height="100%">
@@ -962,7 +964,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                      <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[400px] flex flex-col">
                         <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2">
-                           <TrendingUp className="text-green-600" size={20} /> Evolu��o de Custos (Semestral)
+                           <TrendingUp className="text-green-600" size={20} /> Evoluo de Custos (Semestral)
                         </h3>
                         <div className="flex-1 w-full min-h-0">
                            <ResponsiveContainer width="100%" height="100%">
@@ -1041,7 +1043,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         <table className="w-full text-left min-w-[600px]">
                            <thead>
                               <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                                 <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Fun��o / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Ac�ões</th>
+                                 <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Funo / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Acões</th>
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-zinc-50 text-sm">
@@ -1052,7 +1054,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                     <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
                                     <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
                                     <td className="px-8 py-5 text-right flex justify-end gap-2">
-                                       <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Hist�rico Completo"><ClipboardList size={18} /></button>
+                                       <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histrico Completo"><ClipboardList size={18} /></button>
                                        {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
                                        {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
                                     </td>
@@ -1068,9 +1070,9 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             {/* PAYROLL / FOLHA */}
             {activeTab === 'payroll' && (
                <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                  {/* Gr�fico de Tend�ncia Salarial */}
+                  {/* Grfico de Tendncia Salarial */}
                   <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
-                     <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Custo Total de Pessoal (Proje��o)</h3>
+                     <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Custo Total de Pessoal (Projeo)</h3>
                      <ResponsiveContainer width="100%" height="85%">
                         <AreaChart data={analyticsData.chartArea}>
                            <defs>
@@ -1092,11 +1094,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <div>
                         <h2 className="text-3xl font-black uppercase text-yellow-500">Mesa de Processamento</h2>
                         <p className="text-zinc-400 font-medium">Ciclo: {currentMonthName} {currentFiscalYear}</p>
-                        <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest font-bold">Introduza vari�veis antes de processar</p>
+                        <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest font-bold">Introduza variveis antes de processar</p>
                      </div>
                      <div className="flex flex-col md:flex-row gap-4 relative z-10 items-center">
                         <div className="flex flex-col gap-2">
-                           <label className="text-[10px] font-black uppercase text-zinc-500 ml-4">N� Documento</label>
+                           <label className="text-[10px] font-black uppercase text-zinc-500 ml-4">N Documento</label>
                            <input
                               type="text"
                               value={payrollDocNumber}
@@ -1127,14 +1129,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         <thead>
                            <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                               <th className="px-6 py-4">Colaborador</th>
-                              <th className="px-6 py-4">Sal�rio Base</th>
+                              <th className="px-6 py-4">Salrio Base</th>
                               <th className="px-6 py-4 text-center">H. Extras</th>
                               <th className="px-6 py-4 text-center">Faltas</th>
-                              <th className="px-6 py-4">Subs�dios (Alim/Trans)</th>
-                              <th className="px-6 py-4">Subs. Extras (F�r/Nat)</th>
-                              <th className="px-6 py-4">B�nus/Pr�mios</th>
-                              <th className="px-6 py-4">Empr�st/Desc</th>
-                              <th className="px-6 py-4 text-right">L�quido Est.</th>
+                              <th className="px-6 py-4">Subsdios (Alim/Trans)</th>
+                              <th className="px-6 py-4">Subs. Extras (Fr/Nat)</th>
+                              <th className="px-6 py-4">Bnus/Prmios</th>
+                              <th className="px-6 py-4">Emprst/Desc</th>
+                              <th className="px-6 py-4 text-right">Lquido Est.</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50 text-xs">
@@ -1169,7 +1171,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                     <td className="px-6 py-4">
                                        <div className="flex flex-col gap-1">
                                           <div className="flex items-center gap-1">
-                                             <span className="text-[8px] font-black text-zinc-400">F�r:</span>
+                                             <span className="text-[8px] font-black text-zinc-400">Fr:</span>
                                              <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold"
                                                 value={inputs.subFerias} onChange={e => updatePayrollInput(f.id, 'subFerias', Number(e.target.value))} />
                                           </div>
@@ -1215,12 +1217,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                   {/* LISTA DE RECIBOS GERADOS */}
                   <div className="grid grid-cols-1 gap-4">
-                     <h3 className="text-lg font-black text-zinc-900 uppercase ml-4">Hist�rico de Recibos Emitidos</h3>
+                     <h3 className="text-lg font-black text-zinc-900 uppercase ml-4">Histrico de Recibos Emitidos</h3>
                      {recibos.length > 0 ? recibos.map(r => (
                         <div key={r.id} className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex items-center justify-between group hover:shadow-xl transition-all">
                            <div className="flex items-center gap-6"><div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all"><FileText size={28} /></div><div><h4 className="font-black text-zinc-900 text-lg">{r.nome}</h4><p className="text-[10px] font-black text-zinc-400 uppercase">{r.mes} / {r.ano}</p></div></div>
                            <div className="text-right">
-                              <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">L�quido</p>
+                              <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Lquido</p>
                               <p className="text-2xl font-black text-zinc-900">{formatAOA(r.liquido)}</p>
                            </div>
                            <div className="flex gap-2 ml-6">
@@ -1255,7 +1257,6 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            <p className="text-xl font-black uppercase text-yellow-500">{currentMonthName}</p>
                         </div>
                         <div className="bg-white/5 px-8 py-5 rounded-[2rem] border border-white/10 text-center backdrop-blur-md">
-                           <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">Data de Hoje</p>
                            <p className="text-xl font-black">{new Date().toLocaleDateString('pt-PT')}</p>
                         </div>
                      </div>
@@ -1864,6 +1865,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                        />
                                        <p className="text-[8px] text-zinc-400 italic">O prefixo +244 será adicionado automaticamente.</p>
                                     </div>
+                                    <div className="flex flex-col gap-1.5">
+                                       <label className="text-[9px] font-black uppercase text-zinc-900 ml-1">Mensagem (Editável)</label>
+                                       <textarea
+                                          value={customMessage}
+                                          onChange={(e) => setCustomMessage(e.target.value)}
+                                          rows={5}
+                                          className="w-full px-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-[10px] font-bold focus:ring-2 focus:ring-green-500 outline-none transition-all resize-none"
+                                       />
+                                    </div>
                                     <button
                                        onClick={() => { handleWhatsAppShare(); setShowShareOptions(false); }}
                                        className="w-full py-4 bg-zinc-900 text-white rounded-xl font-black uppercase text-[10px] hover:bg-green-600 transition-all shadow-lg flex items-center justify-center gap-2"
@@ -2069,9 +2079,19 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               <p className='text-[10px] font-black text-white/50 uppercase tracking-[0.3em] font-sans'>Amazing ERP – Sistema Inteligente</p>
                            </div>
                            <p className='text-[9px] font-bold text-white/40 uppercase tracking-widest italic'>
-                              Folha de Salário processada pelo Computador em 28/02/2026 22:43:43
+                              Folha de Salário processada pelo Computador em {new Date().toLocaleString()}
                            </p>
                         </div>
+                     </div>
+
+                     {/* BOTÃO VOLTAR NO FINAL (PARA FACILIDADE) */}
+                     <div className="p-8 border-t border-zinc-100 flex justify-center print:hidden bg-zinc-50/50">
+                        <button
+                           onClick={() => setViewingRecibo(null)}
+                           className="flex items-center gap-3 px-12 py-5 bg-zinc-900 text-white rounded-[2rem] font-black uppercase text-xs hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-2xl"
+                        >
+                           <ArrowLeft size={20} /> Fechar e Voltar ao Painel
+                        </button>
                      </div>
                   </div>
                </div>
