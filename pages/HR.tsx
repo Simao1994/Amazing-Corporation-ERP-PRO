@@ -824,6 +824,35 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       }
    };
 
+   const handleDeleteFuncionario = async (f: Funcionario) => {
+      if (!confirm(`Deseja realmente EXCLUIR o colaborador ${f.nome} e todo o seu histórico (Recibos, Pontos e Metas)? Esta ação é irreversível!`)) return;
+
+      try {
+         // 1. Eliminar dependências (para evitar erro de Foreign Key)
+         await Promise.all([
+            supabase.from('hr_presencas').delete().eq('funcionario_id', f.id),
+            supabase.from('hr_recibos').delete().eq('funcionario_id', f.id),
+            supabase.from('hr_metas').delete().eq('funcionario_id', f.id),
+            supabase.from('rh_contas_bancarias').delete().eq('funcionario_id', f.id)
+         ]);
+
+         // 2. Eliminar o funcionário
+         const { error } = await supabase.from('funcionarios').delete().eq('id', f.id);
+         if (error) throw error;
+
+         // 3. Feedback e Sincronização
+         if ((window as any).notify) {
+            (window as any).notify("Colaborador eliminado com sucesso!", "success");
+         } else {
+            alert("Colaborador eliminado com sucesso!");
+         }
+         await fetchHRData();
+      } catch (err: any) {
+         console.error("Erro ao eliminar colaborador:", err);
+         alert(`Falha ao eliminar: ${err.message || 'Erro de integridade ou permissão'}`);
+      }
+   };
+
    const COLORS_PIE = ['#eab308', '#22c55e', '#3b82f6', '#ef4444', '#a855f7'];
 
    if (loading && funcionarios.length === 0) {
