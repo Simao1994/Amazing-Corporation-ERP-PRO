@@ -250,5 +250,18 @@ CREATE TABLE IF NOT EXISTS public.blog_posts (
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 
+-- 7. METAS DE PERFORMANCE
+CREATE TABLE IF NOT EXISTS public.hr_metas (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    funcionario_id uuid REFERENCES public.funcionarios(id) ON DELETE CASCADE,
+    titulo text NOT NULL,
+    progresso integer DEFAULT 0,
+    prazo date NOT NULL,
+    status text DEFAULT 'Em curso',
+    created_at timestamp with time zone DEFAULT now()
+);
+
+GRANT ALL ON public.hr_metas TO anon, authenticated, service_role;
+
 -- Forçar o Supabase PostgREST a engolir a nova cache
 NOTIFY pgrst, 'reload schema';
