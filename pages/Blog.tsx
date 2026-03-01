@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Newspaper, Plus, Search, Edit, Trash2, Calendar, User as UserIcon, Tag, Eye, X, Send, Image as ImageIcon, RefreshCw, Play, Lock } from 'lucide-react';
+import { Newspaper, Plus, Search, Edit, Trash2, Calendar, User as UserIcon, Tag, Eye, X, Send, Image as ImageIcon, RefreshCw, Play, Lock, Download } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
