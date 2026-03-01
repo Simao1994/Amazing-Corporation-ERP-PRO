@@ -1932,7 +1932,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </button>
                      </div>
 
-                     <div className="flex-1 px-16 pt-16 pb-32 print:px-12 flex flex-col">
+                     <div className="flex-1 pt-[2cm] px-16 pb-32 print:px-12 flex flex-col relative">
                         {/* LINHA DE TÍTULO - REESTRUTURADA PARA MÁXIMA VISIBILIDADE */}
                         <div className="border-b-[4px] border-zinc-900 pb-6 mb-8 flex justify-between items-center">
                            {/* ESQUERDA: LOGO E INFO (MAIS ROBUSTO) */}
@@ -2090,8 +2090,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                      </div>
 
-                     {/* DESIGN GEOMÉTRICO INFERIOR (PINNED TO BOTTOM) */}
-                     <div className="absolute bottom-0 left-0 w-full h-32 overflow-hidden bg-white print-bg-fix border-t border-zinc-100/50">
+                     {/* DESIGN GEOMÉTRICO INFERIOR (PINNED TO ABSOLUTE BOTTOM) */}
+                     <div className="absolute bottom-0 left-0 w-full h-[3.5cm] overflow-hidden bg-white print-bg-fix border-t border-zinc-100/50">
                         {/* Light Blue Polygon */}
                         <div
                            className="absolute bottom-0 left-0 w-[60%] h-full bg-sky-600 origin-bottom-left print:bg-sky-600 print-bg-fix"
