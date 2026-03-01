@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Newspaper, Plus, Search, Edit, Trash2, Calendar, User, Tag, Eye, X, Send, Image as ImageIcon, RefreshCw, Play, Lock } from 'lucide-react';
+import { Newspaper, Plus, Search, Edit, Trash2, Calendar, User as UserIcon, Tag, Eye, X, Send, Image as ImageIcon, RefreshCw, Play, Lock } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
-import { BlogPost } from '../types';
+import { BlogPost, User } from '../types';
 import { supabase, uploadBlogMedia, uploadMultipleBlogMedia } from '../src/lib/supabase';
 import { Upload, FileVideo } from 'lucide-react';
 
-const BlogPage: React.FC = () => {
+interface BlogPageProps {
+  user?: User;
+}
+
+const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingItem, setEditingItem] = useState<BlogPost | null>(null);
@@ -74,8 +78,17 @@ const BlogPage: React.FC = () => {
     const isEditing = !!editingItem;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Robust session check: try to fetch current user definitive session
+      let { data: { session } } = await supabase.auth.getSession();
+
+      // If no session, try to refresh it
       if (!session) {
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        session = refreshData.session;
+      }
+
+      // Final check: if still no session and no appUser, block
+      if (!session && !appUser) {
         alert("Sua sessão expirou. Por favor, faça login novamente para publicar.");
         return;
       }
@@ -295,7 +308,7 @@ const BlogPage: React.FC = () => {
                 <div className="pt-4 border-t border-zinc-50 flex items-center justify-between text-zinc-400">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
-                      <User size={12} className="text-yellow-500" /> {post.autor}
+                      <UserIcon size={12} className="text-yellow-500" /> {post.autor}
                     </div>
                     <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
                       <Calendar size={12} className="text-yellow-500" /> {new Date(post.data).toLocaleDateString()}

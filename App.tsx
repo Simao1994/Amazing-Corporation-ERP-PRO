@@ -214,7 +214,7 @@ const App: React.FC = () => {
                     <Route path="/recrutamento" element={<ProtectedRoute user={user} path="/recrutamento"><RecruitmentPage /></ProtectedRoute>} />
                     <Route path="/tesouraria" element={<ProtectedRoute user={user} path="/tesouraria"><FinancialHubPage /></ProtectedRoute>} />
                     <Route path="/solicitacoes" element={<ProtectedRoute user={user} path="/solicitacoes"><RequestsPage /></ProtectedRoute>} />
-                    <Route path="/blog" element={<ProtectedRoute user={user} path="/blog"><BlogPage /></ProtectedRoute>} />
+                    <Route path="/blog" element={<ProtectedRoute user={user} path="/blog"><BlogPage user={user} /></ProtectedRoute>} />
                     <Route path="/galeria" element={<ProtectedRoute user={user} path="/galeria"><GaleriaPage /></ProtectedRoute>} />
                     <Route path="/feed" element={<ProtectedRoute user={user} path="/feed"><FeedPage /></ProtectedRoute>} />
                     <Route path="/transportes" element={<ProtectedRoute user={user} path="/transportes"><TransportPage /></ProtectedRoute>} />
