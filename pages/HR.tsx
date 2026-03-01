@@ -1932,7 +1932,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </button>
                      </div>
 
-                     <div className="flex-1 pt-[3cm] px-16 pb-32 print:px-12 flex flex-col relative">
+                     <div className="flex-1 pt-[4.5cm] px-16 pb-32 print:px-12 flex flex-col relative">
                         {/* LINHA DE TÍTULO - REESTRUTURADA PARA MÁXIMA VISIBILIDADE */}
                         <div className="border-b-[4px] border-zinc-900 pb-6 mb-8 flex justify-between items-center">
                            {/* ESQUERDA: LOGO E INFO (MAIS ROBUSTO) */}
@@ -2090,26 +2090,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                      </div>
 
-                     {/* DESIGN GEOMÉTRICO INFERIOR (PINNED TO ABSOLUTE BOTTOM) */}
-                     <div className="absolute bottom-0 left-0 w-full h-[3.5cm] overflow-hidden bg-white print-bg-fix border-t border-zinc-100/50">
-                        {/* Light Blue Polygon */}
-                        <div
-                           className="absolute bottom-0 left-0 w-[60%] h-full bg-sky-600 origin-bottom-left print:bg-sky-600 print-bg-fix"
-                           style={{ clipPath: 'polygon(0 0, 85% 100%, 0 100%)', WebkitPrintColorAdjust: 'exact' }}
-                        ></div>
-                        {/* Black Polygon */}
-                        <div
-                           className="absolute bottom-0 left-0 w-[50%] h-[75%] bg-zinc-900 origin-bottom-left print:bg-zinc-900 print-bg-fix"
-                           style={{ clipPath: 'polygon(0 0, 75% 100%, 0 100%)', WebkitPrintColorAdjust: 'exact' }}
-                        ></div>
-
-                        <div className='absolute bottom-6 right-12 z-10 flex flex-col gap-1 items-end text-right'>
-                           <div className='flex items-center gap-6'>
-                              <p className='text-[10px] font-bold text-white uppercase tracking-widest'>Pág. 01 / 01</p>
-                              <div className='h-4 w-[1px] bg-white/20'></div>
-                              <p className='text-[12px] font-black text-white uppercase tracking-[0.2em] font-sans'>Amazing ERP – Sistema Inteligente</p>
+                     {/* RODAPÉ SIMPLIFICADO (APENAS TEXTO PRATA) */}
+                     <div className="absolute bottom-0 left-0 w-full h-[2cm] overflow-hidden bg-white print:bg-white border-t border-zinc-100 flex items-center justify-end px-16">
+                        <div className='flex flex-col gap-0.5 items-end text-right text-zinc-400'>
+                           <div className='flex items-center gap-4'>
+                              <p className='text-[9px] font-bold uppercase tracking-widest'>Pág. 01 / 01</p>
+                              <div className='h-3 w-[1px] bg-zinc-200'></div>
+                              <p className='text-[10px] font-black uppercase tracking-[0.1em] font-sans'>Amazing ERP – Sistema Inteligente</p>
                            </div>
-                           <p className='text-[11px] font-bold text-white/70 uppercase tracking-widest italic'>
+                           <p className='text-[10px] font-medium uppercase tracking-widest italic opacity-80'>
                               Folha de Salário processada pelo Computador em {new Date().toLocaleString()}
                            </p>
                         </div>
