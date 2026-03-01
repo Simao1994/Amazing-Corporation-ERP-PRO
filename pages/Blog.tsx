@@ -44,8 +44,8 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
         titulo: p.titulo,
         categoria: p.categoria,
         conteudo: p.conteudo,
-        autor: p.autor_name,
-        data: p.data_publicacao,
+        autor: p.autor || p.autor_name, // Suporte a ambas as colunas se existirem
+        data: p.data || p.data_publicacao, // Suporte a ambas as colunas
         imagem_url: p.imagem_url,
         video_url: p.video_url,
         galeria_urls: p.galeria_urls,
@@ -121,9 +121,8 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
         titulo: formData.get('titulo') as string,
         categoria: formData.get('categoria') as any || 'Institucional',
         conteudo: formData.get('conteudo') as string,
-        autor_name: formData.get('autor') as string,
-        autor_id: session?.user?.id || appUser?.id, // Safe access from session or appUser fallback
-        data_publicacao: editingItem?.data || new Date().toISOString().split('T')[0],
+        autor: formData.get('autor') as string, // Usar 'autor' conforme recovery.sql
+        data: editingItem?.data || new Date().toISOString().split('T')[0], // Usar 'data' conforme recovery.sql
         imagem_url: finalImageUrl,
         video_url: finalVideoUrl || null,
         galeria_urls: galeriaArray,
@@ -260,7 +259,15 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
                   }
                 })() : (
                   <>
-                    <img src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={post.titulo} />
+                    <img
+                      src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      alt={post.titulo}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800';
+                      }}
+                    />
                     <div className="absolute top-4 left-4 flex gap-2">
                       <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
                         {post.categoria}
