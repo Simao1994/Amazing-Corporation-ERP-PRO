@@ -10,7 +10,7 @@ import {
    Image as ImageIcon, Eye, Calculator, MapPinOff, UserCheck, FileCheck,
    FileSpreadsheet, FileDown, ClipboardList, GraduationCap, Home,
    Coins, Ban, Percent, Timer, CalendarDays, ScanBarcode, PieChart as PieIcon, Landmark,
-   MessageCircle, Mail, ArrowLeft
+   MessageCircle, Mail, ArrowLeft, History
 } from 'lucide-react';
 import {
    ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -253,6 +253,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const [metas, setMetas] = useState<MetaDesempenho[]>(() => AmazingStorage.get(STORAGE_KEYS.METAS, []));
    const [corporateInfo, setCorporateInfo] = useState<any>(() => AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
    const [loading, setLoading] = useState(false);
+   const [showMetaHistoryModal, setShowMetaHistoryModal] = useState(false);
 
    // --- ESTADO PARA PROCESSAMENTO DE FOLHA ---
    const [payrollInputs, setPayrollInputs] = useState<Record<string, PayrollInput>>({});
@@ -402,9 +403,21 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          if (error) throw error;
          fetchHRData();
          setShowMetaModal(false);
-      } catch (err) {
+      } catch (err: any) {
          console.error('Erro ao criar meta:', err);
-         alert('Erro ao criar meta. Verifique se a tabela existe.');
+         alert(`Erro ao criar meta: ${err.message || 'Erro desconhecido'}`);
+      }
+   };
+
+   const handleDeleteMeta = async (id: string) => {
+      if (!confirm('Deseja realmente eliminar esta meta?')) return;
+      try {
+         const { error } = await supabase.from('hr_metas').delete().eq('id', id);
+         if (error) throw error;
+         fetchHRData();
+      } catch (err: any) {
+         console.error('Erro ao eliminar meta:', err);
+         alert(`Erro ao eliminar meta: ${err.message || 'Erro desconhecido'}`);
       }
    };
 
@@ -1473,14 +1486,32 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   <div className="flex justify-between items-center bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
                      <Target className="absolute -right-8 -bottom-8 opacity-10" size={200} />
                      <div><h2 className="text-3xl font-black uppercase">Desempenho</h2><p className="text-zinc-400 font-medium">Acompanhamento de KPIs</p></div>
-                     <button onClick={() => setShowMetaModal(true)} className="px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-white transition-all flex items-center gap-3 relative z-10"><PlusCircle size={20} /> Atribuir Meta</button>
+                     <div className="flex gap-4 relative z-10">
+                        <button onClick={() => setShowMetaHistoryModal(true)} className="px-8 py-4 bg-white/10 border border-white/20 text-white rounded-2xl font-black uppercase text-[10px] hover:bg-white/20 transition-all flex items-center gap-3"><History size={20} /> Histórico Completo</button>
+                        <button onClick={() => setShowMetaModal(true)} className="px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-white transition-all flex items-center gap-3"><PlusCircle size={20} /> Atribuir Meta</button>
+                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                      {metas.map(m => {
                         const func = funcionarios.find(f => f.id === m.funcionario_id);
                         return (
                            <div key={m.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm space-y-6 hover:shadow-xl transition-all">
-                              <div className="flex justify-between items-start"><div className="flex items-center gap-3"><img src={func?.foto_url} className="w-10 h-10 rounded-xl object-cover grayscale" /><h4 className="font-black text-zinc-900 text-sm">{func?.nome.split(' ')[0]}</h4></div><span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${m.status === 'Concluída' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{m.status}</span></div>
+                              <div className="flex justify-between items-start">
+                                 <div className="flex items-center gap-3">
+                                    <img src={func?.foto_url} className="w-10 h-10 rounded-xl object-cover grayscale" />
+                                    <h4 className="font-black text-zinc-900 text-sm">{func?.nome.split(' ')[0]}</h4>
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                    <button
+                                       onClick={(e) => { e.stopPropagation(); handleDeleteMeta(m.id); }}
+                                       className="p-1.5 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                       title="Eliminar Meta"
+                                    >
+                                       <Trash2 size={14} />
+                                    </button>
+                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${m.status === 'Concluída' || m.status === 'Concluda' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{m.status}</span>
+                                 </div>
+                              </div>
                               <h3 className="text-base font-black text-zinc-900 mb-4">{m.titulo}</h3>
                               <div className="space-y-2">
                                  <input type="range" min="0" max="100" value={m.progresso} onChange={(e) => updateMetaProgresso(m.id, Number(e.target.value))} className="w-full h-2 bg-zinc-100 rounded-full appearance-none cursor-pointer accent-yellow-500" />
@@ -1818,6 +1849,73 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <Input name="prazo" label="Prazo Final" type="date" required defaultValue={new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]} />
                      <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] hover:bg-yellow-500 transition-all shadow-xl"><Save size={18} /> Efectivar Atribuição</button>
                   </form>
+               </div>
+            </div>
+         )}
+
+         {/* MODAL HISTÓRICO DE METAS */}
+         {showMetaHistoryModal && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in">
+               <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col">
+                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                     <div>
+                        <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase"><History className="text-yellow-500" /> Histórico de Performance</h2>
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo completo de todos os KPIs</p>
+                     </div>
+                     <button onClick={() => setShowMetaHistoryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all">
+                        <X size={24} />
+                     </button>
+                  </div>
+                  <div className="flex-1 overflow-auto p-8">
+                     <table className="w-full text-left border-collapse">
+                        <thead>
+                           <tr className="border-b border-zinc-100 text-[10px] uppercase font-black text-zinc-400 tracking-widest">
+                              <th className="pb-4">Responsável</th>
+                              <th className="pb-4">Meta / KPI</th>
+                              <th className="pb-4">Prazo</th>
+                              <th className="pb-4">Progresso</th>
+                              <th className="pb-4 text-right">Acções</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {metas.map(m => {
+                              const func = funcionarios.find(f => f.id === m.funcionario_id);
+                              return (
+                                 <tr key={m.id} className="border-b border-zinc-50 group hover:bg-zinc-50/50 transition-all">
+                                    <td className="py-4 whitespace-nowrap">
+                                       <div className="flex items-center gap-3">
+                                          <img src={func?.foto_url} className="w-8 h-8 rounded-lg object-cover grayscale" />
+                                          <div>
+                                             <p className="text-sm font-black text-zinc-900">{func?.nome.split(' ')[0]}</p>
+                                             <p className="text-[10px] text-zinc-400">{func?.funcao}</p>
+                                          </div>
+                                       </div>
+                                    </td>
+                                    <td className="py-4">
+                                       <p className="text-sm font-bold text-zinc-800">{m.titulo}</p>
+                                       <span className={`text-[9px] font-black uppercase ${m.status === 'Concluída' || m.status === 'Concluda' ? 'text-green-500' : 'text-yellow-500'}`}>{m.status}</span>
+                                    </td>
+                                    <td className="py-4 text-xs font-bold text-zinc-500">{m.prazo}</td>
+                                    <td className="py-4">
+                                       <div className="w-24 bg-zinc-100 h-1.5 rounded-full overflow-hidden">
+                                          <div className={`h-full ${m.progresso === 100 ? 'bg-green-500' : 'bg-yellow-500'}`} style={{ width: `${m.progresso}%` }}></div>
+                                       </div>
+                                       <p className="text-[9px] font-black mt-1">{m.progresso}%</p>
+                                    </td>
+                                    <td className="py-4 text-right">
+                                       <button
+                                          onClick={() => handleDeleteMeta(m.id)}
+                                          className="p-2 text-zinc-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                                       >
+                                          <Trash2 size={16} />
+                                       </button>
+                                    </td>
+                                 </tr>
+                              );
+                           })}
+                        </tbody>
+                     </table>
+                  </div>
                </div>
             </div>
          )}
