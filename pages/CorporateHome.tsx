@@ -415,18 +415,18 @@ const PublicVagasGrid: React.FC = () => {
           .from('rh_vagas')
           .select('*')
           .eq('status', 'ativa')
-          .order('data_publicacao', { ascending: false })
-          .limit(3);
+          .order('data_publicacao', { ascending: false });
 
         if (error) throw error;
-        
+
         // Filtrar no frontend as vagas cuja data_encerramento já passou
         const vagasValidas = (data as any[]).filter(v => {
           if (!v.data_encerramento) return true;
           const dataFim = new Date(v.data_encerramento);
           dataFim.setHours(23, 59, 59, 999);
           return dataFim.getTime() >= new Date().getTime();
-        });
+        }).slice(0, 3); // Limit to top 3 after filtering
+
         setVagas(vagasValidas);
       } catch (err) {
         console.error('Erro ao buscar vagas publicas:', err);
@@ -447,32 +447,48 @@ const PublicVagasGrid: React.FC = () => {
     );
   }
 
-  if (vagas.length === 0) return null;
+  if (vagas.length === 0) {
+    return (
+      <div className="mt-16 w-full max-w-6xl mx-auto p-12 rounded-[2.5rem] bg-zinc-800/20 border border-zinc-700/30 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-500">
+          <Sparkles size={32} />
+        </div>
+        <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight">Estamos a preparar novas oportunidades</h3>
+        <p className="text-zinc-500 font-medium">Fique atento! Novas vagas corporativas serão publicadas em breve.</p>
+        <div className="mt-8">
+          <Link to="/candidatura-espontanea" className="text-yellow-500 font-black text-[10px] uppercase tracking-[0.3em] hover:text-yellow-400 transition-colors flex items-center justify-center gap-2">
+            Enviar Candidatura Espontânea <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16 w-full max-w-6xl mx-auto relative z-20">
-      {vagas.map(vaga => (
-        <div 
-          key={vaga.id} 
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16 w-full max-w-6xl mx-auto relative z-20 animate-in fade-in slide-in-from-bottom-6 duration-700">
+      {vagas.map((vaga, idx) => (
+        <div
+          key={vaga.id}
           onClick={() => navigate(`/carreiras/${vaga.id}`)}
-          className="bg-zinc-800/40 backdrop-blur-md border border-zinc-700/50 p-8 rounded-[2rem] hover:bg-zinc-800 hover:border-yellow-500/50 hover:shadow-2xl hover:shadow-yellow-500/10 transition-all cursor-pointer group text-left flex flex-col justify-between"
+          style={{ animationDelay: `${idx * 100}ms` }}
+          className="bg-zinc-800/40 backdrop-blur-md border border-zinc-700/50 p-8 rounded-[2rem] hover:bg-zinc-800 hover:border-yellow-500/50 hover:shadow-2xl hover:shadow-yellow-500/10 transition-all cursor-pointer group text-left flex flex-col justify-between animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500"
         >
           <div>
             <div className="flex justify-between items-start mb-6">
-               <span className="bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">{vaga.tipo_contrato}</span>
-               {(vaga as any).data_encerramento && (
-                  <span className="text-zinc-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"><Clock size={12} className="text-red-400" /> Fim: {new Date((vaga as any).data_encerramento).toLocaleDateString()}</span>
-               )}
+              <span className="bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">{vaga.tipo_contrato}</span>
+              {(vaga as any).data_encerramento && (
+                <span className="text-zinc-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"><Clock size={12} className="text-red-400" /> Fim: {new Date((vaga as any).data_encerramento).toLocaleDateString()}</span>
+              )}
             </div>
             <h3 className="text-xl font-black text-white group-hover:text-yellow-400 mb-6 leading-tight line-clamp-2">{vaga.titulo}</h3>
             <div className="flex flex-col gap-3 text-xs font-bold text-zinc-400">
-               <span className="flex items-center gap-3"><MapPin size={16} className="text-sky-400" /> {vaga.localizacao}</span>
-               <span className="flex items-center gap-3"><Building2 size={16} className="text-purple-400" /> {vaga.nivel_experiencia}</span>
+              <span className="flex items-center gap-3"><MapPin size={16} className="text-sky-400" /> {vaga.localizacao}</span>
+              <span className="flex items-center gap-3"><Building2 size={16} className="text-purple-400" /> {vaga.nivel_experiencia}</span>
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-zinc-700/50 flex justify-between items-center group-hover:border-yellow-500/30">
-             <span className="text-[10px] font-black text-yellow-600 uppercase tracking-widest group-hover:text-yellow-500 transition-colors">Ver Detalhes</span>
-             <ChevronRight size={18} className="text-yellow-600 group-hover:text-yellow-500 group-hover:translate-x-1 transition-all" />
+            <span className="text-[10px] font-black text-yellow-600 uppercase tracking-widest group-hover:text-yellow-500 transition-colors">Ver Detalhes</span>
+            <ChevronRight size={18} className="text-yellow-600 group-hover:text-yellow-500 group-hover:translate-x-1 transition-all" />
           </div>
         </div>
       ))}
@@ -982,7 +998,7 @@ const CorporateHome: React.FC = () => {
         </div>
         <div className="w-full text-center space-y-8 relative z-10 max-w-5xl mx-auto">
           <div className="inline-flex items-center justify-center p-4 bg-yellow-500/10 rounded-full mb-4">
-             <Briefcase size={32} className="text-yellow-500" />
+            <Briefcase size={32} className="text-yellow-500" />
           </div>
           <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter">Faça Parte da Nossa <br /><span className="text-yellow-500">História de Sucesso.</span></h2>
           <p className="text-zinc-400 text-xl md:text-2xl leading-relaxed font-medium">
@@ -995,16 +1011,22 @@ const CorporateHome: React.FC = () => {
           </div>
         </div>
 
-        <PublicVagasGrid />
+        <div className="w-full mt-20 animate-in fade-in duration-1000 relative z-10">
+          <div className="text-center space-y-2 mb-4">
+            <span className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.5em]">Join Our Team</span>
+            <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight">Oportunidades Disponíveis</h2>
+          </div>
+          <PublicVagasGrid />
+        </div>
 
-        <div className="w-full relative z-10">
+        <div className="w-full mt-24 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Link to="/candidatura-espontanea" className="group col-span-1 md:col-span-2 lg:col-span-3 bg-zinc-800 p-8 rounded-3xl border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer">
               <div className="space-y-2 text-center md:text-left">
-                 <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center justify-center md:justify-start gap-3">
-                   <UploadCloud className="text-yellow-500" size={28} /> Candidatura Espontânea
-                 </h3>
-                 <p className="text-zinc-400 font-medium max-w-2xl">Não encontra a vaga ideal? Deixe o seu currículo na nossa base de talentos. Analisaremos o seu perfil para funções corporativas que venham a surgir.</p>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center justify-center md:justify-start gap-3">
+                  <UploadCloud className="text-yellow-500" size={28} /> Candidatura Espontânea
+                </h3>
+                <p className="text-zinc-400 font-medium max-w-2xl">Não encontra a vaga ideal? Deixe o seu currículo na nossa base de talentos. Analisaremos o seu perfil para funções corporativas que venham a surgir.</p>
               </div>
               <div className="bg-yellow-500 text-zinc-900 px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 shadow-xl group-hover:bg-yellow-400 transition-colors whitespace-nowrap">
                 Enviar CV <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />

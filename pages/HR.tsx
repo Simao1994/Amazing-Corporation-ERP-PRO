@@ -1588,12 +1588,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
          {/* MODAL RECIBO PROFISSIONAL (ESTILO CANVA) */}
          {viewingRecibo && (
-                  <style>{
+                  <style>{`
                      @media print {
                         @page { size: A4; margin: 0; }
                         body { margin: 0; padding: 0; }
                      }
-                  }</style>
+                  `}</style>
 
             <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10 print:static print:p-0 print:bg-white print:block">
                <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:mx-auto min-h-[1120px] flex flex-col overflow-hidden">
@@ -1954,5 +1954,6 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 };
 
 export default HRPage;
+
 
 
