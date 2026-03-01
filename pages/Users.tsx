@@ -119,27 +119,13 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
                 throw new Error('O nome completo deve conter pelo menos dois nomes (ex: Simão Pambo).');
             }
 
-            // Tenta obter a sessão de forma robusta
-            let { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            // Obtém a sessão de forma silenciosa ou usa o objeto de utilizador global
+            let { data: { session } } = await supabase.auth.getSession();
 
-            // Se não houver sessão ou houver erro, tenta o refresh
-            if (!session || sessionError) {
+            // Se ainda não houver sessão, tentamos o refresh silencioso
+            if (!session) {
                 const { data: refreshData } = await supabase.auth.refreshSession();
                 session = refreshData.session;
-            }
-
-            // Se ainda não houver sessão, fazemos uma última tentativa com getUser()
-            if (!session) {
-                const { data: { user: authUser } } = await supabase.auth.getUser();
-                if (authUser) {
-                    const { data: retrySession } = await supabase.auth.getSession();
-                    session = retrySession.session;
-                }
-            }
-
-            // Bloqueio final se realmente não houver sessão válida
-            if (!session) {
-                throw new Error('A sua sessão de segurança expirou. Por favor, saia do sistema e volte a entrar para validar o seu acesso de administrador.');
             }
 
             const url = editingUser
