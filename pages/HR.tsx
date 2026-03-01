@@ -389,9 +389,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const handleAddMeta = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const fd = new FormData(e.currentTarget);
-      const id = `MT-${Date.now()}`;
       const nova = {
-         id,
          funcionario_id: fd.get('func_id') as string,
          titulo: fd.get('titulo') as string,
          progresso: 0,
@@ -405,7 +403,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          fetchHRData();
          setShowMetaModal(false);
       } catch (err) {
-         alert('Erro ao criar meta');
+         console.error('Erro ao criar meta:', err);
+         alert('Erro ao criar meta. Verifique se a tabela existe.');
       }
    };
 
