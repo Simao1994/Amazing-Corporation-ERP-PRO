@@ -264,7 +264,11 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
                       src={post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800'}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
                       alt={post.titulo}
-                      onClick={() => setViewingImage(post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const url = post.imagem_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800';
+                        setViewingImage(url);
+                      }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800';

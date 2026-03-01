@@ -237,11 +237,14 @@ const PublicNewsGrid: React.FC = () => {
                   <div className="h-[400px] w-full overflow-hidden cursor-zoom-in">
                     <img
                       src={selectedPost.imagem_url}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover cursor-zoom-in"
                       alt={selectedPost.titulo}
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
-                        setViewingImage(selectedPost.imagem_url);
+                        if (selectedPost?.imagem_url) {
+                          setViewingImage(selectedPost.imagem_url);
+                        }
                       }}
                     />
                   </div>
@@ -280,12 +283,18 @@ const PublicNewsGrid: React.FC = () => {
                           <div
                             key={i}
                             className="aspect-square rounded-[2rem] overflow-hidden border border-zinc-100 shadow-sm hover:shadow-xl transition-all cursor-zoom-in"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setViewingImage(url);
-                            }}
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <img src={url} className="w-full h-full object-cover hover:scale-110 transition-all duration-700" alt="Gallery item" />
+                            <img
+                              src={url}
+                              className="w-full h-full object-cover hover:scale-110 transition-all duration-700 cursor-zoom-in"
+                              alt="Gallery item"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setViewingImage(url);
+                              }}
+                            />
                           </div>
                         ))}
                       </div>
