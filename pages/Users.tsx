@@ -115,9 +115,15 @@ const UsersPage: React.FC = () => {
                 throw new Error('O nome completo deve conter pelo menos dois nomes (ex: Simão Pambo).');
             }
 
-            // Get fresh session token
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            if (sessionError || !session) throw new Error('Sessão inválida. Por favor faça login novamente.');
+            // Get fresh session token with robust refresh
+            let { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+            if (!session || sessionError) {
+                const { data: refreshData } = await supabase.auth.refreshSession();
+                session = refreshData.session;
+            }
+
+            if (!session) throw new Error('Sessão inválida. Por favor faça login novamente.');
 
             const url = editingUser
                 ? `${SUPABASE_URL}/functions/v1/update-user`
