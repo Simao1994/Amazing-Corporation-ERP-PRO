@@ -29,6 +29,7 @@ import {
   X,
   Clock,
   Download,
+  FileDown,
   RefreshCw,
   Navigation,
   FileText,
@@ -317,25 +318,24 @@ const PublicNewsGrid: React.FC = () => {
         );
       })()}
 
-      {/* LIGHTBOX PARA IMAGENS */}
+      {/* LIGHTBOX PARA IMAGENS - ULTRA ROBUST */}
       {viewingImage && (
         <div
-          className="fixed inset-0 z-[300] flex items-center justify-center bg-zinc-950/98 backdrop-blur-2xl p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/95 p-4"
           onClick={() => setViewingImage(null)}
         >
-          <div className="absolute top-10 right-10 flex gap-4">
+          <div className="absolute top-10 right-10 flex gap-6" onClick={(e) => e.stopPropagation()}>
             <a
               href={viewingImage}
               download="amazing-photo.jpg"
               target="_blank"
               onClick={(e) => e.stopPropagation()}
-              className="text-white/50 hover:text-white transition-all bg-white/10 p-5 rounded-full border border-white/10 flex items-center gap-2"
-              title="Baixar Foto"
+              className="text-white hover:text-yellow-500 transition-all bg-white/10 p-5 rounded-full"
             >
-              <Download size={24} />
+              <FileDown size={32} />
             </a>
             <button
-              className="text-white/50 hover:text-white transition-all bg-white/10 p-5 rounded-full border border-white/10 hover:rotate-90"
+              className="text-white hover:text-yellow-500 transition-all bg-white/10 p-5 rounded-full"
               onClick={() => setViewingImage(null)}
             >
               <X size={32} />
@@ -343,8 +343,12 @@ const PublicNewsGrid: React.FC = () => {
           </div>
           <img
             src={viewingImage}
-            className="max-w-full max-h-[90vh] rounded-[3rem] shadow-3xl animate-in zoom-in-95 duration-500 object-contain border-4 border-white/5 cursor-zoom-out"
+            className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl object-contain border-4 border-white/5"
             alt="Lightbox"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800';
+            }}
           />
         </div>
       )}
