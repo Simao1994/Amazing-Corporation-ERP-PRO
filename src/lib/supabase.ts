@@ -33,3 +33,8 @@ export async function uploadBlogMedia(file: File) {
 
     return data.publicUrl;
 }
+
+export async function uploadMultipleBlogMedia(files: FileList | File[]) {
+    const uploadPromises = Array.from(files).map(file => uploadBlogMedia(file));
+    return Promise.all(uploadPromises);
+}

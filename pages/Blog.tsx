@@ -4,7 +4,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { BlogPost } from '../types';
-import { supabase, uploadBlogMedia } from '../src/lib/supabase';
+import { supabase, uploadBlogMedia, uploadMultipleBlogMedia } from '../src/lib/supabase';
 import { Upload, FileVideo } from 'lucide-react';
 
 const BlogPage: React.FC = () => {
@@ -19,8 +19,10 @@ const BlogPage: React.FC = () => {
   // File upload state
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<FileList | null>(null);
   const headerInputRef = React.useRef<HTMLInputElement>(null);
   const videoInputRef = React.useRef<HTMLInputElement>(null);
+  const galleryInputRef = React.useRef<HTMLInputElement>(null);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -72,6 +74,12 @@ const BlogPage: React.FC = () => {
     const isEditing = !!editingItem;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert("Sua sessão expirou. Por favor, faça login novamente para publicar.");
+        return;
+      }
+
       let finalImageUrl = formData.get('imagem_url') as string;
       let finalVideoUrl = formData.get('video_url') as string;
 
@@ -85,9 +93,16 @@ const BlogPage: React.FC = () => {
         finalVideoUrl = await uploadBlogMedia(videoFile);
       }
 
-      const tipo = formData.get('tipo') as any || 'artigo';
       const galeriaString = formData.get('galeria_urls') as string;
-      const galeriaArray = galeriaString ? galeriaString.split(',').map(s => s.trim()).filter(Boolean) : [];
+      let galeriaArray = galeriaString ? galeriaString.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+      // Upload Gallery Files if selected
+      if (galleryFiles && galleryFiles.length > 0) {
+        const uploadedUrls = await uploadMultipleBlogMedia(galleryFiles);
+        galeriaArray = [...galeriaArray, ...uploadedUrls];
+      }
+
+      const tipo = formData.get('tipo') as any || 'artigo';
 
       const dataPayload = {
         titulo: formData.get('titulo') as string,
@@ -121,6 +136,7 @@ const BlogPage: React.FC = () => {
       setEditingItem(null);
       setHeaderFile(null);
       setVideoFile(null);
+      setGalleryFiles(null);
     } catch (err: any) {
       console.error('Erro ao guardar artigo:', err);
       const isStorageError = err.message?.toLowerCase().includes('storage') || err.statusCode === '404' || err.error === 'Not Found';
@@ -381,7 +397,20 @@ const BlogPage: React.FC = () => {
                 </div>
               </div>
 
-              <Input name="galeria_urls" label="Galeria (Links separados por vírgula)" defaultValue={editingItem?.galeria_urls?.join(', ')} placeholder="Link1, Link2, Link3..." icon={<ImageIcon size={18} />} />
+              <div className="space-y-3">
+                <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest">Galeria de Fotografias</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div
+                    onClick={() => galleryInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${galleryFiles && galleryFiles.length > 0 ? 'bg-orange-50 border-orange-500 text-orange-700' : 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-orange-500 hover:bg-orange-50'}`}
+                  >
+                    <input type="file" ref={galleryInputRef} onChange={(e) => setGalleryFiles(e.target.files)} className="hidden" accept="image/*" multiple />
+                    <ImageIcon size={20} />
+                    <span className="text-[10px] font-bold uppercase">{galleryFiles && galleryFiles.length > 0 ? `${galleryFiles.length} fotos selecionadas` : 'Carregar Fotos'}</span>
+                  </div>
+                  <Input name="galeria_urls" label="Ou Links (separados por vírgula)" defaultValue={editingItem?.galeria_urls?.join(', ')} placeholder="Link1, Link2..." icon={<ImageIcon size={18} />} />
+                </div>
+              </div>
 
               <div className="space-y-1">
                 <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-1">Conteúdo do Artigo</label>
