@@ -1932,7 +1932,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </button>
                      </div>
 
-                     <div className="flex-1 pt-[4.5cm] px-16 pb-32 print:px-12 flex flex-col relative">
+                     <div className="flex-1 pt-[5.5cm] px-16 pb-32 print:px-12 flex flex-col relative">
                         {/* LINHA DE TÍTULO - REESTRUTURADA PARA MÁXIMA VISIBILIDADE */}
                         <div className="border-b-[4px] border-zinc-900 pb-6 mb-8 flex justify-between items-center">
                            {/* ESQUERDA: LOGO E INFO (MAIS ROBUSTO) */}
@@ -2070,36 +2070,35 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
 
                         {/* ASSINATURAS E VALIDAÇÃO */}
-                        <div className="mt-20 grid grid-cols-3 gap-12 items-end">
+                        <div className="mt-16 grid grid-cols-3 gap-12 items-end">
                            <div className="text-center">
-                              <div className="h-16 flex items-center justify-center opacity-40 italic font-serif"></div>
+                              <div className="h-16 flex items-center justify-center"></div>
                               <div className="border-t-2 border-zinc-900 mt-4 pt-2">
-                                 <p className="text-[12px] font-black uppercase text-zinc-900" style={{ fontFamily: 'Times New Roman' }}>Entidade Empregadora</p>
+                                 <p className="text-[13px] font-black uppercase text-black" style={{ fontFamily: 'Times New Roman' }}>Entidade Empregadora</p>
                               </div>
                            </div>
                            <div className="flex flex-col items-center">
-                              {/* Espaço para Carimbo ou Selo Físico conforme solicitado (Remoção de Ícones Digitais) */}
                               <div className="h-24"></div>
                            </div>
                            <div className="text-center">
-                              <div className="h-16"></div>
+                              <div className="h-12"></div>
                               <div className="border-t-2 border-zinc-900 mt-4 pt-2">
-                                 <p className="text-[14px] font-bold text-zinc-900" style={{ fontFamily: 'Times New Roman' }}>Assinatura do Colaborador</p>
+                                 <p className="text-[14px] font-black text-black" style={{ fontFamily: 'Times New Roman' }}>Assinatura do Colaborador</p>
                               </div>
                            </div>
                         </div>
                      </div>
 
-                     {/* RODAPÉ SIMPLIFICADO (APENAS TEXTO PRATA) */}
-                     <div className="absolute bottom-0 left-0 w-full h-[2cm] overflow-hidden bg-white print:bg-white border-t border-zinc-100 flex items-center justify-end px-16">
-                        <div className='flex flex-col gap-0.5 items-end text-right text-zinc-400'>
+                     {/* RODAPÉ REFINADO (ALTA VISIBILIDADE) */}
+                     <div className="absolute bottom-0 left-0 w-full h-[2.5cm] overflow-hidden bg-white print:bg-white border-t border-zinc-200 flex items-center justify-end px-16">
+                        <div className='flex flex-col gap-1 items-end text-right text-black' style={{ fontFamily: 'Times New Roman' }}>
                            <div className='flex items-center gap-4'>
-                              <p className='text-[9px] font-bold uppercase tracking-widest'>Pág. 01 / 01</p>
-                              <div className='h-3 w-[1px] bg-zinc-200'></div>
-                              <p className='text-[10px] font-black uppercase tracking-[0.1em] font-sans'>Amazing ERP – Sistema Inteligente</p>
+                              <p className='text-[13px] italic font-normal'>Pág. 01 / 01</p>
+                              <div className='h-4 w-[1px] bg-zinc-300'></div>
+                              <p className='text-[12px] font-black uppercase tracking-tight'>Amazing Corporation, Lda</p>
                            </div>
-                           <p className='text-[10px] font-medium uppercase tracking-widest italic opacity-80'>
-                              Folha de Salário processada pelo Computador em {new Date().toLocaleString()}
+                           <p className='text-[10px] font-bold uppercase tracking-tight'>
+                              Folha de Salário processada pelo Computador em {new Date().toLocaleString('pt-PT')}
                            </p>
                         </div>
                      </div>
