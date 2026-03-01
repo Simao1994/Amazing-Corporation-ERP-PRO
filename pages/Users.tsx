@@ -48,7 +48,11 @@ interface Profile {
     created_at: string;
 }
 
-const UsersPage: React.FC = () => {
+interface UsersPageProps {
+    user?: any;
+}
+
+const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const formRef = React.useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
@@ -115,15 +119,28 @@ const UsersPage: React.FC = () => {
                 throw new Error('O nome completo deve conter pelo menos dois nomes (ex: Simão Pambo).');
             }
 
-            // Get fresh session token with robust refresh
+            // Tenta obter a sessão de forma robusta
             let { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
+            // Se não houver sessão ou houver erro, tenta o refresh
             if (!session || sessionError) {
                 const { data: refreshData } = await supabase.auth.refreshSession();
                 session = refreshData.session;
             }
 
-            if (!session) throw new Error('Sessão inválida. Por favor faça login novamente.');
+            // Se ainda não houver sessão, fazemos uma última tentativa com getUser()
+            if (!session) {
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (authUser) {
+                    const { data: retrySession } = await supabase.auth.getSession();
+                    session = retrySession.session;
+                }
+            }
+
+            // Bloqueio final se realmente não houver sessão válida
+            if (!session) {
+                throw new Error('A sua sessão de segurança expirou. Por favor, saia do sistema e volte a entrar para validar o seu acesso de administrador.');
+            }
 
             const url = editingUser
                 ? `${SUPABASE_URL}/functions/v1/update-user`

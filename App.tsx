@@ -205,7 +205,7 @@ const App: React.FC = () => {
                 <Layout user={user} onLogout={handleLogout}>
                   <Routes>
                     <Route path="/unauthorized" element={<UnauthorizedPage />} />
-                    <Route path="/utilizadores" element={<ProtectedRoute user={user} path="/utilizadores"><UsersPage /></ProtectedRoute>} />
+                    <Route path="/utilizadores" element={<ProtectedRoute user={user} path="/utilizadores"><UsersPage user={user} /></ProtectedRoute>} />
                     <Route path="/dashboard" element={<ProtectedRoute user={user} path="/dashboard"><Dashboard /></ProtectedRoute>} />
                     <Route path="/dashboard/galeria" element={<ProtectedRoute user={user} path="/dashboard/galeria"><DashboardGallery user={user} /></ProtectedRoute>} />
                     <Route path="/dashboard/biblioteca" element={<ProtectedRoute user={user} path="/dashboard/biblioteca"><DashboardLibrary user={user} /></ProtectedRoute>} />
