@@ -122,7 +122,7 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
         categoria: formData.get('categoria') as any || 'Institucional',
         conteudo: formData.get('conteudo') as string,
         autor_name: formData.get('autor') as string,
-        autor_id: session.user.id, // Explicitly include user ID for RLS
+        autor_id: session?.user?.id || appUser?.id, // Safe access from session or appUser fallback
         data_publicacao: editingItem?.data || new Date().toISOString().split('T')[0],
         imagem_url: finalImageUrl,
         video_url: finalVideoUrl || null,
