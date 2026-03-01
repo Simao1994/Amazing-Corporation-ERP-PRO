@@ -28,6 +28,7 @@ import {
   History,
   X,
   Clock,
+  Download,
   RefreshCw,
   Navigation,
   FileText,
