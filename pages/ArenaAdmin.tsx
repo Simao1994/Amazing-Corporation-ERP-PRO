@@ -48,7 +48,7 @@ import { supabase } from '../src/lib/supabase';
 import { formatAOA } from '../constants';
 
 const calculateTournamentStatus = (t: ArenaTournament) => {
-   if (t.vencedor_id || t.vencedor_nome) return 'Finalizado';
+   if (t.vencedor) return 'Finalizado';
    const now = new Date();
    const start = new Date(t.data_inicio);
    const end = new Date(t.data_fim);
