@@ -31,14 +31,14 @@ import BankAccountsTab from '../components/hr/BankAccountsTab';
 import ContasBancariasPage from './ContasBancariasPage';
 import VagasAdminTab from '../components/hr/VagasAdminTab';
 
-// --- CONFIGURAÇÃO DE HORÃRIO E REGRAS ---
+// --- CONFIGURA��O DE HORÁRIO E REGRAS ---
 const WORK_RULES = {
    startHour: 8, // 08:00
    startMinute: 0,
    endHour: 17, // 17:00
-   toleranceMinutes: 15, // TolerÃ¢ncia de atraso
+   toleranceMinutes: 15, // Tolerância de atraso
    dailyHours: 8,
-   overtimeRateNormal: 1.5, // 150% Dias úteis
+   overtimeRateNormal: 1.5, // 150% Dias �teis
    overtimeRateSpecial: 2.0 // 200% Fim de semana/Feriados
 };
 
@@ -47,12 +47,12 @@ const HOLIDAYS_ANGOLA = [
 ];
 
 const PROVINCIAS = [
-   'Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cuando Cubango', 'Cuanza Norte', 'Cuanza Sul',
-   'Cunene', 'Huambo', 'Huíla', 'Luanda', 'Lunda Norte', 'Lunda Sul', 'Malanje', 'Moxico',
-   'Namibe', 'Uíge', 'Zaire'
+   'Bengo', 'Benguela', 'Bi�', 'Cabinda', 'Cuando Cubango', 'Cuanza Norte', 'Cuanza Sul',
+   'Cunene', 'Huambo', 'Hu�la', 'Luanda', 'Lunda Norte', 'Lunda Sul', 'Malanje', 'Moxico',
+   'Namibe', 'U�ge', 'Zaire'
 ];
 
-// --- MOTOR DE CÃLCULO FISCAL ANGOLANO (IRT 2024 - SIMPLIFICADO) ---
+// --- MOTOR DE CÁLCULO FISCAL ANGOLANO (IRT 2024 - SIMPLIFICADO) ---
 const calculateIRT = (baseTributavel: number): number => {
    if (baseTributavel <= 100000) return 0;
    if (baseTributavel <= 150000) return (baseTributavel - 100000) * 0.10;
@@ -83,7 +83,7 @@ const isSpecialDay = (dateStr: string) => {
    const day = date.getDay();
    const md = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-   const isWeekend = day === 0 || day === 6; // Domingo ou Sábado
+   const isWeekend = day === 0 || day === 6; // Domingo ou S�bado
    const isHoliday = HOLIDAYS_ANGOLA.includes(md);
 
    return { isWeekend, isHoliday, isSpecial: isWeekend || isHoliday };
@@ -99,7 +99,7 @@ const calculateTimeStats = (start: string, end: string, dateStr: string) => {
    const diffMs = d2.getTime() - d1.getTime();
    const totalHours = diffMs / (1000 * 60 * 60);
 
-   // Verificação de Atraso
+   // Verifica��o de Atraso
    const scheduleStart = new Date();
    scheduleStart.setHours(WORK_RULES.startHour, WORK_RULES.startMinute, 0);
    // Ajustar d1 para comparar apenas tempo
@@ -115,7 +115,7 @@ const calculateTimeStats = (start: string, end: string, dateStr: string) => {
       }
    }
 
-   // Verificação de Horas Extras e Tipo de Dia
+   // Verifica��o de Horas Extras e Tipo de Dia
    const { isSpecial } = isSpecialDay(dateStr);
 
    let extraHours = 0;
@@ -125,7 +125,7 @@ const calculateTimeStats = (start: string, end: string, dateStr: string) => {
       // Fim de semana ou feriado: Tudo conta como extra
       extraHours = totalHours;
    } else {
-      // Dia útil
+      // Dia �til
       if (totalHours > WORK_RULES.dailyHours) {
          normalHours = WORK_RULES.dailyHours;
          extraHours = totalHours - WORK_RULES.dailyHours;
@@ -178,9 +178,9 @@ const mapFuncionario = (f: any): Funcionario => ({
 interface PayrollInput {
    horasExtras: number; // em horas
    faltas: number; // em dias
-   bonus: number; // valor monetário
-   premios: number; // valor monetário
-   adiantamento: number; // valor monetário (loans)
+   bonus: number; // valor monet�rio
+   premios: number; // valor monet�rio
+   adiantamento: number; // valor monet�rio (loans)
    subFerias?: number;
    subNatal?: number;
    emprestimos?: number;
@@ -212,20 +212,20 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const handleWhatsAppShare = () => {
       if (!viewingRecibo) return;
       const phone = customWhatsApp.replace(/\D/g, '');
-      if (!phone) return alert("Por favor, insira um número de WhatsApp válido.");
+      if (!phone) return alert("Por favor, insira um n�mero de WhatsApp v�lido.");
 
-      const message = encodeURIComponent(`*Amazing Corporation - Folha de Salário*\n\nOlá, segue o resumo do seu recibo de ${viewingRecibo.mes}/${viewingRecibo.ano}:\n\n👤 *Funcionário:* ${viewingRecibo.nome}\n📅 *Período:* ${viewingRecibo.mes} ${viewingRecibo.ano}\n💰 *Líquido a Receber:* ${formatAOA(viewingRecibo.liquido)}\n\n_Documento Interno: #${viewingRecibo.id.substring(0, 8).toUpperCase()}_`);
+      const message = encodeURIComponent(`*Amazing Corporation - Folha de Sal�rio*\n\nOl�, segue o resumo do seu recibo de ${viewingRecibo.mes}/${viewingRecibo.ano}:\n\n?? *Funcion�rio:* ${viewingRecibo.nome}\n?? *Per�odo:* ${viewingRecibo.mes} ${viewingRecibo.ano}\n?? *L�quido a Receber:* ${formatAOA(viewingRecibo.liquido)}\n\n_Documento Interno: #${viewingRecibo.id.substring(0, 8).toUpperCase()}_`);
       window.open(`https://wa.me/${phone.startsWith('244') ? phone : '244' + phone}?text=${message}`, '_blank');
    };
 
    const handleEmailShare = () => {
       if (!viewingRecibo) return;
-      const subject = encodeURIComponent(`Folha de Salário - ${viewingRecibo.mes} ${viewingRecibo.ano}`);
-      const body = encodeURIComponent(`Olá,\n\nSegue o resumo da sua folha de salário:\n\nFuncionário: ${viewingRecibo.nome}\nPeríodo: ${viewingRecibo.mes} ${viewingRecibo.ano}\nValor Líquido: ${formatAOA(viewingRecibo.liquido)}\n\nAtenciosamente,\nAmazing Corporation`);
+      const subject = encodeURIComponent(`Folha de Sal�rio - ${viewingRecibo.mes} ${viewingRecibo.ano}`);
+      const body = encodeURIComponent(`Ol�,\n\nSegue o resumo da sua folha de sal�rio:\n\nFuncion�rio: ${viewingRecibo.nome}\nPer�odo: ${viewingRecibo.mes} ${viewingRecibo.ano}\nValor L�quido: ${formatAOA(viewingRecibo.liquido)}\n\nAtenciosamente,\nAmazing Corporation`);
       window.location.href = `mailto:?subject=${subject}&body=${body}`;
    };
 
-   // Estados locais do formulário para controlo dinÃ¢mico
+   // Estados locais do formul�rio para controlo dinâmico
    const [formState, setFormState] = useState({
       nascimento: '',
       idade: 0,
@@ -233,7 +233,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       municipio: '',
       nome_pai: '',
       nome_mae: '',
-      escolaridade: 'Ensino Médio',
+      escolaridade: 'Ensino M�dio',
       curso: ''
    });
 
@@ -261,7 +261,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    const lastFetchRef = React.useRef<number>(0);
    const fetchHRData = async () => {
-      // Debounce: evitar múltiplas chamadas em menos de 2 segundos (muito comum com Realtime postgres_changes)
+      // Debounce: evitar m�ltiplas chamadas em menos de 2 segundos (muito comum com Realtime postgres_changes)
       const now = Date.now();
       if (now - lastFetchRef.current < 2000) return;
       lastFetchRef.current = now;
@@ -355,7 +355,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             municipio: (func as any).municipio || '',
             nome_pai: (func as any).nome_pai || '',
             nome_mae: (func as any).nome_mae || '',
-            escolaridade: func.nivel_escolaridade || 'Ensino Médio',
+            escolaridade: func.nivel_escolaridade || 'Ensino M�dio',
             curso: func.area_formacao || ''
          });
       } else {
@@ -366,7 +366,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             municipio: '',
             nome_pai: '',
             nome_mae: '',
-            escolaridade: 'Ensino Médio',
+            escolaridade: 'Ensino M�dio',
             curso: ''
          });
       }
@@ -401,7 +401,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       try {
          const { error } = await supabase.from('hr_metas').update({
             progresso: novoProgresso,
-            status: novoProgresso === 100 ? 'Concluída' : 'Em curso'
+            status: novoProgresso === 100 ? 'Conclu�da' : 'Em curso'
          }).eq('id', id);
          if (error) throw error;
          fetchHRData();
@@ -424,7 +424,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                .eq('data', hoje)
                .maybeSingle();
 
-            if (existing) return alert("Já registou entrada hoje.");
+            if (existing) return alert("J� registou entrada hoje.");
 
             const [h, m] = agora.split(':').map(Number);
             const entryDate = new Date(); entryDate.setHours(h, m, 0);
@@ -455,7 +455,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                .is('saida', null)
                .maybeSingle();
 
-            if (fetchErr || !ponto) return alert("Registo de entrada ativo não localizado para hoje.");
+            if (fetchErr || !ponto) return alert("Registo de entrada ativo n�o localizado para hoje.");
 
             const stats = calculateTimeStats(ponto.entrada, agora, hoje);
 
@@ -471,11 +471,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          }
       } catch (err: any) {
          console.error("Erro no ponto:", err);
-         alert(`Erro ao registar ponto: ${err.message || 'Verifique a ligação'}`);
+         alert(`Erro ao registar ponto: ${err.message || 'Verifique a liga��o'}`);
       }
    };
 
-   // --- ATUALIZAÇÃO DE VARIÃVEIS DE FOLHA ---
+   // --- ATUALIZA��O DE VARIÁVEIS DE FOLHA ---
    const updatePayrollInput = (id: string, field: keyof PayrollInput, value: number) => {
       const numericValue = isNaN(value) ? 0 : value;
       setPayrollInputs(prev => ({
@@ -487,14 +487,29 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       }));
    };
 
-   // --- AGREGAÇÃO AUTOMÃTICA DE DADOS DE PONTO PARA FOLHA ---
+   // --- AGREGA��O AUTOMÁTICA DE DADOS DE PONTO PARA FOLHA ---
    const getAutoPayrollData = (funcId: string): PayrollInput => {
       if (payrollInputs[funcId]) return payrollInputs[funcId];
 
-      const currentMonthStr = new Date().toISOString().slice(0, 7);
+      const now = new Date();
+      const currentMonthStr = now.toISOString().slice(0, 7);
       const records = presencas.filter(p => p.funcionario_id === funcId && p.data.startsWith(currentMonthStr));
 
       let totalExtras = 0;
+      let faltas = 0;
+
+      // Calcular faltas automáticas até ao dia de hoje
+      const dayOfMonth = now.getDate();
+      for (let i = 1; i <= dayOfMonth; i++) {
+         const d = new Date(now.getFullYear(), now.getMonth(), i);
+         const dateStr = d.toISOString().split('T')[0];
+         const { isSpecial } = isSpecialDay(dateStr);
+
+         if (!isSpecial) { // Dia útil
+            const hasRecord = records.some(p => p.data === dateStr);
+            if (!hasRecord) faltas++;
+         }
+      }
 
       records.forEach(r => {
          if (r.horas_extras) {
@@ -506,7 +521,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
       return {
          horasExtras: parseFloat(totalExtras.toFixed(2)),
-         faltas: 0,
+         faltas: faltas,
          bonus: 0,
          adiantamento: 0,
          premios: 0,
@@ -517,7 +532,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       };
    };
 
-   // --- CÃLCULO DE FOLHA INDIVIDUAL (MOTOR DE CÃLCULO) ---
+   // --- CÁLCULO DE FOLHA INDIVIDUAL (MOTOR DE CÁLCULO) ---
    const calculatePayrollForEmployee = (f: Funcionario) => {
       const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
 
@@ -539,15 +554,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       const subsidiosTotal = subAlim + subTrans + subFerias + subNatal;
       const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0) + (Number(f.outros_bonus) || 0);
 
-      // Total Proventos (Salário Base + Horas Extras + Subsídios + Bónus)
+      // Total Proventos (Sal�rio Base + Horas Extras + Subs�dios + B�nus)
       const totalProventos = base + valorHorasExtras + subsidiosTotal + premiosBonus;
-      const bruto = totalProventos; // Salário Bruto = Total Proventos
+      const bruto = totalProventos; // Sal�rio Bruto = Total Proventos
 
-      // INSS (Base: Salário Base + Horas Extras + Bónus)
+      // INSS (Base: Sal�rio Base + Horas Extras + B�nus)
       const baseINSS = base + valorHorasExtras + premiosBonus;
       const inss = baseINSS * INSS_WORKER_RATE;
 
-      // IRT (Base: Bruto - INSS - IsençÃµes)
+      // IRT (Base: Bruto - INSS - Isen�ões)
       const exemptSubAlim = Math.min(subAlim, EXEMPT_ALLOWANCE_LIMIT);
       const exemptSubTrans = Math.min(subTrans, EXEMPT_ALLOWANCE_LIMIT);
       const baseIRT = bruto - inss - exemptSubAlim - exemptSubTrans;
@@ -571,7 +586,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    const handleProcessPayroll = async () => {
       const ativos = funcionarios.filter(f => f.status === 'ativo');
-      if (ativos.length === 0) return alert("Não existem colaboradores activos.");
+      if (ativos.length === 0) return alert("N�o existem colaboradores activos.");
 
       // 1. Transparent session check (no more alerts)
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -583,11 +598,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       }
       // If still no session, let the insert/select fail and handle via catch, avoiding the early alert.
 
-      // Verificar se já existe processamento para este mês
+      // Verificar se j� existe processamento para este m�s
       const { data: existing } = await supabase.from('hr_recibos').select('id').eq('mes', currentMonthName).eq('ano', currentFiscalYear);
 
       if (existing && existing.length > 0) {
-         const confirmUpdate = confirm(`A folha de ${currentMonthName}/${currentFiscalYear} já foi processada (${existing.length} recibos). Deseja ANULAR os anteriores e processar novamente?`);
+         const confirmUpdate = confirm(`A folha de ${currentMonthName}/${currentFiscalYear} j� foi processada (${existing.length} recibos). Deseja ANULAR os anteriores e processar novamente?`);
          if (!confirmUpdate) return;
 
          // Eliminar anteriores
@@ -650,10 +665,10 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
          await fetchHRData();
          AmazingStorage.logAction('Payroll', 'RH', `Folha de ${currentMonthName} processada com sucesso.`);
-         alert("Folha de salários processada e fechada com sucesso!");
+         alert("Folha de sal�rios processada e fechada com sucesso!");
       } catch (error: any) {
          console.error("Critical Payroll Error:", error);
-         alert(`Falha no processamento: ${error.message || 'Erro de rede ou permissão'}`);
+         alert(`Falha no processamento: ${error.message || 'Erro de rede ou permiss�o'}`);
       } finally {
          setIsProcessing(false);
       }
@@ -664,15 +679,15 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       // 1. Custos por Departamento (Pie Chart)
       const deptCosts: Record<string, number> = {};
       funcionarios.forEach(f => {
-         const dept = f.departamento_id || 'Administração';
+         const dept = f.departamento_id || 'Administra��o';
          deptCosts[dept] = (deptCosts[dept] || 0) + (f.salario_base || 0);
       });
       const pieData = Object.entries(deptCosts).map(([name, value]) => ({ name, value }));
 
-      // 2. Evolução de Custos (Area Chart) - Baseado nos recibos existentes
+      // 2. Evolu��o de Custos (Area Chart) - Baseado nos recibos existentes
       const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const monthMap: Record<string, string> = {
-         'janeiro': 'Jan', 'fevereiro': 'Fev', 'março': 'Mar', 'abril': 'Abr', 'maio': 'Mai', 'junho': 'Jun',
+         'janeiro': 'Jan', 'fevereiro': 'Fev', 'mar�o': 'Mar', 'abril': 'Abr', 'maio': 'Mai', 'junho': 'Jun',
          'julho': 'Jul', 'agosto': 'Ago', 'setembro': 'Set', 'outubro': 'Out', 'novembro': 'Nov', 'dezembro': 'Dez'
       };
 
@@ -692,17 +707,17 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       // 3. Performance de Metas (Bar Chart)
       const metaStats = { completed: 0, pending: 0 };
       metas.forEach(m => {
-         if (m.status === 'Concluída') metaStats.completed++;
+         if (m.status === 'Conclu�da') metaStats.completed++;
          else metaStats.pending++;
       });
       const barData = [
-         { name: 'Concluídas', valor: metaStats.completed, fill: '#22c55e' },
+         { name: 'Conclu�das', valor: metaStats.completed, fill: '#22c55e' },
          { name: 'Em Curso', valor: metaStats.pending, fill: '#eab308' }
       ];
 
-      // 4. NotificaçÃµes de Contratos a Expirar (Próximos 30 dias)
+      // 4. Notifica�ões de Contratos a Expirar (Pr�ximos 30 dias)
       const proximosVencimentos = funcionarios.filter(f => {
-         if (f.tipo_contrato !== 'Determinado' && f.tipo_contrato !== 'Estágio') return false;
+         if (f.tipo_contrato !== 'Determinado' && f.tipo_contrato !== 'Est�gio') return false;
          if (!f.data_admissao || !f.tempo_contrato) return false;
 
          const meses = parseInt(f.tempo_contrato);
@@ -809,7 +824,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
             <div className="flex flex-col items-center gap-2">
                <h3 className="text-zinc-900 font-black uppercase text-[12px] tracking-[0.3em]">Sincronizando Talentos</h3>
-               <p className="text-zinc-400 text-[10px] font-bold animate-pulse">A carregar informações da nuvem Amazing...</p>
+               <p className="text-zinc-400 text-[10px] font-bold animate-pulse">A carregar informa��es da nuvem Amazing...</p>
             </div>
          </div>
       );
@@ -828,14 +843,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             }
          `}</style>
 
-         {/* ... (MODALS DE RECIBO E FICHA TÉCNICA MANTIDOS DO CÓDIGO ANTERIOR) ... */}
+         {/* ... (MODALS DE RECIBO E FICHA T�CNICA MANTIDOS DO C�DIGO ANTERIOR) ... */}
 
          {/* HEADER RH */}
          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-sky-200 print:hidden">
             <div className="flex items-center gap-3">
                <div className="p-3 bg-zinc-900 rounded-2xl shadow-xl border border-white/10"><Users className="text-yellow-500" size={28} /></div>
                <div>
-                  <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Gestão de <span className="text-yellow-500">Talentos</span></h1>
+                  <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Gest�o de <span className="text-yellow-500">Talentos</span></h1>
                   <p className="text-zinc-500 font-bold flex items-center gap-2 mt-1"><ShieldCheck size={14} className="text-green-600" /> Amazing Corporate Governance</p>
                </div>
             </div>
@@ -848,17 +863,17 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   { id: 'performance', icon: <Award size={18} />, label: 'Metas' },
                   { id: 'passes', icon: <IdCard size={18} />, label: 'Passes' },
                   { id: 'vagas', icon: <UserPlus size={18} />, label: 'Vagas' },
-                  { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Bancárias' }
+                  { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Banc�rias' }
                ].filter(tab => isHRAdmin || !['gente', 'payroll', 'contas', 'vagas'].includes(tab.id)).map(tab => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'}`}>{tab.icon} {tab.label}</button>
                ))}
             </div>
          </div>
 
-         {/* DASHBOARD ANALÃTICO */}
+         {/* DASHBOARD ANALÍTICO */}
          {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4">
-               {/* NotificaçÃµes e Alertas */}
+               {/* Notifica�ões e Alertas */}
                {analyticsData.proximosVencimentos.length > 0 && (
                   <div className="bg-red-50 border border-red-100 p-8 rounded-[2.5rem] flex items-center justify-between shadow-sm animate-pulse">
                      <div className="flex items-center gap-6">
@@ -867,7 +882,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
                         <div>
                            <h4 className="text-lg font-black text-red-900 uppercase tracking-tight">Alertas de Contrato</h4>
-                           <p className="text-sm font-bold text-red-700">Há {analyticsData.proximosVencimentos.length} colaboradores com contrato a terminar nos próximos 30 dias.</p>
+                           <p className="text-sm font-bold text-red-700">H� {analyticsData.proximosVencimentos.length} colaboradores com contrato a terminar nos pr�ximos 30 dias.</p>
                         </div>
                      </div>
                      <div className="flex -space-x-4">
@@ -907,11 +922,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   </div>
                </div>
 
-               {/* Gráficos */}
+               {/* Gr�ficos */}
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[400px] flex flex-col">
                      <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2">
-                        <PieIcon className="text-yellow-500" size={20} /> Distribuição por Departamento
+                        <PieIcon className="text-yellow-500" size={20} /> Distribui��o por Departamento
                      </h3>
                      <div className="flex-1 w-full min-h-0 relative">
                         <ResponsiveContainer width="100%" height="100%">
@@ -937,7 +952,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                   <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[400px] flex flex-col">
                      <h3 className="text-lg font-black uppercase tracking-tight mb-6 flex items-center gap-2">
-                        <TrendingUp className="text-green-600" size={20} /> Evolução de Custos (Semestral)
+                        <TrendingUp className="text-green-600" size={20} /> Evolu��o de Custos (Semestral)
                      </h3>
                      <div className="flex-1 w-full min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
@@ -964,6 +979,44 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
+         {/* PERFORMANCE / METAS */}
+         {activeTab === 'performance' && (
+            <div className="space-y-6 animate-in slide-in-from-bottom-4">
+               <div className="flex flex-col md:flex-row gap-4 items-center">
+                  <div className="flex-1 bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100 w-full flex items-center">
+                     <Search className="ml-6 text-zinc-300" /><input placeholder="Pesquisar..." className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  </div>
+                  {isHRAdmin && <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>}
+               </div>
+               <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                     <table className="w-full text-left min-w-[600px]">
+                        <thead>
+                           <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                              <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Funo / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Acões</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-50 text-sm">
+                           {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
+                              <tr key={f.id} className="hover:bg-zinc-50/50">
+                                 <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
+                                 <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
+                                 <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
+                                 <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
+                                 <td className="px-8 py-5 text-right flex justify-end gap-2">
+                                    <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histrico Completo"><ClipboardList size={18} /></button>
+                                    {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
+                                    {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
+                                 </td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+            </div>
+         )}
+
          {/* GENTE / CADASTRO */}
          {activeTab === 'gente' && (
             <div className="space-y-6 animate-in slide-in-from-bottom-4">
@@ -978,7 +1031,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      <table className="w-full text-left min-w-[600px]">
                         <thead>
                            <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                              <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Função / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">AcçÃµes</th>
+                              <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Fun��o / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Ac�ões</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50 text-sm">
@@ -989,7 +1042,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                  <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
                                  <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
                                  <td className="px-8 py-5 text-right flex justify-end gap-2">
-                                    <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histórico Completo"><ClipboardList size={18} /></button>
+                                    <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Hist�rico Completo"><ClipboardList size={18} /></button>
                                     {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
                                     {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
                                  </td>
@@ -1005,9 +1058,9 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          {/* PAYROLL / FOLHA */}
          {activeTab === 'payroll' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4">
-               {/* Gráfico de Tendência Salarial */}
+               {/* Gr�fico de Tend�ncia Salarial */}
                <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Custo Total de Pessoal (Projeção)</h3>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Custo Total de Pessoal (Proje��o)</h3>
                   <ResponsiveContainer width="100%" height="85%">
                      <AreaChart data={analyticsData.chartArea}>
                         <defs>
@@ -1029,11 +1082,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   <div>
                      <h2 className="text-3xl font-black uppercase text-yellow-500">Mesa de Processamento</h2>
                      <p className="text-zinc-400 font-medium">Ciclo: {currentMonthName} {currentFiscalYear}</p>
-                     <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest font-bold">Introduza variáveis antes de processar</p>
+                     <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest font-bold">Introduza vari�veis antes de processar</p>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 relative z-10 items-center">
                      <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black uppercase text-zinc-500 ml-4">Nº Documento</label>
+                        <label className="text-[10px] font-black uppercase text-zinc-500 ml-4">N� Documento</label>
                         <input
                            type="text"
                            value={payrollDocNumber}
@@ -1058,20 +1111,20 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   </div>
                </div>
 
-               {/* WORKSPACE DE VARIÃVEIS MENSAIS */}
+               {/* WORKSPACE DE VARIÁVEIS MENSAIS */}
                <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
                   <table className="w-full text-left">
                      <thead>
                         <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                            <th className="px-6 py-4">Colaborador</th>
-                           <th className="px-6 py-4">Salário Base</th>
+                           <th className="px-6 py-4">Sal�rio Base</th>
                            <th className="px-6 py-4 text-center">H. Extras</th>
                            <th className="px-6 py-4 text-center">Faltas</th>
-                           <th className="px-6 py-4">Subsídios (Alim/Trans)</th>
-                           <th className="px-6 py-4">Subs. Extras (Fér/Nat)</th>
-                           <th className="px-6 py-4">Bónus/Prémios</th>
-                           <th className="px-6 py-4">Emprést/Desc</th>
-                           <th className="px-6 py-4 text-right">Líquido Est.</th>
+                           <th className="px-6 py-4">Subs�dios (Alim/Trans)</th>
+                           <th className="px-6 py-4">Subs. Extras (F�r/Nat)</th>
+                           <th className="px-6 py-4">B�nus/Pr�mios</th>
+                           <th className="px-6 py-4">Empr�st/Desc</th>
+                           <th className="px-6 py-4 text-right">L�quido Est.</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-zinc-50 text-xs">
@@ -1106,7 +1159,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                  <td className="px-6 py-4">
                                     <div className="flex flex-col gap-1">
                                        <div className="flex items-center gap-1">
-                                          <span className="text-[8px] font-black text-zinc-400">Fér:</span>
+                                          <span className="text-[8px] font-black text-zinc-400">F�r:</span>
                                           <input type="number" min="0" className="w-20 bg-zinc-100 border-none rounded p-1 text-right text-[10px] font-bold"
                                              value={inputs.subFerias} onChange={e => updatePayrollInput(f.id, 'subFerias', Number(e.target.value))} />
                                        </div>
@@ -1152,12 +1205,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                {/* LISTA DE RECIBOS GERADOS */}
                <div className="grid grid-cols-1 gap-4">
-                  <h3 className="text-lg font-black text-zinc-900 uppercase ml-4">Histórico de Recibos Emitidos</h3>
+                  <h3 className="text-lg font-black text-zinc-900 uppercase ml-4">Hist�rico de Recibos Emitidos</h3>
                   {recibos.length > 0 ? recibos.map(r => (
                      <div key={r.id} className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex items-center justify-between group hover:shadow-xl transition-all">
                         <div className="flex items-center gap-6"><div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all"><FileText size={28} /></div><div><h4 className="font-black text-zinc-900 text-lg">{r.nome}</h4><p className="text-[10px] font-black text-zinc-400 uppercase">{r.mes} / {r.ano}</p></div></div>
                         <div className="text-right">
-                           <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Líquido</p>
+                           <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">L�quido</p>
                            <p className="text-2xl font-black text-zinc-900">{formatAOA(r.liquido)}</p>
                         </div>
                         <div className="flex gap-2 ml-6">
@@ -1174,10 +1227,81 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
          {/* PONTO / PRESENÇA */}
          {activeTab === 'presenca' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-4">
-               <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white flex items-center justify-between">
-                  <div><h3 className="text-xl font-black uppercase text-yellow-500">Terminal de Ponto</h3><p className="text-zinc-400 text-sm font-medium">Controlo Biométrico Virtual</p></div>
-                  <div className="bg-white/5 px-6 py-4 rounded-3xl border border-white/10 text-center"><p className="text-[10px] font-black text-zinc-500 uppercase">Hoje</p><p className="text-xl font-black">{new Date().toLocaleDateString('pt-PT')}</p></div>
+            <div className='space-y-8 animate-in slide-in-from-bottom-4'>
+               <div className='bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white flex items-center justify-between'>
+                  <div><h3 className='text-xl font-black uppercase text-yellow-500'>Terminal de Ponto</h3><p className='text-zinc-400 text-sm font-medium'>Controlo Biométrico Virtual</p></div>
+                  <div className='flex gap-4'>
+                     <div className='bg-white/5 px-6 py-4 rounded-3xl border border-white/10 text-center'><p className='text-[10px] font-black text-zinc-500 uppercase'>Mês</p><p className='text-xl font-black uppercase'>{currentMonthName}</p></div>
+                     <div className='bg-white/5 px-6 py-4 rounded-3xl border border-white/10 text-center'><p className='text-[10px] font-black text-zinc-500 uppercase'>Hoje</p><p className='text-xl font-black'>{new Date().toLocaleDateString('pt-PT')}</p></div>
+                  </div>
+               </div>
+
+               {/* RESUMO MENSAL PARA RH */}
+               {isHRAdmin && (
+                  <div className='bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden animate-in fade-in duration-700'>
+                     <div className='flex items-center justify-between mb-8'>
+                        <div>
+                           <h3 className='text-lg font-black text-zinc-900 uppercase'>Resumo Mensal de Assiduidade</h3>
+                           <p className='text-xs text-zinc-400 font-bold uppercase tracking-widest'>Controlo de Faltas e Horas Extras</p>
+                        </div>
+                        <div className='flex items-center gap-4'>
+                           <div className='flex items-center gap-2'><div className='w-3 h-3 bg-red-500 rounded-full'></div><span className='text-[10px] font-black text-zinc-500 uppercase'>Faltas</span></div>
+                           <div className='flex items-center gap-2'><div className='w-3 h-3 bg-yellow-500 rounded-full'></div><span className='text-[10px] font-black text-zinc-500 uppercase'>Horas Extras</span></div>
+                        </div>
+                     </div>
+                     <div className='overflow-x-auto'>
+                        <table className='w-full text-left'>
+                           <thead>
+                              <tr className='bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest'>
+                                 <th className='px-6 py-4'>Colaborador</th>
+                                 <th className='px-6 py-4'>Status Hoje</th>
+                                 <th className='px-6 py-4 text-center'>Presen�as</th>
+                                 <th className='px-6 py-4 text-center'>Faltas</th>
+                                 <th className='px-6 py-4 text-center'>H. Extras Acum.</th>
+                                 <th className='px-6 py-4 text-right'>Progresso (22d)</th>
+                              </tr>
+                           </thead>
+                           <tbody className='divide-y divide-zinc-50 text-xs'>
+                              {funcionarios.filter(f => f.status === 'ativo').map(f => {
+                                 const stats = getAutoPayrollData(f.id);
+                                 const pontoHoje = presencas.find(p => p.funcionario_id === f.id && p.data === new Date().toISOString().split('T')[0]);
+                                 const presencasMes = presencas.filter(p => p.funcionario_id === f.id && p.data.startsWith(new Date().toISOString().slice(0, 7))).length;
+                                 
+                                 return (
+                                    <tr key={f.id} className='hover:bg-zinc-50/50 transition-all'>
+                                       <td className='px-6 py-4'>
+                                          <div className='flex items-center gap-3'>
+                                             <img src={f.foto_url} className='w-8 h-8 rounded-lg object-cover shadow-sm' />
+                                             <span className='font-bold text-zinc-900'>{f.nome}</span>
+                                          </div>
+                                       </td>
+                                       <td className='px-6 py-4'>
+                                          <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase ${pontoHoje ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-500'}`}>
+                                             {pontoHoje ? (pontoHoje.saida ? 'Conclu�do' : 'Presente') : 'Pendente'}
+                                          </span>
+                                       </td>
+                                       <td className='px-6 py-4 text-center font-bold text-zinc-600'>{presencasMes}</td>
+                                       <td className='px-6 py-4 text-center font-black text-red-600'>{stats.faltas}</td>
+                                       <td className='px-6 py-4 text-center font-black text-yellow-600'>+{stats.horasExtras}h</td>
+                                       <td className='px-6 py-4'>
+                                          <div className='flex items-center justify-end gap-3'>
+                                             <div className='w-24 h-1.5 bg-zinc-100 rounded-full overflow-hidden'>
+                                                <div 
+                                                   className='h-full bg-zinc-900 rounded-full' 
+                                                   style={{ width: `${Math.min(100, (presencasMes / 22) * 100)}%` }}
+                                                ></div>
+                                             </div>
+                                             <span className='text-[10px] font-black text-zinc-400'>{Math.round((presencasMes / 22) * 100)}%</span>
+                                          </div>
+                                       </td>
+                                    </tr>
+                                 );
+                              })}
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               )}
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {funcionarios.filter(f => f.status === 'ativo').map(f => {
@@ -1200,14 +1324,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            <div className="space-y-4">
                               <div className="grid grid-cols-2 gap-2 text-[10px] font-black uppercase text-zinc-400 bg-zinc-50 p-4 rounded-2xl">
                                  <div className="text-center"><p className="mb-1">Entrada</p><p className="text-sm text-zinc-900 font-black">{ponto?.entrada || '--:--'}</p></div>
-                                 <div className="text-center border-l border-zinc-200"><p className="mb-1">Saída</p><p className="text-sm text-zinc-900 font-black">{ponto?.saida || '--:--'}</p></div>
+                                 <div className="text-center border-l border-zinc-200"><p className="mb-1">Sa�da</p><p className="text-sm text-zinc-900 font-black">{ponto?.saida || '--:--'}</p></div>
                               </div>
                               {ponto?.saida && ponto.horas_extras > 0 && <div className="flex justify-between items-center px-4 py-2 bg-yellow-50 rounded-xl border border-yellow-100"><span className="text-[9px] font-black text-yellow-700 uppercase">H. Extras</span><span className="text-sm font-black text-zinc-900">+{ponto.horas_extras}h</span></div>}
                               {!ponto ? (
                                  <button onClick={() => registrarPonto(f.id, 'entrada')} className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black uppercase text-[11px] hover:bg-green-600 transition-all flex items-center justify-center gap-2"><Clock size={16} /> Check-in</button>
                               ) : !ponto.saida ? (
                                  <button onClick={() => registrarPonto(f.id, 'saida')} className="w-full py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[11px] hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"><LogOut size={16} /> Check-out</button>
-                              ) : <div className="w-full py-4 bg-zinc-100 text-zinc-400 rounded-2xl text-center font-black uppercase text-[11px]">Jornada Concluída</div>}
+                              ) : <div className="w-full py-4 bg-zinc-100 text-zinc-400 rounded-2xl text-center font-black uppercase text-[11px]">Jornada Conclu�da</div>}
                            </div>
                         </div>
                      );
@@ -1216,55 +1340,56 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-         {/* PERFORMANCE / METAS */}
+{/* PERFORMANCE / METAS */ }
          {activeTab === 'performance' && (
-            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               {/* Chart Metas */}
-               <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Aproveitamento de KPIs</h3>
-                  <ResponsiveContainer width="100%" height="85%">
-                     <BarChart data={analyticsData.barData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                        <XAxis type="number" hide />
-                        <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
-                        <Tooltip cursor={{ fill: 'transparent' }} />
-                        <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={20}>
-                           {analyticsData.barData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                           ))}
-                        </Bar>
-                     </BarChart>
-                  </ResponsiveContainer>
-               </div>
-
-               <div className="flex justify-between items-center bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-                  <Target className="absolute -right-8 -bottom-8 opacity-10" size={200} />
-                  <div><h2 className="text-3xl font-black uppercase">Desempenho</h2><p className="text-zinc-400 font-medium">Acompanhamento de KPIs</p></div>
-                  <button onClick={() => setShowMetaModal(true)} className="px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-white transition-all flex items-center gap-3 relative z-10"><PlusCircle size={20} /> Atribuir Meta</button>
-               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {metas.map(m => {
-                     const func = funcionarios.find(f => f.id === m.funcionario_id);
-                     return (
-                        <div key={m.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm space-y-6 hover:shadow-xl transition-all">
-                           <div className="flex justify-between items-start"><div className="flex items-center gap-3"><img src={func?.foto_url} className="w-10 h-10 rounded-xl object-cover grayscale" /><h4 className="font-black text-zinc-900 text-sm">{func?.nome.split(' ')[0]}</h4></div><span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${m.status === 'Concluída' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{m.status}</span></div>
-                           <h3 className="text-base font-black text-zinc-900 mb-4">{m.titulo}</h3>
-                           <div className="space-y-2">
-                              <input type="range" min="0" max="100" value={m.progresso} onChange={(e) => updateMetaProgresso(m.id, Number(e.target.value))} className="w-full h-2 bg-zinc-100 rounded-full appearance-none cursor-pointer accent-yellow-500" />
-                              <p className="text-right text-[10px] font-black text-zinc-900">{m.progresso}%</p>
-                           </div>
-                        </div>
-                     );
-                  })}
-               </div>
+         <div className="space-y-6 animate-in slide-in-from-bottom-4">
+            {/* Chart Metas */}
+            <div className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm h-[300px]">
+               <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">Aproveitamento de KPIs</h3>
+               <ResponsiveContainer width="100%" height="85%">
+                  <BarChart data={analyticsData.barData} layout="vertical">
+                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                     <XAxis type="number" hide />
+                     <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} />
+                     <Tooltip cursor={{ fill: 'transparent' }} />
+                     <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={20}>
+                        {analyticsData.barData.map((entry, index) => (
+                           <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                     </Bar>
+                  </BarChart>
+               </ResponsiveContainer>
             </div>
-         )}
 
-         {/* MODAL: FOLHA DE SALÁRIO GERAL (TABELA) */}
-         {showPayrollSheetModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/90 backdrop-blur-xl p-4 md:p-10 print:p-0 print:bg-white print:relative print:block">
-               <div className="bg-white w-full h-full max-w-[95vw] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl print:rounded-none print:shadow-none print:max-w-none">
-                  <style>{`
+            <div className="flex justify-between items-center bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+               <Target className="absolute -right-8 -bottom-8 opacity-10" size={200} />
+               <div><h2 className="text-3xl font-black uppercase">Desempenho</h2><p className="text-zinc-400 font-medium">Acompanhamento de KPIs</p></div>
+               <button onClick={() => setShowMetaModal(true)} className="px-8 py-4 bg-yellow-500 text-zinc-900 rounded-2xl font-black uppercase text-[10px] hover:bg-white transition-all flex items-center gap-3 relative z-10"><PlusCircle size={20} /> Atribuir Meta</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {metas.map(m => {
+                  const func = funcionarios.find(f => f.id === m.funcionario_id);
+                  return (
+                     <div key={m.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 shadow-sm space-y-6 hover:shadow-xl transition-all">
+                        <div className="flex justify-between items-start"><div className="flex items-center gap-3"><img src={func?.foto_url} className="w-10 h-10 rounded-xl object-cover grayscale" /><h4 className="font-black text-zinc-900 text-sm">{func?.nome.split(' ')[0]}</h4></div><span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${m.status === 'Conclu�da' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{m.status}</span></div>
+                        <h3 className="text-base font-black text-zinc-900 mb-4">{m.titulo}</h3>
+                        <div className="space-y-2">
+                           <input type="range" min="0" max="100" value={m.progresso} onChange={(e) => updateMetaProgresso(m.id, Number(e.target.value))} className="w-full h-2 bg-zinc-100 rounded-full appearance-none cursor-pointer accent-yellow-500" />
+                           <p className="text-right text-[10px] font-black text-zinc-900">{m.progresso}%</p>
+                        </div>
+                     </div>
+                  );
+               })}
+            </div>
+         </div>
+      )}
+
+{/* MODAL: FOLHA DE SAL�RIO GERAL (TABELA) */ }
+{
+   showPayrollSheetModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/90 backdrop-blur-xl p-4 md:p-10 print:p-0 print:bg-white print:relative print:block">
+         <div className="bg-white w-full h-full max-w-[95vw] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl print:rounded-none print:shadow-none print:max-w-none">
+            <style>{`
                      @media print {
                         @page { size: landscape; margin: 1cm; }
                         body * { visibility: hidden; }
@@ -1290,99 +1415,98 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      .highlight-bold { font-weight: bold; }
                   `}</style>
 
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center print-hidden">
-                     <div>
-                        <h2 className="text-2xl font-black uppercase text-zinc-900">Folha de Salário - {currentMonthName} {currentFiscalYear}</h2>
-                        <p className="text-zinc-500 font-medium tracking-tight uppercase text-[10px]">Documento Nº: <span className="text-zinc-900 font-black">{payrollDocNumber}</span></p>
-                        <p className="text-zinc-400 text-[9px] font-bold">Relatório Geral de Processamento</p>
-                     </div>
-                     <div className="flex gap-3">
-                        <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 transition-all flex items-center gap-2 font-bold uppercase text-[10px]">
-                           <Printer size={20} /> Imprimir Agora
-                        </button>
-                        <button onClick={() => setShowPayrollSheetModal(false)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all">
-                           <X size={24} />
-                        </button>
-                     </div>
-                  </div>
-
-                  <div className="flex-1 overflow-auto p-8 print:p-0" id="payroll-sheet-print">
-                     <div className="mb-6 text-center">
-                        <h1 className="text-xl font-bold uppercase" style={{ fontFamily: 'Times New Roman' }}>Folha de Salário - {corporateInfo?.name || 'Amazing Corporation'}</h1>
-                        <p className="text-sm italic" style={{ fontFamily: 'Times New Roman' }}>Período: {currentMonthName} de {currentFiscalYear}</p>
-                     </div>
-
-                     <table className="payroll-table">
-                        <thead>
-                           <tr>
-                              <th>Nº</th>
-                              <th>Nome</th>
-                              <th>Cargo</th>
-                              <th>Salário Base</th>
-                              <th>Horas Extras</th>
-                              <th>Subs. Alimentação</th>
-                              <th>Subs. Transporte</th>
-                              <th>Subs. Férias</th>
-                              <th>Subs. Natal</th>
-                              <th>Bónus</th>
-                              <th>Total Proventos</th>
-                              <th>INSS</th>
-                              <th>IRT</th>
-                              <th>Faltas</th>
-                              <th>Empréstimos</th>
-                              <th>Outros Desc.</th>
-                              <th>Total Descontos</th>
-                              <th className="highlight-bold">Salário Bruto</th>
-                              <th className="highlight-bold">Salário Líquido</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           {funcionarios.filter(f => f.status === 'ativo').map((f, index) => {
-                              const calc = calculatePayrollForEmployee(f);
-                              const proventosTotal = calc.totalProventos;
-                              const descontosTotal = calc.totalDescontos;
-
-                              return (
-                                 <tr key={f.id}>
-                                    <td>{index + 1}</td>
-                                    <td style={{ textAlign: 'left' }}>{f.nome}</td>
-                                    <td style={{ textAlign: 'left' }}>{f.funcao}</td>
-                                    <td>{formatAOA(f.salario_base)}</td>
-                                    <td>{formatAOA(calc.valorHorasExtras)}</td>
-                                    <td>{formatAOA(calc.subAlim)}</td>
-                                    <td>{formatAOA(calc.subTrans)}</td>
-                                    <td>{formatAOA(calc.subFerias)}</td>
-                                    <td>{formatAOA(calc.subNatal)}</td>
-                                    <td>{formatAOA(calc.premiosBonus)}</td>
-                                    <td className="highlight-bold">{formatAOA(proventosTotal)}</td>
-                                    <td>{formatAOA(calc.inss)}</td>
-                                    <td>{formatAOA(calc.irt)}</td>
-                                    <td>{formatAOA(calc.descontoFaltas)}</td>
-                                    <td>{formatAOA(calc.emprestimos)}</td>
-                                    <td>{formatAOA(calc.outrosDesc)}</td>
-                                    <td className="highlight-bold">{formatAOA(descontosTotal)}</td>
-                                    <td className="highlight-bold">{formatAOA(calc.bruto)}</td>
-                                    <td className="highlight-bold bg-yellow-50">{formatAOA(calc.liquido)}</td>
-                                 </tr>
-                              );
-                           })}
-                        </tbody>
-                     </table>
-
-                     <div className="mt-12 text-[10pt] italic" style={{ fontFamily: 'Times New Roman' }}>
-                        <p><strong>Total Proventos:</strong> Salário Base + Horas Extras + Subsídios + Bónus</p>
-                        <p><strong>Salário Bruto:</strong> Total Proventos (antes dos descontos)</p>
-                        <p><strong>Total Descontos:</strong> INSS + IRT + Faltas + Empréstimos + Outros</p>
-                        <p><strong>Salário Líquido:</strong> Salário Bruto - Total Descontos</p>
-                     </div>
-                  </div>
+            <div className="p-8 border-b border-zinc-100 flex justify-between items-center print-hidden">
+               <div>
+                  <h2 className="text-2xl font-black uppercase text-zinc-900">Folha de Sal�rio - {currentMonthName} {currentFiscalYear}</h2>
+                  <p className="text-zinc-500 font-medium tracking-tight uppercase text-[10px]">Documento N�: <span className="text-zinc-900 font-black">{payrollDocNumber}</span></p>
+                  <p className="text-zinc-400 text-[9px] font-bold">Relat�rio Geral de Processamento</p>
+               </div>
+               <div className="flex gap-3">
+                  <button onClick={() => window.print()} className="p-4 bg-zinc-900 text-white rounded-2xl hover:bg-yellow-500 transition-all flex items-center gap-2 font-bold uppercase text-[10px]">
+                     <Printer size={20} /> Imprimir Agora
+                  </button>
+                  <button onClick={() => setShowPayrollSheetModal(false)} className="p-4 bg-zinc-100 text-zinc-400 hover:bg-zinc-200 rounded-2xl transition-all">
+                     <X size={24} />
+                  </button>
                </div>
             </div>
+
+            <div className="flex-1 overflow-auto p-8 print:p-0" id="payroll-sheet-print">
+               <div className="mb-6 text-center">
+                  <h1 className="text-xl font-bold uppercase" style={{ fontFamily: 'Times New Roman' }}>Folha de Sal�rio - {corporateInfo?.name || 'Amazing Corporation'}</h1>
+                  <p className="text-sm italic" style={{ fontFamily: 'Times New Roman' }}>Per�odo: {currentMonthName} de {currentFiscalYear}</p>
+               </div>
+
+               <table className="payroll-table">
+                  <thead>
+                     <tr>
+                        <th>N�</th>
+                        <th>Nome</th>
+                        <th>Cargo</th>
+                        <th>Sal�rio Base</th>
+                        <th>Horas Extras</th>
+                        <th>Subs. Alimenta��o</th>
+                        <th>Subs. Transporte</th>
+                        <th>Subs. F�rias</th>
+                        <th>Subs. Natal</th>
+                        <th>B�nus</th>
+                        <th>Total Proventos</th>
+                        <th>INSS</th>
+                        <th>IRT</th>
+                        <th>Faltas</th>
+                        <th>Empr�stimos</th>
+                        <th>Outros Desc.</th>
+                        <th>Total Descontos</th>
+                        <th className="highlight-bold">Sal�rio Bruto</th>
+                        <th className="highlight-bold">Sal�rio L�quido</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     {funcionarios.filter(f => f.status === 'ativo').map((f, index) => {
+                        const calc = calculatePayrollForEmployee(f);
+                        const proventosTotal = calc.totalProventos;
+                        const descontosTotal = calc.totalDescontos;
+
+                        return (
+                           <tr key={f.id}>
+                              <td>{index + 1}</td>
+                              <td style={{ textAlign: 'left' }}>{f.nome}</td>
+                              <td style={{ textAlign: 'left' }}>{f.funcao}</td>
+                              <td>{formatAOA(f.salario_base)}</td>
+                              <td>{formatAOA(calc.valorHorasExtras)}</td>
+                              <td>{formatAOA(calc.subAlim)}</td>
+                              <td>{formatAOA(calc.subTrans)}</td>
+                              <td>{formatAOA(calc.subFerias)}</td>
+                              <td>{formatAOA(calc.subNatal)}</td>
+                              <td>{formatAOA(calc.premiosBonus)}</td>
+                              <td className="highlight-bold">{formatAOA(proventosTotal)}</td>
+                              <td>{formatAOA(calc.inss)}</td>
+                              <td>{formatAOA(calc.irt)}</td>
+                              <td>{formatAOA(calc.descontoFaltas)}</td>
+                              <td>{formatAOA(calc.emprestimos)}</td>
+                              <td>{formatAOA(calc.outrosDesc)}</td>
+                              <td className="highlight-bold">{formatAOA(descontosTotal)}</td>
+                              <td className="highlight-bold">{formatAOA(calc.bruto)}</td>
+                              <td className="highlight-bold bg-yellow-50">{formatAOA(calc.liquido)}</td>
+                           </tr>
+                        );
+                     })}
+                  </tbody>
+               </table>
+
+               <div className="mt-12 text-[10pt] italic" style={{ fontFamily: 'Times New Roman' }}>
+                  <p><strong>Total Proventos:</strong> Sal�rio Base + Horas Extras + Subs�dios + B�nus</p>
+                  <p><strong>Sal�rio Bruto:</strong> Total Proventos (antes dos descontos)</p>
+                  <p><strong>Total Descontos:</strong> INSS + IRT + Faltas + Empr�stimos + Outros</p>
+                  <p><strong>Sal�rio L�quido:</strong> Sal�rio Bruto - Total Descontos</p>
+               </div>
+            </div>
+         </div>
          )}
 
          {activeTab === 'passes' && (
             <div className="space-y-6 animate-in slide-in-from-bottom-4">
-               <div className="bg-zinc-50 p-10 rounded-[3rem] border border-sky-100 flex items-center justify-between"><div><h2 className="text-2xl font-black text-zinc-900 uppercase">Identificação Corporativa</h2><p className="text-zinc-500 text-sm font-medium">Emissão e gestão de passes PVC.</p></div><ScanBarcode size={32} className="text-yellow-600" /></div>
+               <div className="bg-zinc-50 p-10 rounded-[3rem] border border-sky-100 flex items-center justify-between"><div><h2 className="text-2xl font-black text-zinc-900 uppercase">Identifica��o Corporativa</h2><p className="text-zinc-500 text-sm font-medium">Emiss�o e gest�o de passes PVC.</p></div><ScanBarcode size={32} className="text-yellow-600" /></div>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {funcionarios.map(f => (
                      <div key={f.id} className="bg-white p-6 rounded-[2.5rem] border border-sky-50 shadow-sm flex flex-col items-center text-center group hover:shadow-2xl transition-all">
@@ -1407,7 +1531,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-         {/* CONTAS BANCÃRIAS (GLOBAL) */}
+         {/* CONTAS BANC�RIAS (GLOBAL) */}
          {activeTab === 'contas' && (
             <div className="animate-in slide-in-from-bottom-4">
                <ContasBancariasPage user={user} inAppTab={true} />
@@ -1421,173 +1545,172 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             </div>
          )}
 
-         {/* MODAL CADASTRO FUNCIONÃRIO (MANTIDO) */}
-         {showModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
-               <div className="bg-white w-full max-w-6xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[95vh]">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                     <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
-                        {editingItem ? <Edit className="text-yellow-500" /> : <UserPlus className="text-yellow-500" />}
-                        {editingItem ? 'Ficha do Colaborador' : 'Nova Admissão'}
-                     </h2>
-                     <button onClick={() => setShowModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><X size={28} /></button>
-                  </div>
-
-                  {/* ABAS DO MODAL */}
-                  {editingItem && (
-                     <div className="flex border-b border-zinc-100 bg-white px-8 pt-4 gap-6">
-                        <button
-                           onClick={() => setModalActiveTab('geral')}
-                           className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modalActiveTab === 'geral' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
-                        >
-                           Dados Gerais
-                        </button>
-                        <button
-                           onClick={() => setModalActiveTab('contas')}
-                           className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modalActiveTab === 'contas' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
-                        >
-                           Contas Bancárias
-                        </button>
+         {/* MODAL CADASTRO FUNCIONÁRIO (MANTIDO) */}
+         {
+            showModal && (
+               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
+                  <div className="bg-white w-full max-w-6xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[95vh]">
+                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                        <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
+                           {editingItem ? <Edit className="text-yellow-500" /> : <UserPlus className="text-yellow-500" />}
+                           {editingItem ? 'Ficha do Colaborador' : 'Nova Admiss�o'}
+                        </h2>
+                        <button onClick={() => setShowModal(false)} className="p-3 hover:bg-zinc-200 rounded-full transition-all text-zinc-400"><X size={28} /></button>
                      </div>
-                  )}
 
-                  <div className="overflow-y-auto w-full h-full p-0">
-                     {modalActiveTab === 'geral' ? (
-                        <form onSubmit={handleSubmitFuncionario} className="p-10 space-y-8">
-                           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                              {/* Coluna da Foto */}
-                              <div className="md:col-span-3 flex flex-col items-center gap-4">
-                                 <div className="w-full aspect-square bg-zinc-50 rounded-[3rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400 overflow-hidden cursor-pointer hover:border-yellow-500 transition-all relative" onClick={() => document.getElementById('photo-upload')?.click()}>
-                                    {photoPreview ? <img src={photoPreview} className="w-full h-full object-cover" /> : <Camera size={48} />}
-                                    <input type="file" id="photo-upload" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { const r = new FileReader(); r.onload = () => setPhotoPreview(r.result as string); r.readAsDataURL(file); } }} />
-                                 </div>
-                                 <p className="text-[9px] font-black text-zinc-400 uppercase">Foto Institucional</p>
-                              </div>
-
-                              {/* Dados Pessoais Principais */}
-                              <div className="md:col-span-9 space-y-6">
-                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><UserCheck size={14} /> Identificação & Contactos</h3>
-
-                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <Input name="nome" label="Nome Completo" defaultValue={editingItem?.nome} required />
-                                    <Input name="bilhete" label="Nº BI / Identidade" defaultValue={editingItem?.bilhete} required />
-                                 </div>
-
-                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                                    <div className="md:col-span-4 grid grid-cols-3 gap-4">
-                                       <div className="col-span-2">
-                                          <Input
-                                             name="nascimento" label="Data de Nascimento" type="date" required
-                                             value={formState.nascimento}
-                                             onChange={e => setFormState({ ...formState, nascimento: e.target.value })}
-                                          />
-                                       </div>
-                                       <Input label="Idade" readOnly value={formState.idade} className="bg-zinc-100 font-bold text-center text-zinc-500 cursor-not-allowed" />
-                                    </div>
-
-                                    <div className="md:col-span-4">
-                                       <Input name="telefone" label="Telemóvel Pessoal" defaultValue={editingItem?.telefone} required placeholder="9xx xxx xxx" />
-                                    </div>
-
-                                    <div className="md:col-span-4">
-                                       <Input name="telefone_alternativo" label="Telefone Alternativo" defaultValue={(editingItem as any)?.telefone_alternativo} placeholder="Opcional" />
-                                    </div>
-                                 </div>
-
-                                 <div className="w-full">
-                                    <Input name="morada" label="Bairro / Rua / Referência" defaultValue={editingItem?.morada} required />
-                                 </div>
-                              </div>
-                           </div>
-
-                           {/* Secção de Filiação e Origem (NOVO) */}
-                           <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100 space-y-6">
-                              <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Users size={14} /> Origem & Filiação</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                 <Input name="nome_pai" label="Nome do Pai" value={formState.nome_pai} onChange={e => setFormState({ ...formState, nome_pai: e.target.value })} />
-                                 <Input name="nome_mae" label="Nome da Mãe" value={formState.nome_mae} onChange={e => setFormState({ ...formState, nome_mae: e.target.value })} />
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                 <Select
-                                    name="provincia" label="Naturalidade (Província)"
-                                    value={formState.provincia}
-                                    onChange={e => setFormState({ ...formState, provincia: e.target.value })}
-                                    options={PROVINCIAS.map(p => ({ value: p, label: p }))}
-                                 />
-                                 <Input name="municipio" label="Município" value={formState.municipio} onChange={e => setFormState({ ...formState, municipio: e.target.value })} />
-                              </div>
-                           </div>
-
-                           {/* Secção Académica e Profissional */}
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                              <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
-                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><GraduationCap size={14} /> HabilitaçÃµes</h3>
-                                 <Select
-                                    name="escolaridade" label="Nível de Escolaridade"
-                                    value={formState.escolaridade}
-                                    onChange={e => setFormState({ ...formState, escolaridade: e.target.value })}
-                                    options={[{ value: 'Ensino Básico', label: 'Ensino Básico' }, { value: 'Ensino Médio', label: 'Ensino Médio' }, { value: 'Licenciatura', label: 'Licenciatura' }, { value: 'Mestrado', label: 'Mestrado' }]}
-                                 />
-                                 <Input name="formacao" label="Curso / Especialidade" value={formState.curso} onChange={e => setFormState({ ...formState, curso: e.target.value })} />
-                              </div>
-
-                              <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
-                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Briefcase size={14} /> Cargo & Função</h3>
-                                 <Input name="funcao" label="Função a Desempenhar" defaultValue={editingItem?.funcao} required />
-                                 <Input name="departamento" label="Departamento" defaultValue={editingItem?.departamento_id} required />
-                              </div>
-                           </div>
-
-                           {/* Contrato e Financeiro */}
-                           <div className="bg-zinc-900 p-10 rounded-[3.5rem] text-white space-y-8 border-l-[12px] border-yellow-500 shadow-2xl">
-                              <h3 className="text-xs font-black text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Wallet size={14} /> Dados Contratuais</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                 <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Estágio', label: 'Estágio Remunerado' }]} />
-                                 <Input name="admissao" label="Data de Início" type="date" defaultValue={editingItem?.data_admissao} required className="bg-zinc-800 border-zinc-700 text-white" />
-                                 <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status || 'ativo'} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'ativo', label: 'Activo' }, { value: 'ferias', label: 'Férias' }, { value: 'inativo', label: 'Inactivo' }, { value: 'rescindido', label: 'Rescindido' }]} />
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4 border-t border-white/10">
-                                 <Input name="salario_base" label="Base (AOA)" type="number" defaultValue={editingItem?.salario_base} className="bg-zinc-800 border-zinc-700 text-white font-black" required />
-                                 <Input name="sub_alim" label="Sub. Alim." type="number" defaultValue={editingItem?.subsidio_alimentacao} className="bg-zinc-800 border-zinc-700 text-white" />
-                                 <Input name="sub_trans" label="Sub. Trans." type="number" defaultValue={editingItem?.subsidio_transporte} className="bg-zinc-800 border-zinc-700 text-white" />
-                                 <Input name="outros_bonus" label="Outros Bónus" type="number" defaultValue={editingItem?.outros_bonus} className="bg-zinc-800 border-zinc-700 text-white border-dashed border-2" />
-                              </div>
-                           </div>
-
-                           <div className="flex justify-end gap-6 pt-6">
-                              <button type="button" onClick={() => setShowModal(false)} className="px-10 py-5 text-[11px] font-black uppercase text-zinc-400">Cancelar</button>
-                              <button type="submit" className="px-16 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[11px] shadow-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-3">
-                                 <Save size={20} /> {editingItem ? 'Actualizar Ficha' : 'Efectivar Admissão'}
-                              </button>
-                           </div>
-                        </form>
-                     ) : (
-                        <div className="p-10 min-h-[500px]">
-                           {editingItem && <BankAccountsTab funcionarioId={editingItem.id} user={user} />}
+                     {/* ABAS DO MODAL */}
+                     {editingItem && (
+                        <div className="flex border-b border-zinc-100 bg-white px-8 pt-4 gap-6">
+                           <button
+                              onClick={() => setModalActiveTab('geral')}
+                              className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modal{activeTab === 'geral' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
+                           >
+                              Dados Gerais
+                           </button>
+                           <button
+                              onClick={() => setModalActiveTab('contas')}
+                              className={`pb-4 font-black text-sm uppercase px-2 transition-all border-b-4 ${modal{activeTab === 'contas' ? 'border-yellow-500 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
+                           >
+                              Contas Banc�rias
+                           </button>
                         </div>
                      )}
+
+                     <div className="overflow-y-auto w-full h-full p-0">
+                        {modal{activeTab === 'geral' ? (
+                           <form onSubmit={handleSubmitFuncionario} className="p-10 space-y-8">
+                              <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                                 {/* Coluna da Foto */}
+                                 <div className="md:col-span-3 flex flex-col items-center gap-4">
+                                    <div className="w-full aspect-square bg-zinc-50 rounded-[3rem] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400 overflow-hidden cursor-pointer hover:border-yellow-500 transition-all relative" onClick={() => document.getElementById('photo-upload')?.click()}>
+                                       {photoPreview ? <img src={photoPreview} className="w-full h-full object-cover" /> : <Camera size={48} />}
+                                       <input type="file" id="photo-upload" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { const r = new FileReader(); r.onload = () => setPhotoPreview(r.result as string); r.readAsDataURL(file); } }} />
+                                    </div>
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase">Foto Institucional</p>
+                                 </div>
+
+                                 {/* Dados Pessoais Principais */}
+                                 <div className="md:col-span-9 space-y-6">
+                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><UserCheck size={14} /> Identifica��o & Contactos</h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                       <Input name="nome" label="Nome Completo" defaultValue={editingItem?.nome} required />
+                                       <Input name="bilhete" label="N� BI / Identidade" defaultValue={editingItem?.bilhete} required />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                       <div className="md:col-span-4 grid grid-cols-3 gap-4">
+                                          <div className="col-span-2">
+                                             <Input
+                                                name="nascimento" label="Data de Nascimento" type="date" required
+                                                value={formState.nascimento}
+                                                onChange={e => setFormState({ ...formState, nascimento: e.target.value })}
+                                             />
+                                          </div>
+                                          <Input label="Idade" readOnly value={formState.idade} className="bg-zinc-100 font-bold text-center text-zinc-500 cursor-not-allowed" />
+                                       </div>
+
+                                       <div className="md:col-span-4">
+                                          <Input name="telefone" label="Telem�vel Pessoal" defaultValue={editingItem?.telefone} required placeholder="9xx xxx xxx" />
+                                       </div>
+
+                                       <div className="md:col-span-4">
+                                          <Input name="telefone_alternativo" label="Telefone Alternativo" defaultValue={(editingItem as any)?.telefone_alternativo} placeholder="Opcional" />
+                                       </div>
+                                    </div>
+
+                                    <div className="w-full">
+                                       <Input name="morada" label="Bairro / Rua / Refer�ncia" defaultValue={editingItem?.morada} required />
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Sec��o de Filia��o e Origem (NOVO) */}
+                              <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100 space-y-6">
+                                 <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Users size={14} /> Origem & Filia��o</h3>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Input name="nome_pai" label="Nome do Pai" value={formState.nome_pai} onChange={e => setFormState({ ...formState, nome_pai: e.target.value })} />
+                                    <Input name="nome_mae" label="Nome da M�e" value={formState.nome_mae} onChange={e => setFormState({ ...formState, nome_mae: e.target.value })} />
+                                 </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Select
+                                       name="provincia" label="Naturalidade (Prov�ncia)"
+                                       value={formState.provincia}
+                                       onChange={e => setFormState({ ...formState, provincia: e.target.value })}
+                                       options={PROVINCIAS.map(p => ({ value: p, label: p }))}
+                                    />
+                                    <Input name="municipio" label="Munic�pio" value={formState.municipio} onChange={e => setFormState({ ...formState, municipio: e.target.value })} />
+                                 </div>
+                              </div>
+
+                              {/* Sec��o Acad�mica e Profissional */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                 <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
+                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><GraduationCap size={14} /> Habilita�ões</h3>
+                                    <Select
+                                       name="escolaridade" label="N�vel de Escolaridade"
+                                       value={formState.escolaridade}
+                                       onChange={e => setFormState({ ...formState, escolaridade: e.target.value })}
+                                       options={[{ value: 'Ensino B�sico', label: 'Ensino B�sico' }, { value: 'Ensino M�dio', label: 'Ensino M�dio' }, { value: 'Licenciatura', label: 'Licenciatura' }, { value: 'Mestrado', label: 'Mestrado' }]}
+                                    />
+                                    <Input name="formacao" label="Curso / Especialidade" value={formState.curso} onChange={e => setFormState({ ...formState, curso: e.target.value })} />
+                                 </div>
+
+                                 <div className="space-y-6 bg-white border border-zinc-100 p-6 rounded-3xl shadow-sm">
+                                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2"><Briefcase size={14} /> Cargo & Fun��o</h3>
+                                    <Input name="funcao" label="Fun��o a Desempenhar" defaultValue={editingItem?.funcao} required />
+                                    <Input name="departamento" label="Departamento" defaultValue={editingItem?.departamento_id} required />
+                                 </div>
+                              </div>
+
+                              {/* Contrato e Financeiro */}
+                              <div className="bg-zinc-900 p-10 rounded-[3.5rem] text-white space-y-8 border-l-[12px] border-yellow-500 shadow-2xl">
+                                 <h3 className="text-xs font-black text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Wallet size={14} /> Dados Contratuais</h3>
+                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Est�gio', label: 'Est�gio Remunerado' }]} />
+                                    <Input name="admissao" label="Data de In�cio" type="date" defaultValue={editingItem?.data_admissao} required className="bg-zinc-800 border-zinc-700 text-white" />
+                                    <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status || 'ativo'} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'ativo', label: 'Activo' }, { value: 'ferias', label: 'F�rias' }, { value: 'inativo', label: 'Inactivo' }, { value: 'rescindido', label: 'Rescindido' }]} />
+                                 </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-4 border-t border-white/10">
+                                    <Input name="salario_base" label="Base (AOA)" type="number" defaultValue={editingItem?.salario_base} className="bg-zinc-800 border-zinc-700 text-white font-black" required />
+                                    <Input name="sub_alim" label="Sub. Alim." type="number" defaultValue={editingItem?.subsidio_alimentacao} className="bg-zinc-800 border-zinc-700 text-white" />
+                                    <Input name="sub_trans" label="Sub. Trans." type="number" defaultValue={editingItem?.subsidio_transporte} className="bg-zinc-800 border-zinc-700 text-white" />
+                                    <Input name="outros_bonus" label="Outros B�nus" type="number" defaultValue={editingItem?.outros_bonus} className="bg-zinc-800 border-zinc-700 text-white border-dashed border-2" />
+                                 </div>
+                              </div>
+
+                              <div className="flex justify-end gap-6 pt-6">
+                                 <button type="button" onClick={() => setShowModal(false)} className="px-10 py-5 text-[11px] font-black uppercase text-zinc-400">Cancelar</button>
+                                 <button type="submit" className="px-16 py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[11px] shadow-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-3">
+                                    <Save size={20} /> {editingItem ? 'Actualizar Ficha' : 'Efectivar Admiss�o'}
+                                 </button>
+                              </div>
+                           </form>
+                        ) : (
+                           <div className="p-10 min-h-[500px]">
+                              {editingItem && <BankAccountsTab funcionarioId={editingItem.id} user={user} />}
+                           </div>
+                        )}
+                     </div>
                   </div>
-               </div>
-            </div>
          )}
 
-         {/* MODAL METAS */}
-         {showMetaModal && (
-            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in">
-               <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50"><h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase"><Target className="text-yellow-500" /> Nova Meta de Performance</h2><button onClick={() => setShowMetaModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button></div>
-                  <form onSubmit={handleAddMeta} className="p-8 space-y-6">
-                     <Select name="func_id" label="Responsável" required options={funcionarios.map(f => ({ value: f.id, label: f.nome }))} />
-                     <Input name="titulo" label="KPI / Objectivo" required placeholder="Ex: Reduzir custos de frota em 10%" />
-                     <Input name="prazo" label="Prazo Final" type="date" required defaultValue={new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]} />
-                     <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] hover:bg-yellow-500 transition-all shadow-xl"><Save size={18} /> Efectivar Atribuição</button>
-                  </form>
-               </div>
-            </div>
+                  {/* MODAL METAS */}
+                  {showMetaModal && (
+                     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in">
+                        <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
+                           <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50"><h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase"><Target className="text-yellow-500" /> Nova Meta de Performance</h2><button onClick={() => setShowMetaModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button></div>
+                           <form onSubmit={handleAddMeta} className="p-8 space-y-6">
+                              <Select name="func_id" label="Respons�vel" required options={funcionarios.map(f => ({ value: f.id, label: f.nome }))} />
+                              <Input name="titulo" label="KPI / Objectivo" required placeholder="Ex: Reduzir custos de frota em 10%" />
+                              <Input name="prazo" label="Prazo Final" type="date" required defaultValue={new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]} />
+                              <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] hover:bg-yellow-500 transition-all shadow-xl"><Save size={18} /> Efectivar Atribui��o</button>
+                           </form>
+                        </div>
          )}
 
-         {/* MODAL RECIBO PROFISSIONAL (ESTILO CANVA) */}
-         {viewingRecibo && (
+                        {/* MODAL RECIBO PROFISSIONAL (ESTILO CANVA) */}
+                        {viewingRecibo && (
                   <style>{`
                      @media print {
                         @page { size: A4; margin: 0; }
@@ -1598,7 +1721,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in py-10 print:static print:p-0 print:bg-white print:block">
                <div className="bg-white w-full max-w-4xl shadow-2xl relative print:shadow-none print:w-[210mm] print:mx-auto min-h-[1120px] flex flex-col overflow-hidden">
 
-                  {/* DESIGN GEOMÉTRICO SUPERIOR (TEMPLATE) */}
+                  {/* DESIGN GEOM�TRICO SUPERIOR (TEMPLATE) */}
                   <div className="relative h-56 w-full print:h-56 overflow-hidden bg-white border-b-4 border-zinc-900">
                      {/* Blue Polygon */}
                      <div
@@ -1611,11 +1734,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)' }}
                      ></div>
 
-                     {/* DESIGN GEOMÉTRICO - APENAS VISUAL */}
+                     {/* DESIGN GEOM�TRICO - APENAS VISUAL */}
                      <div className="absolute top-0 right-12 p-8 z-10 w-full text-right">
                         <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-xl border border-white/10 inline-block">
                            <p className="text-[12px] font-black text-white uppercase tracking-[0.3em]">Recibo Oficial</p>
-                           <p className="text-[9px] font-bold text-white/40 uppercase mt-1 tracking-widest italic">Amazing Corp Cloud • ERP</p>
+                           <p className="text-[9px] font-bold text-white/40 uppercase mt-1 tracking-widest italic">Amazing Corp Cloud � ERP</p>
                         </div>
                      </div>
                   </div>
@@ -1647,7 +1770,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               </div>
                               <div className="space-y-4">
                                  <div className="flex flex-col gap-1.5">
-                                    <label className="text-[9px] font-black uppercase text-zinc-900 ml-1">Nº do Telefone (Funcionário)</label>
+                                    <label className="text-[9px] font-black uppercase text-zinc-900 ml-1">N� do Telefone (Funcion�rio)</label>
                                     <input
                                        type="text"
                                        value={customWhatsApp}
@@ -1655,7 +1778,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-green-500 outline-none transition-all"
                                        placeholder="Ex: 931116696"
                                     />
-                                    <p className="text-[8px] text-zinc-400 italic">O prefixo +244 será adicionado automaticamente.</p>
+                                    <p className="text-[8px] text-zinc-400 italic">O prefixo +244 ser� adicionado automaticamente.</p>
                                  </div>
                                  <button
                                     onClick={() => { handleWhatsAppShare(); setShowShareOptions(false); }}
@@ -1686,7 +1809,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                   </div>
 
                   <div className="flex-1 px-16 py-8 print:px-12">
-                     {/* LINHA DE TÍTULO - REESTRUTURADA (LOGO E TÍTULO 18PX NA MESMA LINHA) */}
+                     {/* LINHA DE T�TULO - REESTRUTURADA (LOGO E T�TULO 18PX NA MESMA LINHA) */}
                      <div className="border-b-[4px] border-zinc-900 pb-8 mb-8 flex justify-between items-center">
                         {/* ESQUERDA: LOGO + INFO (TAMANHO AJUSTADO) */}
                         <div className="flex items-center gap-6">
@@ -1695,36 +1818,36 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            </div>
                            <div className="flex flex-col text-[10px] leading-tight font-black uppercase text-zinc-400">
                               <span className="text-zinc-900 font-black text-[11px] mb-1">NIF: 50002181797</span>
-                              <span>Endereço: Benguela/Angola</span>
+                              <span>Endere�o: Benguela/Angola</span>
                               <span>Bairro Massangarala</span>
                               <span className="text-zinc-800 mt-1 font-bold">Contacto: +244 931 116 696</span>
                               <span className="lowercase text-sky-600 font-bold">Email: geral.amazingcorporation@gmail.com</span>
                            </div>
                         </div>
 
-                        {/* CENTRO: TÍTULO 18PX - NA MESMA LINHA */}
+                        {/* CENTRO: T�TULO 18PX - NA MESMA LINHA */}
                         <div className="text-center">
-                           <h2 className="text-[18px] font-black text-zinc-900 uppercase tracking-tight leading-none">Folha de Salário</h2>
+                           <h2 className="text-[18px] font-black text-zinc-900 uppercase tracking-tight leading-none">Folha de Sal�rio</h2>
                            <div className="mt-2 inline-block bg-zinc-900 text-white px-4 py-1 rounded-full">
-                              <p className="text-[10px] font-black uppercase tracking-widest">Período: {viewingRecibo.mes} {viewingRecibo.ano}</p>
+                              <p className="text-[10px] font-black uppercase tracking-widest">Per�odo: {viewingRecibo.mes} {viewingRecibo.ano}</p>
                            </div>
                         </div>
 
-                        {/* DIREITA: Nº DOCUMENTO */}
+                        {/* DIREITA: N� DOCUMENTO */}
                         <div className="text-right">
-                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nº Documento</p>
+                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">N� Documento</p>
                            <p className="text-xl font-black text-zinc-900 tabular-nums uppercase">#{viewingRecibo.numero_documento || viewingRecibo.id.substring(0, 8).toUpperCase()}</p>
                         </div>
                      </div>
 
-                     {/* DADOS DO FUNCIONÃRIO - TABELA REFINADA */}
+                     {/* DADOS DO FUNCIONÁRIO - TABELA REFINADA */}
                      <div className="mb-12 overflow-hidden rounded-2xl border border-zinc-200">
                         <table className="w-full text-sm text-left">
                            <thead className="bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest">
                               <tr>
                                  <th className="px-6 py-3 border-r border-white/10">Nome do Colaborador</th>
-                                 <th className="px-6 py-3 border-r border-white/10">Cargo / Função</th>
-                                 <th className="px-6 py-3">Nº Bilhete</th>
+                                 <th className="px-6 py-3 border-r border-white/10">Cargo / Fun��o</th>
+                                 <th className="px-6 py-3">N� Bilhete</th>
                               </tr>
                            </thead>
                            <tbody className="bg-zinc-50 font-bold text-zinc-900">
@@ -1742,7 +1865,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         <table className="w-full text-left border-collapse" style={{ fontFamily: 'Times New Roman', fontSize: '14px' }}>
                            <thead>
                               <tr className="border-b-2 border-zinc-900 bg-zinc-50/50">
-                                 <th className="py-3 px-4 text-zinc-900 font-black uppercase text-[11px] w-1/2">Descrição</th>
+                                 <th className="py-3 px-4 text-zinc-900 font-black uppercase text-[11px] w-1/2">Descri��o</th>
                                  <th className="py-3 px-4 text-right text-zinc-900 font-black uppercase text-[11px]">Rendimentos (+)</th>
                                  <th className="py-3 px-4 text-right text-zinc-900 font-black uppercase text-[11px]">Descontos (-)</th>
                               </tr>
@@ -1756,21 +1879,21 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               </tr>
                               {viewingRecibo.subsidio_alimentacao > 0 && (
                                  <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Subsídio de Alimentação</td>
+                                    <td className="py-2 px-4 text-zinc-700">Subs�dio de Alimenta��o</td>
                                     <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.subsidio_alimentacao)}</td>
                                     <td className="py-2 px-4 text-right text-zinc-300">---</td>
                                  </tr>
                               )}
                               {viewingRecibo.subsidio_transporte > 0 && (
                                  <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Subsídio de Transporte</td>
+                                    <td className="py-2 px-4 text-zinc-700">Subs�dio de Transporte</td>
                                     <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA(viewingRecibo.subsidio_transporte)}</td>
                                     <td className="py-2 px-4 text-right text-zinc-300">---</td>
                                  </tr>
                               )}
                               {((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0)) > 0 && (
                                  <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Horas Extras / Bónus</td>
+                                    <td className="py-2 px-4 text-zinc-700">Horas Extras / B�nus</td>
                                     <td className="py-2 px-4 text-right font-bold text-zinc-900">{formatAOA((viewingRecibo.horas_extras_valor || 0) + (viewingRecibo.bonus_premios || 0))}</td>
                                     <td className="py-2 px-4 text-right text-zinc-300">---</td>
                                  </tr>
@@ -1779,7 +1902,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               {/* DESCONTOS */}
                               {viewingRecibo.inss_trabalhador > 0 && (
                                  <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Segurança Social (3%)</td>
+                                    <td className="py-2 px-4 text-zinc-700">Seguran�a Social (3%)</td>
                                     <td className="py-2 px-4 text-right text-zinc-300">---</td>
                                     <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.inss_trabalhador)}</td>
                                  </tr>
@@ -1793,7 +1916,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               )}
                               {viewingRecibo.adiantamentos > 0 && (
                                  <tr>
-                                    <td className="py-2 px-4 text-zinc-700">Adiantamentos / Empréstimos</td>
+                                    <td className="py-2 px-4 text-zinc-700">Adiantamentos / Empr�stimos</td>
                                     <td className="py-2 px-4 text-right text-zinc-300">---</td>
                                     <td className="py-2 px-4 text-right font-bold text-red-500">-{formatAOA(viewingRecibo.adiantamentos)}</td>
                                  </tr>
@@ -1816,12 +1939,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            <span className="font-bold">{formatAOA(viewingRecibo.bruto || 0)}</span>
                         </div>
                         <div className="flex justify-start gap-4 text-zinc-900">
-                           <span className="font-black uppercase text-[16px] text-zinc-900 w-48">Líquido a Receber:</span>
+                           <span className="font-black uppercase text-[16px] text-zinc-900 w-48">L�quido a Receber:</span>
                            <span className="font-black text-2xl border-b-2 border-zinc-900">{formatAOA(viewingRecibo.liquido)}</span>
                         </div>
                      </div>
 
-                     {/* ASSINATURAS E VALIDAÇÃO */}
+                     {/* ASSINATURAS E VALIDA��O */}
                      <div className="mt-20 grid grid-cols-3 gap-12 items-end">
                         <div className="text-center">
                            <div className="h-16 flex items-center justify-center opacity-40 italic font-serif"></div>
@@ -1830,7 +1953,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            </div>
                         </div>
                         <div className="flex flex-col items-center">
-                           {/* Espaço para Carimbo ou Selo Físico conforme solicitado (Remoção de Ícones Digitais) */}
+                           {/* Espa�o para Carimbo ou Selo F�sico conforme solicitado (Remo��o de �cones Digitais) */}
                            <div className="h-24"></div>
                         </div>
                         <div className="text-center">
@@ -1842,7 +1965,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      </div>
                   </div>
 
-                  {/* DESIGN GEOMÉTRICO INFERIOR (TEMPLATE) */}
+                  {/* DESIGN GEOM�TRICO INFERIOR (TEMPLATE) */}
                   <div className="relative h-32 w-full mt-auto mb-[-1px] overflow-hidden bg-white">
                      {/* Light Blue Polygon */}
                      <div
@@ -1857,103 +1980,102 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                                                                  <div className='absolute bottom-8 right-12 z-10 flex flex-col gap-1 items-end text-right'>
                          <div className='flex items-center gap-6'>
-                            <p className='text-[8px] font-bold text-white/30 uppercase tracking-widest'>Pág. 01 / 01</p>
+                            <p className='text-[8px] font-bold text-white/30 uppercase tracking-widest'>P�g. 01 / 01</p>
                             <div className='h-4 w-[1px] bg-white/10'></div>
-                            <p className='text-[10px] font-black text-white/50 uppercase tracking-[0.3em] font-sans'>Amazing ERP • Sistema Inteligente</p>
+                            <p className='text-[10px] font-black text-white/50 uppercase tracking-[0.3em] font-sans'>Amazing ERP � Sistema Inteligente</p>
                          </div>
                          <p className='text-[9px] font-bold text-white/40 uppercase tracking-widest italic'>
-                            Folha de Salário processada pelo Computador em 28/02/2026 22:43:43
+                            Folha de Sal�rio processada pelo Computador em 28/02/2026 22:43:43
                          </p>
                       </div>
                   </div>
                </div>
-            </div>
          )}
 
          {/* MODAL PASSE PVC (ESCURO - REFINADO) */}
          {printingPass && (
-            <div className="fixed inset-0 z-[250] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in py-10 overflow-y-auto">
-               <div className="bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                     <h2 className="text-xl font-black text-zinc-900 uppercase flex items-center gap-2">
-                        <IdCard className="text-yellow-500" size={24} /> Emissão PVC Corporativo
-                     </h2>
-                     <button onClick={() => setPrintingPass(null)} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+      <div className="fixed inset-0 z-[250] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in py-10 overflow-y-auto">
+         <div className="bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto">
+            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+               <h2 className="text-xl font-black text-zinc-900 uppercase flex items-center gap-2">
+                  <IdCard className="text-yellow-500" size={24} /> Emiss�o PVC Corporativo
+               </h2>
+               <button onClick={() => setPrintingPass(null)} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
+            </div>
+
+            <div className="p-10 flex flex-col items-center gap-8">
+               {/* Cart�o PVC - Frente (Tema Escuro solicitado pelo Utilizador) */}
+               <div id="pvc-card" className="w-[320px] h-[520px] bg-zinc-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden relative flex flex-col items-center p-0 print:shadow-none border border-white/5">
+
+                  {/* Design superior minimalista */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full -translate-y-32 translate-x-32"></div>
+                  <div className="absolute top-0 left-0 w-48 h-48 bg-sky-600/10 rounded-full -translate-y-24 -translate-x-24"></div>
+
+                  {/* Logotipo ajustado (Menor conforme solicitado) */}
+                  <div className="z-10 mt-10 mb-8 flex flex-col items-center">
+                     <div className="scale-75 opacity-90 filter brightness-0 invert">
+                        <Logo />
+                     </div>
+                     <div className="w-8 h-1 bg-yellow-500 rounded-full mt-4"></div>
                   </div>
 
-                  <div className="p-10 flex flex-col items-center gap-8">
-                     {/* Cartão PVC - Frente (Tema Escuro solicitado pelo Utilizador) */}
-                     <div id="pvc-card" className="w-[320px] h-[520px] bg-zinc-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden relative flex flex-col items-center p-0 print:shadow-none border border-white/5">
+                  {/* Fotografia */}
+                  <div className="relative mb-8">
+                     <img src={printingPass.foto_url} className="w-32 h-32 rounded-[2.5rem] object-cover border-4 border-zinc-800 shadow-2xl relative z-10" />
+                     <div className="absolute -inset-2 bg-gradient-to-tr from-sky-600/20 to-yellow-500/20 rounded-[2.8rem] blur-xl opacity-50"></div>
+                  </div>
 
-                        {/* Design superior minimalista */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full -translate-y-32 translate-x-32"></div>
-                        <div className="absolute top-0 left-0 w-48 h-48 bg-sky-600/10 rounded-full -translate-y-24 -translate-x-24"></div>
+                  {/* Dados do Funcion�rio */}
+                  <div className="flex-1 w-full flex flex-col items-center px-8 text-center text-white">
+                     <h2 className="text-2xl font-black leading-tight uppercase tracking-tighter mb-1">{printingPass.nome}</h2>
+                     <p className="text-[11px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-8">{printingPass.funcao}</p>
 
-                        {/* Logotipo ajustado (Menor conforme solicitado) */}
-                        <div className="z-10 mt-10 mb-8 flex flex-col items-center">
-                           <div className="scale-75 opacity-90 filter brightness-0 invert">
-                              <Logo />
-                           </div>
-                           <div className="w-8 h-1 bg-yellow-500 rounded-full mt-4"></div>
+                     <div className="grid grid-cols-2 gap-3 w-full mb-10">
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                           <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">ID Registo</p>
+                           <p className="text-[11px] font-black text-white font-mono tracking-tighter">#{printingPass.id.substring(0, 8).toUpperCase()}</p>
                         </div>
-
-                        {/* Fotografia */}
-                        <div className="relative mb-8">
-                           <img src={printingPass.foto_url} className="w-32 h-32 rounded-[2.5rem] object-cover border-4 border-zinc-800 shadow-2xl relative z-10" />
-                           <div className="absolute -inset-2 bg-gradient-to-tr from-sky-600/20 to-yellow-500/20 rounded-[2.8rem] blur-xl opacity-50"></div>
-                        </div>
-
-                        {/* Dados do Funcionário */}
-                        <div className="flex-1 w-full flex flex-col items-center px-8 text-center text-white">
-                           <h2 className="text-2xl font-black leading-tight uppercase tracking-tighter mb-1">{printingPass.nome}</h2>
-                           <p className="text-[11px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-8">{printingPass.funcao}</p>
-
-                           <div className="grid grid-cols-2 gap-3 w-full mb-10">
-                              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">ID Registo</p>
-                                 <p className="text-[11px] font-black text-white font-mono tracking-tighter">#{printingPass.id.substring(0, 8).toUpperCase()}</p>
-                              </div>
-                              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Validade</p>
-                                 <p className="text-[11px] font-black text-white">
-                                    {(() => {
-                                       const d = new Date();
-                                       d.setFullYear(d.getFullYear() + 2);
-                                       return d.toLocaleDateString('pt-PT');
-                                    })()}
-                                 </p>
-                              </div>
-                           </div>
-
-                           {/* QR Code */}
-                           <div className="mt-auto mb-10 bg-white p-2.5 rounded-[1.2rem] shadow-2xl">
-                              <QrCode size={40} className="text-zinc-900" />
-                           </div>
-                        </div>
-
-                        {/* Accents laterais ou inferiores */}
-                        <div className="absolute bottom-0 left-0 w-full flex h-1.5">
-                           <div className="flex-1 bg-sky-600"></div>
-                           <div className="flex-1 bg-yellow-500"></div>
-                           <div className="flex-1 bg-zinc-900 border-t border-white/10"></div>
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                           <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Validade</p>
+                           <p className="text-[11px] font-black text-white">
+                              {(() => {
+                                 const d = new Date();
+                                 d.setFullYear(d.getFullYear() + 2);
+                                 return d.toLocaleDateString('pt-PT');
+                              })()}
+                           </p>
                         </div>
                      </div>
 
-                     <div className="flex gap-4 w-full">
-                        <button onClick={() => window.print()} className="flex-1 py-5 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl">
-                           <Printer size={20} /> Emitir Passe PVC
-                        </button>
-                        <button onClick={() => setPrintingPass(null)} className="px-8 py-5 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-xs uppercase hover:bg-zinc-200 transition-all">Sair</button>
+                     {/* QR Code */}
+                     <div className="mt-auto mb-10 bg-white p-2.5 rounded-[1.2rem] shadow-2xl">
+                        <QrCode size={40} className="text-zinc-900" />
                      </div>
+                  </div>
+
+                  {/* Accents laterais ou inferiores */}
+                  <div className="absolute bottom-0 left-0 w-full flex h-1.5">
+                     <div className="flex-1 bg-sky-600"></div>
+                     <div className="flex-1 bg-yellow-500"></div>
+                     <div className="flex-1 bg-zinc-900 border-t border-white/10"></div>
                   </div>
                </div>
+
+               <div className="flex gap-4 w-full">
+                  <button onClick={() => window.print()} className="flex-1 py-5 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl">
+                     <Printer size={20} /> Emitir Passe PVC
+                  </button>
+                  <button onClick={() => setPrintingPass(null)} className="px-8 py-5 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-xs uppercase hover:bg-zinc-200 transition-all">Sair</button>
+               </div>
             </div>
-         )}
+         </div>
+               )}
+         </div>
       </div>
-   );
+                        );
 };
 
-export default HRPage;
+                        export default HRPage;
 
 
 
