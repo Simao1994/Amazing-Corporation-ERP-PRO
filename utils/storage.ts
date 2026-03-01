@@ -46,7 +46,20 @@ export const STORAGE_KEYS = {
   ARENA_SESSIONS: 'amazing_arena_sessions_v1',
   // Fix: Added missing Arena keys used in pages
   ARENA_TOURNAMENTS: 'amazing_arena_tournaments_v1',
-  ARENA_RANKING: 'amazing_arena_ranking_v1'
+  ARENA_RANKING: 'amazing_arena_ranking_v1',
+  // Accounting & ERP Keys
+  ACC_EMPRESAS: 'amazing_acc_companies',
+  ACC_CONTAS: 'amazing_acc_accounts',
+  ACC_PERIODOS: 'amazing_acc_periods',
+  ACC_LANCAMENTOS: 'amazing_acc_ledger',
+  ACC_LANCAMENTO_ITENS: 'amazing_acc_ledger_items',
+  ACC_FOLHAS: 'amazing_acc_payroll',
+  ACC_OBRIGACOES: 'amazing_acc_fiscal_tasks',
+  ACC_CONFIG: 'amazing_acc_config',
+  ACC_CENTROS: 'amazing_acc_cost_centers',
+  ACC_CATEGORIAS: 'amazing_acc_inventory_categories',
+  ACC_CONTACTOS: 'amazing_acc_contacts',
+  ERP_EMPRESAS: 'amazing_erp_entities_general'
 };
 
 export interface SystemLog {

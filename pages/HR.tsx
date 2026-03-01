@@ -247,12 +247,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       curso: ''
    });
 
-   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
-   const [presencas, setPresencas] = useState<RegistroPresenca[]>([]);
-   const [recibos, setRecibos] = useState<ReciboSalarial[]>([]);
-   const [metas, setMetas] = useState<MetaDesempenho[]>([]);
-   const [corporateInfo, setCorporateInfo] = useState<any>(null);
-   const [loading, setLoading] = useState(true);
+   const [funcionarios, setFuncionarios] = useState<Funcionario[]>(() => AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []).map(mapFuncionario));
+   const [presencas, setPresencas] = useState<RegistroPresenca[]>(() => AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
+   const [recibos, setRecibos] = useState<ReciboSalarial[]>(() => AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
+   const [metas, setMetas] = useState<MetaDesempenho[]>(() => AmazingStorage.get(STORAGE_KEYS.METAS, []));
+   const [corporateInfo, setCorporateInfo] = useState<any>(() => AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
+   const [loading, setLoading] = useState(false);
 
    // --- ESTADO PARA PROCESSAMENTO DE FOLHA ---
    const [payrollInputs, setPayrollInputs] = useState<Record<string, PayrollInput>>({});
@@ -323,11 +323,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       }
 
       setCorporateInfo(AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
+      setLoading(false);
    };
 
    useEffect(() => {
       // 2. Initial background sync
-      fetchHRData().finally(() => setLoading(false));
+      fetchHRData();
 
       // 3. Real-time Subscriptions (Ensures automatic updates)
       const channel = supabase.channel('hr_changes')

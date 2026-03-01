@@ -24,6 +24,7 @@ import { supabase } from '../src/lib/supabase';
 import { formatAOA } from '../constants';
 import Select from '../components/ui/Select';
 import Logo from '../components/Logo';
+import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 
 const COLORS_PIE = ['#eab308', '#22c55e', '#ef4444', '#3b82f6', '#a855f7', '#f97316'];
 
@@ -92,7 +93,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [activeTab, setActiveTab] = useState<'dashboard' | 'facturas' | 'proformas' | 'guias' | 'encomendas' | 'contactos' | 'itens' | 'relatorios' | 'diario' | 'plano' | 'folha' | 'fiscal' | 'periodos' | 'auditoria' | 'ia' | 'conciliacao' | 'consolidacao' | 'fontes'>('dashboard');
    const [selectedEmpresaId, setSelectedEmpresaId] = useState<string>('');
    const [selectedPeriodoId, setSelectedPeriodoId] = useState<string>('');
-   const [loading, setLoading] = useState(true);
+   const [loading, setLoading] = useState(false);
+   const [compras, setCompras] = useState<any[]>(() => AmazingStorage.get('amazing_compras', []));
+   const [pendingApproval, setPendingApproval] = useState<any[]>([]);
 
    // Safe Currency Formatter
    const safeFormatAOA = (value: any) => {
@@ -144,7 +147,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [customItem, setCustomItem] = useState({ nome: '', preco: 0, qtd: 1 });
 
    // --- ESTADO DE CONTACTOS (CRM) ---
-   const [contactos, setContactos] = useState<any[]>([]);
+   const [contactos, setContactos] = useState<any[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_CONTACTOS, []));
    const [showContactModal, setShowContactModal] = useState(false);
    const [isSavingContact, setIsSavingContact] = useState(false);
    const [newContact, setNewContact] = useState({
@@ -201,7 +204,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
    // --- ESTADO DE INVENTÁRIO (CATEGORIAS E ITENS) ---
-   const [categorias, setCategorias] = useState<any[]>([]);
+   const [categorias, setCategorias] = useState<any[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_CATEGORIAS, []));
    const [showCategoryModal, setShowCategoryModal] = useState(false);
    const [isSavingCategory, setIsSavingCategory] = useState(false);
    const [newCategory, setNewCategory] = useState({ nome: '', descricao: '', cor: '#fbbf24' });
@@ -540,27 +543,27 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [regrasAutomaticas, setRegrasAutomaticas] = useState<any[]>([]);
 
    // --- ESTADOS DE DADOS (SUPABASE) ---
-   const [lancamentos, setLancamentos] = useState<LancamentoContabil[]>([]);
-   const [folhas, setFolhas] = useState<FolhaPagamento[]>([]);
-   const [obligacoes, setObligacoes] = useState<ObrigacaoFiscal[]>([]);
-   const [empresas, setEmpresas] = useState<EmpresaAfiliada[]>([]);
-   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
-   const [planoContas, setPlanoContas] = useState<PlanoConta[]>(PGN_PADRAO_ANGOLANO);
-   const [periodos, setPeriodos] = useState<PeriodoContabil[]>([]);
+   const [lancamentos, setLancamentos] = useState<LancamentoContabil[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_LANCAMENTOS, []));
+   const [folhas, setFolhas] = useState<FolhaPagamento[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_FOLHAS, []));
+   const [obligacoes, setObligacoes] = useState<ObrigacaoFiscal[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_OBRIGACOES, []));
+   const [empresas, setEmpresas] = useState<EmpresaAfiliada[]>(() => AmazingStorage.get(STORAGE_KEYS.ERP_EMPRESAS, []));
+   const [funcionarios, setFuncionarios] = useState<Funcionario[]>(() => AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []));
+   const [planoContas, setPlanoContas] = useState<PlanoConta[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_CONTAS, PGN_PADRAO_ANGOLANO));
+   const [periodos, setPeriodos] = useState<PeriodoContabil[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_PERIODOS, []));
    const [auditLogs, setAuditLogs] = useState<any[]>([]);
    const [systemLogs, setSystemLogs] = useState<any[]>([]);
-   const [centrosCusto, setCentrosCusto] = useState<any[]>([]);
-   const [accountingConfig, setAccountingConfig] = useState<Record<string, string>>({});
-   const [loadingStatus, setLoadingStatus] = useState<string>('Iniciando...');
+   const [centrosCusto, setCentrosCusto] = useState<any[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_CENTROS, []));
+   const [accountingConfig, setAccountingConfig] = useState<Record<string, string>>(() => AmazingStorage.get(STORAGE_KEYS.ACC_CONFIG, {}));
+   const [loadingStatus, setLoadingStatus] = useState<string>('');
    const [extratos, setExtratos] = useState<any[]>([]);
    const [isSuggestingAccounts, setIsSuggestingAccounts] = useState(false);
 
    // --- MÓDULOS EXTERNOS (INTEGRAÇÃO AUTOMÁTICA) ---
-   const [extFaturas, setExtFaturas] = useState<any[]>([]);
-   const [extTesouraria, setExtTesouraria] = useState<any[]>([]);
-   const [extRhRecibos, setExtRhRecibos] = useState<any[]>([]);
-   const [extInventario, setExtInventario] = useState<any[]>([]);
-   const [extStockMov, setExtStockMov] = useState<any[]>([]);
+   const [extFaturas, setExtFaturas] = useState<any[]>(() => AmazingStorage.get('amazing_ext_faturas', []));
+   const [extTesouraria, setExtTesouraria] = useState<any[]>(() => AmazingStorage.get('amazing_ext_tesouraria', []));
+   const [extRhRecibos, setExtRhRecibos] = useState<any[]>(() => AmazingStorage.get('amazing_ext_rh_recibos', []));
+   const [extInventario, setExtInventario] = useState<any[]>(() => AmazingStorage.get(STORAGE_KEYS.INVENTARIO, []));
+   const [extStockMov, setExtStockMov] = useState<any[]>(() => AmazingStorage.get('amazing_ext_stock_mov', []));
    const [isSyncingModules, setIsSyncingModules] = useState(false);
    const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
 
@@ -648,7 +651,6 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
    // --- COMPRAS ---
-   const [compras, setCompras] = useState<any[]>([]);
    const [showCompraModal, setShowCompraModal] = useState(false);
    const [newCompra, setNewCompra] = useState({
       numero_compra: '', fornecedor_nome: '', fornecedor_nif: '',
@@ -658,7 +660,6 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [isSavingCompra, setIsSavingCompra] = useState(false);
 
    // --- APROVAÇÃO DE LANÇAMENTOS ---
-   const [pendingApproval, setPendingApproval] = useState<any[]>([]);
    const [isApprovingId, setIsApprovingId] = useState<string | null>(null);
    const [showApprovalModal, setShowApprovalModal] = useState(false);
    const [approvalTarget, setApprovalTarget] = useState<any | null>(null);
@@ -692,40 +693,28 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
    const fetchAccountingData = async () => {
-      setLoading(true);
+      // Debounce/Throttling: Avoid sync if we just synced less than 15s ago
+      const lastSync = (fetchAccountingData as any).lastSync || 0;
+      if (Date.now() - lastSync < 15000) return;
+      (fetchAccountingData as any).lastSync = Date.now();
+
+      setLoadingStatus('Sincronizando...');
       try {
          const fetchQuery = async (query: any, label: string) => {
-            setLoadingStatus(`Sincronizando ${label}...`);
-            const timeoutPromise = new Promise((_, reject) =>
-               setTimeout(() => reject(new Error(`Timeout em ${label} `)), 15000)
-            );
-            try {
-               const { data, error } = await Promise.race([query, timeoutPromise]) as any;
-               if (error) {
-                  console.error(`Error in ${label}: `, error);
-                  return [];
-               }
-               return data || [];
-            } catch (e) {
-               console.warn(`Atenção: Falha ou Timeout em ${label}.`, e);
+            const { data, error } = await query;
+            if (error) {
+               console.error(`Error in ${label}: `, error);
                return [];
             }
+            return data || [];
          };
 
-         // 1. Carregar Dados Estruturais
-         setLoadingStatus('Sincronizando Estrutura...');
-
-         const e1 = await fetchQuery(supabase.from('empresas').select('*').order('nome'), 'Entidades (Geral)');
-         const e2 = await fetchQuery(supabase.from('acc_empresas').select('*').order('nome'), 'Entidades (Contábil)');
-
-         const emps = [...(e1 || [])];
-         (e2 || []).forEach((e: any) => {
-            if (!emps.find(x => x.id === e.id || x.nif === e.nif)) {
-               emps.push(e);
-            }
-         });
-
+         // 1. Carregar Dados Estruturais (Prioridade Alta)
+         const e1 = await fetchQuery(supabase.from('empresas').select('*').order('nome'), 'Entidades');
+         const emps = e1 || [];
          setEmpresas(emps as any);
+         AmazingStorage.save(STORAGE_KEYS.ERP_EMPRESAS, emps);
+
          const effEmpId = selectedEmpresaId || emps[0]?.id;
 
          const [funcs, dataContas, dataPeriodos] = await Promise.all([
@@ -735,23 +724,19 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          ]);
 
          setFuncionarios(funcs as any);
+         AmazingStorage.save(STORAGE_KEYS.FUNCIONARIOS, funcs);
 
          if (dataContas && dataContas.length > 0) {
             setPlanoContas(dataContas as any);
-         } else {
-            setPlanoContas(PGN_PADRAO_ANGOLANO);
+            AmazingStorage.save(STORAGE_KEYS.ACC_CONTAS, dataContas);
          }
 
          if (dataPeriodos && dataPeriodos.length > 0) {
             setPeriodos(dataPeriodos as any);
+            AmazingStorage.save(STORAGE_KEYS.ACC_PERIODOS, dataPeriodos);
             if (!selectedPeriodoId) {
-               // Inicialização inteligente: primeiro período da empresa atual ou vácuo (evitando vazamento)
                const initialPeriod = (dataPeriodos as any[]).find(p => p.empresa_id === effEmpId);
-               if (initialPeriod) {
-                  setSelectedPeriodoId(initialPeriod.id);
-               } else {
-                  setSelectedPeriodoId('');
-               }
+               if (initialPeriod) setSelectedPeriodoId(initialPeriod.id);
             }
          }
 
@@ -759,78 +744,80 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             setSelectedEmpresaId(emps[0].id);
          }
 
-         // LIBERAÇÃO IMEDIATA DO PAINEL (Progressivo)
-         setLoading(false);
-         setLoadingStatus('Carregando módulos...');
-         console.log('TRACE: UI Unlocked.');
-
          // 2. Carregar Dados Transacionais em PARALELO (Background)
+         // UNLOCK UI EARLY
+         setLoading(false);
 
+         const [lnc, lncItens, flh, obl, centros, configs, sLogs, faturas, tesouraria, rhRecibos, inventarioItems, comprasData, contactosData, categoriasData] = await Promise.all([
+            fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }), 'Diário'),
+            fetchQuery(supabase.from('acc_lancamento_itens').select('*'), 'Itens'),
+            fetchQuery(supabase.from('acc_folhas').select('*').order('mes_referencia', { ascending: false }), 'Processamento'),
+            fetchQuery(supabase.from('acc_obrigacoes').select('*').order('data_limite'), 'Fiscal'),
+            fetchQuery(supabase.from('acc_centros_custo').select('*').order('nome'), 'Centros'),
+            fetchQuery(supabase.from('acc_config').select('*'), 'Config'),
+            fetchQuery(supabase.from('acc_system_logs').select('*').order('created_at', { ascending: false }).limit(50), 'Logs'),
+            fetchQuery(supabase.from('contabil_faturas').select('*').order('created_at', { ascending: false }), 'Facturas'),
+            fetchQuery(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }), 'Tesouraria'),
+            fetchQuery(supabase.from('rh_recibos').select('*').order('data_emissao', { ascending: false }), 'Recibos'),
+            fetchQuery(supabase.from('inventario').select('*').eq('empresa_id', effEmpId).order('nome'), 'Inventário'),
+            fetchQuery(supabase.from('compras').select('*').order('data_compra', { ascending: false }), 'Compras'),
+            fetchQuery(supabase.from('acc_contactos').select('*').order('nome'), 'Contactos'),
+            fetchQuery(supabase.from('acc_categorias').select('*').eq('empresa_id', effEmpId).order('nome'), 'Categorias')
+         ]);
 
-         const [lnc, lncItens, flh, obl, logs, centros, configs, sLogs, extratosData,
-            faturas, tesouraria, rhRecibos, inventarioItems, stockMov, regras, comprasData, contactosData, categoriasData] = await Promise.all([
-               fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }), 'Diário Geral'),
-               fetchQuery(supabase.from('acc_lancamento_itens').select('*'), 'Itens Contábeis'),
-               fetchQuery(supabase.from('acc_folhas').select('*').order('mes_referencia', { ascending: false }), 'Processamento RH'),
-               fetchQuery(supabase.from('acc_obrigacoes').select('*').order('data_limite'), 'Calendário Fiscal'),
-               fetchQuery(supabase.from('acc_audit_logs').select('*').order('created_at', { ascending: false }).limit(20), 'Auditoria'),
-               fetchQuery(supabase.from('acc_centros_custo').select('*').order('nome'), 'Centros de Custo'),
-               fetchQuery(supabase.from('acc_config').select('*'), 'Configurações'),
-               fetchQuery(supabase.from('acc_system_logs').select('*').order('created_at', { ascending: false }), 'Logs do Sistema'),
-               fetchQuery(supabase.from('acc_extratos_bancarios').select('*').order('data', { ascending: false }), 'Extratos Bancários'),
-               // === MÓDULOS EXTERNOS (INTEGRAÇÃO AUTOMÁTICA) ===
-               fetchQuery(supabase.from('contabil_faturas').select('*').order('created_at', { ascending: false }), 'Documentos Fiscais'),
-               fetchQuery(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }), 'Tesouraria'),
-               fetchQuery(supabase.from('rh_recibos').select('*').order('data_emissao', { ascending: false }), 'Recibos de Salário'),
-               fetchQuery(supabase.from('inventario').select('*').eq('empresa_id', effEmpId).order('nome'), 'Catálogo de Produtos'),
-               fetchQuery(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }), 'Kardex'),
-               fetchQuery(supabase.from('acc_regras_automaticas').select('*'), 'Regras de Negócio'),
-               fetchQuery(supabase.from('compras').select('*').order('data_compra', { ascending: false }), 'Gestão de Compras'),
-               fetchQuery(supabase.from('acc_contactos').select('*').order('nome'), 'Contactos (CRM)'),
-               fetchQuery(supabase.from('acc_categorias').select('*').eq('empresa_id', effEmpId).order('nome'), 'Categorias de Inventário')
-            ]);
-
-         // Merging itens sync
          const mergedLnc = (lnc || []).map((l: any) => ({
             ...l,
             itens: (lncItens || []).filter((it: any) => it.lancamento_id === l.id)
          }));
 
+         // Multi-save to Cache
          setLancamentos(mergedLnc as any);
-         // setLancamentoItens(lncItens as any); // This setter was not in the original code, but implied by the edit. Keeping original behavior.
+         AmazingStorage.save(STORAGE_KEYS.ACC_LANCAMENTOS, mergedLnc);
+
          setFolhas(flh as any);
+         AmazingStorage.save(STORAGE_KEYS.ACC_FOLHAS, flh);
+
          setObligacoes(obl as any);
-         setAuditLogs(logs || []);
+         AmazingStorage.save(STORAGE_KEYS.ACC_OBRIGACOES, obl);
+
          setCentrosCusto(centros || []);
+         AmazingStorage.save(STORAGE_KEYS.ACC_CENTROS, centros);
 
          const configMap: Record<string, string> = {};
          (configs || []).forEach((c: any) => configMap[c.chave] = c.valor);
          setAccountingConfig(configMap);
-         setSystemLogs(sLogs || []); // This was `setSystemLogs(sLogs || [])` in original, but `sLogs` is now `acc_stock_logs`. Reverting to original intent for `systemLogs` and adding `stockLogs` if needed.
-         setExtratos(extratosData || []);
-         // Módulos Externos
-         setExtFaturas(faturas || []);
-         setExtTesouraria(tesouraria || []);
-         setExtRhRecibos(rhRecibos || []);
-         setExtInventario(inventarioItems || []);
-         setExtStockMov(stockMov || []);
-         setLastSyncAt(new Date());
-         setRegrasAutomaticas(regras || []);
-         setCompras(comprasData || []);
-         setContactos(contactosData || []);
-         setCategorias(categoriasData || []);
-         // Lançamentos aguardando aprovação (status 'Rascunho' ou 'PendenteAprovacao')
-         setPendingApproval((mergedLnc || []).filter((l: any) => l.status === 'Rascunho' || l.status === 'PendenteAprovacao'));
+         AmazingStorage.save(STORAGE_KEYS.ACC_CONFIG, configMap);
 
-         setLoadingStatus('Sincronização concluída');
+         setSystemLogs(sLogs || []);
+         setExtFaturas(faturas || []);
+         AmazingStorage.save('amazing_ext_faturas', faturas);
+
+         setExtTesouraria(tesouraria || []);
+         AmazingStorage.save('amazing_ext_tesouraria', tesouraria);
+
+         setExtRhRecibos(rhRecibos || []);
+         AmazingStorage.save('amazing_ext_rh_recibos', rhRecibos);
+
+         setExtInventario(inventarioItems || []);
+         AmazingStorage.save(STORAGE_KEYS.INVENTARIO, inventarioItems);
+
+         setCompras(comprasData || []);
+         AmazingStorage.save('amazing_compras', comprasData);
+
+         setContactos(contactosData || []);
+         AmazingStorage.save(STORAGE_KEYS.ACC_CONTACTOS, contactosData);
+
+         setCategorias(categoriasData || []);
+         AmazingStorage.save(STORAGE_KEYS.ACC_CATEGORIAS, categoriasData);
+
+         setPendingApproval((mergedLnc || []).filter((l: any) => l.status === 'Rascunho' || l.status === 'PendenteAprovacao'));
+         setLastSyncAt(new Date());
+         setLoadingStatus('');
       } catch (error) {
-         console.error('TRACE: Critical Error in fetchAccountingData:', error);
-         setLoadingStatus('Erro na sincronização. Tentando modo de segurança...');
-         setLoading(false);
+         console.error('Critical Error in fetchAccountingData:', error);
+         setLoadingStatus('Falha na sincronização');
       } finally {
-         console.log('TRACE: Sync attempt finished.');
          setLoading(false);
-         setTimeout(() => setLoadingStatus(''), 800);
       }
    };
 
