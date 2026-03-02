@@ -137,7 +137,7 @@ export interface ContaBancariaHR {
   atualizado_em?: string;
 }
 
-export type ContratoTipo = 'Indeterminado' | 'Determinado' | 'Estágio';
+export type ContratoTipo = 'Indeterminado' | 'Determinado' | 'Estágio' | 'Prestação de Serviços';
 export type FuncionarioStatus = 'ativo' | 'ferias' | 'inativo' | 'rescindido';
 
 export interface Funcionario {

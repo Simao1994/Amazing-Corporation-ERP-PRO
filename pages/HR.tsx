@@ -60,19 +60,24 @@ const PROVINCIAS = [
    'Namibe', 'U�ge', 'Zaire'
 ];
 
-// --- MOTOR DE CÁLCULO FISCAL ANGOLANO (IRT 2024 - SIMPLIFICADO) ---
-const calculateIRT = (baseTributavel: number): number => {
-   if (baseTributavel <= 100000) return 0;
-   if (baseTributavel <= 150000) return (baseTributavel - 100000) * 0.10;
-   if (baseTributavel <= 200000) return 5000 + (baseTributavel - 150000) * 0.13;
-   if (baseTributavel <= 300000) return 11500 + (baseTributavel - 200000) * 0.16;
-   if (baseTributavel <= 500000) return 27500 + (baseTributavel - 300000) * 0.18;
-   if (baseTributavel <= 1000000) return 63500 + (baseTributavel - 500000) * 0.19;
-   if (baseTributavel <= 1500000) return 158500 + (baseTributavel - 1000000) * 0.20;
-   if (baseTributavel <= 2000000) return 258500 + (baseTributavel - 1500000) * 0.21;
-   if (baseTributavel <= 5000000) return 363500 + (baseTributavel - 2000000) * 0.22;
-   if (baseTributavel <= 10000000) return 1023500 + (baseTributavel - 5000000) * 0.23;
-   return 2173500 + (baseTributavel - 10000000) * 0.25;
+// --- MOTOR DE CÁLCULO FISCAL ANGOLANO (IRT 2024 - CONFORME TABELA AGT) ---
+const calculateIRT = (baseTributavel: number, isPrestacaoServico: boolean = false): number => {
+   // Para Prestadores de Serviço (Conta Própria), aplica-se a taxa flat de 15% (Retenção na Fonte)
+   if (isPrestacaoServico) return baseTributavel * 0.15;
+
+   if (baseTributavel <= 70000) return 0;
+   if (baseTributavel <= 100000) return 3000 + (baseTributavel - 70000) * 0.10;
+   if (baseTributavel <= 150000) return 6000 + (baseTributavel - 100000) * 0.13;
+   if (baseTributavel <= 200000) return 12500 + (baseTributavel - 150000) * 0.16;
+   if (baseTributavel <= 300000) return 31250 + (baseTributavel - 200000) * 0.18;
+   if (baseTributavel <= 500000) return 49250 + (baseTributavel - 300000) * 0.19;
+   if (baseTributavel <= 1000000) return 87250 + (baseTributavel - 500000) * 0.20;
+   if (baseTributavel <= 1500000) return 187250 + (baseTributavel - 1000000) * 0.21;
+   if (baseTributavel <= 2000000) return 292000 + (baseTributavel - 1500000) * 0.22;
+   if (baseTributavel <= 2500000) return 402250 + (baseTributavel - 2000000) * 0.23;
+   if (baseTributavel <= 5000000) return 517250 + (baseTributavel - 2500000) * 0.24;
+   if (baseTributavel <= 10000000) return 1117250 + (baseTributavel - 5000000) * 0.245;
+   return 2342250 + (baseTributavel - 10000000) * 0.25;
 };
 
 // --- HELPERS DE TEMPO ---
@@ -556,57 +561,62 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       };
    };
 
-   // --- CÁLCULO DE FOLHA INDIVIDUAL (MOTOR DE CÁLCULO) ---
-   const calculatePayrollForEmployee = (f: Funcionario) => {
-      const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
+    // --- CÁLCULO DE FOLHA INDIVIDUAL (MOTOR DE CÁLCULO) ---
+    const calculatePayrollForEmployee = (f: Funcionario) => {
+       const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
 
-      const DIAS_UTEIS = 30;
-      const HORAS_MENSAIS = 173.33;
-      const INSS_WORKER_RATE = 0.03;
-      const EXEMPT_ALLOWANCE_LIMIT = 30000;
+       const DIAS_UTEIS = 30;
+       const HORAS_MENSAIS = 173.33;
+       const INSS_WORKER_RATE = 0.03;
+       const INSS_COMPANY_RATE = 0.08;
+       const EXEMPT_ALLOWANCE_LIMIT = 30000;
 
-      const base = Number(f.salario_base) || 0;
-      const valorHora = base / HORAS_MENSAIS;
-      const valorDia = base / DIAS_UTEIS;
+       const isPrestacaoServico = f.tipo_contrato === 'Prestação de Serviços';
 
-      // Rendimentos
-      const valorHorasExtras = inputs.horasExtras * (valorHora * WORK_RULES.overtimeRateNormal);
-      const subAlim = Number(f.subsidio_alimentacao) || 0;
-      const subTrans = Number(f.subsidio_transporte) || 0;
-      const subFerias = Number(inputs.subFerias) || 0;
-      const subNatal = Number(inputs.subNatal) || 0;
-      const subsidiosTotal = subAlim + subTrans + subFerias + subNatal;
-      const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0) + (Number(f.outros_bonus) || 0);
+       const base = Number(f.salario_base) || 0;
+       const valorHora = base / HORAS_MENSAIS;
+       const valorDia = base / DIAS_UTEIS;
 
-      // Total Proventos (Salrio Base + Horas Extras + Subsdios + Bnus)
-      const totalProventos = base + valorHorasExtras + subsidiosTotal + premiosBonus;
-      const bruto = totalProventos; // Salrio Bruto = Total Proventos
+       // Rendimentos
+       const valorHorasExtras = inputs.horasExtras * (valorHora * WORK_RULES.overtimeRateNormal);
+       const subAlim = Number(f.subsidio_alimentacao) || 0;
+       const subTrans = Number(f.subsidio_transporte) || 0;
+       const subFerias = Number(inputs.subFerias) || 0;
+       const subNatal = Number(inputs.subNatal) || 0;
+       const subsidiosTotal = subAlim + subTrans + subFerias + subNatal;
+       const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0) + (Number(f.outros_bonus) || 0);
 
-      // INSS (Base: Salrio Base + Horas Extras + Bnus)
-      const baseINSS = base + valorHorasExtras + premiosBonus;
-      const inss = baseINSS * INSS_WORKER_RATE;
+       // Total Proventos (Salário Base + Horas Extras + Subsídios + Bónus)
+       const totalProventos = base + valorHorasExtras + subsidiosTotal + premiosBonus;
+       const bruto = totalProventos; 
 
-      // IRT (Base: Bruto - INSS - Isenões)
-      const exemptSubAlim = Math.min(subAlim, EXEMPT_ALLOWANCE_LIMIT);
-      const exemptSubTrans = Math.min(subTrans, EXEMPT_ALLOWANCE_LIMIT);
-      const baseIRT = bruto - inss - exemptSubAlim - exemptSubTrans;
+       // INSS (Base: Salário Base + Horas Extras + Bónus)
+       // Trabalhadores em Prestação de Serviço geralmente não descontam INSS na folha da empresa
+       const baseINSS = isPrestacaoServico ? 0 : (base + valorHorasExtras + premiosBonus);
+       const inss = baseINSS * INSS_WORKER_RATE;
+       const inssEmpresa = baseINSS * INSS_COMPANY_RATE;
 
-      const irt = calculateIRT(baseIRT);
+       // IRT (Base: Bruto - INSS - Isenções)
+       const exemptSubAlim = Math.min(subAlim, EXEMPT_ALLOWANCE_LIMIT);
+       const exemptSubTrans = Math.min(subTrans, EXEMPT_ALLOWANCE_LIMIT);
+       const baseIRT = bruto - inss - exemptSubAlim - exemptSubTrans;
 
-      // Descontos
-      const descontoFaltas = (inputs.faltas || 0) * valorDia;
-      const emprestimos = (inputs.emprestimos || 0) + (inputs.adiantamento || 0);
-      const outrosDesc = (inputs.outrosDesc || 0);
-      const totalDescontos = inss + irt + descontoFaltas + emprestimos + outrosDesc;
+       const irt = calculateIRT(baseIRT, isPrestacaoServico);
 
-      const liquido = bruto - totalDescontos;
+       // Descontos
+       const descontoFaltas = (inputs.faltas || 0) * valorDia;
+       const emprestimos = (inputs.emprestimos || 0) + (inputs.adiantamento || 0);
+       const outrosDesc = (inputs.outrosDesc || 0);
+       const totalDescontos = inss + irt + descontoFaltas + emprestimos + outrosDesc;
 
-      return {
-         bruto, inss, irt, descontoFaltas, totalDescontos, liquido,
-         valorHorasExtras, premiosBonus, subsidiosTotal, subAlim, subTrans, subFerias, subNatal,
-         totalProventos, emprestimos, outrosDesc, inputs
-      };
-   };
+       const liquido = bruto - totalDescontos;
+
+       return {
+          bruto, inss, inssEmpresa, irt, descontoFaltas, totalDescontos, liquido,
+          valorHorasExtras, premiosBonus, subsidiosTotal, subAlim, subTrans, subFerias, subNatal,
+          totalProventos, emprestimos, outrosDesc, inputs
+       };
+    };
 
    const handleProcessPayroll = async () => {
       const ativos = funcionarios.filter(f => f.status === 'ativo');
@@ -1590,7 +1600,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                  <th>Subs. Natal</th>
                                  <th>Bônus</th>
                                  <th>Total Proventos</th>
-                                 <th>INSS</th>
+                                 <th>INSS (3%)</th>
+                                 <th>SS Empresa (8%)</th>
                                  <th>IRT</th>
                                  <th>Faltas</th>
                                  <th>Empréstimos</th>
@@ -1620,6 +1631,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                        <td>{formatAOA(calc.premiosBonus)}</td>
                                        <td className="highlight-bold">{formatAOA(proventosTotal)}</td>
                                        <td>{formatAOA(calc.inss)}</td>
+                                       <td className="text-zinc-400 italic">{formatAOA(calc.inssEmpresa)}</td>
                                        <td>{formatAOA(calc.irt)}</td>
                                        <td>{formatAOA(calc.descontoFaltas)}</td>
                                        <td>{formatAOA(calc.emprestimos)}</td>
@@ -1636,8 +1648,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         <div className="mt-12 text-[10pt] italic" style={{ fontFamily: 'Times New Roman' }}>
                            <p><strong>Total Proventos:</strong> Salário Base + Horas Extras + Subsídios + Bônus</p>
                            <p><strong>Salário Bruto:</strong> Total Proventos (antes dos descontos)</p>
-                           <p><strong>Total Descontos:</strong> INSS + IRT + Faltas + Empréstimos + Outros</p>
+                           <p><strong>Total Descontos:</strong> INSS (3%) + IRT + Faltas + Empréstimos + Outros</p>
                            <p><strong>Salário Líquido:</strong> Salário Bruto - Total Descontos</p>
+                           <p className="mt-2 text-[10px] text-zinc-400 italic font-medium border-t pt-2">
+                              * Para trabalhadores em <strong>Prestação de Serviços</strong>, aplica-se uma taxa flat de 15% de IRT (Retenção na Fonte) e isenção de SS na folha comercial.
+                           </p>
                         </div>
                      </div>
                   </div>
@@ -1809,7 +1824,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               <div className="bg-zinc-900 p-10 rounded-[3.5rem] text-white space-y-8 border-l-[12px] border-yellow-500 shadow-2xl">
                                  <h3 className="text-xs font-black text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Wallet size={14} /> Dados Contratuais</h3>
                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Estágio', label: 'Estágio Remunerado' }]} />
+                                    <Select name="tipo_contrato" label="Regime" defaultValue={editingItem?.tipo_contrato} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'Indeterminado', label: 'Indeterminado' }, { value: 'Determinado', label: 'Determinado' }, { value: 'Estágio', label: 'Estágio Remunerado' }, { value: 'Prestação de Serviços', label: 'Prestação de Serviços (Conta Própria)' }]} />
                                     <Input name="admissao" label="Data de Início" type="date" defaultValue={editingItem?.data_admissao} required className="bg-zinc-800 border-zinc-700 text-white" />
                                     <Select name="status" label="Estado Inicial" defaultValue={editingItem?.status || 'ativo'} className="bg-zinc-800 border-zinc-700 text-white" options={[{ value: 'ativo', label: 'Activo' }, { value: 'ferias', label: 'Férias' }, { value: 'inativo', label: 'Inactivo' }, { value: 'rescindido', label: 'Rescindido' }]} />
                                  </div>
