@@ -42,48 +42,41 @@ CREATE TABLE IF NOT EXISTS public.funcionarios (
 -- 2. RECURSOS HUMANOS (Aba Contas e Recibos)
 CREATE TABLE IF NOT EXISTS public.rh_contas_bancarias (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  funcionario_id uuid,
+  funcionario_id uuid REFERENCES public.funcionarios(id) ON DELETE CASCADE,
   nome_banco text NOT NULL,
   numero_conta text NOT NULL,
   iban text,
   swift_bic text,
   tipo_conta text, 
-  moeda text DEFAULT 'AOA',
+  moeda text DEFAULT 'AOA'::text,
   titular_conta text, 
-  pais_banco text DEFAULT 'Angola',
+  pais_banco text DEFAULT 'Angola'::text,
   codigo_banco text,
   codigo_agencia text,
   principal boolean DEFAULT false,
-  status text DEFAULT 'ativo', 
+  status text DEFAULT 'ativo'::text, 
   observacoes text,
   criado_em timestamp with time zone DEFAULT now(),
   atualizado_em timestamp with time zone DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.rh_recibos (
+CREATE TABLE IF NOT EXISTS public.hr_presencas (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  funcionario_id uuid,
-  nome text,
-  mes text,
-  ano integer,
-  base numeric,
-  subsidios numeric,
-  subsidio_alimentacao numeric,
-  subsidio_transporte numeric,
-  horas_extras_valor numeric,
-  bonus_premios numeric,
-  faltas_desconto numeric,
-  inss_trabalhador numeric,
-  irt numeric,
-  adiantamentos numeric,
-  bruto numeric,
-  liquido numeric,
-  data_emissao timestamp with time zone DEFAULT now()
+  funcionario_id uuid REFERENCES public.funcionarios(id) ON DELETE CASCADE,
+  data date NOT NULL,
+  entrada time without time zone,
+  saida time without time zone,
+  horas_extras numeric DEFAULT 0,
+  status text DEFAULT 'Presente',
+  created_at timestamp with time zone DEFAULT now()
 );
 
+-- rh_recibos (Tabela legada se necessário - removendo duplicidade se possível)
+-- Removida em favor de hr_recibos
+
 CREATE TABLE IF NOT EXISTS public.hr_recibos (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  funcionario_id uuid,
+  id text PRIMARY KEY,
+  funcionario_id uuid REFERENCES public.funcionarios(id) ON DELETE CASCADE,
   nome text,
   mes text,
   ano integer,
@@ -252,7 +245,7 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 
 -- 7. METAS DE PERFORMANCE
 CREATE TABLE IF NOT EXISTS public.hr_metas (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    id text DEFAULT gen_random_uuid() PRIMARY KEY,
     funcionario_id uuid REFERENCES public.funcionarios(id) ON DELETE CASCADE,
     titulo text NOT NULL,
     progresso integer DEFAULT 0,
@@ -262,6 +255,67 @@ CREATE TABLE IF NOT EXISTS public.hr_metas (
 );
 
 GRANT ALL ON public.hr_metas TO anon, authenticated, service_role;
+
+-- 8. RECRUTAMENTO (Vagas e Candidaturas)
+CREATE TABLE IF NOT EXISTS public.rh_vagas (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    titulo text NOT NULL,
+    descricao text,
+    requisitos text,
+    responsabilidades text,
+    localizacao text,
+    tipo_contrato text,
+    nivel_experiencia text,
+    salario text,
+    quantidade integer DEFAULT 1,
+    status text DEFAULT 'ativa'::text,
+    data_publicacao timestamptz DEFAULT now(),
+    data_encerramento timestamptz,
+    criado_em timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.recr_candidaturas (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    short_id text UNIQUE,
+    nome text NOT NULL,
+    sobrenome text NOT NULL,
+    data_nascimento date,
+    idade integer,
+    bi_numero text NOT NULL,
+    bi_emissao date,
+    bi_validade date,
+    nacionalidade text,
+    naturalidade text,
+    provincia text,
+    morada text,
+    nome_pai text,
+    nome_mae text,
+    estado_civil text,
+    telefone text,
+    email text,
+    carta_conducao text,
+    experiencia text,
+    escolaridade text,
+    curso text,
+    certificacoes text,
+    doc_bi text,
+    doc_cv text,
+    doc_certificados text,
+    status text DEFAULT 'pendente'::text,
+    data_candidatura timestamptz DEFAULT now(),
+    notas_internas text,
+    created_at timestamptz DEFAULT now(),
+    genero text,
+    municipio text,
+    disponibilidade text,
+    pretensao_salarial numeric,
+    linkedin_url text,
+    deficiencia boolean DEFAULT false,
+    aceita_termos boolean DEFAULT false
+);
+
+GRANT ALL ON public.rh_vagas TO anon, authenticated, service_role;
+GRANT ALL ON public.recr_candidaturas TO anon, authenticated, service_role;
 
 -- Forçar o Supabase PostgREST a engolir a nova cache
 NOTIFY pgrst, 'reload schema';
