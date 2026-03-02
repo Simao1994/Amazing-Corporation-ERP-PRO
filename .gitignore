@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backup System (local only - nao vai para o repositorio)
+backup-config.json
+backup-logs/
+.backup_data_*/
+.backup_temp_*/
