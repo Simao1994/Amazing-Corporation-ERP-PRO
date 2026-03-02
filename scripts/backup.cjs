@@ -97,15 +97,29 @@ function httpGet(url, headers) {
 
 // ─── Listar Tabelas do Supabase ───────────────────────────────────────────────
 async function listTables(supabaseUrl, anonKey) {
-    // Usa a API de introspection do PostgREST
-    const data = await httpGet(`${supabaseUrl}/rest/v1/`, {
-        'apikey': anonKey,
-        'Authorization': `Bearer ${anonKey}`,
-    });
-    // O PostgREST retorna um objecto com as definições. Extraímos os paths
-    if (data && data.definitions) return Object.keys(data.definitions);
-    if (data && data.paths) return Object.keys(data.paths).map(p => p.replace('/', '')).filter(Boolean);
-    return [];
+    // Como a introspecção via root /rest/v1/ costuma ser proibida pelo anon key,
+    // usamos uma lista fixa de tabelas detectadas no sistema.
+    return [
+        'acc_audit_logs', 'acc_auditoria', 'acc_categorias', 'acc_centros_custo', 'acc_config',
+        'acc_contactos', 'acc_contas', 'acc_documentos', 'acc_documentos_registro',
+        'acc_eliminacoes_intercompany', 'acc_empresas', 'acc_extratos_bancarios', 'acc_folhas',
+        'acc_lancamento_itens', 'acc_lancamentos', 'acc_ledger_immutable', 'acc_logs',
+        'acc_obrigacoes', 'acc_periodos', 'acc_regras_automaticas', 'acc_regras_integracao',
+        'acc_report_cache', 'acc_system_logs', 'acc_tipos_documento', 'acc_tipos_documentos',
+        'agro_agricultores', 'agro_financiamentos', 'agro_producao', 'agro_visitas', 'app_roles',
+        'arena_expenses', 'arena_games', 'arena_pagamentos', 'arena_payments', 'arena_players',
+        'arena_ranking', 'arena_reservas', 'arena_tournaments', 'audit_logs', 'biblioteca_categorias',
+        'biblioteca_emprestimos', 'biblioteca_materiais', 'biblioteca_reservas', 'blog_posts',
+        'candidaturas', 'categorias_documentos', 'compras', 'config_sistema', 'contabil_faturas',
+        'contratos', 'departamentos', 'documentos', 'empresas', 'erp_data', 'expr_fleet',
+        'feed_likes', 'feed_posts', 'fin_notas', 'fin_transacoes', 'funcionarios', 'galeria',
+        'galeria_albuns', 'galeria_arquivo_tags', 'galeria_arquivos', 'galeria_tags', 'hr_metas',
+        'hr_presencas', 'hr_recibos', 'imoveis', 'inventario', 'manutencao', 'newsletter_subscribers',
+        'parceiros', 'profiles', 'real_contratos', 'real_imoveis', 'real_obras', 'recr_candidaturas',
+        'rh_candidaturas', 'rh_contas_bancarias', 'rh_recibos', 'rh_vagas', 'security_attempts',
+        'solicitacoes', 'stock_movimentos', 'sys_ads', 'sys_fornecedores', 'sys_logs',
+        'sys_parceiros', 'tesouraria_caixa', 'testemunhos', 'transacoes', 'veiculos', 'viagens'
+    ];
 }
 
 // ─── Exportar Tabela ──────────────────────────────────────────────────────────
