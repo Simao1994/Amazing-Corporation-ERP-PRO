@@ -211,7 +211,7 @@ const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {currentUser.role === 'admin' && (
+          {(currentUser.role === 'admin' || currentUser.role === 'saas_admin') && (
             <button
               onClick={() => setShowAdModal(true)}
               className="absolute top-6 right-8 bg-zinc-900/80 hover:bg-zinc-900 text-white p-3 rounded-2xl backdrop-blur-md transition-all shadow-lg border border-white/10 z-30"

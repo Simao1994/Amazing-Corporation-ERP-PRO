@@ -27,8 +27,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, children, path, c
     return <>{children}</>;
   }
 
-  // 3. Encontrar o ID do menu correspondente ao path
-  const menuItem = MENU_ITEMS.find(item => item.path === path);
+  // 3. Encontrar o ID do menu correspondente ao path (incluindo sub-rotas)
+  const menuItem = MENU_ITEMS.find(item =>
+    item.path === path || (item.path !== '/' && path.startsWith(item.path + '/'))
+  );
 
   // Se a rota não estiver mapeada no menu (ex: rota raiz '/'), permitimos acesso básico se logado
   if (!menuItem && path !== '/') {

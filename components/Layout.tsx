@@ -58,10 +58,10 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [subStatus, setSubStatus] = useState<SubscriptionStatus | null>(null);
 
   useEffect(() => {
-    if (user?.tenant_id) {
+    if (user?.tenant_id && user.role !== 'saas_admin') {
       checkSubscription(user.tenant_id).then(setSubStatus);
     }
-  }, [user?.tenant_id]);
+  }, [user?.tenant_id, user?.role]);
 
   // Close mobile menu on route change
   useEffect(() => {
