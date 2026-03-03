@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/lib/supabase';
-import { Building2, Users, CreditCard, CheckCircle2, XCircle, Clock, AlertTriangle, TrendingUp, Search } from 'lucide-react';
+import { Building2, Users, CreditCard, CheckCircle2, XCircle, Clock, AlertTriangle, TrendingUp, Search, X } from 'lucide-react';
 import { formatAOA } from '../constants';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -11,6 +11,8 @@ const MasterAdmin: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedTenant, setSelectedTenant] = useState<any>(null);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
 
     const fetchData = async () => {
         setLoading(true);
@@ -66,6 +68,27 @@ const MasterAdmin: React.FC = () => {
             </div>
         );
     }
+
+    const handleUpdateTenantStatus = async (id: string, newStatus: string) => {
+        setUpdatingStatus(true);
+        try {
+            const { error } = await supabase
+                .from('saas_tenants')
+                .update({ status: newStatus })
+                .eq('id', id);
+
+            if (error) throw error;
+            fetchData();
+            if (selectedTenant && selectedTenant.id === id) {
+                setSelectedTenant({ ...selectedTenant, status: newStatus });
+            }
+            (window as any).notify?.('Estado da empresa actualizado!', 'success');
+        } catch (err: any) {
+            (window as any).notify?.(err.message, 'error');
+        } finally {
+            setUpdatingStatus(false);
+        }
+    };
 
     const handleApproveSubscription = async (id: string) => {
         if (!confirm('Aprovar este pagamento e ativar a subscrição?')) return;
@@ -153,11 +176,11 @@ const MasterAdmin: React.FC = () => {
                                     <td className="px-8 py-5">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-600 font-bold">
-                                                {tenant.nome.charAt(0)}
+                                                {tenant.nome ? tenant.nome.charAt(0) : '?'}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-zinc-900">{tenant.nome}</p>
-                                                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{tenant.slug}</p>
+                                                <p className="font-bold text-zinc-900">{tenant.nome || 'Sem Nome'}</p>
+                                                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{tenant.slug || 'no-slug'}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -172,7 +195,13 @@ const MasterAdmin: React.FC = () => {
                                         <p className="text-sm font-bold text-zinc-900">N/A</p>
                                     </td>
                                     <td className="px-8 py-5">
-                                        <button className="text-yellow-600 font-black text-[10px] uppercase tracking-widest border-b border-yellow-500/50 hover:border-yellow-500 transition-all">Ver Detalhes</button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedTenant(tenant)}
+                                            className="text-yellow-600 font-black text-[10px] uppercase tracking-widest border-b border-yellow-500/50 hover:border-yellow-500 transition-all"
+                                        >
+                                            Ver Detalhes
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -211,6 +240,100 @@ const MasterAdmin: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Modal de Detalhes da Empresa */}
+            {selectedTenant && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-2xl rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="p-8 bg-zinc-50 border-b border-zinc-100 flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-yellow-500 flex items-center justify-center text-zinc-900 font-black text-xl">
+                                    {selectedTenant.nome ? selectedTenant.nome.charAt(0) : '?'}
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-tight">{selectedTenant.nome || 'Empresa Sem Nome'}</h2>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{selectedTenant.slug}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedTenant(null)}
+                                className="p-3 hover:bg-zinc-200 rounded-full transition-all"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-10 space-y-8">
+                            <div className="grid grid-cols-2 gap-8">
+                                <div>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">NIF</p>
+                                    <p className="font-bold text-zinc-900">{selectedTenant.nif || 'Não informado'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Data de Registo</p>
+                                    <p className="font-bold text-zinc-900">{new Date(selectedTenant.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Estado do Inquilino</p>
+                                    <div className="flex gap-2 mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleUpdateTenantStatus(selectedTenant.id, 'ativo')}
+                                            disabled={updatingStatus}
+                                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedTenant.status === 'ativo' ? 'bg-green-500 text-white shadow-lg shadow-green-200' : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'}`}
+                                        >
+                                            Activo
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleUpdateTenantStatus(selectedTenant.id, 'suspenso')}
+                                            disabled={updatingStatus}
+                                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedTenant.status === 'suspenso' ? 'bg-red-500 text-white shadow-lg shadow-red-200' : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'}`}
+                                        >
+                                            Suspenso
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total de Subscrições</p>
+                                    <p className="font-bold text-zinc-900">{selectedTenant.saas_subscriptions?.length || 0}</p>
+                                </div>
+                            </div>
+
+                            <div className="pt-8 border-t border-zinc-100">
+                                <h3 className="text-xs font-black text-zinc-900 uppercase tracking-[0.2em] mb-4">Histórico de Subscrições</h3>
+                                <div className="space-y-3 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                    {selectedTenant.saas_subscriptions?.map((sub: any) => (
+                                        <div key={sub.id} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex justify-between items-center text-xs">
+                                            <div>
+                                                <p className="font-bold text-zinc-900">Plano ID: {sub.plan_id?.substring(0, 8)}...</p>
+                                                <p className="text-zinc-500">{new Date(sub.data_inicio).toLocaleDateString()} - {new Date(sub.data_expiracao).toLocaleDateString()}</p>
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-lg font-bold uppercase text-[8px] ${sub.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {sub.status}
+                                            </span>
+                                        </div>
+                                    ))}
+                                    {!selectedTenant.saas_subscriptions?.length && (
+                                        <p className="text-zinc-400 italic text-xs">Nenhuma subscrição encontrada.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-zinc-900 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedTenant(null)}
+                                className="px-6 py-3 bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-white/20 transition-all"
+                            >
+                                Fechar Detalhes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

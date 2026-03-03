@@ -207,7 +207,7 @@ interface HRPageProps {
 }
 
 const HRPage: React.FC<HRPageProps> = ({ user }) => {
-   const isHRAdmin = ['admin', 'hr', 'director_hr'].includes(user.role);
+   const isHRAdmin = ['admin', 'hr', 'director_hr', 'saas_admin'].includes(user.role);
    const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes' | 'contas' | 'vagas'>('dashboard');
    const [showModal, setShowModal] = useState(false);
    const [showMetaModal, setShowMetaModal] = useState(false);
@@ -561,62 +561,62 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       };
    };
 
-    // --- CÁLCULO DE FOLHA INDIVIDUAL (MOTOR DE CÁLCULO) ---
-    const calculatePayrollForEmployee = (f: Funcionario) => {
-       const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
+   // --- CÁLCULO DE FOLHA INDIVIDUAL (MOTOR DE CÁLCULO) ---
+   const calculatePayrollForEmployee = (f: Funcionario) => {
+      const inputs = payrollInputs[f.id] || getAutoPayrollData(f.id);
 
-       const DIAS_UTEIS = 30;
-       const HORAS_MENSAIS = 173.33;
-       const INSS_WORKER_RATE = 0.03;
-       const INSS_COMPANY_RATE = 0.08;
-       const EXEMPT_ALLOWANCE_LIMIT = 30000;
+      const DIAS_UTEIS = 30;
+      const HORAS_MENSAIS = 173.33;
+      const INSS_WORKER_RATE = 0.03;
+      const INSS_COMPANY_RATE = 0.08;
+      const EXEMPT_ALLOWANCE_LIMIT = 30000;
 
-       const isPrestacaoServico = f.tipo_contrato === 'Prestação de Serviços';
+      const isPrestacaoServico = f.tipo_contrato === 'Prestação de Serviços';
 
-       const base = Number(f.salario_base) || 0;
-       const valorHora = base / HORAS_MENSAIS;
-       const valorDia = base / DIAS_UTEIS;
+      const base = Number(f.salario_base) || 0;
+      const valorHora = base / HORAS_MENSAIS;
+      const valorDia = base / DIAS_UTEIS;
 
-       // Rendimentos
-       const valorHorasExtras = inputs.horasExtras * (valorHora * WORK_RULES.overtimeRateNormal);
-       const subAlim = Number(f.subsidio_alimentacao) || 0;
-       const subTrans = Number(f.subsidio_transporte) || 0;
-       const subFerias = Number(inputs.subFerias) || 0;
-       const subNatal = Number(inputs.subNatal) || 0;
-       const subsidiosTotal = subAlim + subTrans + subFerias + subNatal;
-       const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0) + (Number(f.outros_bonus) || 0);
+      // Rendimentos
+      const valorHorasExtras = inputs.horasExtras * (valorHora * WORK_RULES.overtimeRateNormal);
+      const subAlim = Number(f.subsidio_alimentacao) || 0;
+      const subTrans = Number(f.subsidio_transporte) || 0;
+      const subFerias = Number(inputs.subFerias) || 0;
+      const subNatal = Number(inputs.subNatal) || 0;
+      const subsidiosTotal = subAlim + subTrans + subFerias + subNatal;
+      const premiosBonus = (inputs.bonus || 0) + (inputs.premios || 0) + (Number(f.outros_bonus) || 0);
 
-       // Total Proventos (Salário Base + Horas Extras + Subsídios + Bónus)
-       const totalProventos = base + valorHorasExtras + subsidiosTotal + premiosBonus;
-       const bruto = totalProventos; 
+      // Total Proventos (Salário Base + Horas Extras + Subsídios + Bónus)
+      const totalProventos = base + valorHorasExtras + subsidiosTotal + premiosBonus;
+      const bruto = totalProventos;
 
-       // INSS (Base: Salário Base + Horas Extras + Bónus)
-       // Trabalhadores em Prestação de Serviço geralmente não descontam INSS na folha da empresa
-       const baseINSS = isPrestacaoServico ? 0 : (base + valorHorasExtras + premiosBonus);
-       const inss = baseINSS * INSS_WORKER_RATE;
-       const inssEmpresa = baseINSS * INSS_COMPANY_RATE;
+      // INSS (Base: Salário Base + Horas Extras + Bónus)
+      // Trabalhadores em Prestação de Serviço geralmente não descontam INSS na folha da empresa
+      const baseINSS = isPrestacaoServico ? 0 : (base + valorHorasExtras + premiosBonus);
+      const inss = baseINSS * INSS_WORKER_RATE;
+      const inssEmpresa = baseINSS * INSS_COMPANY_RATE;
 
-       // IRT (Base: Bruto - INSS - Isenções)
-       const exemptSubAlim = Math.min(subAlim, EXEMPT_ALLOWANCE_LIMIT);
-       const exemptSubTrans = Math.min(subTrans, EXEMPT_ALLOWANCE_LIMIT);
-       const baseIRT = bruto - inss - exemptSubAlim - exemptSubTrans;
+      // IRT (Base: Bruto - INSS - Isenções)
+      const exemptSubAlim = Math.min(subAlim, EXEMPT_ALLOWANCE_LIMIT);
+      const exemptSubTrans = Math.min(subTrans, EXEMPT_ALLOWANCE_LIMIT);
+      const baseIRT = bruto - inss - exemptSubAlim - exemptSubTrans;
 
-       const irt = calculateIRT(baseIRT, isPrestacaoServico);
+      const irt = calculateIRT(baseIRT, isPrestacaoServico);
 
-       // Descontos
-       const descontoFaltas = (inputs.faltas || 0) * valorDia;
-       const emprestimos = (inputs.emprestimos || 0) + (inputs.adiantamento || 0);
-       const outrosDesc = (inputs.outrosDesc || 0);
-       const totalDescontos = inss + irt + descontoFaltas + emprestimos + outrosDesc;
+      // Descontos
+      const descontoFaltas = (inputs.faltas || 0) * valorDia;
+      const emprestimos = (inputs.emprestimos || 0) + (inputs.adiantamento || 0);
+      const outrosDesc = (inputs.outrosDesc || 0);
+      const totalDescontos = inss + irt + descontoFaltas + emprestimos + outrosDesc;
 
-       const liquido = bruto - totalDescontos;
+      const liquido = bruto - totalDescontos;
 
-       return {
-          bruto, inss, inssEmpresa, irt, descontoFaltas, totalDescontos, liquido,
-          valorHorasExtras, premiosBonus, subsidiosTotal, subAlim, subTrans, subFerias, subNatal,
-          totalProventos, emprestimos, outrosDesc, inputs
-       };
-    };
+      return {
+         bruto, inss, inssEmpresa, irt, descontoFaltas, totalDescontos, liquido,
+         valorHorasExtras, premiosBonus, subsidiosTotal, subAlim, subTrans, subFerias, subNatal,
+         totalProventos, emprestimos, outrosDesc, inputs
+      };
+   };
 
    const handleProcessPayroll = async () => {
       const ativos = funcionarios.filter(f => f.status === 'ativo');
@@ -1043,43 +1043,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                </div>
             )}
 
-            {/* PERFORMANCE / METAS */}
-            {activeTab === 'performance' && (
-               <div className="space-y-6 animate-in slide-in-from-bottom-4">
-                  <div className="flex flex-col md:flex-row gap-4 items-center">
-                     <div className="flex-1 bg-white p-2 rounded-[2rem] shadow-sm border border-sky-100 w-full flex items-center">
-                        <Search className="ml-6 text-zinc-300" /><input placeholder="Pesquisar..." className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                     </div>
-                     {isHRAdmin && <button onClick={() => handleOpenModal(null)} className="px-10 py-5 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-500 transition-all flex items-center gap-3 shadow-xl"><UserPlus size={20} /> Admitir</button>}
-                  </div>
-                  <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden">
-                     <div className="overflow-x-auto">
-                        <table className="w-full text-left min-w-[600px]">
-                           <thead>
-                              <tr className="bg-zinc-50 border-b border-zinc-100 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                                 <th className="px-8 py-6">Colaborador</th><th className="px-8 py-6">Funo / Dept</th><th className="px-8 py-6">Vencimento</th><th className="px-8 py-6">Estado</th><th className="px-8 py-6 text-right">Acões</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-zinc-50 text-sm">
-                              {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
-                                 <tr key={f.id} className="hover:bg-zinc-50/50">
-                                    <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
-                                    <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>
-                                    <td className="px-8 py-5 font-black text-zinc-900">{formatAOA(f.salario_base)}</td>
-                                    <td className="px-8 py-5"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${f.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.status}</span></td>
-                                    <td className="px-8 py-5 text-right flex justify-end gap-2">
-                                       <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histrico Completo"><ClipboardList size={18} /></button>
-                                       {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
-                                       {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
-                                    </td>
-                                 </tr>
-                              ))}
-                           </tbody>
-                        </table>
-                     </div>
-                  </div>
-               </div>
-            )}
+
 
             {/* GENTE / CADASTRO */}
             {activeTab === 'gente' && (
