@@ -17,8 +17,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, children, path, c
     return <Navigate to="/" replace />;
   }
 
-  // 2. Se for admin, acesso total
-  if (user.role === 'admin') {
+  // 2. Se for admin ou saas_admin, acesso total
+  if (user.role === 'admin' || user.role === 'saas_admin') {
     return <>{children}</>;
   }
 

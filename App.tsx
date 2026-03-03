@@ -92,7 +92,7 @@ const App: React.FC = () => {
             id: session.user.id,
             email: session.user.email || '',
             nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
-            role: profile?.role || (session.user.email === 'simaopambo94@gmail.com' ? 'admin' : 'operario'),
+            role: profile?.role || (session.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario'),
             tenant_id: profile?.tenant_id || session.user.user_metadata?.tenant_id
           };
 
@@ -110,7 +110,7 @@ const App: React.FC = () => {
             id: session.user.id,
             email: session.user.email || '',
             nome: session.user.user_metadata?.nome || 'Utilizador',
-            role: session.user.email === 'simaopambo94@gmail.com' ? 'admin' : 'operario',
+            role: session.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
             tenant_id: session.user.user_metadata?.tenant_id
           };
           setUser(fallbackUser);
