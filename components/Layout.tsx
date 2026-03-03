@@ -25,10 +25,13 @@ import {
   AlertTriangle,
   CheckCircle2,
   FileText,
-  Phone
+  Phone,
+  Clock
 } from 'lucide-react';
 import { User, ChatMessage, ChatContact, UserRole } from '../types';
 import Logo from './Logo';
+import { useTenant } from '../src/components/TenantProvider';
+import { checkSubscription, SubscriptionStatus } from '../src/utils/subscription';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 
 interface LayoutProps {
@@ -47,10 +50,18 @@ interface Notification {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
+  const { tenant } = useTenant();
   const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [subStatus, setSubStatus] = useState<SubscriptionStatus | null>(null);
+
+  useEffect(() => {
+    if (user?.tenant_id) {
+      checkSubscription(user.tenant_id).then(setSubStatus);
+    }
+  }, [user?.tenant_id]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -253,7 +264,17 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
         ${isSidebarOpen ? 'lg:w-72' : 'lg:w-20'}
       `}>
         <div className="p-8 flex flex-col items-center overflow-hidden">
-          {isSidebarOpen ? <Logo className="w-full" light showTagline /> : <div className="bg-yellow-500 text-zinc-900 w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-lg text-lg">A</div>}
+          {isSidebarOpen ? (
+            tenant?.logo_url ? (
+              <img src={tenant.logo_url} alt={tenant.nome} className="max-h-12 w-auto" />
+            ) : (
+              <Logo className="w-full" light showTagline />
+            )
+          ) : (
+            <div className="bg-yellow-500 text-zinc-900 w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-lg text-lg">
+              {tenant?.nome?.charAt(0) || 'A'}
+            </div>
+          )}
         </div>
         <nav className="flex-1 mt-4 px-3 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           {allowedMenuItems.map((item) => (
@@ -295,8 +316,13 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="hidden lg:flex p-2 hover:bg-white/10 rounded-lg text-slate-400 transition-all"><Search size={20} /></button>
             <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10 ml-2">
               <div className="scale-110 filter brightness-0 invert opacity-90 origin-left">
-                <Logo className="h-10" />
+                {tenant?.logo_url ? (
+                  <img src={tenant.logo_url} alt={tenant.nome} className="h-10 w-auto" />
+                ) : (
+                  <Logo className="h-10" />
+                )}
               </div>
+              {tenant && <span className="text-white font-black uppercase text-xs tracking-widest ml-2">{tenant.nome}</span>}
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -353,6 +379,24 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
         </header>
 
         <main className={`flex-1 overflow-y-auto ${isHomePage ? 'p-0' : 'p-4 lg:p-8'} bg-[#e0f2fe] relative`}>
+          {subStatus && !subStatus.active && (
+            <div className="mb-6 bg-red-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-pulse">
+              <div className="flex items-center gap-3">
+                <AlertTriangle size={20} />
+                <span className="text-sm font-bold uppercase tracking-tight">{subStatus.message || 'Licença Expirada'}</span>
+              </div>
+              <Link to="/configuracoes/assinatura" className="bg-white text-red-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-100 transition-all">Renovar Agora</Link>
+            </div>
+          )}
+          {subStatus && subStatus.active && subStatus.daysLeft <= 7 && (
+            <div className="mb-6 bg-orange-500 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Clock size={20} />
+                <span className="text-sm font-bold uppercase tracking-tight">O seu plano expira em {subStatus.daysLeft} dias.</span>
+              </div>
+              <Link to="/configuracoes/assinatura" className="bg-zinc-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all">Regularizar</Link>
+            </div>
+          )}
           <div className={`${isHomePage ? 'w-full' : 'max-w-7xl mx-auto pb-12'}`}>{children}</div>
         </main>
 

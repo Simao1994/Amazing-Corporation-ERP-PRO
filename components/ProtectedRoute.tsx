@@ -8,9 +8,10 @@ interface ProtectedRouteProps {
   user: User | null;
   children: React.ReactNode;
   path: string; // O caminho da rota atual (ex: '/financeiro')
+  customRole?: string; // Papel específico necessário para esta rota
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, children, path }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, children, path, customRole }) => {
   // 1. Verificar autenticação
   if (!user) {
     return <Navigate to="/" replace />;
@@ -18,6 +19,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ user, children, path })
 
   // 2. Se for admin, acesso total
   if (user.role === 'admin') {
+    return <>{children}</>;
+  }
+
+  // 2.5. Se houver um customRole exigido, verificar se o utilizador o possui
+  if (customRole && user.role === customRole) {
     return <>{children}</>;
   }
 

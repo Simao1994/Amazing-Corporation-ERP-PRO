@@ -18,11 +18,21 @@ export type UserRole =
   | 'bibliotecario'
   | 'operario';
 
+export interface Tenant {
+  id: string;
+  nome: string;
+  slug: string;
+  logo_url?: string;
+  status: 'ativo' | 'suspenso' | 'expirado';
+  config?: any;
+}
+
 export interface User {
   id: string;
   nome: string;
   role: UserRole;
   email: string;
+  tenant_id: string;
 }
 
 // --- CHAT ---
