@@ -62,8 +62,8 @@ const PROVINCIAS = [
 
 // --- MOTOR DE CÁLCULO FISCAL ANGOLANO (IRT 2024 - CONFORME TABELA AGT) ---
 const calculateIRT = (baseTributavel: number, isPrestacaoServico: boolean = false): number => {
-   // Para Prestadores de Serviço (Conta Própria), aplica-se a taxa flat de 15% (Retenção na Fonte)
-   if (isPrestacaoServico) return baseTributavel * 0.15;
+   // Para Prestadores de Serviço, aplica-se a taxa flat de 6,5% (Retenção na Fonte - Art.º 67 CIRT)
+   if (isPrestacaoServico) return baseTributavel * 0.065;
 
    if (baseTributavel <= 70000) return 0;
    if (baseTributavel <= 100000) return 3000 + (baseTributavel - 70000) * 0.10;
@@ -1651,7 +1651,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            <p><strong>Total Descontos:</strong> INSS (3%) + IRT + Faltas + Empréstimos + Outros</p>
                            <p><strong>Salário Líquido:</strong> Salário Bruto - Total Descontos</p>
                            <p className="mt-2 text-[10px] text-zinc-400 italic font-medium border-t pt-2">
-                              * Para trabalhadores em <strong>Prestação de Serviços</strong>, aplica-se uma taxa flat de 15% de IRT (Retenção na Fonte) e isenção de SS na folha comercial.
+                              * Para trabalhadores em <strong>Prestação de Serviços</strong>, aplica-se uma taxa flat de 6,5% de IRT (Retenção na Fonte) e isenção de SS na folha comercial.
                            </p>
                         </div>
                      </div>
