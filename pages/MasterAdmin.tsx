@@ -9,24 +9,33 @@ const MasterAdmin: React.FC = () => {
     const [tenants, setTenants] = useState<any[]>([]);
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     const fetchData = async () => {
         setLoading(true);
+        setError(null);
         try {
-            const { data: tenantsData } = await supabase
+            console.log('Fetching Master Admin data...');
+            const { data: tenantsData, error: tenantsError } = await supabase
                 .from('saas_tenants')
                 .select('*, saas_subscriptions(*)');
 
-            const { data: subsData } = await supabase
+            if (tenantsError) throw tenantsError;
+
+            const { data: subsData, error: subsError } = await supabase
                 .from('saas_subscriptions')
                 .select('*, saas_tenants(nome), saas_plans(nome)')
                 .order('created_at', { ascending: false });
 
+            if (subsError) throw subsError;
+
+            console.log('Data fetched successfully:', { tenantsCount: tenantsData?.length, subsCount: subsData?.length });
             setTenants(tenantsData || []);
             setSubscriptions(subsData || []);
-        } catch (error) {
-            console.error('Error fetching master admin data:', error);
+        } catch (err: any) {
+            console.error('Error fetching master admin data:', err);
+            setError(err.message || 'Erro ao carregar dados do Master Admin');
         } finally {
             setLoading(false);
         }
@@ -35,6 +44,28 @@ const MasterAdmin: React.FC = () => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    if (loading) {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
+                <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest animate-pulse">Carregando dados mestre...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 p-8 bg-red-50 rounded-[3rem] border border-red-100">
+                <AlertTriangle size={48} className="text-red-500" />
+                <div className="text-center">
+                    <h2 className="text-xl font-black text-red-900 uppercase">Erro de Acesso</h2>
+                    <p className="text-red-600 font-medium mt-2">{error}</p>
+                </div>
+                <Button onClick={fetchData} className="bg-red-600 hover:bg-red-700 text-white">Tentar Novamente</Button>
+            </div>
+        );
+    }
 
     const handleApproveSubscription = async (id: string) => {
         if (!confirm('Aprovar este pagamento e ativar a subscrição?')) return;
@@ -54,7 +85,7 @@ const MasterAdmin: React.FC = () => {
     };
 
     const filteredTenants = tenants.filter(t =>
-        t.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (t.nome?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         t.nif?.includes(searchTerm)
     );
 
