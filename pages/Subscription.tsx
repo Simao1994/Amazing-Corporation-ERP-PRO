@@ -8,14 +8,14 @@ import Input from '../components/ui/Input';
 
 const SubscriptionPage: React.FC = () => {
     const { tenant } = useTenant();
-    const [subscription, setSubscription] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [uploading, setUploading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchSubscription = async () => {
         if (!tenant) return;
+        setLoading(true);
+        setError(null);
         try {
-            const { data, error } = await supabase
+            const { data, error: fetchError } = await supabase
                 .from('saas_subscriptions')
                 .select('*, saas_plans(*)')
                 .eq('tenant_id', tenant.id)
@@ -23,9 +23,13 @@ const SubscriptionPage: React.FC = () => {
                 .limit(1)
                 .single();
 
+            if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+                throw fetchError;
+            }
             setSubscription(data);
-        } catch (error) {
-            console.error('Error fetching subscription:', error);
+        } catch (err: any) {
+            console.error('Error fetching subscription:', err);
+            setError(err.message || 'Erro ao carregar subscrição');
         } finally {
             setLoading(false);
         }
@@ -107,7 +111,27 @@ const SubscriptionPage: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Carregando...</div>;
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+                <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Carregando...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="max-w-md mx-auto mt-20 p-10 bg-white rounded-[3rem] border border-red-100 shadow-xl text-center">
+                <AlertTriangle size={48} className="mx-auto mb-4 text-red-500" />
+                <h2 className="text-xl font-black text-zinc-900 uppercase mb-2">Erro de Carregamento</h2>
+                <p className="text-zinc-500 text-sm mb-8">{error}</p>
+                <Button onClick={fetchSubscription} variant="primary" className="w-full">
+                    Tentar Novamente
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
