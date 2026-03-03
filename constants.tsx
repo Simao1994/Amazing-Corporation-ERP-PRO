@@ -55,11 +55,12 @@ export const MENU_ITEMS = [
   { id: 'empresas', label: 'Unidades do Grupo', icon: <Building2 size={20} />, path: '/empresas' },
   { id: 'utilizadores', label: 'Gestão de Utilizadores', icon: <Users size={20} />, path: '/utilizadores' },
   { id: 'arquivos', label: 'Gestão de Arquivos', icon: <Files size={20} />, path: '/dashboard/arquivos' },
+  { id: 'master', label: 'Master Admin', icon: <ShieldCheck size={20} />, path: '/master' },
 ];
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
-  // Administrador tem acesso total (incluindo gestão de utilizadores)
-  admin: ['all', 'utilizadores', 'fornecedores', 'parceiros', 'empresas', 'galeria_corp', 'biblioteca', 'arquivos', 'assinatura'],
+  // Administrador tem acesso total
+  admin: ['all'],
 
   // Director Amazing Arena Gamer - Apenas Arena + Dashboard + Solicitações
   director_arena: ['home', 'dashboard', 'arena_admin', 'solicitacoes', 'blog'],
@@ -96,6 +97,9 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
 
   // Operário - Acesso limitado a Galeria, Biblioteca, Home e Dashboard
   operario: ['home', 'dashboard', 'galeria_corp', 'biblioteca'],
+
+  // Master Admin (SaaS)
+  saas_admin: ['all', 'master'],
 };
 
 export const formatAOA = (value: number) => {

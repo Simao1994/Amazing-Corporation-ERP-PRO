@@ -240,7 +240,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   };
 
   const allowedMenuItems = MENU_ITEMS.filter(item => {
-    if (user.role === 'admin') return true;
+    if (user.role === 'admin' || user.role === 'saas_admin') return true;
     const userPermissions = getMergedPermissions(user.role);
     return userPermissions.includes(item.id) || userPermissions.includes('all');
   });

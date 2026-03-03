@@ -16,7 +16,8 @@ export type UserRole =
   | 'director_hr'
   | 'director_finance'
   | 'bibliotecario'
-  | 'operario';
+  | 'operario'
+  | 'saas_admin';
 
 export interface Tenant {
   id: string;
