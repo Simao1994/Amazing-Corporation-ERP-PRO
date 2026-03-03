@@ -1,4 +1,4 @@
-// Trigger Re-deploy: v1.0.1
+// Trigger Re-deploy: v1.0.2
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
