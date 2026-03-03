@@ -8,6 +8,9 @@ import Input from '../components/ui/Input';
 
 const SubscriptionPage: React.FC = () => {
     const { tenant } = useTenant();
+    const [subscription, setSubscription] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchSubscription = async () => {
