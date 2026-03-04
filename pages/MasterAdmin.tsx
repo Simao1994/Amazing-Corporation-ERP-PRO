@@ -76,9 +76,11 @@ const MasterAdmin: React.FC = () => {
     }, [authLoading, user]);
 
     const fetchData = async (retryCount = 0) => {
+        if (!isMounted.current) return;
+
         // Se for a primeira tentativa, esperar um pouco para evitar colisão com boot da app
         if (retryCount === 0) {
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 400));
         }
 
         if (!isMounted.current) return;
@@ -94,23 +96,23 @@ const MasterAdmin: React.FC = () => {
         timeoutIdRef.current = setTimeout(() => {
             if (isMounted.current) {
                 console.error("MasterAdmin: Timeout de 15s atingido.");
-                setError('Tempo limite de carregamento excedido. Isto acontece por vezes devido a lentidão na resolução de segurança do navegador. Por favor, tente recarregar a página.');
+                setError('Tempo limite de carregamento excedido. Por favor, tente recarregar a página ou contacte o suporte se o erro persistir.');
                 setLoading(false);
             }
         }, 15000);
 
         try {
-            // Chamadas sequenciais para evitar contenção de LockManager do Supabase
-            console.log("MasterAdmin: A carregar empresas...");
-            const tenantsRes = await supabase.from('saas_tenants').select('*, saas_subscriptions(*)');
+            console.log("MasterAdmin: Iniciando chamadas paralelas ao Supabase...");
+
+            // Chamadas paralelas para melhor performance
+            const [tenantsRes, plansRes, subsRes] = await Promise.all([
+                supabase.from('saas_tenants').select('*, saas_subscriptions(*)'),
+                supabase.from('saas_plans').select('*').order('valor', { ascending: true }),
+                supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false })
+            ]);
+
             if (tenantsRes.error) throw tenantsRes.error;
-
-            console.log("MasterAdmin: A carregar planos...");
-            const plansRes = await supabase.from('saas_plans').select('*').order('valor', { ascending: true });
             if (plansRes.error) throw plansRes.error;
-
-            console.log("MasterAdmin: A carregar subscrições...");
-            const subsRes = await supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false });
             if (subsRes.error) throw subsRes.error;
 
             if (isMounted.current) {
@@ -119,7 +121,7 @@ const MasterAdmin: React.FC = () => {
                 setPlans(plansRes.data || []);
                 setSubscriptions(subsRes.data || []);
                 setLoading(false);
-                clearTimeout(timeoutIdRef.current);
+                if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
             }
         } catch (err: any) {
             console.error('MasterAdmin: Erro ao carregar dados:', err);
@@ -134,7 +136,7 @@ const MasterAdmin: React.FC = () => {
             if (isMounted.current) {
                 setError(err.message || 'Erro ao carregar dados do dashboard master.');
                 setLoading(false);
-                clearTimeout(timeoutIdRef.current);
+                if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
             }
         }
     };
