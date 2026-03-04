@@ -1,5 +1,3 @@
--- PLAN H: TRULY UNIVERSAL SAFE RLS (V8)
--- Purpose: Handle missing tenant_id columns gracefully and break recursion
 
 -- 1. Ensure helper functions are robust
 CREATE OR REPLACE FUNCTION public.get_auth_tenant_safe() RETURNS uuid AS $$
