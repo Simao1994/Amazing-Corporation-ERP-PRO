@@ -117,6 +117,14 @@ const App: React.FC = () => {
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
             A validar infraestrutura e permissões...
           </p>
+          <div className="flex gap-4 justify-center mt-4">
+            <div className={`px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest border ${authLoading ? 'border-yellow-500/50 text-yellow-500 animate-pulse' : 'border-green-500/50 text-green-500'}`}>
+              Auth: {authLoading ? 'Pendente' : 'Pronto'}
+            </div>
+            <div className={`px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest border ${saasLoading ? 'border-yellow-500/50 text-yellow-500 animate-pulse' : 'border-green-500/50 text-green-500'}`}>
+              SaaS: {saasLoading ? 'Pendente' : 'Pronto'}
+            </div>
+          </div>
         </div>
 
         {showForceLoad && (
