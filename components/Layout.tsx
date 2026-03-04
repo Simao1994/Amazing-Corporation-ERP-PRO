@@ -36,6 +36,8 @@ import { useSaaS } from '../src/contexts/SaaSContext';
 import { isModuleActive } from '../src/utils/subscription';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 
+import { useAuth } from '../src/contexts/AuthContext';
+
 interface LayoutProps {
   children: React.ReactNode;
   user: User;
@@ -112,10 +114,16 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
   const [rolesLoaded, setRolesLoaded] = useState(false);
 
+  const { user: authUser, loading: authLoading } = useAuth();
+
   // --- DYNAMIC ROLES FETCH ---
   useEffect(() => {
     const fetchDynamicRoles = async () => {
+      // Só carregar se a autenticação estiver pronta e houver um utilizador
+      if (authLoading || !authUser) return;
+
       try {
+        console.log('Layout: Auth pronto, a carregar cargos dinâmicos...');
         const { data, error } = await supabase
           .from('app_roles')
           .select('role_key, allowed_modules');
@@ -128,9 +136,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             rolesMap[r.role_key] = r.allowed_modules;
           });
           setDynamicRoles(rolesMap);
-          // Trigger a re-render by updating a local state if needed, 
-          // but since MENU_ITEMS filter uses user.role which is stable, 
-          // we might need a signal state.
           setRolesLoaded(true);
         }
       } catch (err) {
@@ -139,7 +144,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     };
 
     fetchDynamicRoles();
-  }, []);
+  }, [authLoading, authUser]);
 
 
   useEffect(() => {

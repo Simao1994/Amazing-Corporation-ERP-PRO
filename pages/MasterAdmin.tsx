@@ -6,8 +6,10 @@ import {
     Calendar, RefreshCcw, ChevronDown
 } from 'lucide-react';
 import { formatAOA } from '../constants';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const MasterAdmin: React.FC = () => {
+    const { user, loading: authLoading } = useAuth();
     const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'plans' | 'subscriptions'>('overview');
     const [tenants, setTenants] = useState<any[]>([]);
     const [plans, setPlans] = useState<any[]>([]);
@@ -50,12 +52,18 @@ const MasterAdmin: React.FC = () => {
 
     useEffect(() => {
         isMounted.current = true;
-        fetchData();
+
+        // Só iniciar se a autenticação estiver resolvida e o utilizador logado
+        if (!authLoading && user) {
+            console.log("MasterAdmin: Auth resolvido, iniciando fetchData...");
+            fetchData();
+        }
+
         return () => {
             isMounted.current = false;
             if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
         };
-    }, []);
+    }, [authLoading, user]);
 
     const fetchData = async (retryCount = 0) => {
         // Se for a primeira tentativa, esperar um pouco para evitar colisão com boot da app
