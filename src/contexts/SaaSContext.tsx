@@ -29,17 +29,27 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             // Fetch profile for tenant_id and role
-            const { data: profile } = await supabase
+            const { data: profile, error: profileErr } = await supabase
                 .from('profiles')
                 .select('tenant_id, role')
                 .eq('id', user.id)
                 .single();
 
+            if (profileErr) {
+                console.error('SaaSContext: Erro ao buscar perfil:', profileErr);
+            }
+
+            const effectiveRole = profile?.role || (user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : '');
+            const effectiveTenantId = profile?.tenant_id;
+
+            console.log('SaaSContext: Perfil detectado:', { role: profile?.role, effectiveRole, tenant_id: effectiveTenantId });
+
             // saas_admin has special properties (active by default, access to all)
-            if (profile?.role === 'saas_admin') {
+            if (effectiveRole === 'saas_admin') {
+                console.log('SaaSContext: Activating simulated plan for saas_admin');
                 const adminSub: SubscriptionStatus = {
                     id: 'saas-admin-unlimited',
-                    tenant_id: profile?.tenant_id || 'saas-admin-tenant',
+                    tenant_id: effectiveTenantId || 'saas-admin-tenant',
                     active: true,
                     status: 'ativo',
                     daysLeft: 9999,
@@ -65,10 +75,13 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
-            if (profile?.tenant_id) {
-                const status = await checkSubscription(profile.tenant_id);
+            if (effectiveTenantId) {
+                console.log('SaaSContext: Checking subscription for tenant:', effectiveTenantId);
+                const status = await checkSubscription(effectiveTenantId);
+                console.log('SaaSContext: Subscription status:', status);
                 setSubscription(prev => JSON.stringify(prev) === JSON.stringify(status) ? prev : status);
             } else {
+                console.warn('SaaSContext: No tenant_id found for user. Subscription set to null.');
                 setSubscription(null);
             }
         } catch (err) {
