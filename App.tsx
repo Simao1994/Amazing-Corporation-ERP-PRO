@@ -1,4 +1,4 @@
-// Trigger Re-deploy: v1.0.2
+// Trigger Re-deploy: v1.0.3 - Fixed Authentication Strobe
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
@@ -36,10 +36,10 @@ import PublicVagaDetalhes from './pages/PublicVagaDetalhes';
 import PublicCandidaturaStatus from './pages/PublicCandidaturaStatus';
 import ProtectedRoute from './components/ProtectedRoute';
 import { TenantProvider } from './src/components/TenantProvider';
-import { supabase, getUserProfile } from './src/lib/supabase';
+import { supabase } from './src/lib/supabase';
 import { AmazingStorage, STORAGE_KEYS } from './utils/storage';
 import { useSaaS } from './src/contexts/SaaSContext';
-import { User } from './types';
+import { useAuth } from './src/contexts/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import UsersPage from './pages/Users';
 import EmpresasPage from './pages/Empresas';
@@ -49,20 +49,11 @@ import PublicCandidaturaEspontanea from './pages/PublicCandidaturaEspontanea';
 import AutoLogout from './components/AutoLogout';
 import MasterAdmin from './pages/MasterAdmin';
 import SubscriptionPage from './pages/Subscription';
-import { checkSubscription } from './src/utils/subscription';
 
 const App: React.FC = () => {
-  const { refreshSubscription } = useSaaS();
-  const [user, setUser] = useState<User | null>(() => AmazingStorage.get(STORAGE_KEYS.USER, null));
-  const userRef = React.useRef<User | null>(user);
+  const { user, loading: authLoading, refreshProfile } = useAuth();
+  const { loading: saasLoading } = useSaaS();
 
-  // Sync ref with state
-  useEffect(() => {
-    userRef.current = user;
-  }, [user]);
-
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -75,114 +66,34 @@ const App: React.FC = () => {
     (window as any).notify = showToast;
   }, []);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`Auth event: ${event}`);
-
-      if (session?.user) {
-        // Use ref to avoid stale closure issues
-        const currentUser = userRef.current;
-        const isFreshEntry = !currentUser;
-
-        if (isFreshEntry) {
-          setIsLoadingUser(true);
-        }
-
-        try {
-          // 1. Fetch BASIC PROFILE (Essential for entering the app)
-          const { data: profile } = await getUserProfile(session.user.id);
-
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            nome: profile?.nome || session.user.user_metadata?.nome || session.user.email?.split('@')[0] || 'Utilizador',
-            role: profile?.role || (session.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario'),
-            tenant_id: profile?.tenant_id || session.user.user_metadata?.tenant_id
-          };
-
-          // 2. Set user immediately to allow app entry
-          setUser(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(userData)) return prev;
-            return userData;
-          });
-
-          // 3. Background tasks (Non-blocking for UI entry)
-          AmazingStorage.save(STORAGE_KEYS.USER, userData);
-          AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
-          refreshSubscription(); // Sincronizar subscrição no login
-          AmazingStorage.loadAllFromCloud();
-
-        } catch (err) {
-          console.error("Initialization error:", err);
-          // Fallback logic
-          const fallbackUser: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            nome: 'Utilizador',
-            role: session.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
-            tenant_id: session.user.user_metadata?.tenant_id
-          };
-          setUser(fallbackUser);
-        } finally {
-          setIsLoadingUser(false);
-          setIsInitializing(false);
-        }
-      } else {
-        setUser(null);
-        setIsLoadingUser(false);
-        localStorage.removeItem(STORAGE_KEYS.USER);
-        AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]).finally(() => {
-          setIsInitializing(false);
-        });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogin = (userData: User) => {
-    // Show feedback immediately for a "premium" feel
+  const handleLogin = async (userData: any) => {
+    showToast("Autenticando...");
+    await refreshProfile();
     showToast("Login realizado com sucesso!");
 
-    setUser(userData);
-    AmazingStorage.save(STORAGE_KEYS.USER, userData);
-
-    // Non-blocking background sync
     setIsSyncing(true);
     AmazingStorage.loadAllFromCloud().finally(() => setIsSyncing(false));
-
-    AmazingStorage.logAction('Login', 'Sessão', `Utilizador ${userData.nome} acedeu ao sistema`);
-    // Removed window.location.hash = '#/' to prevent flickering/jumpy transition
+    AmazingStorage.logAction('Login', 'Sessão', `Utilizador acedeu ao sistema`);
   };
 
   const handleLogout = async () => {
     try {
-      AmazingStorage.logAction('Logout', 'Sessão', `Utilizador encerrou sessão`);
-      // Use a timeout for signOut to prevent hanging
-      const signOutPromise = supabase.auth.signOut();
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
-
-      await Promise.race([signOutPromise, timeoutPromise]).catch(err => console.warn("SignOut error or timeout:", err));
+      await supabase.auth.signOut();
     } catch (error) {
-      console.error("Logout process error:", error);
+      console.error("Logout error:", error);
     } finally {
-      // ALWAYS clear local state regardless of server outcome
-      setUser(null);
-      localStorage.removeItem(STORAGE_KEYS.USER);
-      // Force clear specific Supabase keys just in case
-      Object.keys(localStorage).forEach(key => {
-        if (key.includes('auth-token')) localStorage.removeItem(key);
-      });
       showToast("Sessão encerrada.", "info");
     }
   };
 
-  // Show spinner during initial app load OR while fetching user profile after auth
-  if (isInitializing || isLoadingUser) {
+  // RULE 1, 2, 3: While loading, show spinner, DO NOT render dashboard, DO NOT redirect
+  const isGlobalLoading = authLoading || saasLoading;
+
+  if (isGlobalLoading) {
     return (
       <div className="min-h-screen bg-[#e0f2fe] flex flex-col items-center justify-center gap-4">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 shadow-xl"></div>
-        <p className="text-zinc-500 font-black uppercase text-[10px] tracking-widest animate-pulse">Iniciando Amazing Corp Cloud...</p>
+        <p className="text-zinc-500 font-black uppercase text-[10px] tracking-widest animate-pulse">Sincronizando Segurança Amazing Corp...</p>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { checkSubscription, SubscriptionStatus } from '../utils/subscription';
+import { useAuth } from './AuthContext';
 
 interface SaaSContextType {
     subscription: SubscriptionStatus | null;
@@ -11,38 +12,22 @@ interface SaaSContextType {
 const SaaSContext = createContext<SaaSContextType | undefined>(undefined);
 
 export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user, loading: authLoading } = useAuth();
     const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const [isFirstLoad, setIsFirstLoad] = useState(true);
-
     const refreshSubscription = async () => {
-        // Prevent concurrent refreshes
+        if (!user) {
+            setSubscription(null);
+            setLoading(false);
+            return;
+        }
+
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
+            const effectiveRole = user.role;
+            const effectiveTenantId = user.tenant_id;
 
-            if (!user) {
-                setSubscription(null);
-                setLoading(false);
-                return;
-            }
-
-            // Fetch profile for tenant_id and role
-            const { data: profile, error: profileErr } = await supabase
-                .from('profiles')
-                .select('tenant_id, role')
-                .eq('id', user.id)
-                .single();
-
-            if (profileErr) {
-                console.error('SaaSContext: Erro ao buscar perfil:', profileErr);
-            }
-
-            const effectiveRole = profile?.role || (user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : '');
-            const effectiveTenantId = profile?.tenant_id;
-
-            console.log('SaaSContext: Perfil detectado:', { role: profile?.role, effectiveRole, tenant_id: effectiveTenantId });
+            console.log('SaaSContext: User data from AuthContext:', { role: user.role, tenant_id: user.tenant_id });
 
             // saas_admin has special properties (active by default, access to all)
             if (effectiveRole === 'saas_admin') {
@@ -88,17 +73,17 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('SaaS Context Error:', err);
         } finally {
             setLoading(false);
-            setIsFirstLoad(false);
         }
     };
 
     useEffect(() => {
-        // Initial load
-        refreshSubscription();
-    }, []);
+        if (!authLoading) {
+            refreshSubscription();
+        }
+    }, [user, authLoading]);
 
     return (
-        <SaaSContext.Provider value={{ subscription, loading, refreshSubscription }}>
+        <SaaSContext.Provider value={{ subscription, loading: loading || authLoading, refreshSubscription }}>
             {children}
         </SaaSContext.Provider>
     );
