@@ -55,12 +55,20 @@ const FinancialHubPage: React.FC = () => {
 
    const fetchTransactions = async () => {
       setLoading(true);
+      setError(null);
       try {
          let query = supabase.from('fin_transacoes').select('*');
          if (selectedEmpresaId) {
             query = query.eq('empresa_id', selectedEmpresaId);
          }
-         const { data, error } = await query.order('data', { ascending: false });
+
+         const fetchPromise = query.order('data', { ascending: false });
+         const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout ao carregar transações')), 12000)
+         );
+
+         const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
          if (error) throw error;
          if (data) {
             const mapped = data.map((t: any) => ({
@@ -69,8 +77,9 @@ const FinancialHubPage: React.FC = () => {
             }));
             setTransactions(mapped as unknown as TransacaoFinanceira[]);
          }
-      } catch (error) {
+      } catch (error: any) {
          console.error('Error fetching transactions:', error);
+         setError(error.message || 'Erro ao carregar dados financeiros');
       } finally {
          setLoading(false);
       }
@@ -104,14 +113,19 @@ const FinancialHubPage: React.FC = () => {
       }
    };
 
+   const [error, setError] = useState<string | null>(null);
+
    useEffect(() => {
       fetchEmpresas();
    }, []);
 
    useEffect(() => {
       if (selectedEmpresaId) {
-         fetchTransactions();
-         fetchExtratos();
+         // Parallel fetch for transactions and extratos
+         Promise.all([
+            fetchTransactions(),
+            fetchExtratos()
+         ]);
       }
    }, [selectedEmpresaId]);
 
@@ -332,9 +346,35 @@ const FinancialHubPage: React.FC = () => {
 
    if (loading) {
       return (
-         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-            <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
-            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">A processar dados financeiros...</p>
+         <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 animate-in fade-in duration-500">
+            <div className="relative">
+               <RefreshCw className="w-16 h-16 text-yellow-500 animate-spin" />
+               <div className="absolute inset-0 bg-yellow-500/10 blur-xl rounded-full"></div>
+            </div>
+            <div className="text-center space-y-2">
+               <p className="text-zinc-900 font-black uppercase tracking-[0.3em] text-xs">A processar dados financeiros...</p>
+               <p className="text-zinc-400 font-bold uppercase tracking-widest text-[9px] animate-pulse">A validar conformidade Amazing Cloud...</p>
+            </div>
+         </div>
+      );
+   }
+
+   if (error) {
+      return (
+         <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-6">
+            <div className="p-6 bg-red-50 rounded-[2.5rem] border border-red-100 flex flex-col items-center text-center max-w-md">
+               <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mb-4">
+                  <AlertTriangle size={24} />
+               </div>
+               <h3 className="text-red-900 font-black uppercase tracking-tight text-lg">Erro na Sincronização</h3>
+               <p className="text-red-700/70 text-sm font-medium mt-2 leading-relaxed">{error}</p>
+               <button
+                  onClick={() => window.location.reload()}
+                  className="mt-6 px-10 py-3 bg-red-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 transition-all shadow-lg"
+               >
+                  Tentar Novamente
+               </button>
+            </div>
          </div>
       );
    }
