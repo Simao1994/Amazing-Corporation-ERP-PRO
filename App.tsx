@@ -71,19 +71,16 @@ const App: React.FC = () => {
       console.log(`Auth event: ${event}`);
 
       if (session?.user) {
-        // ONLY show spinner if we don't have a user yet or if it's a fresh sign in
-        // This prevents the "pulsing" or "strobe" effect on every token refresh
-        const shouldShowSpinner = !user || event === 'SIGNED_IN';
-        if (shouldShowSpinner) {
+        // ONLY show full-screen spinner if we have NO user at all (initial entry)
+        const isFreshEntry = !user;
+        if (isFreshEntry) {
           setIsLoadingUser(true);
         }
 
-        // Parallel Background tasks
-        Promise.all([
-          getUserProfile(session.user.id),
-          AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]),
-          AmazingStorage.loadAllFromCloud()
-        ]).then(([{ data: profile }]) => {
+        try {
+          // 1. Fetch BASIC PROFILE (Essential for entering the app)
+          const { data: profile } = await getUserProfile(session.user.id);
+
           const userData: User = {
             id: session.user.id,
             email: session.user.email || '',
@@ -92,27 +89,32 @@ const App: React.FC = () => {
             tenant_id: profile?.tenant_id || session.user.user_metadata?.tenant_id
           };
 
-          // Optimization: only update state if user data changed to avoid re-renders
+          // 2. Set user immediately to allow app entry
           setUser(prev => {
             if (JSON.stringify(prev) === JSON.stringify(userData)) return prev;
             return userData;
           });
+
+          // 3. Background tasks (Non-blocking for UI entry)
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
-        }).catch(err => {
-          console.error("Background initialization error:", err);
+          AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
+          AmazingStorage.loadAllFromCloud(); // NO .then() here to avoid hanging on slow mobile data
+
+        } catch (err) {
+          console.error("Initialization error:", err);
+          // Fallback logic
           const fallbackUser: User = {
             id: session.user.id,
             email: session.user.email || '',
-            nome: session.user.user_metadata?.nome || 'Utilizador',
+            nome: 'Utilizador',
             role: session.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
             tenant_id: session.user.user_metadata?.tenant_id
           };
           setUser(fallbackUser);
-          AmazingStorage.save(STORAGE_KEYS.USER, fallbackUser);
-        }).finally(() => {
+        } finally {
           setIsLoadingUser(false);
           setIsInitializing(false);
-        });
+        }
       } else {
         setUser(null);
         setIsLoadingUser(false);

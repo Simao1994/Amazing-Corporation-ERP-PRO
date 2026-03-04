@@ -82,24 +82,6 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         // Initial load
         refreshSubscription();
-
-        // Listen for auth changes to re-fetch subscription
-        const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log(`SaaSContext Auth Event: ${event}`);
-
-            if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
-                if (session?.user) {
-                    await refreshSubscription();
-                }
-            } else if (event === 'SIGNED_OUT') {
-                setSubscription(null);
-                setLoading(false); // DON'T set to true here, or Layout will block "/" page
-            }
-        });
-
-        return () => {
-            authListener.unsubscribe();
-        };
     }, []);
 
     return (
