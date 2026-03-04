@@ -45,8 +45,8 @@ const SettingsPage: React.FC = () => {
   const checkCloudStatus = async () => {
     setCloudStatus('checking');
     try {
-      // 1. Verificar conexão básica
-      const { error: pingError } = await supabase.from('blog_posts').select('*', { count: 'exact', head: true });
+      // 1. Verificar conexão básica (usando profiles que é mais estável)
+      const { error: pingError } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).limit(1);
       if (pingError) throw pingError;
 
       // 2. Buscar contagem real de tabelas via RPC
