@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../src/lib/supabase';
 import { ShieldCheck, Eye, EyeOff, Home } from 'lucide-react';
 import Button from '../components/ui/Button';
@@ -20,6 +20,23 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [searchParams] = useSearchParams();
+  const [tenantName, setTenantName] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const slug = searchParams.get('empresa');
+    if (slug) {
+      const fetchTenant = async () => {
+        const { data } = await supabase
+          .from('saas_tenants')
+          .select('nome')
+          .eq('slug', slug)
+          .single();
+        if (data) setTenantName(data.nome);
+      };
+      fetchTenant();
+    }
+  }, [searchParams]);
 
   const translateError = (msg: string): string => {
     if (msg.includes('Invalid login credentials')) return 'Email ou senha incorretos.';
@@ -80,9 +97,11 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
 
         <div className="bg-white w-full rounded-[2.5rem] shadow-2xl p-8 space-y-5 border border-sky-100 relative">
           <div className="text-center">
-            <h2 className="text-2xl font-black text-slate-900">Acesso Seguro</h2>
+            <h2 className="text-2xl font-black text-slate-900">
+              {tenantName ? `Bem-vindo à ${tenantName}` : 'Acesso Seguro'}
+            </h2>
             <p className="text-slate-500 text-sm mt-2 font-medium">
-              Entre com suas credenciais corporativas.
+              {tenantName ? 'Entre com as suas credenciais para aceder ao portal.' : 'Entre com suas credenciais corporativas.'}
             </p>
           </div>
 

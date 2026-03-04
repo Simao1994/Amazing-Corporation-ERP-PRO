@@ -3,7 +3,7 @@ import { supabase } from '../src/lib/supabase';
 import {
     Building2, Users, CreditCard, CheckCircle2, XCircle, Clock,
     AlertTriangle, TrendingUp, Search, X, Plus, Edit3, Shield, Globe, Layers, BarChart3,
-    Calendar, RefreshCcw, ChevronDown
+    Calendar, RefreshCcw, ChevronDown, Link as LinkIcon
 } from 'lucide-react';
 import { formatAOA } from '../constants';
 import { useAuth } from '../src/contexts/AuthContext';
@@ -552,6 +552,17 @@ const MasterAdmin: React.FC = () => {
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            const url = `${window.location.origin}${window.location.pathname}#/login?empresa=${tenant.slug}`;
+                                                            navigator.clipboard.writeText(url);
+                                                            (window as any).notify?.("Link de acesso copiado!", "success");
+                                                        }}
+                                                        className="p-2 rounded-xl border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white transition-all shadow-lg shadow-sky-900/10"
+                                                        title="Copiar Link de Acesso"
+                                                    >
+                                                        <LinkIcon size={18} />
+                                                    </button>
                                                     <button
                                                         onClick={() => handleUpdateTenantStatus(tenant.id, tenant.status === 'ativo' ? 'suspenso' : 'ativo')}
                                                         className={`p-2 rounded-xl border transition-all ${tenant.status === 'ativo' ? 'border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white' : 'border-green-500/30 text-green-400 hover:bg-green-500 hover:text-white'
