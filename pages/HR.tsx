@@ -209,7 +209,6 @@ interface HRPageProps {
 const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const isHRAdmin = true;
    const realRole = user.role;
-   useEffect(() => { window.alert("RH CARGO: " + realRole); }, [realRole]);
    const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes' | 'contas' | 'vagas'>('dashboard');
    const [showModal, setShowModal] = useState(false);
    const [showMetaModal, setShowMetaModal] = useState(false);
@@ -280,58 +279,67 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    const lastFetchRef = React.useRef<number>(0);
    const fetchHRData = async () => {
-      // Debounce: evitar mltiplas chamadas em menos de 2 segundos (muito comum com Realtime postgres_changes)
+      // Debounce: evitar múltiplas chamadas em menos de 2 segundos
       const now = Date.now();
       if (now - lastFetchRef.current < 2000) return;
       lastFetchRef.current = now;
+      setLoading(true);
 
-      // 1. Fetch everything in PARALLEL to avoid waterfalls
-      const [funcsRes, presRes, recRes, metasRes] = await Promise.allSettled([
-         supabase.from('funcionarios').select('*').order('nome', { ascending: true }),
-         supabase.from('hr_presencas').select('*').order('data', { ascending: false }).limit(200),
-         supabase.from('hr_recibos').select('*').order('data_emissao', { ascending: false }).limit(200),
-         supabase.from('hr_metas').select('*').order('status', { ascending: true })
-      ]);
+      try {
+         console.log("HR: Iniciando sincronização de dados...");
+         // 1. Fetch everything in PARALLEL to avoid waterfalls
+         const [funcsRes, presRes, recRes, metasRes] = await Promise.allSettled([
+            supabase.from('funcionarios').select('*').order('nome', { ascending: true }),
+            supabase.from('hr_presencas').select('*').order('data', { ascending: false }).limit(200),
+            supabase.from('hr_recibos').select('*').order('data_emissao', { ascending: false }).limit(200),
+            supabase.from('hr_metas').select('*').order('status', { ascending: true })
+         ]);
 
-      // --- PROCESS EMPLOYEES ---
-      if (funcsRes.status === 'fulfilled' && !funcsRes.value.error && funcsRes.value.data) {
-         const data = funcsRes.value.data;
-         setFuncionarios(data.map(mapFuncionario));
-         localStorage.setItem(STORAGE_KEYS.FUNCIONARIOS, JSON.stringify(data));
-      } else {
-         const cached = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
-         if (cached.length > 0) setFuncionarios(cached.map(mapFuncionario));
+         // --- PROCESS EMPLOYEES ---
+         if (funcsRes.status === 'fulfilled' && !funcsRes.value.error && funcsRes.value.data) {
+            const data = funcsRes.value.data;
+            setFuncionarios(data.map(mapFuncionario));
+            localStorage.setItem(STORAGE_KEYS.FUNCIONARIOS, JSON.stringify(data));
+         } else {
+            if (funcsRes.status === 'rejected') console.error("HR: Erro ao carregar funcionários", funcsRes.reason);
+            const cached = AmazingStorage.get(STORAGE_KEYS.FUNCIONARIOS, []);
+            if (cached.length > 0) setFuncionarios(cached.map(mapFuncionario));
+         }
+
+         // --- PROCESS PRESENCES ---
+         if (presRes.status === 'fulfilled' && !presRes.value.error && presRes.value.data) {
+            const data = presRes.value.data;
+            setPresencas(data as any);
+            localStorage.setItem(STORAGE_KEYS.PRESENCA, JSON.stringify(data));
+         } else {
+            setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
+         }
+
+         // --- PROCESS RECEIPTS ---
+         if (recRes.status === 'fulfilled' && !recRes.value.error && recRes.value.data) {
+            const data = recRes.value.data;
+            setRecibos(data);
+            localStorage.setItem(STORAGE_KEYS.RECIBOS, JSON.stringify(data));
+         } else {
+            setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
+         }
+
+         // --- PROCESS METAS ---
+         if (metasRes.status === 'fulfilled' && !metasRes.value.error && metasRes.value.data) {
+            const data = metasRes.value.data;
+            setMetas(data as any);
+            localStorage.setItem(STORAGE_KEYS.METAS, JSON.stringify(data));
+         } else {
+            setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
+         }
+
+         setCorporateInfo(AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
+      } catch (err) {
+         console.error("HR: Erro crítico na sincronização:", err);
+      } finally {
+         setLoading(false);
+         console.log("HR: Sincronização concluída.");
       }
-
-      // --- PROCESS PRESENCES ---
-      if (presRes.status === 'fulfilled' && !presRes.value.error && presRes.value.data) {
-         const data = presRes.value.data;
-         setPresencas(data as any);
-         localStorage.setItem(STORAGE_KEYS.PRESENCA, JSON.stringify(data));
-      } else {
-         setPresencas(AmazingStorage.get(STORAGE_KEYS.PRESENCA, []));
-      }
-
-      // --- PROCESS RECEIPTS ---
-      if (recRes.status === 'fulfilled' && !recRes.value.error && recRes.value.data) {
-         const data = recRes.value.data;
-         setRecibos(data);
-         localStorage.setItem(STORAGE_KEYS.RECIBOS, JSON.stringify(data));
-      } else {
-         setRecibos(AmazingStorage.get(STORAGE_KEYS.RECIBOS, []));
-      }
-
-      // --- PROCESS METAS ---
-      if (metasRes.status === 'fulfilled' && !metasRes.value.error && metasRes.value.data) {
-         const data = metasRes.value.data;
-         setMetas(data as any);
-         localStorage.setItem(STORAGE_KEYS.METAS, JSON.stringify(data));
-      } else {
-         setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
-      }
-
-      setCorporateInfo(AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
-      setLoading(false);
    };
 
    useEffect(() => {

@@ -38,6 +38,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { TenantProvider } from './src/components/TenantProvider';
 import { supabase, getUserProfile } from './src/lib/supabase';
 import { AmazingStorage, STORAGE_KEYS } from './utils/storage';
+import { useSaaS } from './src/contexts/SaaSContext';
 import { User } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import UsersPage from './pages/Users';
@@ -51,9 +52,17 @@ import SubscriptionPage from './pages/Subscription';
 import { checkSubscription } from './src/utils/subscription';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const { refreshSubscription } = useSaaS();
+  const [user, setUser] = useState<User | null>(() => AmazingStorage.get(STORAGE_KEYS.USER, null));
+  const userRef = React.useRef<User | null>(user);
+
+  // Sync ref with state
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -71,8 +80,10 @@ const App: React.FC = () => {
       console.log(`Auth event: ${event}`);
 
       if (session?.user) {
-        // ONLY show full-screen spinner if we have NO user at all (initial entry)
-        const isFreshEntry = !user;
+        // Use ref to avoid stale closure issues
+        const currentUser = userRef.current;
+        const isFreshEntry = !currentUser;
+
         if (isFreshEntry) {
           setIsLoadingUser(true);
         }
@@ -98,7 +109,8 @@ const App: React.FC = () => {
           // 3. Background tasks (Non-blocking for UI entry)
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
           AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]);
-          AmazingStorage.loadAllFromCloud(); // NO .then() here to avoid hanging on slow mobile data
+          refreshSubscription(); // Sincronizar subscrição no login
+          AmazingStorage.loadAllFromCloud();
 
         } catch (err) {
           console.error("Initialization error:", err);
