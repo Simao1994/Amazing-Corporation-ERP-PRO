@@ -47,6 +47,16 @@ const MasterAdmin: React.FC = () => {
     // Subscription edit state
     const [editingSubscription, setEditingSubscription] = useState<any>(null);
 
+    // Tenant registration state
+    const [isTenantModalOpen, setIsTenantModalOpen] = useState(false);
+    const [tenantFormSaving, setTenantFormSaving] = useState(false);
+    const [tenantForm, setTenantForm] = useState({
+        nome: '',
+        nif: '',
+        slug: '',
+        status: 'ativo'
+    });
+
     const isMounted = React.useRef(true);
     const timeoutIdRef = React.useRef<any>(null);
 
@@ -220,6 +230,44 @@ const MasterAdmin: React.FC = () => {
             (window as any).notify?.(err.message, 'error');
         } finally {
             setLicenseFormSaving(false);
+        }
+    };
+
+    const handleSaveTenant = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!tenantForm.nome || !tenantForm.slug) {
+            (window as any).notify?.("Nome e Slug são obrigatórios.", "error");
+            return;
+        }
+
+        setTenantFormSaving(true);
+        try {
+            console.log("MasterAdmin: A registar nova empresa...", tenantForm);
+            const { data, error } = await supabase
+                .from('saas_tenants')
+                .insert([
+                    {
+                        nome: tenantForm.nome,
+                        nif: tenantForm.nif || null,
+                        slug: tenantForm.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                        status: tenantForm.status
+                    }
+                ])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            console.log("MasterAdmin: Empresa registada com sucesso:", data);
+            (window as any).notify?.("Empresa registada com sucesso!", "success");
+            setIsTenantModalOpen(false);
+            setTenantForm({ nome: '', nif: '', slug: '', status: 'ativo' });
+            fetchData();
+        } catch (err: any) {
+            console.error("MasterAdmin: Erro ao registar empresa:", err);
+            (window as any).notify?.(`Erro ao registar empresa: ${err.message || 'Verifique se o NIF ou Slug já existem.'}`, "error");
+        } finally {
+            setTenantFormSaving(false);
         }
     };
 
@@ -433,14 +481,22 @@ const MasterAdmin: React.FC = () => {
                             <h2 className="text-xl font-black uppercase tracking-tight">Directório de Empresas</h2>
                             <p className="text-slate-500 text-xs mt-1">Clique em <span className="text-purple-400 font-black">+ Licença</span> para criar ou editar a licença de uma empresa</p>
                         </div>
-                        <div className="relative w-full md:w-80">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                            <input
-                                placeholder="Procurar empresa ou NIF..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                            />
+                        <div className="flex items-center gap-4">
+                            <div className="relative w-full md:w-80">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                <input
+                                    placeholder="Procurar empresa ou NIF..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                />
+                            </div>
+                            <button
+                                onClick={() => setIsTenantModalOpen(true)}
+                                className="px-6 py-3 bg-white text-zinc-900 rounded-2xl flex items-center gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg hover:bg-zinc-100 transition-all"
+                            >
+                                <Plus size={16} /> Nova Empresa
+                            </button>
                         </div>
                     </div>
                     <div className="overflow-x-auto">
@@ -875,6 +931,67 @@ const MasterAdmin: React.FC = () => {
                             </button>
                         </div>
                     </form>
+                </div>
+            )}
+            {/* Tenant Registration Modal */}
+            {isTenantModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                    <div className="bg-[#0f172a] w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border border-white/10 animate-in zoom-in-95">
+                        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2">
+                            <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 text-white">
+                                <Building2 className="text-purple-500" /> Registar Empresa
+                            </h2>
+                            <button onClick={() => setIsTenantModalOpen(false)} className="p-3 hover:bg-white/10 rounded-full transition-all text-slate-400"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleSaveTenant} className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Designação Social</label>
+                                <input
+                                    required
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                    placeholder="Ex: Amazing Corp S.A."
+                                    value={tenantForm.nome}
+                                    onChange={e => {
+                                        const nome = e.target.value;
+                                        setTenantForm({
+                                            ...tenantForm,
+                                            nome,
+                                            slug: tenantForm.slug || nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+                                        });
+                                    }}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">NIF</label>
+                                    <input
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                        placeholder="5000..."
+                                        value={tenantForm.nif}
+                                        onChange={e => setTenantForm({ ...tenantForm, nif: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Slug (URL)</label>
+                                    <input
+                                        required
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                        placeholder="ex-empresa"
+                                        value={tenantForm.slug}
+                                        onChange={e => setTenantForm({ ...tenantForm, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={tenantFormSaving}
+                                className="w-full py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black rounded-2xl uppercase text-xs tracking-[0.2em] shadow-xl shadow-purple-900/40 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                            >
+                                {tenantFormSaving ? <RefreshCcw className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
+                                {tenantFormSaving ? 'A REGISTAR...' : 'EFECTIVAR REGISTO'}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>
