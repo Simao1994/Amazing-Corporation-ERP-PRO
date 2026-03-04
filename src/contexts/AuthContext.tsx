@@ -24,10 +24,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Defensive fallback data
+        const userEmail = activeSession.user.email || '';
         const fallbackUser = {
             ...activeSession.user,
-            role: activeSession.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
-            nome: activeSession.user.user_metadata?.nome || activeSession.user.email?.split('@')[0],
+            role: userEmail === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
+            nome: activeSession.user.user_metadata?.nome || userEmail.split('@')[0] || 'Utilizador',
             tenant_id: activeSession.user.user_metadata?.tenant_id
         };
 
@@ -84,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             } catch (err) {
                 console.error('AuthContext: Init error:', err);
+                setUser(null);
             } finally {
                 console.log('AuthContext: initAuth finished, setting loading to false.');
                 setLoading(false);

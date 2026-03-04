@@ -125,6 +125,9 @@ const App: React.FC = () => {
               SaaS: {saasLoading ? 'Pendente' : 'Pronto'}
             </div>
           </div>
+          <p className="text-slate-600 text-[8px] font-mono mt-2 break-all max-w-xs mx-auto">
+            URL: {import.meta.env.VITE_SUPABASE_URL || 'NÃO CONFIGURADA'}
+          </p>
         </div>
 
         {showForceLoad && (
