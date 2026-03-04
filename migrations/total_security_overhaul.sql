@@ -75,12 +75,31 @@ CREATE POLICY "profiles_admin_all" ON public.profiles FOR ALL TO authenticated U
 DROP POLICY IF EXISTS "profiles_tenant_select" ON public.profiles;
 CREATE POLICY "profiles_tenant_select" ON public.profiles FOR SELECT TO authenticated USING (tenant_id = get_auth_tenant());
 
--- 4. Ensure Master Admin Account Exists with Correct Role
-INSERT INTO public.profiles (id, email, role, nome)
-SELECT id, email, 'saas_admin', 'Simao Pambo'
-FROM auth.users
-WHERE email = 'simaopambo94@gmail.com'
-ON CONFLICT (id) DO UPDATE SET role = 'saas_admin';
+-- 4. Ensure Master Admin Account Exists with Correct Role and Tenant
+DO $$
+DECLARE
+    default_tenant_id uuid;
+BEGIN
+    -- Encontrar o ID do tenant padrão (Amazing Corporation)
+    SELECT id INTO default_tenant_id FROM public.saas_tenants WHERE slug = 'amazing-corp' LIMIT 1;
+
+    -- Se não existir, criar um temporário para não quebrar a restrição NOT NULL
+    IF default_tenant_id IS NULL THEN
+        INSERT INTO public.saas_tenants (nome, slug, status) 
+        VALUES ('Amazing Corporation', 'amazing-corp', 'ativo')
+        ON CONFLICT (slug) DO UPDATE SET nome = EXCLUDED.nome
+        RETURNING id INTO default_tenant_id;
+    END IF;
+
+    -- Upsert do perfil com o tenant_id obrigatório
+    INSERT INTO public.profiles (id, email, role, nome, tenant_id)
+    SELECT id, email, 'saas_admin', 'Simao Pambo', default_tenant_id
+    FROM auth.users
+    WHERE email = 'simaopambo94@gmail.com'
+    ON CONFLICT (id) DO UPDATE SET 
+        role = 'saas_admin',
+        tenant_id = default_tenant_id;
+END $$;
 
 -- 5. Finalize
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
