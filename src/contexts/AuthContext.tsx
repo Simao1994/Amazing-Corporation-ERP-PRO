@@ -11,7 +11,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<any | null>(null);
+    // 1. Iniciar imediatamente com dados do cache se disponíveis para evitar tela branca
+    const [user, setUser] = useState<any | null>(() => {
+        const cached = localStorage.getItem('auth_user_cache');
+        return cached ? JSON.parse(cached) : null;
+    });
+
     const [session, setSession] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
     const isInitialLoad = useRef(true);
@@ -20,10 +25,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const activeSession = currentSession || session;
         if (!activeSession?.user) {
             setUser(null);
+            localStorage.removeItem('auth_user_cache');
             return;
         }
 
-        // Defensive fallback data
         const userEmail = activeSession.user.email || '';
         const fallbackUser = {
             ...activeSession.user,
@@ -33,91 +38,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         try {
-            console.log('AuthContext: Fetching profile for', activeSession.user.email);
+            console.log('AuthContext: Buscando perfil de', userEmail);
 
-            // Timeout protection for the profile fetch (5 seconds)
-            const profilePromise = supabase
+            const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', activeSession.user.id)
                 .single();
 
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
-            );
-
-            const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
-
             if (error) {
-                console.warn('AuthContext: Profile fetch error (using fallback):', error);
+                console.warn('AuthContext: Erro ao buscar perfil (usando fallback):', error);
                 setUser(fallbackUser);
+                localStorage.setItem('auth_user_cache', JSON.stringify(fallbackUser));
             } else if (profile) {
-                console.log('AuthContext: Profile loaded successfully');
-                setUser({
-                    ...activeSession.user,
-                    ...profile
-                });
+                const fullUser = { ...activeSession.user, ...profile };
+                setUser(fullUser);
+                localStorage.setItem('auth_user_cache', JSON.stringify(fullUser));
             } else {
                 setUser(fallbackUser);
+                localStorage.setItem('auth_user_cache', JSON.stringify(fallbackUser));
             }
         } catch (err) {
-            console.error('AuthContext: Error in refreshProfile (using fallback):', err);
+            console.error('AuthContext: Erro fatal no refreshProfile:', err);
             setUser(fallbackUser);
         }
     };
 
     useEffect(() => {
-        // 1. Initial lookup
+        // FAIL-SAFE GLOBAL: Independente de tudo, parar o loading em 4 segundos
+        const failSafeTimer = setTimeout(() => {
+            if (loading) {
+                console.error('AuthContext: FAIL-SAFE disparado! Forçando carregamento...');
+                setLoading(false);
+            }
+        }, 4000);
+
         const initAuth = async () => {
-            console.log('AuthContext: Starting initAuth...');
             try {
-                // Initial session fetch with timeout
-                const sessionPromise = supabase.auth.getSession();
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
-                );
-
-                const { data: { session: initialSession } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
-
+                // Obter sessão inicial
+                const { data: { session: initialSession } } = await supabase.auth.getSession();
                 setSession(initialSession);
+
                 if (initialSession) {
                     await refreshProfile(initialSession);
                 }
             } catch (err) {
-                console.error('AuthContext: Init error:', err);
-                setUser(null);
+                console.error('AuthContext: Erro na inicialização:', err);
             } finally {
-                console.log('AuthContext: initAuth finished, setting loading to false.');
                 setLoading(false);
                 isInitialLoad.current = false;
+                clearTimeout(failSafeTimer);
             }
         };
 
         initAuth();
 
-        // 2. Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-            console.log('AuthContext: Auth Event:', event);
-
             setSession(newSession);
-
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                if (newSession) {
-                    await refreshProfile(newSession);
-                }
+                if (newSession) await refreshProfile(newSession);
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
                 setSession(null);
+                localStorage.removeItem('auth_user_cache');
             }
 
-            // Only stop loading if we're not in the middle of init
-            if (!isInitialLoad.current) {
-                setLoading(false);
-            }
+            if (!isInitialLoad.current) setLoading(false);
         });
 
         return () => {
             subscription.unsubscribe();
+            clearTimeout(failSafeTimer);
         };
     }, []);
 
@@ -130,8 +121,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
+    if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
     return context;
 };

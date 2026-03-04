@@ -63,7 +63,15 @@ const App: React.FC = () => {
   };
 
   const [showForceLoad, setShowForceLoad] = useState(false);
-  const [forceLoadManual, setForceLoadManual] = useState(false);
+  const [forceLoadManual, setForceLoadManual] = useState(() => {
+    return localStorage.getItem('emergency_nuclear_bypass') === 'true';
+  });
+
+  const clearEverything = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.reload();
+  };
 
   useEffect(() => {
     (window as any).notify = showToast;
@@ -137,7 +145,7 @@ const App: React.FC = () => {
                 O carregamento está travado. Isto pode ser devido a instabilidade no banco de dados. Use o Modo de Segurança para entrar.
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4 justify-center">
               <button
                 onClick={() => window.location.reload()}
                 className="bg-slate-800 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all shadow-xl"
@@ -145,14 +153,23 @@ const App: React.FC = () => {
                 Recarregar
               </button>
               <button
-                onClick={() => setForceLoadManual(true)}
+                onClick={() => {
+                  localStorage.setItem('emergency_nuclear_bypass', 'true');
+                  setForceLoadManual(true);
+                }}
                 className="bg-purple-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-500 transition-all shadow-xl border border-purple-400/30"
               >
                 Modo de Segurança
               </button>
+              <button
+                onClick={clearEverything}
+                className="bg-red-900/40 text-red-500 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-900/60 transition-all border border-red-500/30"
+              >
+                Limpar & Resetar
+              </button>
             </div>
             <p className="text-slate-500 text-[9px] font-medium italic">
-              O Modo de Segurança ignora validações pendentes para libertar o acesso.
+              Se o ecrã não sumir após o Modo de Segurança, tente Limpar & Resetar.
             </p>
           </div>
         )}

@@ -86,13 +86,25 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
+        // FAIL-SAFE: Parar carregamento do SaaS em 6 segundos no máximo
+        const failSafe = setTimeout(() => {
+            if (loading) {
+                console.error('SaaSContext: FAIL-SAFE disparado!');
+                setLoading(false);
+            }
+        }, 6000);
+
         if (!authLoading) {
-            refreshSubscription();
+            refreshSubscription().finally(() => {
+                clearTimeout(failSafe);
+            });
         }
+
+        return () => clearTimeout(failSafe);
     }, [user, authLoading]);
 
     return (
-        <SaaSContext.Provider value={{ subscription, loading: loading || authLoading, refreshSubscription }}>
+        <SaaSContext.Provider value={{ subscription, loading: loading, refreshSubscription }}>
             {children}
         </SaaSContext.Provider>
     );
