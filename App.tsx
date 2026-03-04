@@ -63,14 +63,15 @@ const App: React.FC = () => {
   };
 
   const [showForceLoad, setShowForceLoad] = useState(false);
+  const [forceLoadManual, setForceLoadManual] = useState(false);
 
   useEffect(() => {
     (window as any).notify = showToast;
 
-    // Safety timeout for global loading
+    // Safety timeout for global loading (Reduced to 5s for emergency)
     const timer = setTimeout(() => {
       setShowForceLoad(true);
-    }, 12000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -96,7 +97,8 @@ const App: React.FC = () => {
   };
 
   // RULE 1, 2, 3: While loading, show spinner, DO NOT render dashboard, DO NOT redirect
-  const isGlobalLoading = authLoading || saasLoading;
+  // Emergency bypass: if forceLoadManual is true, we stop loading
+  const isGlobalLoading = (authLoading || saasLoading) && !forceLoadManual;
 
   if (isGlobalLoading) {
     return (
@@ -121,23 +123,25 @@ const App: React.FC = () => {
           <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center gap-4">
             <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-2xl max-w-xs text-center">
               <p className="text-red-400 text-[10px] font-bold leading-relaxed">
-                O carregamento está a demorar mais do que o esperado. Isto pode ser devido a uma ligação lenta ou instabilidade no banco de dados.
+                O carregamento está travado. Isto pode ser devido a instabilidade no banco de dados. Use o Modo de Segurança para entrar.
               </p>
             </div>
-            <button
-              onClick={() => {
-                // Force state resolution
-                console.warn("App: Forcing load state...");
-                // Note: We can't easily force contexts from here without exposing setters, 
-                // but we can at least try to render something.
-                window.location.reload();
-              }}
-              className="bg-white text-black px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl"
-            >
-              Recarregar Sistema
-            </button>
+            <div className="flex gap-4">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-slate-800 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all shadow-xl"
+              >
+                Recarregar
+              </button>
+              <button
+                onClick={() => setForceLoadManual(true)}
+                className="bg-purple-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-500 transition-all shadow-xl border border-purple-400/30"
+              >
+                Modo de Segurança
+              </button>
+            </div>
             <p className="text-slate-500 text-[9px] font-medium italic">
-              Se o problema persistir, limpe a cache do navegador.
+              O Modo de Segurança ignora validações pendentes para libertar o acesso.
             </p>
           </div>
         )}
