@@ -62,8 +62,17 @@ const App: React.FC = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const [showForceLoad, setShowForceLoad] = useState(false);
+
   useEffect(() => {
     (window as any).notify = showToast;
+
+    // Safety timeout for global loading
+    const timer = setTimeout(() => {
+      setShowForceLoad(true);
+    }, 12000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const handleLogin = async (userData: any) => {
@@ -91,9 +100,47 @@ const App: React.FC = () => {
 
   if (isGlobalLoading) {
     return (
-      <div className="min-h-screen bg-[#e0f2fe] flex flex-col items-center justify-center gap-4">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 shadow-xl"></div>
-        <p className="text-zinc-500 font-black uppercase text-[10px] tracking-widest animate-pulse">Sincronizando Segurança Amazing Corp...</p>
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center gap-6 p-6">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-purple-500 shadow-[0_0_50px_rgba(168,85,247,0.3)]"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 bg-purple-500/10 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+
+        <div className="text-center space-y-2">
+          <p className="text-white font-black uppercase text-xs tracking-[0.3em] animate-pulse">
+            Sincronizando Segurança Alpha
+          </p>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+            A validar infraestrutura e permissões...
+          </p>
+        </div>
+
+        {showForceLoad && (
+          <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center gap-4">
+            <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-2xl max-w-xs text-center">
+              <p className="text-red-400 text-[10px] font-bold leading-relaxed">
+                O carregamento está a demorar mais do que o esperado. Isto pode ser devido a uma ligação lenta ou instabilidade no banco de dados.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                // Force state resolution
+                console.warn("App: Forcing load state...");
+                // Note: We can't easily force contexts from here without exposing setters, 
+                // but we can at least try to render something.
+                window.location.reload();
+              }}
+              className="bg-white text-black px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl"
+            >
+              Recarregar Sistema
+            </button>
+            <p className="text-slate-500 text-[9px] font-medium italic">
+              Se o problema persistir, limpe a cache do navegador.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
