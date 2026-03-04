@@ -62,7 +62,15 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (effectiveTenantId) {
                 console.log('SaaSContext: Checking subscription for tenant:', effectiveTenantId);
-                const status = await checkSubscription(effectiveTenantId);
+
+                // Timeout protection for subscription check (5 seconds)
+                const subPromise = checkSubscription(effectiveTenantId);
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Subscription check timeout')), 5000)
+                );
+
+                const status = await Promise.race([subPromise, timeoutPromise]) as SubscriptionStatus;
+
                 console.log('SaaSContext: Subscription status:', status);
                 setSubscription(prev => JSON.stringify(prev) === JSON.stringify(status) ? prev : status);
             } else {

@@ -23,37 +23,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
         }
 
+        // Defensive fallback data
+        const fallbackUser = {
+            ...activeSession.user,
+            role: activeSession.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
+            nome: activeSession.user.user_metadata?.nome || activeSession.user.email?.split('@')[0],
+            tenant_id: activeSession.user.user_metadata?.tenant_id
+        };
+
         try {
-            // Fetch profile for tenant_id and role
-            const { data: profile } = await supabase
+            console.log('AuthContext: Fetching profile for', activeSession.user.email);
+
+            // Timeout protection for the profile fetch (5 seconds)
+            const profilePromise = supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', activeSession.user.id)
                 .single();
 
-            if (profile) {
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+            );
+
+            const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+
+            if (error) {
+                console.warn('AuthContext: Profile fetch error (using fallback):', error);
+                setUser(fallbackUser);
+            } else if (profile) {
+                console.log('AuthContext: Profile loaded successfully');
                 setUser({
                     ...activeSession.user,
                     ...profile
                 });
             } else {
-                // Fallback for Master Admin or missing profile
-                setUser({
-                    ...activeSession.user,
-                    role: activeSession.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
-                    nome: activeSession.user.user_metadata?.nome || activeSession.user.email?.split('@')[0]
-                });
+                setUser(fallbackUser);
             }
         } catch (err) {
-            console.error('AuthContext: Error fetching profile:', err);
+            console.error('AuthContext: Error in refreshProfile (using fallback):', err);
+            setUser(fallbackUser);
         }
     };
 
     useEffect(() => {
         // 1. Initial lookup
         const initAuth = async () => {
+            console.log('AuthContext: Starting initAuth...');
             try {
-                const { data: { session: initialSession } } = await supabase.auth.getSession();
+                // Initial session fetch with timeout
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+                );
+
+                const { data: { session: initialSession } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+
                 setSession(initialSession);
                 if (initialSession) {
                     await refreshProfile(initialSession);
@@ -61,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } catch (err) {
                 console.error('AuthContext: Init error:', err);
             } finally {
+                console.log('AuthContext: initAuth finished, setting loading to false.');
                 setLoading(false);
                 isInitialLoad.current = false;
             }
