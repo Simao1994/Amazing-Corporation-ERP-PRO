@@ -82,19 +82,21 @@ const MasterAdmin: React.FC = () => {
         }, 15000);
 
         try {
-            // Executar em paralelo para performance
-            const [tenantsRes, plansRes, subsRes] = await Promise.all([
-                supabase.from('saas_tenants').select('*, saas_subscriptions(*)'),
-                supabase.from('saas_plans').select('*').order('valor', { ascending: true }),
-                supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false })
-            ]);
-
+            // Chamadas sequenciais para evitar contenção de LockManager do Supabase
+            console.log("MasterAdmin: A carregar empresas...");
+            const tenantsRes = await supabase.from('saas_tenants').select('*, saas_subscriptions(*)');
             if (tenantsRes.error) throw tenantsRes.error;
+
+            console.log("MasterAdmin: A carregar planos...");
+            const plansRes = await supabase.from('saas_plans').select('*').order('valor', { ascending: true });
             if (plansRes.error) throw plansRes.error;
+
+            console.log("MasterAdmin: A carregar subscrições...");
+            const subsRes = await supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false });
             if (subsRes.error) throw subsRes.error;
 
             if (isMounted.current) {
-                console.log("MasterAdmin: Dados carregados com sucesso.");
+                console.log("MasterAdmin: Todos os dados carregados com sucesso.");
                 setTenants(tenantsRes.data || []);
                 setPlans(plansRes.data || []);
                 setSubscriptions(subsRes.data || []);

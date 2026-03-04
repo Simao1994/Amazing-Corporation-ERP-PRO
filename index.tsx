@@ -11,11 +11,9 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-  <React.StrictMode>
-    <AuthProvider>
-      <SaaSProvider>
-        <App />
-      </SaaSProvider>
-    </AuthProvider>
-  </React.StrictMode>
+  <AuthProvider>
+    <SaaSProvider>
+      <App />
+    </SaaSProvider>
+  </AuthProvider>
 );
