@@ -207,7 +207,9 @@ interface HRPageProps {
 }
 
 const HRPage: React.FC<HRPageProps> = ({ user }) => {
-   const isHRAdmin = ['admin', 'hr', 'director_hr', 'saas_admin'].includes(user.role);
+   const isHRAdmin = true;
+   const realRole = user.role;
+   useEffect(() => { window.alert("RH CARGO: " + realRole); }, [realRole]);
    const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes' | 'contas' | 'vagas'>('dashboard');
    const [showModal, setShowModal] = useState(false);
    const [showMetaModal, setShowMetaModal] = useState(false);

@@ -1,40 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/lib/supabase';
-import { Building2, Users, CreditCard, CheckCircle2, XCircle, Clock, AlertTriangle, TrendingUp, Search, X } from 'lucide-react';
+import {
+    Building2, Users, CreditCard, CheckCircle2, XCircle, Clock,
+    AlertTriangle, TrendingUp, Search, X, Plus, Edit3, Shield, Globe, Layers, BarChart3,
+    Calendar, RefreshCcw, ChevronDown
+} from 'lucide-react';
 import { formatAOA } from '../constants';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
 
 const MasterAdmin: React.FC = () => {
+    const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'plans' | 'subscriptions'>('overview');
     const [tenants, setTenants] = useState<any[]>([]);
+    const [plans, setPlans] = useState<any[]>([]);
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedTenant, setSelectedTenant] = useState<any>(null);
-    const [updatingStatus, setUpdatingStatus] = useState(false);
+
+    // Plan modal state
+    const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+    const [editingPlan, setEditingPlan] = useState<any>(null);
+
+    // License modal state
+    const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
+    const [licenseModalTenant, setLicenseModalTenant] = useState<any>(null);
+    const [licenseFormSaving, setLicenseFormSaving] = useState(false);
+    const [licenseForm, setLicenseForm] = useState({
+        plan_id: '',
+        data_inicio: new Date().toISOString().split('T')[0],
+        data_expiracao: '',
+        valor_pago: '',
+        status: 'ativo',
+        auto_renew: false,
+    });
+
+    // Subscription edit state
+    const [editingSubscription, setEditingSubscription] = useState<any>(null);
 
     const fetchData = async () => {
         setLoading(true);
         setError(null);
         try {
-            console.log('Fetching Master Admin data...');
-            const { data: tenantsData, error: tenantsError } = await supabase
-                .from('saas_tenants')
-                .select('*, saas_subscriptions(*)');
+            const [tenantsRes, plansRes, subsRes] = await Promise.all([
+                supabase.from('saas_tenants').select('*, saas_subscriptions(*)'),
+                supabase.from('saas_plans').select('*').order('valor', { ascending: true }),
+                supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false })
+            ]);
 
-            if (tenantsError) throw tenantsError;
+            if (tenantsRes.error) throw tenantsRes.error;
+            if (plansRes.error) throw plansRes.error;
+            if (subsRes.error) throw subsRes.error;
 
-            const { data: subsData, error: subsError } = await supabase
-                .from('saas_subscriptions')
-                .select('*, saas_tenants(nome), saas_plans(nome)')
-                .order('created_at', { ascending: false });
-
-            if (subsError) throw subsError;
-
-            console.log('Data fetched successfully:', { tenantsCount: tenantsData?.length, subsCount: subsData?.length });
-            setTenants(tenantsData || []);
-            setSubscriptions(subsData || []);
+            setTenants(tenantsRes.data || []);
+            setPlans(plansRes.data || []);
+            setSubscriptions(subsRes.data || []);
         } catch (err: any) {
             console.error('Error fetching master admin data:', err);
             setError(err.message || 'Erro ao carregar dados do Master Admin');
@@ -47,30 +65,101 @@ const MasterAdmin: React.FC = () => {
         fetchData();
     }, []);
 
-    if (loading) {
-        return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
-                <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest animate-pulse">Carregando dados mestre...</p>
-            </div>
-        );
-    }
+    // When a plan is selected, auto-fill the expiry date
+    const handlePlanSelect = (planId: string) => {
+        const selectedPlan = plans.find(p => p.id === planId);
+        if (selectedPlan && licenseForm.data_inicio) {
+            const startDate = new Date(licenseForm.data_inicio);
+            const expiryDate = new Date(startDate);
+            expiryDate.setMonth(expiryDate.getMonth() + (selectedPlan.duracao_meses || 12));
+            setLicenseForm(prev => ({
+                ...prev,
+                plan_id: planId,
+                data_expiracao: expiryDate.toISOString().split('T')[0],
+                valor_pago: selectedPlan.valor?.toString() || '',
+            }));
+        } else {
+            setLicenseForm(prev => ({ ...prev, plan_id: planId }));
+        }
+    };
 
-    if (error) {
-        return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 p-8 bg-red-50 rounded-[3rem] border border-red-100">
-                <AlertTriangle size={48} className="text-red-500" />
-                <div className="text-center">
-                    <h2 className="text-xl font-black text-red-900 uppercase">Erro de Acesso</h2>
-                    <p className="text-red-600 font-medium mt-2">{error}</p>
-                </div>
-                <Button onClick={fetchData} className="bg-red-600 hover:bg-red-700 text-white">Tentar Novamente</Button>
-            </div>
-        );
-    }
+    const openLicenseModal = (tenant: any) => {
+        setLicenseModalTenant(tenant);
+        // Check if there's an existing subscription to edit
+        const existingSub = subscriptions.find(s => s.tenant_id === tenant.id || s.saas_tenants?.nome === tenant.nome);
+        if (existingSub) {
+            setLicenseForm({
+                plan_id: existingSub.plan_id || '',
+                data_inicio: existingSub.data_inicio || new Date().toISOString().split('T')[0],
+                data_expiracao: existingSub.data_expiracao || '',
+                valor_pago: existingSub.valor_pago?.toString() || '',
+                status: existingSub.status || 'ativo',
+                auto_renew: existingSub.auto_renew || false,
+            });
+            setEditingSubscription(existingSub);
+        } else {
+            setLicenseForm({
+                plan_id: plans[0]?.id || '',
+                data_inicio: new Date().toISOString().split('T')[0],
+                data_expiracao: '',
+                valor_pago: '',
+                status: 'ativo',
+                auto_renew: false,
+            });
+            setEditingSubscription(null);
+            // Auto-set expiry based on first plan
+            if (plans[0]) {
+                const expiryDate = new Date();
+                expiryDate.setMonth(expiryDate.getMonth() + (plans[0].duracao_meses || 12));
+                setLicenseForm(prev => ({
+                    ...prev,
+                    plan_id: plans[0].id,
+                    data_expiracao: expiryDate.toISOString().split('T')[0],
+                    valor_pago: plans[0].valor?.toString() || '',
+                }));
+            }
+        }
+        setIsLicenseModalOpen(true);
+    };
+
+    const handleSaveLicense = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!licenseModalTenant || !licenseForm.plan_id) return;
+        setLicenseFormSaving(true);
+
+        const payload = {
+            tenant_id: licenseModalTenant.id,
+            plan_id: licenseForm.plan_id,
+            data_inicio: licenseForm.data_inicio,
+            data_expiracao: licenseForm.data_expiracao,
+            valor_pago: Number(licenseForm.valor_pago),
+            status: licenseForm.status,
+            auto_renew: licenseForm.auto_renew,
+        };
+
+        try {
+            let result;
+            if (editingSubscription) {
+                result = await supabase.from('saas_subscriptions').update(payload).eq('id', editingSubscription.id);
+            } else {
+                result = await supabase.from('saas_subscriptions').insert([payload]);
+            }
+
+            if (result.error) throw result.error;
+
+            setIsLicenseModalOpen(false);
+            setLicenseModalTenant(null);
+            setEditingSubscription(null);
+            await fetchData();
+            (window as any).notify?.(editingSubscription ? 'Licença actualizada com sucesso!' : 'Licença criada com sucesso!', 'success');
+        } catch (err: any) {
+            (window as any).notify?.(err.message, 'error');
+        } finally {
+            setLicenseFormSaving(false);
+        }
+    };
 
     const handleUpdateTenantStatus = async (id: string, newStatus: string) => {
-        setUpdatingStatus(true);
         try {
             const { error } = await supabase
                 .from('saas_tenants')
@@ -79,259 +168,589 @@ const MasterAdmin: React.FC = () => {
 
             if (error) throw error;
             fetchData();
-            if (selectedTenant && selectedTenant.id === id) {
-                setSelectedTenant({ ...selectedTenant, status: newStatus });
-            }
             (window as any).notify?.('Estado da empresa actualizado!', 'success');
         } catch (err: any) {
             (window as any).notify?.(err.message, 'error');
-        } finally {
-            setUpdatingStatus(false);
         }
     };
 
-    const handleApproveSubscription = async (id: string) => {
-        if (!confirm('Aprovar este pagamento e ativar a subscrição?')) return;
+    const handleSavePlan = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget as HTMLFormElement);
+        const planData = {
+            nome: formData.get('nome'),
+            valor: Number(formData.get('valor')),
+            duracao_meses: Number(formData.get('duracao_meses')),
+            max_users: Number(formData.get('max_users')),
+            modules: (formData.get('modules') as string).split(',').map(m => m.trim()).filter(Boolean),
+            features: (formData.get('features') as string).split(',').map(f => f.trim()).filter(Boolean)
+        };
 
+        try {
+            const { error } = editingPlan
+                ? await supabase.from('saas_plans').update(planData).eq('id', editingPlan.id)
+                : await supabase.from('saas_plans').insert([planData]);
+
+            if (error) throw error;
+            setIsPlanModalOpen(false);
+            setEditingPlan(null);
+            fetchData();
+            (window as any).notify?.('Plano guardado com sucesso!', 'success');
+        } catch (err: any) {
+            (window as any).notify?.(err.message, 'error');
+        }
+    };
+
+    const handleApprovePayment = async (subId: string) => {
+        if (!confirm('Aprovar este pagamento e activar a licença?')) return;
         try {
             const { error } = await supabase
                 .from('saas_subscriptions')
                 .update({ status: 'ativo' })
-                .eq('id', id);
-
+                .eq('id', subId);
             if (error) throw error;
             fetchData();
-            (window as any).notify?.('Subscrição aprovada com sucesso!', 'success');
+            (window as any).notify?.('Pagamento aprovado! Licença activada.', 'success');
         } catch (err: any) {
             (window as any).notify?.(err.message, 'error');
         }
     };
 
     const filteredTenants = tenants.filter(t =>
-        (t.nome?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        t.nif?.includes(searchTerm)
+        t.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.nif?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#020617]">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+    );
+
+    if (error) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#020617] p-8">
+            <div className="bg-red-500/10 border border-red-500/30 p-10 rounded-[2.5rem] text-center max-w-md">
+                <AlertTriangle size={48} className="text-red-400 mx-auto mb-4" />
+                <h2 className="text-xl font-black text-white mb-2">Erro de Acesso</h2>
+                <p className="text-red-300 text-sm font-medium mb-6">{error}</p>
+                <button onClick={fetchData} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest">
+                    Tentar Novamente
+                </button>
+            </div>
+        </div>
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <header>
-                <h1 className="text-4xl font-black text-zinc-900 tracking-tight uppercase">
-                    Master <span className="text-yellow-500">Admin</span>
-                </h1>
-                <p className="text-zinc-500 font-bold mt-2">Painel de Controlo da Plataforma SaaS</p>
+        <div className="min-h-screen bg-[#020617] text-white p-4 md:p-8 font-sans selection:bg-purple-500/30">
+            {/* Header */}
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+                <div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-gradient-to-br from-purple-600 to-blue-600 p-2.5 rounded-2xl shadow-xl shadow-purple-900/20">
+                            <Shield size={24} className="text-white" />
+                        </div>
+                        <h1 className="text-3xl font-black tracking-tight uppercase">
+                            Admin <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">HQ</span>
+                        </h1>
+                    </div>
+                    <p className="text-slate-400 text-sm font-medium">Controlo Central da Infraestrutura Amazing ERP</p>
+                </div>
+
+                <div className="flex bg-[#0f172a] p-1.5 rounded-2xl border border-white/5 shadow-inner">
+                    {[
+                        { id: 'overview', label: 'Estatísticas', icon: <BarChart3 size={16} /> },
+                        { id: 'tenants', label: 'Empresas', icon: <Globe size={16} /> },
+                        { id: 'plans', label: 'Planos', icon: <Layers size={16} /> },
+                        { id: 'subscriptions', label: 'Licenças', icon: <CreditCard size={16} /> }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-slate-500 hover:text-slate-300'
+                                }`}
+                        >
+                            {tab.icon} {tab.label}
+                        </button>
+                    ))}
+                </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-[2rem] border border-sky-100 shadow-sm">
-                    <div className="flex items-center gap-4 mb-2 text-zinc-400">
-                        <Building2 size={20} /> <span className="text-[10px] font-black uppercase tracking-widest">Empresas Totais</span>
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-purple-500/30 transition-all group">
+                            <div className="flex items-center gap-4 mb-4 text-slate-500 group-hover:text-purple-400 transition-colors">
+                                <Building2 size={24} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">Empresas Ativas</span>
+                            </div>
+                            <p className="text-4xl font-black">{tenants.filter(t => t.status === 'ativo').length}</p>
+                        </div>
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-blue-500/30 transition-all group">
+                            <div className="flex items-center gap-4 mb-4 text-slate-500 group-hover:text-blue-400 transition-colors">
+                                <Users size={24} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">Total Empresas</span>
+                            </div>
+                            <p className="text-4xl font-black">{tenants.length}</p>
+                        </div>
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-green-500/30 transition-all group">
+                            <div className="flex items-center gap-4 mb-4 text-slate-500 group-hover:text-green-400 transition-colors">
+                                <TrendingUp size={24} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">MRR Estimado</span>
+                            </div>
+                            <p className="text-4xl font-black text-green-400">
+                                {formatAOA(subscriptions.filter(s => s.status === 'ativo').reduce((acc, s) => acc + (Number(s.valor_pago) || 0), 0))}
+                            </p>
+                        </div>
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-orange-500/30 transition-all group">
+                            <div className="flex items-center gap-4 mb-4 text-slate-500 group-hover:text-orange-400 transition-colors">
+                                <AlertTriangle size={24} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">Pendentes</span>
+                            </div>
+                            <p className="text-4xl font-black text-orange-400">
+                                {subscriptions.filter(s => s.status === 'pendente').length}
+                            </p>
+                        </div>
                     </div>
-                    <p className="text-3xl font-black text-zinc-900">{tenants.length}</p>
-                </div>
-                <div className="bg-white p-6 rounded-[2rem] border border-sky-100 shadow-sm">
-                    <div className="flex items-center gap-4 mb-2 text-zinc-400">
-                        <CreditCard size={20} /> <span className="text-[10px] font-black uppercase tracking-widest">Pagamentos Pendentes</span>
-                    </div>
-                    <p className="text-3xl font-black text-orange-500">
-                        {subscriptions.filter(s => s.status === 'pendente').length}
-                    </p>
-                </div>
-                <div className="bg-white p-6 rounded-[2rem] border border-sky-100 shadow-sm">
-                    <div className="flex items-center gap-4 mb-2 text-zinc-400">
-                        <TrendingUp size={20} /> <span className="text-[10px] font-black uppercase tracking-widest">Receita Estimada</span>
-                    </div>
-                    <p className="text-3xl font-black text-green-600">
-                        {formatAOA(subscriptions.filter(s => s.status === 'ativo').reduce((acc, s) => acc + (Number(s.valor_pago) || 0), 0))}
-                    </p>
-                </div>
-            </div>
 
-            <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
-                <div className="p-8 border-b border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Gestão de Empresas</h2>
-                    <div className="relative w-full md:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-                        <Input
-                            placeholder="Procurar empresa..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="bg-zinc-50 border-b border-zinc-100">
-                                <th className="px-8 py-4 text-[10px] font-black uppercase text-zinc-400 tracking-widest">Empresa</th>
-                                <th className="px-8 py-4 text-[10px] font-black uppercase text-zinc-400 tracking-widest">NIF</th>
-                                <th className="px-8 py-4 text-[10px] font-black uppercase text-zinc-400 tracking-widest">Status</th>
-                                <th className="px-8 py-4 text-[10px] font-black uppercase text-zinc-400 tracking-widest">Plano</th>
-                                <th className="px-8 py-4 text-[10px] font-black uppercase text-zinc-400 tracking-widest">Acções</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-50">
-                            {filteredTenants.map(tenant => (
-                                <tr key={tenant.id} className="hover:bg-zinc-50/50 transition-all">
-                                    <td className="px-8 py-5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-600 font-bold">
-                                                {tenant.nome ? tenant.nome.charAt(0) : '?'}
-                                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="bg-[#0f172a] p-8 rounded-[3rem] border border-white/5">
+                            <h3 className="text-lg font-black uppercase tracking-tight mb-6">Atividade Recente</h3>
+                            <div className="space-y-4">
+                                {subscriptions.slice(0, 5).map(sub => (
+                                    <div key={sub.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                        <div className="flex items-center gap-4">
+                                            <div className="bg-purple-500/20 text-purple-400 p-2.5 rounded-xl"><CreditCard size={20} /></div>
                                             <div>
-                                                <p className="font-bold text-zinc-900">{tenant.nome || 'Sem Nome'}</p>
-                                                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{tenant.slug || 'no-slug'}</p>
+                                                <p className="text-sm font-bold">{sub.saas_tenants?.nome}</p>
+                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{sub.saas_plans?.nome} • {sub.status}</p>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td className="px-8 py-5 text-sm font-medium text-zinc-600">{tenant.nif || 'Não informado'}</td>
-                                    <td className="px-8 py-5">
-                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${tenant.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                            }`}>
-                                            {tenant.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-8 py-5">
-                                        <p className="text-sm font-bold text-zinc-900">N/A</p>
-                                    </td>
-                                    <td className="px-8 py-5">
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedTenant(tenant)}
-                                            className="text-yellow-600 font-black text-[10px] uppercase tracking-widest border-b border-yellow-500/50 hover:border-yellow-500 transition-all"
-                                        >
-                                            Ver Detalhes
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        <p className="text-xs font-black">{new Date(sub.created_at).toLocaleDateString()}</p>
+                                    </div>
+                                ))}
+                                {subscriptions.length === 0 && (
+                                    <p className="text-slate-500 text-sm text-center py-8">Nenhuma actividade recente.</p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="bg-[#0f172a] p-8 rounded-[3rem] border border-white/5 flex flex-col items-center justify-center text-center">
+                            <div className="w-20 h-20 bg-gradient-to-tr from-purple-600 to-blue-600 rounded-full flex items-center justify-center mb-6 shadow-2xl shadow-purple-900/40">
+                                <TrendingUp size={32} />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tight mb-2">Crescimento da Plataforma</h3>
+                            <p className="text-slate-400 text-sm max-w-xs mx-auto">A monitorização de crescimento anual será integrada na v2.0.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
 
-            <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
-                <div className="p-8 border-b border-zinc-100">
-                    <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Pagamentos Pendentes</h2>
+            {/* Tenants Tab */}
+            {activeTab === 'tenants' && (
+                <div className="bg-[#0f172a] rounded-[3rem] border border-white/5 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+                    <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/2 backdrop-blur-sm">
+                        <div>
+                            <h2 className="text-xl font-black uppercase tracking-tight">Directório de Empresas</h2>
+                            <p className="text-slate-500 text-xs mt-1">Clique em <span className="text-purple-400 font-black">+ Licença</span> para criar ou editar a licença de uma empresa</p>
+                        </div>
+                        <div className="relative w-full md:w-80">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                            <input
+                                placeholder="Procurar empresa ou NIF..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                            />
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-white/2 border-b border-white/5">
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Empresa / Slug</th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">NIF / Data</th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Estado</th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Licença Activa</th>
+                                    <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {filteredTenants.map(tenant => {
+                                    const activeSub = subscriptions.find(s => s.tenant_id === tenant.id && s.status === 'ativo');
+                                    return (
+                                        <tr key={tenant.id} className="hover:bg-white/2 transition-colors">
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-white/5 flex items-center justify-center text-purple-400 font-black text-xl shadow-inner">
+                                                        {tenant.nome?.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-sm uppercase tracking-tight">{tenant.nome}</p>
+                                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">{tenant.slug}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <p className="text-xs font-bold text-slate-300">NIF: {tenant.nif || '—'}</p>
+                                                <p className="text-[10px] text-slate-500 font-medium">Cadastrado em {new Date(tenant.created_at).toLocaleDateString()}</p>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`w-2 h-2 rounded-full ${tenant.status === 'ativo' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                                                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${tenant.status === 'ativo' ? 'text-green-400' : 'text-red-400'}`}>
+                                                        {tenant.status}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                {activeSub ? (
+                                                    <div>
+                                                        <p className="text-xs font-black text-purple-400">{activeSub.saas_plans?.nome}</p>
+                                                        <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                                                            Expira: {new Date(activeSub.data_expiracao).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Sem Licença</span>
+                                                )}
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => handleUpdateTenantStatus(tenant.id, tenant.status === 'ativo' ? 'suspenso' : 'ativo')}
+                                                        className={`p-2 rounded-xl border transition-all ${tenant.status === 'ativo' ? 'border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white' : 'border-green-500/30 text-green-400 hover:bg-green-500 hover:text-white'
+                                                            }`}
+                                                        title={tenant.status === 'ativo' ? 'Suspender empresa' : 'Activar empresa'}
+                                                    >
+                                                        {tenant.status === 'ativo' ? <XCircle size={18} /> : <CheckCircle2 size={18} />}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openLicenseModal(tenant)}
+                                                        className="flex items-center gap-2 px-4 py-2 border border-purple-500/30 text-purple-400 hover:bg-purple-500 hover:text-white rounded-xl transition-all text-[10px] font-black uppercase tracking-widest"
+                                                    >
+                                                        <Plus size={14} /> Licença
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {filteredTenants.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="text-center py-16 text-slate-500 font-bold text-sm">
+                                            Nenhuma empresa encontrada.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div className="p-8 space-y-4">
-                    {subscriptions.filter(s => s.status === 'pendente').map(sub => (
-                        <div key={sub.id} className="flex flex-col md:flex-row items-center justify-between p-6 bg-zinc-50 rounded-3xl border border-zinc-100 gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-white rounded-2xl shadow-sm"><CreditCard className="text-orange-500" /></div>
-                                <div>
-                                    <p className="font-black text-zinc-900 uppercase tracking-tight">{sub.saas_tenants?.nome}</p>
-                                    <p className="text-xs text-zinc-500 font-bold">{sub.saas_plans?.nome} • {formatAOA(sub.valor_pago)}</p>
+            )}
+
+            {/* Plans Tab */}
+            {activeTab === 'plans' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
+                    {plans.map(plan => (
+                        <div key={plan.id} className="bg-[#0f172a] rounded-[2.5rem] border border-white/5 p-8 flex flex-col relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8">
+                                <button onClick={() => { setEditingPlan(plan); setIsPlanModalOpen(true); }} className="text-slate-500 hover:text-white transition-colors"><Edit3 size={20} /></button>
+                            </div>
+                            <div className="mb-8">
+                                <h3 className="text-2xl font-black uppercase tracking-tight mb-2">{plan.nome}</h3>
+                                <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">{plan.duracao_meses} Meses de Validade</p>
+                            </div>
+                            <div className="mb-10">
+                                <p className="text-4xl font-black mb-1">{formatAOA(plan.valor)}</p>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Pagamento único por período</p>
+                            </div>
+                            <div className="space-y-4 mb-10 flex-1">
+                                <div className="p-4 bg-white/2 rounded-2xl border border-white/5">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Módulos Ativos</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(Array.isArray(plan.modules) ? plan.modules : Object.entries(plan.modules || {}).filter(([, v]) => v).map(([k]) => k)).map((mod: string) => (
+                                            <span key={mod} className="bg-purple-500/10 text-purple-400 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-purple-500/20">{mod}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Recursos do Plano</p>
+                                    {(plan.features || []).map((feat: string) => (
+                                        <div key={feat} className="flex items-center gap-2 text-xs text-slate-300 font-medium">
+                                            <CheckCircle2 size={14} className="text-green-500" /> {feat}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4 w-full md:w-auto">
-                                {sub.comprovativo_url && (
-                                    <a href={sub.comprovativo_url} target="_blank" className="flex-1 md:flex-none text-center px-6 py-3 bg-white border border-zinc-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-100 transition-all">Ver Comprovativo</a>
-                                )}
-                                <Button onClick={() => handleApproveSubscription(sub.id)} className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white">Aprovar</Button>
+                            <div className="bg-white/2 p-4 rounded-2xl border border-white/5 flex items-center justify-between">
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Limite de Utilizadores</span>
+                                <span className="font-black text-purple-400">{plan.max_users}</span>
                             </div>
                         </div>
                     ))}
-                    {subscriptions.filter(s => s.status === 'pendente').length === 0 && (
-                        <div className="py-12 text-center text-zinc-400">
-                            <Clock size={32} className="mx-auto mb-2 opacity-20" />
-                            <p className="text-xs font-medium">Sem pagamentos pendentes para aprovação.</p>
+                    <button
+                        onClick={() => { setEditingPlan(null); setIsPlanModalOpen(true); }}
+                        className="bg-transparent border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 text-slate-500 hover:border-purple-500 hover:text-purple-400 transition-all min-h-[400px]"
+                    >
+                        <Plus size={48} />
+                        <span className="font-black uppercase tracking-widest">Novo Plano</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Subscriptions Tab */}
+            {activeTab === 'subscriptions' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    {subscriptions.filter(s => s.status === 'pendente').length > 0 && (
+                        <div className="bg-orange-500/10 border border-orange-500/30 p-8 rounded-[3rem] mb-12">
+                            <h3 className="text-orange-400 font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                                <AlertTriangle size={20} /> Aprovação Urgente (Pagamentos Pendentes)
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {subscriptions.filter(s => s.status === 'pendente').map(sub => (
+                                    <div key={sub.id} className="bg-[#1e293b] p-6 rounded-3xl border border-white/5 flex items-center justify-between group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400 font-black"><CreditCard /></div>
+                                            <div>
+                                                <p className="font-black text-sm uppercase tracking-tight">{sub.saas_tenants?.nome}</p>
+                                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{sub.saas_plans?.nome} • {formatAOA(sub.valor_pago)}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            {sub.comprovativo_url && (
+                                                <a href={sub.comprovativo_url} target="_blank" rel="noreferrer" className="p-3 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white transition-all"><Search size={18} /></a>
+                                            )}
+                                            <button
+                                                onClick={() => handleApprovePayment(sub.id)}
+                                                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-900/20"
+                                            >
+                                                Aprovar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Modal de Detalhes da Empresa */}
-            {selectedTenant && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-2xl rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-                        <div className="p-8 bg-zinc-50 border-b border-zinc-100 flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-yellow-500 flex items-center justify-center text-zinc-900 font-black text-xl">
-                                    {selectedTenant.nome ? selectedTenant.nome.charAt(0) : '?'}
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-tight">{selectedTenant.nome || 'Empresa Sem Nome'}</h2>
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{selectedTenant.slug}</p>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedTenant(null)}
-                                className="p-3 hover:bg-zinc-200 rounded-full transition-all"
-                            >
-                                <X size={24} />
-                            </button>
+                    <div className="bg-[#0f172a] rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
+                        <div className="p-8 border-b border-white/5 bg-white/2">
+                            <h2 className="text-xl font-black uppercase tracking-tight">Histórico Global de Licenças</h2>
                         </div>
-
-                        <div className="p-10 space-y-8">
-                            <div className="grid grid-cols-2 gap-8">
-                                <div>
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">NIF</p>
-                                    <p className="font-bold text-zinc-900">{selectedTenant.nif || 'Não informado'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Data de Registo</p>
-                                    <p className="font-bold text-zinc-900">{new Date(selectedTenant.created_at).toLocaleDateString()}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Estado do Inquilino</p>
-                                    <div className="flex gap-2 mt-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleUpdateTenantStatus(selectedTenant.id, 'ativo')}
-                                            disabled={updatingStatus}
-                                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedTenant.status === 'ativo' ? 'bg-green-500 text-white shadow-lg shadow-green-200' : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'}`}
-                                        >
-                                            Activo
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleUpdateTenantStatus(selectedTenant.id, 'suspenso')}
-                                            disabled={updatingStatus}
-                                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedTenant.status === 'suspenso' ? 'bg-red-500 text-white shadow-lg shadow-red-200' : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'}`}
-                                        >
-                                            Suspenso
-                                        </button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total de Subscrições</p>
-                                    <p className="font-bold text-zinc-900">{selectedTenant.saas_subscriptions?.length || 0}</p>
-                                </div>
-                            </div>
-
-                            <div className="pt-8 border-t border-zinc-100">
-                                <h3 className="text-xs font-black text-zinc-900 uppercase tracking-[0.2em] mb-4">Histórico de Subscrições</h3>
-                                <div className="space-y-3 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                                    {selectedTenant.saas_subscriptions?.map((sub: any) => (
-                                        <div key={sub.id} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex justify-between items-center text-xs">
-                                            <div>
-                                                <p className="font-bold text-zinc-900">Plano ID: {sub.plan_id?.substring(0, 8)}...</p>
-                                                <p className="text-zinc-500">{new Date(sub.data_inicio).toLocaleDateString()} - {new Date(sub.data_expiracao).toLocaleDateString()}</p>
-                                            </div>
-                                            <span className={`px-2 py-1 rounded-lg font-bold uppercase text-[8px] ${sub.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {sub.status}
-                                            </span>
-                                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-white/2 border-b border-white/5">
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Data</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Empresa</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Plano / Valor</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Validade</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {subscriptions.map(sub => (
+                                        <tr key={sub.id} className="hover:bg-white/2 transition-colors">
+                                            <td className="px-8 py-6 text-xs text-slate-400 font-bold">{new Date(sub.created_at).toLocaleDateString()}</td>
+                                            <td className="px-8 py-6">
+                                                <p className="font-black text-sm uppercase tracking-tight">{sub.saas_tenants?.nome}</p>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <p className="text-xs font-bold text-slate-200">{sub.saas_plans?.nome}</p>
+                                                <p className="text-[10px] text-slate-500 font-bold tracking-widest">{formatAOA(sub.valor_pago)}</p>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <p className="text-xs font-bold text-slate-300">{sub.data_expiracao ? new Date(sub.data_expiracao).toLocaleDateString() : '—'}</p>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <span className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] ${sub.status === 'ativo' ? 'bg-green-500/20 text-green-400 border border-green-500/20' :
+                                                        sub.status === 'pendente' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' : 'bg-red-500/20 text-red-400 border border-red-500/20'
+                                                    }`}>
+                                                    {sub.status}
+                                                </span>
+                                            </td>
+                                        </tr>
                                     ))}
-                                    {!selectedTenant.saas_subscriptions?.length && (
-                                        <p className="text-zinc-400 italic text-xs">Nenhuma subscrição encontrada.</p>
+                                    {subscriptions.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="text-center py-16 text-slate-500 font-bold text-sm">
+                                                Nenhuma licença registada ainda.
+                                            </td>
+                                        </tr>
                                     )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-6 bg-zinc-900 flex justify-end">
-                            <button
-                                type="button"
-                                onClick={() => setSelectedTenant(null)}
-                                className="px-6 py-3 bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-white/20 transition-all"
-                            >
-                                Fechar Detalhes
-                            </button>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* ===== LICENSE MODAL ===== */}
+            {isLicenseModalOpen && licenseModalTenant && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-zinc-950/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
+                    <form onSubmit={handleSaveLicense} className="bg-[#0f172a] w-full max-w-2xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        {/* Modal Header */}
+                        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2">
+                            <div>
+                                <h2 className="text-xl font-black uppercase tracking-tight">
+                                    {editingSubscription ? 'Editar Licença' : 'Nova Licença'}
+                                </h2>
+                                <p className="text-slate-400 text-xs mt-1">
+                                    Empresa: <span className="text-purple-400 font-black">{licenseModalTenant.nome}</span>
+                                </p>
+                            </div>
+                            <button type="button" onClick={() => setIsLicenseModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-all text-slate-400"><X size={20} /></button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-8 space-y-6">
+                            {/* Plan Selector */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Plano de Licença</label>
+                                <div className="relative">
+                                    <select
+                                        value={licenseForm.plan_id}
+                                        onChange={(e) => handlePlanSelect(e.target.value)}
+                                        required
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-4 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 appearance-none text-white"
+                                    >
+                                        <option value="">-- Selecionar Plano --</option>
+                                        {plans.map(p => (
+                                            <option key={p.id} value={p.id} style={{ background: '#1e293b' }}>
+                                                {p.nome} — {formatAOA(p.valor)} / {p.duracao_meses} meses
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                                </div>
+                            </div>
+
+                            {/* Dates and value */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2 flex items-center gap-1"><Calendar size={12} /> Início</label>
+                                    <input
+                                        type="date"
+                                        value={licenseForm.data_inicio}
+                                        onChange={(e) => setLicenseForm(prev => ({ ...prev, data_inicio: e.target.value }))}
+                                        required
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2 flex items-center gap-1"><Clock size={12} /> Expiração</label>
+                                    <input
+                                        type="date"
+                                        value={licenseForm.data_expiracao}
+                                        onChange={(e) => setLicenseForm(prev => ({ ...prev, data_expiracao: e.target.value }))}
+                                        required
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Valor Pago (AOA)</label>
+                                    <input
+                                        type="number"
+                                        value={licenseForm.valor_pago}
+                                        onChange={(e) => setLicenseForm(prev => ({ ...prev, valor_pago: e.target.value }))}
+                                        required
+                                        min="0"
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Status and Auto-renew */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Estado da Licença</label>
+                                    <div className="relative">
+                                        <select
+                                            value={licenseForm.status}
+                                            onChange={(e) => setLicenseForm(prev => ({ ...prev, status: e.target.value }))}
+                                            className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 appearance-none text-white"
+                                        >
+                                            <option value="ativo" style={{ background: '#1e293b' }}>✅ Ativo</option>
+                                            <option value="pendente" style={{ background: '#1e293b' }}>⏳ Pendente</option>
+                                            <option value="suspenso" style={{ background: '#1e293b' }}>⏸️ Suspenso</option>
+                                            <option value="expirado" style={{ background: '#1e293b' }}>❌ Expirado</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2 flex items-center gap-2">
+                                        <RefreshCcw size={12} /> Renovação Automática
+                                    </label>
+                                    <div className="flex items-center gap-4 h-[46px] px-4 bg-[#1e293b] border border-white/5 rounded-2xl">
+                                        <button
+                                            type="button"
+                                            onClick={() => setLicenseForm(prev => ({ ...prev, auto_renew: !prev.auto_renew }))}
+                                            className={`w-12 h-7 rounded-full p-1 transition-all duration-300 ${licenseForm.auto_renew ? 'bg-purple-600' : 'bg-white/10'}`}
+                                        >
+                                            <div className={`w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 transform ${licenseForm.auto_renew ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        </button>
+                                        <span className="text-xs font-bold text-slate-400">{licenseForm.auto_renew ? 'Activada' : 'Desactivada'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-8 bg-black/20 flex justify-end gap-4">
+                            <button type="button" onClick={() => setIsLicenseModalOpen(false)} className="px-8 py-3 bg-white/5 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={licenseFormSaving}
+                                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-purple-900/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
+                            >
+                                {licenseFormSaving && <RefreshCcw size={14} className="animate-spin" />}
+                                {editingSubscription ? 'Actualizar Licença' : 'Criar Licença'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* ===== PLAN MODAL ===== */}
+            {isPlanModalOpen && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-zinc-950/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
+                    <form onSubmit={handleSavePlan} className="bg-[#0f172a] w-full max-w-xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2">
+                            <h2 className="text-xl font-black uppercase tracking-tight">{editingPlan ? 'Editar Plano' : 'Novo Plano'}</h2>
+                            <button type="button" onClick={() => setIsPlanModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-all text-slate-400"><X /></button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Nome do Plano</label>
+                                    <input name="nome" defaultValue={editingPlan?.nome} required className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Valor (AOA)</label>
+                                    <input name="valor" type="number" defaultValue={editingPlan?.valor} required className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Duração (Meses)</label>
+                                    <input name="duracao_meses" type="number" defaultValue={editingPlan?.duracao_meses} required className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Limite Utilizadores</label>
+                                    <input name="max_users" type="number" defaultValue={editingPlan?.max_users} required className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Módulos (separados por vírgula)</label>
+                                <textarea name="modules" defaultValue={Array.isArray(editingPlan?.modules) ? editingPlan.modules.join(', ') : ''} className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 h-20 text-white" placeholder="Ex: RH, FINANCAS, FROTA, ALL"></textarea>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Recursos (separados por vírgula)</label>
+                                <textarea name="features" defaultValue={editingPlan?.features?.join(', ')} className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 h-20 text-white" placeholder="Ex: Suporte 24/7, Servidor Dedicado, Backup Diário"></textarea>
+                            </div>
+                        </div>
+                        <div className="p-8 bg-black/20 flex justify-end gap-4">
+                            <button type="button" onClick={() => setIsPlanModalOpen(false)} className="px-8 py-3 bg-white/5 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">Cancelar</button>
+                            <button type="submit" className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-purple-900/40 hover:scale-105 active:scale-95 transition-all">Guardar Plano</button>
+                        </div>
+                    </form>
                 </div>
             )}
         </div>

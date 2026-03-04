@@ -55,17 +55,6 @@ const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-  const [subBlocked, setSubBlocked] = useState(false);
-
-  useEffect(() => {
-    if (user?.tenant_id && user.role !== 'saas_admin') {
-      checkSubscription(user.tenant_id).then(status => {
-        setSubBlocked(!status.active);
-      });
-    } else {
-      setSubBlocked(false);
-    }
-  }, [user]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
@@ -221,45 +210,39 @@ const App: React.FC = () => {
                   <LoginPage onLogin={handleLogin} />
                 ) : (
                   <Layout user={user} onLogout={handleLogout}>
-                    {subBlocked &&
-                      !window.location.hash.includes('/configuracoes/assinatura') &&
-                      !window.location.hash.includes('/master') ? (
-                      <Navigate to="/configuracoes/assinatura" replace />
-                    ) : (
-                      <Routes>
-                        <Route path="/unauthorized" element={<UnauthorizedPage />} />
-                        <Route path="/utilizadores" element={<ProtectedRoute user={user} path="/utilizadores"><UsersPage user={user} /></ProtectedRoute>} />
-                        <Route path="/dashboard" element={<ProtectedRoute user={user} path="/dashboard"><Dashboard /></ProtectedRoute>} />
-                        <Route path="/dashboard/galeria" element={<ProtectedRoute user={user} path="/dashboard/galeria"><DashboardGallery user={user} /></ProtectedRoute>} />
-                        <Route path="/dashboard/biblioteca" element={<ProtectedRoute user={user} path="/dashboard/biblioteca"><DashboardLibrary user={user} /></ProtectedRoute>} />
-                        <Route path="/dashboard/arquivos" element={<ProtectedRoute user={user} path="/dashboard/arquivos"><DashboardFiles user={user} /></ProtectedRoute>} />
-                        <Route path="/arena/admin" element={<ProtectedRoute user={user} path="/arena/admin"><ArenaAdmin /></ProtectedRoute>} />
-                        <Route path="/recrutamento" element={<ProtectedRoute user={user} path="/recrutamento"><RecruitmentPage /></ProtectedRoute>} />
-                        <Route path="/tesouraria" element={<ProtectedRoute user={user} path="/tesouraria"><FinancialHubPage /></ProtectedRoute>} />
-                        <Route path="/solicitacoes" element={<ProtectedRoute user={user} path="/solicitacoes"><RequestsPage /></ProtectedRoute>} />
-                        <Route path="/blog" element={<ProtectedRoute user={user} path="/blog"><BlogPage user={user} /></ProtectedRoute>} />
-                        <Route path="/galeria" element={<ProtectedRoute user={user} path="/galeria"><GaleriaPage /></ProtectedRoute>} />
-                        <Route path="/feed" element={<ProtectedRoute user={user} path="/feed"><FeedPage /></ProtectedRoute>} />
-                        <Route path="/transportes" element={<ProtectedRoute user={user} path="/transportes"><TransportPage /></ProtectedRoute>} />
-                        <Route path="/rh" element={<ProtectedRoute user={user} path="/rh"><HRPage user={user} /></ProtectedRoute>} />
-                        <Route path="/rh/contas" element={<ProtectedRoute user={user} path="/rh/contas"><ContasBancariasPage user={user} /></ProtectedRoute>} />
-                        <Route path="/departamentos" element={<ProtectedRoute user={user} path="/departamentos"><DepartmentsPage user={user} /></ProtectedRoute>} />
-                        <Route path="/financeiro" element={<ProtectedRoute user={user} path="/financeiro"><FinancePage /></ProtectedRoute>} />
-                        <Route path="/contabilidade" element={<ProtectedRoute user={user} path="/contabilidade"><AccountingPage user={user} /></ProtectedRoute>} />
-                        <Route path="/inventario" element={<ProtectedRoute user={user} path="/inventario"><InventoryPage /></ProtectedRoute>} />
-                        <Route path="/manutencao" element={<ProtectedRoute user={user} path="/manutencao"><MaintenancePage /></ProtectedRoute>} />
-                        <Route path="/auditoria" element={<ProtectedRoute user={user} path="/auditoria"><AuditPage /></ProtectedRoute>} />
-                        <Route path="/configuracoes" element={<ProtectedRoute user={user} path="/configuracoes"><SettingsPage /></ProtectedRoute>} />
-                        <Route path="/agro" element={<ProtectedRoute user={user} path="/agro"><AgroPage /></ProtectedRoute>} />
-                        <Route path="/imobiliario" element={<ProtectedRoute user={user} path="/imobiliario"><RealEstatePage /></ProtectedRoute>} />
-                        <Route path="/fornecedores" element={<ProtectedRoute user={user} path="/fornecedores"><FornecedoresPage /></ProtectedRoute>} />
-                        <Route path="/empresas" element={<ProtectedRoute user={user} path="/empresas"><EmpresasPage /></ProtectedRoute>} />
-                        <Route path="/parceiros" element={<ProtectedRoute user={user} path="/parceiros"><ParceirosPage /></ProtectedRoute>} />
-                        <Route path="/configuracoes/assinatura" element={<ProtectedRoute user={user} path="/configuracoes"><SubscriptionPage /></ProtectedRoute>} />
-                        <Route path="/master" element={<ProtectedRoute user={user} path="/master" customRole="saas_admin"><MasterAdmin /></ProtectedRoute>} />
-                        <Route path="*" element={<Navigate to="/" />} />
-                      </Routes>
-                    )}
+                    <Routes>
+                      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+                      <Route path="/utilizadores" element={<ProtectedRoute user={user} path="/utilizadores"><UsersPage user={user} /></ProtectedRoute>} />
+                      <Route path="/dashboard" element={<ProtectedRoute user={user} path="/dashboard"><Dashboard /></ProtectedRoute>} />
+                      <Route path="/dashboard/galeria" element={<ProtectedRoute user={user} path="/dashboard/galeria"><DashboardGallery user={user} /></ProtectedRoute>} />
+                      <Route path="/dashboard/biblioteca" element={<ProtectedRoute user={user} path="/dashboard/biblioteca"><DashboardLibrary user={user} /></ProtectedRoute>} />
+                      <Route path="/dashboard/arquivos" element={<ProtectedRoute user={user} path="/dashboard/arquivos"><DashboardFiles user={user} /></ProtectedRoute>} />
+                      <Route path="/arena/admin" element={<ProtectedRoute user={user} path="/arena/admin"><ArenaAdmin /></ProtectedRoute>} />
+                      <Route path="/recrutamento" element={<ProtectedRoute user={user} path="/recrutamento"><RecruitmentPage /></ProtectedRoute>} />
+                      <Route path="/tesouraria" element={<ProtectedRoute user={user} path="/tesouraria"><FinancialHubPage /></ProtectedRoute>} />
+                      <Route path="/solicitacoes" element={<ProtectedRoute user={user} path="/solicitacoes"><RequestsPage /></ProtectedRoute>} />
+                      <Route path="/blog" element={<ProtectedRoute user={user} path="/blog"><BlogPage user={user} /></ProtectedRoute>} />
+                      <Route path="/galeria" element={<ProtectedRoute user={user} path="/galeria"><GaleriaPage /></ProtectedRoute>} />
+                      <Route path="/feed" element={<ProtectedRoute user={user} path="/feed"><FeedPage /></ProtectedRoute>} />
+                      <Route path="/transportes" element={<ProtectedRoute user={user} path="/transportes"><TransportPage /></ProtectedRoute>} />
+                      <Route path="/rh" element={<ProtectedRoute user={user} path="/rh"><HRPage user={user} /></ProtectedRoute>} />
+                      <Route path="/rh/contas" element={<ProtectedRoute user={user} path="/rh/contas"><ContasBancariasPage user={user} /></ProtectedRoute>} />
+                      <Route path="/departamentos" element={<ProtectedRoute user={user} path="/departamentos"><DepartmentsPage user={user} /></ProtectedRoute>} />
+                      <Route path="/financeiro" element={<ProtectedRoute user={user} path="/financeiro"><FinancePage /></ProtectedRoute>} />
+                      <Route path="/contabilidade" element={<ProtectedRoute user={user} path="/contabilidade"><AccountingPage user={user} /></ProtectedRoute>} />
+                      <Route path="/inventario" element={<ProtectedRoute user={user} path="/inventario"><InventoryPage /></ProtectedRoute>} />
+                      <Route path="/manutencao" element={<ProtectedRoute user={user} path="/manutencao"><MaintenancePage /></ProtectedRoute>} />
+                      <Route path="/auditoria" element={<ProtectedRoute user={user} path="/auditoria"><AuditPage /></ProtectedRoute>} />
+                      <Route path="/configuracoes" element={<ProtectedRoute user={user} path="/configuracoes"><SettingsPage /></ProtectedRoute>} />
+                      <Route path="/agro" element={<ProtectedRoute user={user} path="/agro"><AgroPage /></ProtectedRoute>} />
+                      <Route path="/imobiliario" element={<ProtectedRoute user={user} path="/imobiliario"><RealEstatePage /></ProtectedRoute>} />
+                      <Route path="/fornecedores" element={<ProtectedRoute user={user} path="/fornecedores"><FornecedoresPage /></ProtectedRoute>} />
+                      <Route path="/empresas" element={<ProtectedRoute user={user} path="/empresas"><EmpresasPage /></ProtectedRoute>} />
+                      <Route path="/parceiros" element={<ProtectedRoute user={user} path="/parceiros"><ParceirosPage /></ProtectedRoute>} />
+                      <Route path="/configuracoes/assinatura" element={<ProtectedRoute user={user} path="/configuracoes"><SubscriptionPage /></ProtectedRoute>} />
+                      <Route path="/master" element={<ProtectedRoute user={user} path="/master" customRole="saas_admin"><MasterAdmin /></ProtectedRoute>} />
+                      <Route path="*" element={<Navigate to="/" />} />
+                    </Routes>
                   </Layout>
                 )
               } />

@@ -26,12 +26,14 @@ import {
   CheckCircle2,
   FileText,
   Phone,
-  Clock
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 import { User, ChatMessage, ChatContact, UserRole } from '../types';
 import Logo from './Logo';
 import { useTenant } from '../src/components/TenantProvider';
-import { checkSubscription, SubscriptionStatus } from '../src/utils/subscription';
+import { useSaaS } from '../src/contexts/SaaSContext';
+import { isModuleActive } from '../src/utils/subscription';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 
 interface LayoutProps {
@@ -51,17 +53,11 @@ interface Notification {
 
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const { tenant } = useTenant();
+  const { subscription: subStatus, loading: saasLoading } = useSaaS();
   const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [subStatus, setSubStatus] = useState<SubscriptionStatus | null>(null);
-
-  useEffect(() => {
-    if (user?.tenant_id && user.role !== 'saas_admin') {
-      checkSubscription(user.tenant_id).then(setSubStatus);
-    }
-  }, [user?.tenant_id, user?.role]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -239,11 +235,66 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     );
   };
 
+
   const allowedMenuItems = MENU_ITEMS.filter(item => {
-    if (user.role === 'admin' || user.role === 'saas_admin') return true;
+    // SaaS Admin and Master Admin see everything related to their role
+    if (user.role === 'saas_admin') return true;
+
+    // Check role permissions first
     const userPermissions = getMergedPermissions(user.role);
-    return userPermissions.includes(item.id) || userPermissions.includes('all');
+    const hasRoleAccess = user.role === 'admin' || userPermissions.includes(item.id) || userPermissions.includes('all');
+
+    if (!hasRoleAccess) return false;
+
+    // Check plan module access for standard users
+    if (subStatus) {
+      // Exceptions for pages that should always be visible (home, dashboard, profile, subscription)
+      const publicDocs = ['home', 'dashboard', 'configuracoes', 'assinatura', 'solicitacoes'];
+      if (publicDocs.includes(item.id)) return true;
+
+      // Map menu item IDs to module names in the SaaS plan
+      const moduleMap: Record<string, string> = {
+        'rh': 'RH',
+        'financeiro': 'FINANCEIRO',
+        'contabilidade': 'CONTABILIDADE',
+        'inventario': 'INVENTARIO',
+        'manutencao': 'MANUTENCAO',
+        'transportes': 'TRANSPORTES',
+        'imobiliario': 'IMOBILIARIO',
+        'agro': 'AGRO',
+        'arena_admin': 'ARENA'
+      };
+
+      const moduleName = moduleMap[item.id] || item.id.toUpperCase();
+      return isModuleActive(subStatus, moduleName);
+    }
+
+    return true;
   });
+
+  // Strict License Block Logic
+  // 1. saas_admin is never blocked
+  // 2. /master and /configuracoes/assinatura are never blocked
+  // 3. / (home) is never blocked
+  const isMasterPath = location.pathname.startsWith('/master');
+  const isSubPath = location.pathname === '/configuracoes/assinatura';
+  const isPublicPath = location.pathname === '/' || location.pathname === '/dashboard';
+
+  const isBlocked = !saasLoading &&
+    subStatus &&
+    !subStatus.active &&
+    user.role !== 'saas_admin' &&
+    !isMasterPath &&
+    !isSubPath &&
+    !isPublicPath;
+
+  if (saasLoading && !isBlocked) {
+    return (
+      <div className="flex h-screen bg-[#e0f2fe] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#e0f2fe] overflow-hidden text-zinc-900 font-sans">
@@ -254,6 +305,37 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
+
+      {/* Blocked Interface Overlay */}
+      {isBlocked && (
+        <div className="fixed inset-0 z-[100] bg-zinc-900/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-500">
+          <div className="max-w-md w-full bg-white rounded-[3.5rem] p-12 text-center shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-red-500" />
+            <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-8">
+              <AlertTriangle size={48} className="text-red-500" />
+            </div>
+            <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tight mb-4">Acesso Bloqueado</h2>
+            <p className="text-zinc-500 font-bold mb-10 leading-relaxed">
+              A licença de uso deste sistema expirou ou foi suspensas. Por favor, regularize o pagamento para continuar operacional.
+            </p>
+            <div className="space-y-4">
+              <Link
+                to="/configuracoes/assinatura"
+                className="flex items-center justify-center gap-3 w-full py-5 bg-zinc-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all shadow-xl shadow-zinc-900/20"
+              >
+                Gerir Assinatura <ArrowRight size={16} />
+              </Link>
+              <button
+                onClick={onLogout}
+                className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-red-500 transition-colors"
+              >
+                Sair da Conta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar — fixed drawer on mobile, static flex item on desktop */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 flex flex-col bg-[#0f172a] text-white shadow-2xl border-r border-white/5
@@ -380,21 +462,36 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
         <main className={`flex-1 overflow-y-auto ${isHomePage ? 'p-0' : 'p-4 lg:p-8'} bg-[#e0f2fe] relative`}>
           {subStatus && !subStatus.active && (
-            <div className="mb-6 bg-red-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-pulse">
-              <div className="flex items-center gap-3">
-                <AlertTriangle size={20} />
-                <span className="text-sm font-bold uppercase tracking-tight">{subStatus.message || 'Licença Expirada'}</span>
+            <div className="mb-8 p-6 bg-white border-2 border-red-100 rounded-[2.5rem] shadow-xl shadow-red-500/5 flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500">
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-red-600 uppercase tracking-widest mb-1">Licença em Risco</h4>
+                  <p className="text-[11px] text-zinc-500 font-bold max-w-md">{subStatus.message || 'A sua licença expirou ou o pagamento falhou. Regularize para evitar bloqueio total.'}</p>
+                </div>
               </div>
-              <Link to="/configuracoes/assinatura" className="bg-white text-red-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-100 transition-all">Renovar Agora</Link>
+              <Link to="/configuracoes/assinatura" className="bg-red-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-600/20">
+                Pagar Agora
+              </Link>
             </div>
           )}
+
           {subStatus && subStatus.active && subStatus.daysLeft <= 7 && (
-            <div className="mb-6 bg-orange-500 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock size={20} />
-                <span className="text-sm font-bold uppercase tracking-tight">O seu plano expira em {subStatus.daysLeft} dias.</span>
+            <div className="mb-8 p-6 bg-white border-2 border-orange-100 rounded-[2.5rem] shadow-xl shadow-orange-500/5 flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 line">
+                  <Clock size={24} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-orange-600 uppercase tracking-widest mb-1">Renovação Próxima</h4>
+                  <p className="text-[11px] text-zinc-500 font-bold max-w-md">O seu plano expira em apenas <span className="text-orange-600">{subStatus.daysLeft} dias</span>. Evite interrupções no serviço.</p>
+                </div>
               </div>
-              <Link to="/configuracoes/assinatura" className="bg-zinc-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all">Regularizar</Link>
+              <Link to="/configuracoes/assinatura" className="bg-zinc-900 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/20">
+                Regularizar
+              </Link>
             </div>
           )}
           <div className={`${isHomePage ? 'w-full' : 'max-w-7xl mx-auto pb-12'}`}>{children}</div>

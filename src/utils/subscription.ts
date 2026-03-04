@@ -1,11 +1,33 @@
 import { supabase } from '../lib/supabase';
-import { Tenant } from '../../types';
 
 export interface SubscriptionStatus {
+    // Core status fields
     active: boolean;
     status: 'ativo' | 'suspenso' | 'expirado' | 'pendente';
     daysLeft: number;
     message?: string;
+    modules: string[];
+    maxUsers: number;
+    // Full DB record fields (optional for saas_admin simulated status)
+    id?: string;
+    tenant_id?: string;
+    plan_id?: string;
+    valor_pago?: number;
+    data_inicio?: string;
+    data_expiracao?: string;
+    auto_renew?: boolean;
+    comprovativo_url?: string;
+    created_at?: string;
+    // Joined relation
+    saas_plans?: {
+        id: string;
+        nome: string;
+        valor: number;
+        duracao_meses: number;
+        max_users: number;
+        modules: string[] | Record<string, boolean>;
+        features: string[];
+    };
 }
 
 export const checkSubscription = async (tenantId: string): Promise<SubscriptionStatus> => {
@@ -14,13 +36,19 @@ export const checkSubscription = async (tenantId: string): Promise<SubscriptionS
             .from('saas_subscriptions')
             .select('*, saas_plans(*)')
             .eq('tenant_id', tenantId)
-            .eq('status', 'ativo')
             .order('data_expiracao', { ascending: false })
             .limit(1)
             .single();
 
         if (error || !data) {
-            return { active: false, status: 'expirado', daysLeft: 0, message: 'Nenhuma subscrição activa encontrada.' };
+            return {
+                active: false,
+                status: 'expirado',
+                daysLeft: 0,
+                message: 'Nenhuma subscrição activa encontrada.',
+                modules: [],
+                maxUsers: 0
+            };
         }
 
         const expiry = new Date(data.data_expiracao);
@@ -28,18 +56,62 @@ export const checkSubscription = async (tenantId: string): Promise<SubscriptionS
         const diffTime = expiry.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diffDays < 0) {
-            return { active: false, status: 'expirado', daysLeft: 0, message: 'A sua licença expirou.' };
+        const plan = data.saas_plans;
+        // modules can be an array or an object (key: boolean map)
+        let modules: string[] = [];
+        if (Array.isArray(plan?.modules)) {
+            modules = plan.modules;
+        } else if (plan?.modules && typeof plan.modules === 'object') {
+            // Convert {RH: true, FINANCEIRO: false} to ['RH']
+            modules = Object.entries(plan.modules as Record<string, boolean>)
+                .filter(([, active]) => active)
+                .map(([key]) => key);
+        }
+        const maxUsers = plan?.max_users || 0;
+
+        let status = data.status as SubscriptionStatus['status'];
+        let active = status === 'ativo' && diffDays >= 0;
+
+        if (diffDays < 0 && status === 'ativo') {
+            status = 'expirado';
+            active = false;
         }
 
         return {
-            active: true,
-            status: data.status,
+            active,
+            status,
             daysLeft: diffDays,
-            message: diffDays <= 7 ? `A sua licença expira em ${diffDays} dias.` : undefined
+            message: diffDays <= 7 && diffDays >= 0 ? `A sua licença expira em ${diffDays} dias.` :
+                diffDays < 0 ? 'A sua licença expirou.' : undefined,
+            modules,
+            maxUsers,
+            // Full DB fields
+            id: data.id,
+            tenant_id: data.tenant_id,
+            plan_id: data.plan_id,
+            valor_pago: data.valor_pago ? Number(data.valor_pago) : undefined,
+            data_inicio: data.data_inicio,
+            data_expiracao: data.data_expiracao,
+            auto_renew: data.auto_renew ?? false,
+            comprovativo_url: data.comprovativo_url,
+            created_at: data.created_at,
+            saas_plans: plan || undefined,
         };
     } catch (err) {
         console.error('Error checking subscription:', err);
-        return { active: false, status: 'suspenso', daysLeft: 0, message: 'Erro ao validar licença.' };
+        return {
+            active: false,
+            status: 'suspenso',
+            daysLeft: 0,
+            message: 'Erro ao validar licença.',
+            modules: [],
+            maxUsers: 0
+        };
     }
+};
+
+export const isModuleActive = (status: SubscriptionStatus, moduleName: string): boolean => {
+    if (!status.active) return false;
+    return status.modules.some(m => m.toUpperCase() === moduleName.toUpperCase())
+        || status.modules.some(m => m.toUpperCase() === 'ALL');
 };
