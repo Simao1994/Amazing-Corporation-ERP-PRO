@@ -64,7 +64,13 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
     setSuccessMsg('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Timeout de segurança para a autenticação (10 segundos)
+      const authPromise = supabase.auth.signInWithPassword({ email, password });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('A conexão com o servidor de autenticação expirou. Verifique sua internet.')), 10000)
+      );
+
+      const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any;
       if (error) throw error;
 
       if (data.user) {
@@ -75,7 +81,6 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
         }
 
         // NO-WAIT: call onLogin immediately with fallback data.
-        // App.tsx auth listener handles background enrichment.
         onLogin({
           id: data.user.id,
           email: data.user.email,

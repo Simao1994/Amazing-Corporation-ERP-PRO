@@ -40,11 +40,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             console.log('AuthContext: Buscando perfil de', userEmail);
 
-            const { data: profile, error } = await supabase
+            // Proteção de timeout para a busca de perfil (3 segundos)
+            const profilePromise = supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', activeSession.user.id)
                 .single();
+
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+            );
+
+            const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
             if (error) {
                 console.warn('AuthContext: Erro ao buscar perfil (usando fallback):', error);
@@ -59,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 localStorage.setItem('auth_user_cache', JSON.stringify(fallbackUser));
             }
         } catch (err) {
-            console.error('AuthContext: Erro fatal no refreshProfile:', err);
+            console.warn('AuthContext: Timeout ou erro no refreshProfile (usando fallback):', err);
             setUser(fallbackUser);
         }
     };
