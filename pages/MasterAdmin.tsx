@@ -19,6 +19,15 @@ const MasterAdmin: React.FC = () => {
     // Plan modal state
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<any>(null);
+    const [planFormSaving, setPlanFormSaving] = useState(false);
+    const [planForm, setPlanForm] = useState({
+        nome: '',
+        valor: '',
+        duracao_meses: '12',
+        max_users: '10',
+        modules: '',
+        features: ''
+    });
 
     // License modal state
     const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
@@ -176,16 +185,21 @@ const MasterAdmin: React.FC = () => {
 
     const handleSavePlan = async (e: React.FormEvent) => {
         e.preventDefault();
-        const formData = new FormData(e.currentTarget as HTMLFormElement);
         const planData = {
-            nome: formData.get('nome'),
-            valor: Number(formData.get('valor')),
-            duracao_meses: Number(formData.get('duracao_meses')),
-            max_users: Number(formData.get('max_users')),
-            modules: (formData.get('modules') as string).split(',').map(m => m.trim()).filter(Boolean),
-            features: (formData.get('features') as string).split(',').map(f => f.trim()).filter(Boolean)
+            nome: planForm.nome,
+            valor: Number(planForm.valor),
+            duracao_meses: Number(planForm.duracao_meses),
+            max_users: Number(planForm.max_users),
+            modules: planForm.modules.split(',').map(m => m.trim()).filter(Boolean),
+            features: planForm.features.split(',').map(f => f.trim()).filter(Boolean)
         };
 
+        if (!planForm.nome || !planForm.valor) {
+            (window as any).notify?.('Preencha o nome e o valor do plano.', 'error');
+            return;
+        }
+
+        setPlanFormSaving(true);
         try {
             const { error } = editingPlan
                 ? await supabase.from('saas_plans').update(planData).eq('id', editingPlan.id)
@@ -198,7 +212,22 @@ const MasterAdmin: React.FC = () => {
             (window as any).notify?.('Plano guardado com sucesso!', 'success');
         } catch (err: any) {
             (window as any).notify?.(err.message, 'error');
+        } finally {
+            setPlanFormSaving(false);
         }
+    };
+
+    const openPlanModal = (plan: any | null) => {
+        setEditingPlan(plan);
+        setPlanForm({
+            nome: plan?.nome || '',
+            valor: plan?.valor?.toString() || '',
+            duracao_meses: plan?.duracao_meses?.toString() || '12',
+            max_users: plan?.max_users?.toString() || '10',
+            modules: Array.isArray(plan?.modules) ? plan.modules.join(', ') : '',
+            features: Array.isArray(plan?.features) ? plan.features.join(', ') : ''
+        });
+        setIsPlanModalOpen(true);
     };
 
     const handleApprovePayment = async (subId: string) => {
@@ -450,7 +479,7 @@ const MasterAdmin: React.FC = () => {
                     {plans.map(plan => (
                         <div key={plan.id} className="bg-[#0f172a] rounded-[2.5rem] border border-white/5 p-8 flex flex-col relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-8">
-                                <button onClick={() => { setEditingPlan(plan); setIsPlanModalOpen(true); }} className="text-slate-500 hover:text-white transition-colors"><Edit3 size={20} /></button>
+                                <button onClick={() => openPlanModal(plan)} className="text-slate-500 hover:text-white transition-colors"><Edit3 size={20} /></button>
                             </div>
                             <div className="mb-8">
                                 <h3 className="text-2xl font-black uppercase tracking-tight mb-2">{plan.nome}</h3>
@@ -485,7 +514,7 @@ const MasterAdmin: React.FC = () => {
                         </div>
                     ))}
                     <button
-                        onClick={() => { setEditingPlan(null); setIsPlanModalOpen(true); }}
+                        onClick={() => openPlanModal(null)}
                         className="bg-transparent border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 text-slate-500 hover:border-purple-500 hover:text-purple-400 transition-all min-h-[400px]"
                     >
                         <Plus size={48} />
@@ -560,7 +589,7 @@ const MasterAdmin: React.FC = () => {
                                             </td>
                                             <td className="px-8 py-6">
                                                 <span className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] ${sub.status === 'ativo' ? 'bg-green-500/20 text-green-400 border border-green-500/20' :
-                                                        sub.status === 'pendente' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' : 'bg-red-500/20 text-red-400 border border-red-500/20'
+                                                    sub.status === 'pendente' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' : 'bg-red-500/20 text-red-400 border border-red-500/20'
                                                     }`}>
                                                     {sub.status}
                                                 </span>
@@ -722,33 +751,73 @@ const MasterAdmin: React.FC = () => {
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Nome do Plano</label>
-                                    <input name="nome" defaultValue={editingPlan?.nome} required className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white" />
+                                    <input
+                                        value={planForm.nome}
+                                        onChange={(e) => setPlanForm(prev => ({ ...prev, nome: e.target.value }))}
+                                        required
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Valor (AOA)</label>
-                                    <input name="valor" type="number" defaultValue={editingPlan?.valor} required className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white" />
+                                    <input
+                                        type="number"
+                                        value={planForm.valor}
+                                        onChange={(e) => setPlanForm(prev => ({ ...prev, valor: e.target.value }))}
+                                        required
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Duração (Meses)</label>
-                                    <input name="duracao_meses" type="number" defaultValue={editingPlan?.duracao_meses} required className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white" />
+                                    <input
+                                        type="number"
+                                        value={planForm.duracao_meses}
+                                        onChange={(e) => setPlanForm(prev => ({ ...prev, duracao_meses: e.target.value }))}
+                                        required
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Limite Utilizadores</label>
-                                    <input name="max_users" type="number" defaultValue={editingPlan?.max_users} required className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white" />
+                                    <input
+                                        type="number"
+                                        value={planForm.max_users}
+                                        onChange={(e) => setPlanForm(prev => ({ ...prev, max_users: e.target.value }))}
+                                        required
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
+                                    />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Módulos (separados por vírgula)</label>
-                                <textarea name="modules" defaultValue={Array.isArray(editingPlan?.modules) ? editingPlan.modules.join(', ') : ''} className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 h-20 text-white" placeholder="Ex: RH, FINANCAS, FROTA, ALL"></textarea>
+                                <textarea
+                                    value={planForm.modules}
+                                    onChange={(e) => setPlanForm(prev => ({ ...prev, modules: e.target.value }))}
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 h-20 text-white"
+                                    placeholder="Ex: RH, FINANCAS, FROTA, ALL"
+                                ></textarea>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Recursos (separados por vírgula)</label>
-                                <textarea name="features" defaultValue={editingPlan?.features?.join(', ')} className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 h-20 text-white" placeholder="Ex: Suporte 24/7, Servidor Dedicado, Backup Diário"></textarea>
+                                <textarea
+                                    value={planForm.features}
+                                    onChange={(e) => setPlanForm(prev => ({ ...prev, features: e.target.value }))}
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 h-20 text-white"
+                                    placeholder="Ex: Suporte 24/7, Servidor Dedicado, Backup Diário"
+                                ></textarea>
                             </div>
                         </div>
                         <div className="p-8 bg-black/20 flex justify-end gap-4">
                             <button type="button" onClick={() => setIsPlanModalOpen(false)} className="px-8 py-3 bg-white/5 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">Cancelar</button>
-                            <button type="submit" className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-purple-900/40 hover:scale-105 active:scale-95 transition-all">Guardar Plano</button>
+                            <button
+                                type="submit"
+                                disabled={planFormSaving}
+                                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-purple-900/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {planFormSaving && <RefreshCcw size={14} className="animate-spin" />}
+                                Guardar Plano
+                            </button>
                         </div>
                     </form>
                 </div>

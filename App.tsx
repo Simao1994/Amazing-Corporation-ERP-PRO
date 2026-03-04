@@ -53,6 +53,7 @@ import { checkSubscription } from './src/utils/subscription';
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -70,6 +71,9 @@ const App: React.FC = () => {
       console.log(`Auth event: ${event}`);
 
       if (session?.user) {
+        // Show spinner immediately instead of flashing login page
+        setIsLoadingUser(true);
+
         // Parallel Background tasks
         Promise.all([
           getUserProfile(session.user.id),
@@ -87,12 +91,6 @@ const App: React.FC = () => {
 
           setUser(userData);
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
-          setIsInitializing(false);
-
-          // If profile is missing but user is logged in, we might want to notify or log
-          if (!profile && session.user.email === 'simaopambo94@gmail.com') {
-            console.warn("Profile missing for admin user. Ensure SQL fix is applied.");
-          }
         }).catch(err => {
           console.error("Background initialization error:", err);
           const fallbackUser: User = {
@@ -103,10 +101,18 @@ const App: React.FC = () => {
             tenant_id: session.user.user_metadata?.tenant_id
           };
           setUser(fallbackUser);
+          AmazingStorage.save(STORAGE_KEYS.USER, fallbackUser);
+        }).finally(() => {
+          setIsLoadingUser(false);
           setIsInitializing(false);
+
+          if (!session.user.email && session.user.email === 'simaopambo94@gmail.com') {
+            console.warn("Profile missing for admin user. Ensure SQL fix is applied.");
+          }
         });
       } else {
         setUser(null);
+        setIsLoadingUser(false);
         localStorage.removeItem(STORAGE_KEYS.USER);
         // Background sync for public info
         AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]).finally(() => {
@@ -155,7 +161,8 @@ const App: React.FC = () => {
     }
   };
 
-  if (isInitializing) {
+  // Show spinner during initial app load OR while fetching user profile after auth
+  if (isInitializing || isLoadingUser) {
     return (
       <div className="min-h-screen bg-[#e0f2fe] flex flex-col items-center justify-center gap-4">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 shadow-xl"></div>

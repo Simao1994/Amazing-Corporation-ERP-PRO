@@ -18,7 +18,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const user = session?.user;
-            
+
             if (!user) {
                 setSubscription(null);
                 setLoading(false);
@@ -35,11 +35,25 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // saas_admin has special properties (active by default, access to all)
             if (profile?.role === 'saas_admin') {
                 setSubscription({
+                    id: 'saas-admin-unlimited',
+                    tenant_id: profile?.tenant_id || 'saas-admin-tenant',
                     active: true,
                     status: 'ativo',
                     daysLeft: 9999,
                     modules: ['ALL'],
-                    maxUsers: 9999
+                    maxUsers: 9999,
+                    valor_pago: 0,
+                    data_inicio: new Date().toISOString(),
+                    data_expiracao: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(), // 10 years
+                    auto_renew: true,
+                    saas_plans: {
+                        nome: 'Master Admin Plan',
+                        valor: 0,
+                        duracao_meses: 120,
+                        max_users: 9999,
+                        modules: ['ALL'],
+                        features: ['Acesso Total', 'Gestão de Infraestrutura']
+                    }
                 });
                 setLoading(false);
                 return;
