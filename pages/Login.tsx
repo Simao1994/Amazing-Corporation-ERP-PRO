@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../src/lib/supabase';
+import { supabase } from '@/src/lib/supabase';
 import { ShieldCheck, Eye, EyeOff, Home } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -27,12 +27,21 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
     const slug = searchParams.get('empresa');
     if (slug) {
       const fetchTenant = async () => {
-        const { data } = await supabase
-          .from('saas_tenants')
-          .select('nome')
-          .eq('slug', slug)
-          .single();
-        if (data) setTenantName(data.nome);
+        try {
+          const { data, error: fetchError } = await supabase
+            .from('saas_tenants')
+            .select('nome')
+            .eq('slug', slug)
+            .single();
+
+          if (fetchError) {
+            console.warn('Tenant branding fetch error:', fetchError);
+            return;
+          }
+          if (data) setTenantName(data.nome);
+        } catch (err) {
+          console.error('Failed to pre-fetch tenant branding:', err);
+        }
       };
       fetchTenant();
     }
