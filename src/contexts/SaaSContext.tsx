@@ -14,7 +14,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
+
     const refreshSubscription = async () => {
+        // Prevent concurrent refreshes
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const user = session?.user;
@@ -34,7 +37,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // saas_admin has special properties (active by default, access to all)
             if (profile?.role === 'saas_admin') {
-                setSubscription({
+                const adminSub: SubscriptionStatus = {
                     id: 'saas-admin-unlimited',
                     tenant_id: profile?.tenant_id || 'saas-admin-tenant',
                     active: true,
@@ -44,9 +47,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     maxUsers: 9999,
                     valor_pago: 0,
                     data_inicio: new Date().toISOString(),
-                    data_expiracao: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(), // 10 years
+                    data_expiracao: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),
                     auto_renew: true,
                     saas_plans: {
+                        id: 'plan-master-admin',
                         nome: 'Master Admin Plan',
                         valor: 0,
                         duracao_meses: 120,
@@ -54,14 +58,16 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         modules: ['ALL'],
                         features: ['Acesso Total', 'Gestão de Infraestrutura']
                     }
-                });
+                };
+
+                setSubscription(prev => JSON.stringify(prev) === JSON.stringify(adminSub) ? prev : adminSub);
                 setLoading(false);
                 return;
             }
 
             if (profile?.tenant_id) {
                 const status = await checkSubscription(profile.tenant_id);
-                setSubscription(status);
+                setSubscription(prev => JSON.stringify(prev) === JSON.stringify(status) ? prev : status);
             } else {
                 setSubscription(null);
             }
@@ -69,6 +75,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('SaaS Context Error:', err);
         } finally {
             setLoading(false);
+            setIsFirstLoad(false);
         }
     };
 
@@ -77,12 +84,16 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshSubscription();
 
         // Listen for auth changes to re-fetch subscription
-        const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(async (event) => {
-            if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-                await refreshSubscription();
+        const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log(`SaaSContext Auth Event: ${event}`);
+
+            if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+                if (session?.user) {
+                    await refreshSubscription();
+                }
             } else if (event === 'SIGNED_OUT') {
                 setSubscription(null);
-                setLoading(true); // Reset loading state for next login
+                setLoading(false); // DON'T set to true here, or Layout will block "/" page
             }
         });
 

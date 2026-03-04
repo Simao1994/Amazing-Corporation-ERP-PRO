@@ -71,8 +71,12 @@ const App: React.FC = () => {
       console.log(`Auth event: ${event}`);
 
       if (session?.user) {
-        // Show spinner immediately instead of flashing login page
-        setIsLoadingUser(true);
+        // ONLY show spinner if we don't have a user yet or if it's a fresh sign in
+        // This prevents the "pulsing" or "strobe" effect on every token refresh
+        const shouldShowSpinner = !user || event === 'SIGNED_IN';
+        if (shouldShowSpinner) {
+          setIsLoadingUser(true);
+        }
 
         // Parallel Background tasks
         Promise.all([
@@ -80,7 +84,6 @@ const App: React.FC = () => {
           AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]),
           AmazingStorage.loadAllFromCloud()
         ]).then(([{ data: profile }]) => {
-          // Check if profile exists in DB, otherwise use metadata/fallback
           const userData: User = {
             id: session.user.id,
             email: session.user.email || '',
@@ -89,7 +92,11 @@ const App: React.FC = () => {
             tenant_id: profile?.tenant_id || session.user.user_metadata?.tenant_id
           };
 
-          setUser(userData);
+          // Optimization: only update state if user data changed to avoid re-renders
+          setUser(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(userData)) return prev;
+            return userData;
+          });
           AmazingStorage.save(STORAGE_KEYS.USER, userData);
         }).catch(err => {
           console.error("Background initialization error:", err);
@@ -105,16 +112,11 @@ const App: React.FC = () => {
         }).finally(() => {
           setIsLoadingUser(false);
           setIsInitializing(false);
-
-          if (!session.user.email && session.user.email === 'simaopambo94@gmail.com') {
-            console.warn("Profile missing for admin user. Ensure SQL fix is applied.");
-          }
         });
       } else {
         setUser(null);
         setIsLoadingUser(false);
         localStorage.removeItem(STORAGE_KEYS.USER);
-        // Background sync for public info
         AmazingStorage.loadSpecificKeys([STORAGE_KEYS.CORPORATE_INFO]).finally(() => {
           setIsInitializing(false);
         });
