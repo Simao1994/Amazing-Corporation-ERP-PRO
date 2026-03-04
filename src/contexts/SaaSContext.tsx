@@ -63,10 +63,10 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (effectiveTenantId) {
                 console.log('SaaSContext: Checking subscription for tenant:', effectiveTenantId);
 
-                // Timeout protection for subscription check (5 seconds)
+                // Timeout protection for subscription check (10 seconds)
                 const subPromise = checkSubscription(effectiveTenantId);
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Subscription check timeout')), 5000)
+                    setTimeout(() => reject(new Error('Subscription check timeout')), 10000)
                 );
 
                 const status = await Promise.race([subPromise, timeoutPromise]) as SubscriptionStatus;
@@ -77,8 +77,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.warn('SaaSContext: No tenant_id found for user. Subscription set to null.');
                 setSubscription(null);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('SaaS Context Error:', err);
+            // Even on error, we must allow the app to load (error handling will happen in components)
         } finally {
             setLoading(false);
         }

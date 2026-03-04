@@ -45,10 +45,44 @@ const MasterAdmin: React.FC = () => {
     // Subscription edit state
     const [editingSubscription, setEditingSubscription] = useState<any>(null);
 
-    const fetchData = async () => {
+    const isMounted = React.useRef(true);
+    const timeoutIdRef = React.useRef<any>(null);
+
+    useEffect(() => {
+        isMounted.current = true;
+        fetchData();
+        return () => {
+            isMounted.current = false;
+            if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+        };
+    }, []);
+
+    const fetchData = async (retryCount = 0) => {
+        // Se for a primeira tentativa, esperar um pouco para evitar colisão com boot da app
+        if (retryCount === 0) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+        }
+
+        if (!isMounted.current) return;
+
+        console.log(`MasterAdmin: A iniciar carregamento de dados SaaS (Tentativa ${retryCount + 1})...`);
         setLoading(true);
         setError(null);
+
+        // Limpar timeout anterior se existir
+        if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+
+        // Timeout de segurança (15s)
+        timeoutIdRef.current = setTimeout(() => {
+            if (isMounted.current) {
+                console.error("MasterAdmin: Timeout de 15s atingido.");
+                setError('Tempo limite de carregamento excedido. Isto acontece por vezes devido a lentidão na resolução de segurança do navegador. Por favor, tente recarregar a página.');
+                setLoading(false);
+            }
+        }, 15000);
+
         try {
+            // Executar em paralelo para performance
             const [tenantsRes, plansRes, subsRes] = await Promise.all([
                 supabase.from('saas_tenants').select('*, saas_subscriptions(*)'),
                 supabase.from('saas_plans').select('*').order('valor', { ascending: true }),
@@ -59,20 +93,31 @@ const MasterAdmin: React.FC = () => {
             if (plansRes.error) throw plansRes.error;
             if (subsRes.error) throw subsRes.error;
 
-            setTenants(tenantsRes.data || []);
-            setPlans(plansRes.data || []);
-            setSubscriptions(subsRes.data || []);
+            if (isMounted.current) {
+                console.log("MasterAdmin: Dados carregados com sucesso.");
+                setTenants(tenantsRes.data || []);
+                setPlans(plansRes.data || []);
+                setSubscriptions(subsRes.data || []);
+                setLoading(false);
+                clearTimeout(timeoutIdRef.current);
+            }
         } catch (err: any) {
-            console.error('Error fetching master admin data:', err);
-            setError(err.message || 'Erro ao carregar dados do Master Admin');
-        } finally {
-            setLoading(false);
+            console.error('MasterAdmin: Erro ao carregar dados:', err);
+
+            // Se for erro de Lock do Supabase e tivermos menos de 2 retries, tentar de novo
+            if (err.message?.includes('LockManager') && retryCount < 2 && isMounted.current) {
+                console.warn('MasterAdmin: Detectado erro de Lock, a tentar novamente em 1s...');
+                setTimeout(() => fetchData(retryCount + 1), 1000);
+                return;
+            }
+
+            if (isMounted.current) {
+                setError(err.message || 'Erro ao carregar dados do dashboard master.');
+                setLoading(false);
+                clearTimeout(timeoutIdRef.current);
+            }
         }
     };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     // When a plan is selected, auto-fill the expiry date
     const handlePlanSelect = (planId: string) => {

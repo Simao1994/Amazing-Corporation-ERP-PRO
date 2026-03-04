@@ -209,7 +209,7 @@ interface HRPageProps {
 const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const isHRAdmin = true;
    const realRole = user.role;
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes' | 'contas' | 'vagas'>('dashboard');
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes' | 'contas' | 'vagas' | 'settings'>('dashboard');
    const [showModal, setShowModal] = useState(false);
    const [showMetaModal, setShowMetaModal] = useState(false);
    const [editingItem, setEditingItem] = useState<Funcionario | null>(null);
@@ -288,12 +288,13 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       try {
          console.log("HR: Iniciando sincronização de dados...");
          // 1. Fetch everything in PARALLEL to avoid waterfalls
-         const [funcsRes, presRes, recRes, metasRes] = await Promise.allSettled([
+         const [funcsRes, presRes, recRes, metasRes, corpRes] = await Promise.allSettled([
             supabase.from('funcionarios').select('*').order('nome', { ascending: true }),
             supabase.from('hr_presencas').select('*').order('data', { ascending: false }).limit(200),
             supabase.from('hr_recibos').select('*').order('data_emissao', { ascending: false }).limit(200),
-            supabase.from('hr_metas').select('*').order('status', { ascending: true })
-         ]);
+            supabase.from('hr_metas').select('*').order('status', { ascending: true }),
+            supabase.from('config_sistema').select('*').eq('categoria', 'empresa')
+         ]) as any[];
 
          // --- PROCESS EMPLOYEES ---
          if (funcsRes.status === 'fulfilled' && !funcsRes.value.error && funcsRes.value.data) {
@@ -326,14 +327,22 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
          // --- PROCESS METAS ---
          if (metasRes.status === 'fulfilled' && !metasRes.value.error && metasRes.value.data) {
-            const data = metasRes.value.data;
-            setMetas(data as any);
-            localStorage.setItem(STORAGE_KEYS.METAS, JSON.stringify(data));
+            setMetas(metasRes.value.data);
+            localStorage.setItem(STORAGE_KEYS.METAS, JSON.stringify(metasRes.value.data));
          } else {
             setMetas(AmazingStorage.get(STORAGE_KEYS.METAS, []));
          }
 
-         setCorporateInfo(AmazingStorage.get(STORAGE_KEYS.CORPORATE_INFO, null));
+         // --- PROCESS CORPORATE INFO ---
+         if (corpRes.status === 'fulfilled' && !corpRes.value.error && corpRes.value.data) {
+            const data = corpRes.value.data;
+            const info: any = { ...corporateInfo };
+            data.forEach((item: any) => {
+               info[item.chave] = item.valor;
+            });
+            setCorporateInfo(info);
+            AmazingStorage.save(STORAGE_KEYS.CORPORATE_INFO, info);
+         }
       } catch (err) {
          console.error("HR: Erro crítico na sincronização:", err);
       } finally {
@@ -371,6 +380,34 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          setFormState(prev => ({ ...prev, idade: calculateAge(prev.nascimento) }));
       }
    }, [formState.nascimento]);
+
+   const handleSaveCorporateInfo = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      const newInfo = { ...corporateInfo };
+      const keys = ['company_name', 'company_nif', 'company_address', 'company_phone', 'company_email', 'company_bank', 'company_iban'];
+
+      setLoading(true);
+      try {
+         for (const key of keys) {
+            const val = formData.get(key) as string;
+            newInfo[key] = val;
+            await supabase.from('config_sistema').upsert({
+               categoria: 'empresa',
+               chave: key,
+               valor: val,
+               updated_at: new Date().toISOString()
+            }, { onConflict: 'categoria,chave' });
+         }
+         setCorporateInfo(newInfo);
+         AmazingStorage.save(STORAGE_KEYS.CORPORATE_INFO, newInfo);
+         alert("Configurações atualizadas com sucesso!");
+      } catch (err) {
+         console.error("Erro ao salvar config:", err);
+      } finally {
+         setLoading(false);
+      }
+   };
 
    const handleOpenModal = (func: Funcionario | null) => {
       setEditingItem(func);
@@ -937,7 +974,8 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                      { id: 'performance', icon: <Award size={18} />, label: 'Metas' },
                      { id: 'passes', icon: <IdCard size={18} />, label: 'Passes' },
                      { id: 'vagas', icon: <UserPlus size={18} />, label: 'Vagas' },
-                     { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Bancrias' }
+                     { id: 'contas', icon: <Landmark size={18} />, label: 'Contas Bancrias' },
+                     { id: 'settings', icon: <Settings size={18} />, label: 'Empresa' }
                   ].filter(tab => isHRAdmin || !['gente', 'payroll', 'contas', 'vagas'].includes(tab.id)).map(tab => (
                      <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-zinc-900 text-white shadow-xl scale-105' : 'text-zinc-400 hover:bg-white hover:text-zinc-900'}`}>{tab.icon} {tab.label}</button>
                   ))}
@@ -1674,6 +1712,57 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                </div>
             )}
 
+            {/* ABA CONFIGURAÇÕES DA EMPRESA */}
+            {activeTab === 'settings' && isHRAdmin && (
+               <div className="animate-in slide-in-from-bottom-4 space-y-8">
+                  <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm">
+                     <div className="flex items-center gap-4 mb-8">
+                        <div className="p-4 bg-zinc-900 rounded-3xl text-yellow-500 shadow-xl"><Settings size={28} /></div>
+                        <div>
+                           <h2 className="text-2xl font-black text-zinc-900 uppercase">Perfil da Empresa</h2>
+                           <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">Configure os dados que aparecem nos documentos oficiais</p>
+                        </div>
+                     </div>
+
+                     <form onSubmit={handleSaveCorporateInfo} className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                           <div className="space-y-6">
+                              <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">Identidade Corporativa</h3>
+                              <Input name="company_name" label="Nome da Empresa" defaultValue={corporateInfo?.company_name} placeholder="Amazing Corporation, Lda" required />
+                              <Input name="company_nif" label="NIF / Número de Contribuinte" defaultValue={corporateInfo?.company_nif} placeholder="50002181797" required />
+                              <div className="grid grid-cols-2 gap-4">
+                                 <Input name="company_phone" label="Telefone Geral" defaultValue={corporateInfo?.company_phone} placeholder="+244 931 116 696" />
+                                 <Input name="company_email" label="Email de Contacto" defaultValue={corporateInfo?.company_email} placeholder="geral@amazing.com" />
+                              </div>
+                           </div>
+
+                           <div className="space-y-6">
+                              <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">Localização & Pagamentos</h3>
+                              <Input name="company_address" label="Morada Completa" defaultValue={corporateInfo?.company_address} placeholder="Benguela, Angola" required />
+                              <div className="bg-zinc-50 p-6 rounded-[2rem] border border-zinc-100 space-y-4">
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Dados Bancários para Recibos</p>
+                                 <div className="grid grid-cols-1 gap-4">
+                                    <Input name="company_bank" label="Banco" defaultValue={corporateInfo?.company_bank} placeholder="BAI / BFA / BIC" required />
+                                    <Input name="company_iban" label="IBAN Completo" defaultValue={corporateInfo?.company_iban} placeholder="AO06 0000 ..." required className="font-mono text-xs" />
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="flex justify-end pt-4">
+                           <button
+                              type="submit"
+                              disabled={loading}
+                              className="px-12 py-5 bg-zinc-900 text-white rounded-2xl font-black uppercase text-xs hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-2xl flex items-center gap-3 disabled:opacity-50"
+                           >
+                              <Save size={20} /> Guardar Alterações
+                           </button>
+                        </div>
+                     </form>
+                  </div>
+               </div>
+            )}
+
          </div>
 
          {/* MODAL CADASTRO FUNCIONÁRIO (MANTIDO) */}
@@ -2026,14 +2115,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                            <div className="flex items-center gap-6">
                               <div className="w-44 h-24 bg-zinc-50 rounded-xl flex items-center justify-center p-2 border border-zinc-100 print:border-none print-bg-fix relative">
                                  <Logo className="h-16 w-auto z-10" />
-                                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-zinc-300 uppercase tracking-widest text-center px-4">Amazing Corp</span>
+                                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-zinc-300 uppercase tracking-widest text-center px-4">{corporateInfo?.company_name || 'Amazing Corp'}</span>
                               </div>
                               <div className="flex flex-col text-[11px] leading-tight font-black uppercase text-zinc-600">
-                                 <span className="text-zinc-900 font-black text-[14px] mb-1 tracking-tighter italic">Amazing Corporation</span>
-                                 <span className="text-zinc-900 font-bold">NIF: 50002181797</span>
-                                 <span>Benguela/Angola • Massangarala</span>
-                                 <span className="text-zinc-900 mt-1 font-black">Tel: +244 931 116 696</span>
-                                 <span className="lowercase text-sky-700 font-black text-xs">Email: geral.amazingcorporation@gmail.com</span>
+                                 <span className="text-zinc-900 font-black text-[14px] mb-1 tracking-tighter italic">{corporateInfo?.company_name || 'Amazing Corporation'}</span>
+                                 <span className="text-zinc-900 font-bold">NIF: {corporateInfo?.company_nif || '50002181797'}</span>
+                                 <span>{corporateInfo?.company_address || 'Benguela/Angola • Massangarala'}</span>
+                                 <span className="text-zinc-900 mt-1 font-black">Tel: {corporateInfo?.company_phone || '+244 931 116 696'}</span>
+                                 <span className="lowercase text-sky-700 font-black text-xs">Email: {corporateInfo?.company_email || 'geral.amazingcorporation@gmail.com'}</span>
                               </div>
                            </div>
 
@@ -2145,145 +2234,153 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                         </div>
 
                         {/* RESUMO TOTAL - DESIGN LIMPO */}
-                        <div className="mt-12 flex flex-col gap-3" style={{ fontFamily: 'Times New Roman', fontSize: '18px' }}>
-                           <div className="flex justify-start gap-4 text-zinc-900">
-                              <span className="font-bold uppercase text-[16px] text-zinc-500 w-48">Total Bruto:</span>
-                              <span className="font-bold">{formatAOA(viewingRecibo.bruto || 0)}</span>
-                           </div>
-                           <div className="flex justify-start gap-4 text-zinc-900">
-                              <span className="font-black uppercase text-[16px] text-zinc-900 w-48">Líquido a Receber:</span>
-                              <span className="font-black text-2xl border-b-2 border-zinc-900">{formatAOA(viewingRecibo.liquido)}</span>
-                           </div>
+                        <div className="flex justify-start gap-4 text-zinc-900">
+                           <span className="font-bold uppercase text-[16px] text-zinc-500 w-48">Total Bruto:</span>
+                           <span className="font-bold">{formatAOA(viewingRecibo.bruto || 0)}</span>
                         </div>
+                        <div className="flex justify-start gap-4 text-zinc-900">
+                           <span className="font-black uppercase text-[16px] text-zinc-900 w-48">Líquido a Receber:</span>
+                           <span className="font-black text-2xl border-b-2 border-zinc-900">{formatAOA(viewingRecibo.liquido)}</span>
+                        </div>
+                     </div>
 
-                        {/* ASSINATURAS E VALIDAÇÃO */}
-                        <div className="mt-16 grid grid-cols-3 gap-12 items-end">
-                           <div className="text-center">
-                              <div className="h-16 flex items-center justify-center"></div>
-                              <div className="border-t-2 border-zinc-900 mt-4 pt-2">
-                                 <p className="text-[13px] font-black uppercase text-black" style={{ fontFamily: 'Times New Roman' }}>Entidade Empregadora</p>
-                              </div>
+                     {/* DADOS BANCÁRIOS NO RECIBO (ABAIXO DO TOTAL) */}
+                     <div className="mt-10 p-6 bg-zinc-50 rounded-3xl border border-zinc-100 space-y-4">
+                        <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-200 pb-2">Informação para Transferência</p>
+                        <div className="flex justify-between items-end">
+                           <div>
+                              <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">Banco</p>
+                              <p className="text-sm font-black text-zinc-900 uppercase italic">{corporateInfo?.company_bank || 'BAI'}</p>
                            </div>
-                           <div className="flex flex-col items-center">
-                              <div className="h-24"></div>
-                           </div>
-                           <div className="text-center">
-                              <div className="h-12"></div>
-                              <div className="border-t-2 border-zinc-900 mt-4 pt-2">
-                                 <p className="text-[14px] font-black text-black" style={{ fontFamily: 'Times New Roman' }}>Assinatura do Colaborador</p>
-                              </div>
+                           <div className="text-right">
+                              <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">IBAN de Destino</p>
+                              <p className="text-[15px] font-black text-zinc-900 font-mono select-all tracking-tighter">{corporateInfo?.company_iban || 'AO06 0000 0000 8921 3451 2'}</p>
                            </div>
                         </div>
                      </div>
 
-                     {/* RODAPÉ REFINADO (ALTA VISIBILIDADE) */}
-                     <div className="absolute bottom-0 left-0 w-full h-[2.5cm] overflow-hidden bg-white print:bg-white border-t border-zinc-200 flex items-center justify-end px-16">
-                        <div className='flex flex-col gap-1 items-end text-right text-black' style={{ fontFamily: 'Times New Roman' }}>
-                           <div className='flex items-center gap-4'>
-                              <p className='text-[13px] italic font-normal'>Pág. 01 / 01</p>
-                              <div className='h-4 w-[1px] bg-zinc-300'></div>
-                              <p className='text-[12px] font-black uppercase tracking-tight'>Amazing Corporation, Lda</p>
+                     {/* ASSINATURAS E VALIDAÇÃO */}
+                     <div className="mt-16 grid grid-cols-3 gap-12 items-end">
+                        <div className="text-center">
+                           <div className="h-16 flex items-center justify-center"></div>
+                           <div className="border-t-2 border-zinc-900 mt-4 pt-2">
+                              <p className="text-[13px] font-black uppercase text-black" style={{ fontFamily: 'Times New Roman' }}>Entidade Empregadora</p>
                            </div>
-                           <p className='text-[10px] font-bold uppercase tracking-tight'>
-                              Folha de Salário processada pelo Computador em {new Date().toLocaleString('pt-PT')}
-                           </p>
                         </div>
-                     </div>
-
-                     {/* BOTÃO VOLTAR NO FINAL (PARA FACILIDADE) */}
-                     <div className="p-8 border-t border-zinc-100 flex justify-center print:hidden bg-zinc-50/50">
-                        <button
-                           onClick={() => setViewingRecibo(null)}
-                           className="flex items-center gap-3 px-12 py-5 bg-zinc-900 text-white rounded-[2rem] font-black uppercase text-xs hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-2xl"
-                        >
-                           <ArrowLeft size={20} /> Fechar e Voltar ao Painel
-                        </button>
+                        <div className="flex flex-col items-center">
+                           <div className="h-24"></div>
+                        </div>
+                        <div className="text-center">
+                           <div className="h-12"></div>
+                           <div className="border-t-2 border-zinc-900 mt-4 pt-2">
+                              <p className="text-[14px] font-black text-black" style={{ fontFamily: 'Times New Roman' }}>Assinatura do Colaborador</p>
+                           </div>
+                        </div>
                      </div>
                   </div>
+
+                  {/* RODAPÉ REFINADO (ALTA VISIBILIDADE) */}
+                  <div className="absolute bottom-0 left-0 w-full h-[2.5cm] overflow-hidden bg-white print:bg-white border-t border-zinc-200 flex items-center justify-end px-16">
+                     <div className='flex flex-col gap-1 items-end text-right text-black' style={{ fontFamily: 'Times New Roman' }}>
+                        <div className='flex items-center gap-4'>
+                           <p className='text-[13px] italic font-normal'>Pág. 01 / 01</p>
+                           <div className='h-4 w-[1px] bg-zinc-300'></div>
+                           <p className='text-[12px] font-black uppercase tracking-tight'>Amazing Corporation, Lda</p>
+                        </div>
+                        <p className='text-[10px] font-bold uppercase tracking-tight'>
+                           Folha de Salário processada pelo Computador em {new Date().toLocaleString('pt-PT')}
+                        </p>
+                     </div>
+                  </div>
+
+                  {/* BOTÃO VOLTAR NO FINAL (PARA FACILIDADE) */}
+                  <div className="p-8 border-t border-zinc-100 flex justify-center print:hidden bg-zinc-50/50">
+                     <button
+                        onClick={() => setViewingRecibo(null)}
+                        className="flex items-center gap-3 px-12 py-5 bg-zinc-900 text-white rounded-[2rem] font-black uppercase text-xs hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-2xl"
+                     >
+                        <Printer size={20} />
+                     </button>
+                  </div>
+
                </div>
             </>
          )}
 
-         {/* MODAL PASSE PVC (ESCURO - REFINADO) */}
-         {printingPass && (
-            <div className="fixed inset-0 z-[250] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in py-10 overflow-y-auto">
-               <div className="bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto">
-                  <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                     <h2 className="text-xl font-black text-zinc-900 uppercase flex items-center gap-2">
-                        <IdCard className="text-yellow-500" size={24} /> Emissão PVC Corporativo
-                     </h2>
-                     <button onClick={() => setPrintingPass(null)} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
-                  </div>
-
-                  <div className="p-10 flex flex-col items-center gap-8">
-                     {/* Cartão PVC - Frente (Tema Escuro solicitado pelo Utilizador) */}
-                     <div id="pvc-card" className="w-[320px] h-[520px] bg-zinc-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden relative flex flex-col items-center p-0 print:shadow-none border border-white/5">
-
-                        {/* Design superior minimalista */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full -translate-y-32 translate-x-32"></div>
-                        <div className="absolute top-0 left-0 w-48 h-48 bg-sky-600/10 rounded-full -translate-y-24 -translate-x-24"></div>
-
-                        {/* Logotipo ajustado (Menor conforme solicitado) */}
-                        <div className="z-10 mt-10 mb-8 flex flex-col items-center">
-                           <div className="scale-75 opacity-90 filter brightness-0 invert">
-                              <Logo />
-                           </div>
-                           <div className="w-8 h-1 bg-yellow-500 rounded-full mt-4"></div>
-                        </div>
-
-                        {/* Fotografia */}
-                        <div className="relative mb-8">
-                           <img src={printingPass.foto_url} className="w-32 h-32 rounded-[2.5rem] object-cover border-4 border-zinc-800 shadow-2xl relative z-10" />
-                           <div className="absolute -inset-2 bg-gradient-to-tr from-sky-600/20 to-yellow-500/20 rounded-[2.8rem] blur-xl opacity-50"></div>
-                        </div>
-
-                        {/* Dados do Funcionário */}
-                        <div className="flex-1 w-full flex flex-col items-center px-8 text-center text-white">
-                           <h2 className="text-2xl font-black leading-tight uppercase tracking-tighter mb-1">{printingPass.nome}</h2>
-                           <p className="text-[11px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-8">{printingPass.funcao}</p>
-
-                           <div className="grid grid-cols-2 gap-3 w-full mb-10">
-                              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">ID Registo</p>
-                                 <p className="text-[11px] font-black text-white font-mono tracking-tighter">#{printingPass.id.substring(0, 8).toUpperCase()}</p>
-                              </div>
-                              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Validade</p>
-                                 <p className="text-[11px] font-black text-white">
-                                    {(() => {
-                                       const d = new Date();
-                                       d.setFullYear(d.getFullYear() + 2);
-                                       return d.toLocaleDateString('pt-PT');
-                                    })()}
-                                 </p>
-                              </div>
-                           </div>
-
-                           {/* QR Code */}
-                           <div className="mt-auto mb-10 bg-white p-2.5 rounded-[1.2rem] shadow-2xl">
-                              <QrCode size={40} className="text-zinc-900" />
-                           </div>
-                        </div>
-
-                        {/* Accents laterais ou inferiores */}
-                        <div className="absolute bottom-0 left-0 w-full flex h-1.5">
-                           <div className="flex-1 bg-sky-600"></div>
-                           <div className="flex-1 bg-yellow-500"></div>
-                           <div className="flex-1 bg-zinc-900 border-t border-white/10"></div>
-                        </div>
+         {/* MODAL PASSE PVC */}
+         {
+            printingPass && (
+               <div className="fixed inset-0 z-[250] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md p-4 animate-in fade-in py-10 overflow-y-auto">
+                  <div className="bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto">
+                     <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                        <h2 className="text-xl font-black text-zinc-900 uppercase flex items-center gap-2">
+                           <IdCard className="text-yellow-500" size={24} /> Emissão PVC Corporativo
+                        </h2>
+                        <button onClick={() => setPrintingPass(null)} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                      </div>
 
-                     <div className="flex gap-4 w-full">
-                        <button onClick={() => window.print()} className="flex-1 py-5 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl">
-                           <Printer size={20} /> Emitir Passe PVC
-                        </button>
-                        <button onClick={() => setPrintingPass(null)} className="px-8 py-5 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-xs uppercase hover:bg-zinc-200 transition-all">Sair</button>
+                     <div className="p-10 flex flex-col items-center gap-8">
+                        <div id="pvc-card" className="w-[320px] h-[520px] bg-zinc-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] overflow-hidden relative flex flex-col items-center p-0 print:shadow-none border border-white/5">
+                           <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full -translate-y-32 translate-x-32"></div>
+                           <div className="absolute top-0 left-0 w-48 h-48 bg-sky-600/10 rounded-full -translate-y-24 -translate-x-24"></div>
+
+                           <div className="z-10 mt-10 mb-8 flex flex-col items-center text-white">
+                              <div className="scale-75 opacity-90 filter brightness-0 invert">
+                                 <Logo />
+                              </div>
+                              <div className="w-8 h-1 bg-yellow-500 rounded-full mt-4"></div>
+                           </div>
+
+                           <div className="relative mb-8">
+                              <img src={printingPass.foto_url} className="w-32 h-32 rounded-[2.5rem] object-cover border-4 border-zinc-800 shadow-2xl relative z-10" />
+                              <div className="absolute -inset-2 bg-gradient-to-tr from-sky-600/20 to-yellow-500/20 rounded-[2.8rem] blur-xl opacity-50"></div>
+                           </div>
+
+                           <div className="flex-1 w-full flex flex-col items-center px-8 text-center text-white">
+                              <h2 className="text-2xl font-black leading-tight uppercase tracking-tighter mb-1">{printingPass.nome}</h2>
+                              <p className="text-[11px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-8">{printingPass.funcao}</p>
+
+                              <div className="grid grid-cols-2 gap-3 w-full mb-10">
+                                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                                    <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">ID Registo</p>
+                                    <p className="text-[11px] font-black text-white font-mono tracking-tighter">#{printingPass.id.substring(0, 8).toUpperCase()}</p>
+                                 </div>
+                                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                                    <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Validade</p>
+                                    <p className="text-[11px] font-black text-white">
+                                       {(() => {
+                                          const d = new Date();
+                                          d.setFullYear(d.getFullYear() + 2);
+                                          return d.toLocaleDateString('pt-PT');
+                                       })()}
+                                    </p>
+                                 </div>
+                              </div>
+
+                              <div className="mt-auto mb-10 bg-white p-2.5 rounded-[1.2rem] shadow-2xl">
+                                 <QrCode size={40} className="text-zinc-900" />
+                              </div>
+                           </div>
+
+                           <div className="absolute bottom-0 left-0 w-full flex h-1.5">
+                              <div className="flex-1 bg-sky-600"></div>
+                              <div className="flex-1 bg-yellow-500"></div>
+                              <div className="flex-1 bg-zinc-900 border-t border-white/10"></div>
+                           </div>
+                        </div>
+
+                        <div className="flex gap-4 w-full">
+                           <button onClick={() => window.print()} className="flex-1 py-5 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-3 shadow-xl">
+                              <Printer size={20} /> Emitir Passe PVC
+                           </button>
+                           <button onClick={() => setPrintingPass(null)} className="px-8 py-5 bg-zinc-100 text-zinc-400 rounded-2xl font-black text-xs uppercase hover:bg-zinc-200 transition-all">Sair</button>
+                        </div>
                      </div>
                   </div>
                </div>
-            </div>
-         )}
-      </div>
+            )
+         }
+      </div >
    );
 };
 

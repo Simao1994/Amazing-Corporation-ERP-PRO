@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Shield, UserPlus, Trash2, AlertCircle, Database, Download, HardDrive, RefreshCw, CheckCircle2, Send, Lock, Cloud, Wifi, ShieldCheck, Plus, Edit, FolderOpen, PlayCircle, Clock, AlertTriangle, CheckCircle, Archive } from 'lucide-react';
+import { Shield, UserPlus, Trash2, AlertCircle, Database, Download, HardDrive, RefreshCw, CheckCircle2, Send, Lock, Cloud, Wifi, ShieldCheck, Plus, Edit, FolderOpen, PlayCircle, Clock, AlertTriangle, CheckCircle, Archive, Building2, Save } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { supabase } from '../src/lib/supabase';
 import { MENU_ITEMS, ROLE_ACCESS, getMergedPermissions, setDynamicRoles } from '../constants';
 import { UserRole } from '../types';
+import { STORAGE_KEYS } from '../utils/storage';
 
 const SettingsPage: React.FC = () => {
   const [cloudStatus, setCloudStatus] = useState<'checking' | 'connected' | 'error'>('checking');
@@ -27,6 +28,18 @@ const SettingsPage: React.FC = () => {
       catch { return { status: null, date: null, file: null, error: null }; }
     }
   );
+
+  // Corporate Settings State
+  const [corpSettings, setCorpSettings] = useState<Record<string, string>>({
+    company_name: 'Amazing Corporation',
+    company_nif: '50002181797',
+    company_address: 'Benguela/Angola • Massangarala',
+    company_phone: '+244 931 116 696',
+    company_email: 'geral.amazingcorporation@gmail.com',
+    company_bank: 'BAI',
+    company_iban: 'AO06 0000 0000 8921 3451 2'
+  });
+  const [isSavingCorp, setIsSavingCorp] = useState(false);
 
 
   const checkCloudStatus = async () => {
@@ -67,6 +80,51 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const fetchCorpSettings = async () => {
+    try {
+      const { data, error } = await supabase.from('config_sistema').select('*');
+      if (error) throw error;
+      if (data) {
+        const settings: Record<string, string> = { ...corpSettings };
+        data.forEach(item => {
+          if (settings[item.chave] !== undefined || item.chave.startsWith('company_')) {
+            settings[item.chave] = item.valor;
+          }
+        });
+        setCorpSettings(settings);
+        // Sync with local storage for other components
+        localStorage.setItem(STORAGE_KEYS.CORPORATE_INFO, JSON.stringify(settings));
+      }
+    } catch (err) {
+      console.error('Error fetching corp settings:', err);
+    }
+  };
+
+  const handleSaveCorpSettings = async () => {
+    setIsSavingCorp(true);
+    try {
+      const updates = Object.entries(corpSettings).map(([key, value]) => ({
+        chave: key,
+        valor: value,
+        categoria: 'empresa'
+      }));
+
+      const { error } = await supabase
+        .from('config_sistema')
+        .upsert(updates, { onConflict: 'chave' });
+
+      if (error) throw error;
+
+      localStorage.setItem(STORAGE_KEYS.CORPORATE_INFO, JSON.stringify(corpSettings));
+      alert('Configurações da empresa guardadas com sucesso!');
+    } catch (err: any) {
+      console.error('Error saving corp settings:', err);
+      alert('Erro ao guardar configurações: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setIsSavingCorp(false);
+    }
+  };
+
   const handleSaveRole = async (role: any) => {
     try {
       const { error } = await supabase
@@ -100,6 +158,7 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     checkCloudStatus();
     fetchDynamicRoles();
+    fetchCorpSettings();
   }, []);
 
   const [inviteForm, setInviteForm] = useState({ nome: '', email: '', role: 'manager' });
@@ -641,6 +700,90 @@ const SettingsPage: React.FC = () => {
           <p className="text-zinc-400 text-xs leading-relaxed font-medium">
             Sua infraestrutura de dados local utiliza encriptação nativa do navegador. Para migrar para uma solução multi-utilizador em nuvem, contacte o suporte técnico.
           </p>
+        </div>
+
+        {/* Perfil da Empresa (Gestão de IBAN e Dados) */}
+        <div className="md:col-span-2 bg-white p-10 rounded-[2.5rem] shadow-sm border border-sky-100 space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="font-black text-zinc-900 text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
+              <Building2 size={18} className="text-sky-500" />
+              Perfil da Empresa & Dados Bancários
+            </h2>
+            <button
+              onClick={handleSaveCorpSettings}
+              disabled={isSavingCorp}
+              className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {isSavingCorp ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+              Guardar Perfil
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">Nome da Empresa</label>
+              <Input
+                value={corpSettings.company_name}
+                onChange={e => setCorpSettings({ ...corpSettings, company_name: e.target.value })}
+                placeholder="Ex: Amazing Corporation, Lda"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">NIF (Identificação Fiscal)</label>
+              <Input
+                value={corpSettings.company_nif}
+                onChange={e => setCorpSettings({ ...corpSettings, company_nif: e.target.value })}
+                placeholder="Ex: 50002181797"
+              />
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">Sede / Morada Principal</label>
+              <Input
+                value={corpSettings.company_address}
+                onChange={e => setCorpSettings({ ...corpSettings, company_address: e.target.value })}
+                placeholder="Ex: Benguela, Angola"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">Telefone de Contacto</label>
+              <Input
+                value={corpSettings.company_phone}
+                onChange={e => setCorpSettings({ ...corpSettings, company_phone: e.target.value })}
+                placeholder="Ex: +244 931 116 696"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">Email Corporativo</label>
+              <Input
+                value={corpSettings.company_email}
+                onChange={e => setCorpSettings({ ...corpSettings, company_email: e.target.value })}
+                placeholder="geral@amazing.ao"
+              />
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-zinc-50 space-y-6">
+            <h3 className="text-[9px] font-black text-sky-600 uppercase tracking-widest">Informação Bancária para Pagamentos (SaaS/Recibos)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">Banco</label>
+                <Input
+                  value={corpSettings.company_bank}
+                  onChange={e => setCorpSettings({ ...corpSettings, company_bank: e.target.value })}
+                  placeholder="Ex: BAI"
+                />
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[9px] font-black uppercase text-zinc-400 ml-1">IBAN Principal</label>
+                <Input
+                  value={corpSettings.company_iban}
+                  onChange={e => setCorpSettings({ ...corpSettings, company_iban: e.target.value })}
+                  placeholder="Ex: AO06 0000 ..."
+                  className="font-mono"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
