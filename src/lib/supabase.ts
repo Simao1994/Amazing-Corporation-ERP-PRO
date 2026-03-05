@@ -1,10 +1,14 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
+// Proxy URL is used to bypass Antivirus/Firewalls that block Supabase domains directly.
+const supabaseUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/supabase-proxy`
+    : import.meta.env.VITE_SUPABASE_URL;
+
+if (!import.meta.env.VITE_SUPABASE_URL || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
 }
 
@@ -16,7 +20,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 15000); // 15s timeout
-    
+
     try {
         const response = await fetch(url, {
             ...options,
