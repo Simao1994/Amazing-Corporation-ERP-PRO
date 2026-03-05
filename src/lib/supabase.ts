@@ -3,39 +3,42 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Proxy URL is used to bypass Antivirus/Firewalls that block Supabase domains directly.
-const supabaseUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/supabase-proxy`
-    : import.meta.env.VITE_SUPABASE_URL;
+// Revertido o bypass de proxy por causa do bug de KEEP-ALIVE do Node.js (ECONNRESET)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
-if (!import.meta.env.VITE_SUPABASE_URL || !supabaseAnonKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
 }
 
 /**
- * Custom fetch wrapper to enforce a 15-second timeout on all Supabase requests.
- * This prevents the UI from getting stuck in an infinite loading state when
- * the network is down or an antivirus/adblocker blocks the connection on Desktop.
+ * Custom fetch wrapper to enforce a STRICT 10-second timeout on all Supabase requests.
+ * Usamos a Promise manual porque alguns antivírus agressivos interceptam a função window.fetch
+ * e ignoram o sinal AbortController interno, fazendo com que as Promises congelem infinitamente.
  */
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    return new Promise<Response>((resolve, reject) => {
+        let isSettled = false;
 
-    try {
-        const response = await fetch(url, {
-            ...options,
-            signal: controller.signal
-        });
-        clearTimeout(id);
-        return response;
-    } catch (err: any) {
-        clearTimeout(id);
-        // Transform the AbortError into a more descriptive network error
-        if (err.name === 'AbortError' || err.message?.includes('fetch')) {
-            throw new Error('Falha na ligação com o servidor (Tempo Esgotado). Verifique a sua conexão de internet ou se o seu Antivírus/Firewall está bloqueando o acesso.');
-        }
-        throw err;
-    }
+        const id = setTimeout(() => {
+            if (isSettled) return;
+            isSettled = true;
+            reject(new Error('A ligação excedeu o tempo limite (10s). O seu Antivírus, Firewall ou AdBlocker pode estar a bloquear o acesso à base de dados.'));
+        }, 10000); // 10s strict timeout
+
+        fetch(url, options)
+            .then(response => {
+                if (isSettled) return;
+                isSettled = true;
+                clearTimeout(id);
+                resolve(response);
+            })
+            .catch(err => {
+                if (isSettled) return;
+                isSettled = true;
+                clearTimeout(id);
+                reject(err);
+            });
+    });
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
