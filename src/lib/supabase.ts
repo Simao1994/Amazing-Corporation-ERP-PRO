@@ -8,11 +8,40 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
 }
 
+/**
+ * Custom fetch wrapper to enforce a 15-second timeout on all Supabase requests.
+ * This prevents the UI from getting stuck in an infinite loading state when
+ * the network is down or an antivirus/adblocker blocks the connection on Desktop.
+ */
+const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    } catch (err: any) {
+        clearTimeout(id);
+        // Transform the AbortError into a more descriptive network error
+        if (err.name === 'AbortError' || err.message?.includes('fetch')) {
+            throw new Error('Falha na ligação com o servidor (Tempo Esgotado). Verifique a sua conexão de internet ou se o seu Antivírus/Firewall está bloqueando o acesso.');
+        }
+        throw err;
+    }
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+    },
+    global: {
+        fetch: customFetch
     }
 })
 
