@@ -79,19 +79,19 @@ const App: React.FC = () => {
   useEffect(() => {
     (window as any).notify = showToast;
 
-    // Após 5s mostrar os botões de emergência
+    // Após 1s mostrar os botões de emergência (Reduzido drasticamente para evitar frustração)
     const timer = setTimeout(() => {
       setShowForceLoad(true);
-    }, 5000);
+    }, 1000);
 
-    // BYPASS AUTOMÁTICO: após 25s forçar saída do loading sem intervenção do utilizador
+    // BYPASS AUTOMÁTICO: após 12s forçar saída do loading (Reduzido de 25s)
     const autoBypass = setTimeout(() => {
       if (!forceLoadManual) {
-        console.warn('App: Auto-bypass activado após 25s. Auth ou SaaS não responderam a tempo.');
+        console.warn('App: Auto-bypass activado após 12s. Rede instável detectada.');
         localStorage.setItem('emergency_nuclear_bypass', 'true');
         setForceLoadManual(true);
       }
-    }, 25000);
+    }, 12000);
 
     return () => {
       clearTimeout(timer);
@@ -170,19 +170,23 @@ const App: React.FC = () => {
             URL: {import.meta.env.VITE_SUPABASE_URL || 'NÃO CONFIGURADA'}
           </p>
           <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 text-left space-y-2 max-w-sm mx-auto">
-            <p className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Debug Infográfico:</p>
+            <p className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Debug em Tempo Real:</p>
             <div className="grid grid-cols-2 gap-2 text-[8px] font-mono text-slate-400">
-              <span>Token Metadados:</span>
-              <span className={user?.user_metadata?.tenant_id ? "text-green-500" : "text-red-500"}>
-                {user?.user_metadata?.tenant_id ? "Sincronizado" : "Pendente"}
+              <span>Auth Context:</span>
+              <span className={authLoading ? "text-yellow-500 animate-pulse" : "text-green-500"}>
+                {authLoading ? "A verificar..." : "Pronto"}
               </span>
-              <span>Perfil Carregado:</span>
-              <span className={user?.role ? "text-green-500" : "text-red-500"}>
-                {user?.role ? "Sim" : "Não"}
+              <span>SaaS Context:</span>
+              <span className={saasLoading ? "text-yellow-500 animate-pulse" : "text-green-500"}>
+                {saasLoading ? "A sincronizar..." : "Pronto"}
               </span>
-              <span>Sessão Activa:</span>
-              <span className={session ? "text-green-500" : "text-red-500"}>
-                {session ? "Sim" : "Não"}
+              <span>Sessão Supabase:</span>
+              <span className={user ? "text-green-500" : "text-yellow-500"}>
+                {user ? "Activa" : "Pendente"}
+              </span>
+              <span>ID da Empresa:</span>
+              <span className={user?.tenant_id ? "text-green-500" : "text-red-500"}>
+                {user?.tenant_id ? "Sincronizado" : "Não Encontrado"}
               </span>
             </div>
           </div>

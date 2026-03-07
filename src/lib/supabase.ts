@@ -10,35 +10,45 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
 }
 
-/**
- * Custom fetch wrapper to enforce a STRICT 10-second timeout on all Supabase requests.
- * Usamos a Promise manual porque alguns antivírus agressivos interceptam a função window.fetch
- * e ignoram o sinal AbortController interno, fazendo com que as Promises congelem infinitamente.
- */
-const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
-    return new Promise<Response>((resolve, reject) => {
-        let isSettled = false;
+const MAX_RETRIES = 2;
 
-        const id = setTimeout(() => {
-            if (isSettled) return;
-            isSettled = true;
-            reject(new Error('A ligação excedeu o tempo limite (20s). O seu Antivírus, Firewall ou AdBlocker pode estar a bloquear o acesso à base de dados.'));
-        }, 20000); // 20s strict timeout (alinhado com fail-safes do Auth/SaaS)
+const customFetch: typeof fetch = async (url, options) => {
+    let lastError: any;
+    for (let i = 0; i <= MAX_RETRIES; i++) {
+        try {
+            return await new Promise<Response>((resolve, reject) => {
+                let isSettled = false;
+                const timeoutMs = 20000; // 20s timeout
 
-        fetch(url, options)
-            .then(response => {
-                if (isSettled) return;
-                isSettled = true;
-                clearTimeout(id);
-                resolve(response);
-            })
-            .catch(err => {
-                if (isSettled) return;
-                isSettled = true;
-                clearTimeout(id);
-                reject(err);
+                const timeoutId = setTimeout(() => {
+                    if (isSettled) return;
+                    isSettled = true;
+                    reject(new Error(`A ligação excedeu o tempo (20s). Tentativa ${i + 1}/${MAX_RETRIES + 1}.`));
+                }, timeoutMs);
+
+                fetch(url, options)
+                    .then(response => {
+                        if (isSettled) return;
+                        isSettled = true;
+                        clearTimeout(timeoutId);
+                        resolve(response);
+                    })
+                    .catch(err => {
+                        if (isSettled) return;
+                        isSettled = true;
+                        clearTimeout(timeoutId);
+                        reject(err);
+                    });
             });
-    });
+        } catch (err: any) {
+            lastError = err;
+            console.warn(`Supabase Fetch Falhou (Tentativa ${i + 1}):`, err.message);
+            if (i < MAX_RETRIES) {
+                await new Promise(r => setTimeout(r, 1000 * (i + 1))); 
+            }
+        }
+    }
+    throw lastError;
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -46,11 +56,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        storage: localStorage,
     },
     global: {
         fetch: customFetch
     }
-})
+});
 
 export async function getUserProfile(userId: string) {
     const { data, error } = await supabase

@@ -86,14 +86,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const { data: { session: initialSession }, error } = await supabase.auth.getSession();
                 
                 if (error) {
+                    console.error('AuthContext: Erro ao buscar sessão:', error.message);
                     const isLockError = error.message?.includes('Lock broken') || error.message?.includes('steal');
-                    if (isLockError && retryCount < 3) {
-                        const delay = 500 * (retryCount + 1);
+                    if (isLockError && retryCount < 2) { // Reduzido de 3 para 2 retries
+                        const delay = 1000 * (retryCount + 1);
                         console.warn(`AuthContext: Lock detectado, tentando novamente em ${delay}ms...`);
                         setTimeout(() => initAuth(retryCount + 1), delay);
                         return;
                     }
-                    throw error;
+                    // Em caso de erro não crítico de lock, continuamos para não travar o ecrã
                 }
 
                 setSession(initialSession);
@@ -101,9 +102,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await refreshProfile(initialSession);
                 }
             } catch (err) {
-                console.error('AuthContext: Erro na inicialização:', err);
+                console.error('AuthContext: Erro crítico na inicialização:', err);
             } finally {
-                if (retryCount === 0 || !loading) {
+                // EXTREME FAIL-SAFE: Garantir que o loading morre sempre aqui se não houver retry pendente
+                if (retryCount >= 0) {
                     setLoading(false);
                     isInitialLoad.current = false;
                     clearTimeout(failSafeTimer);
