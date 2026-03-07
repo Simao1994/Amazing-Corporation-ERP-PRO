@@ -43,9 +43,9 @@ WITH CHECK (
     )
     OR
     EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE users.id = auth.uid() 
-        AND users.tenant_id = lives.empresa_id
+        SELECT 1 FROM public.profiles 
+        WHERE profiles.id = auth.uid() 
+        AND profiles.tenant_id = lives.empresa_id
     )
 );
 
@@ -61,9 +61,9 @@ USING (
     )
     OR
     EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE users.id = auth.uid() 
-        AND users.tenant_id = lives.empresa_id
+        SELECT 1 FROM public.profiles 
+        WHERE profiles.id = auth.uid() 
+        AND profiles.tenant_id = lives.empresa_id
     )
 );
 
@@ -79,9 +79,9 @@ USING (
     )
     OR
     EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE users.id = auth.uid() 
-        AND users.tenant_id = lives.empresa_id
+        SELECT 1 FROM public.profiles 
+        WHERE profiles.id = auth.uid() 
+        AND profiles.tenant_id = lives.empresa_id
     )
 );
 
