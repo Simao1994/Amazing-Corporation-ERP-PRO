@@ -76,12 +76,24 @@ const App: React.FC = () => {
   useEffect(() => {
     (window as any).notify = showToast;
 
-    // Safety timeout for global loading (Reduced to 5s for emergency)
+    // Após 5s mostrar os botões de emergência
     const timer = setTimeout(() => {
       setShowForceLoad(true);
     }, 5000);
 
-    return () => clearTimeout(timer);
+    // BYPASS AUTOMÁTICO: após 8s forçar saída do loading sem intervenção do utilizador
+    const autoBypass = setTimeout(() => {
+      if (!forceLoadManual) {
+        console.warn('App: Auto-bypass activado após 8s. Auth ou SaaS não responderam a tempo.');
+        localStorage.setItem('emergency_nuclear_bypass', 'true');
+        setForceLoadManual(true);
+      }
+    }, 8000);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(autoBypass);
+    };
   }, []);
 
   const handleLogin = async (userData: any) => {

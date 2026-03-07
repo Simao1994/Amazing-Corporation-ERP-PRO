@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
 
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
             );
 
             const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('AuthContext: FAIL-SAFE disparado! Forçando carregamento...');
                 setLoading(false);
             }
-        }, 4000);
+        }, 2000);
 
         const initAuth = async () => {
             try {
