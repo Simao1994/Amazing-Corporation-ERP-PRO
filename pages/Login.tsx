@@ -214,17 +214,30 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
               setTimeout(async () => {
                 const el = document.getElementById('conn-status');
                 if (!el) return;
+                
+                // Controller para timeout de 5 segundos
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
                 try {
                   const res = await fetch('${import.meta.env.VITE_SUPABASE_URL}/rest/v1/', {
-                    headers: { 'apikey': '${import.meta.env.VITE_SUPABASE_ANON_KEY}' }
+                    headers: { 'apikey': '${import.meta.env.VITE_SUPABASE_ANON_KEY}' },
+                    signal: controller.signal
                   });
+                  clearTimeout(timeoutId);
+                  
                   if (res.ok || res.status === 401 || res.status === 400) {
-                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-green-600 font-bold">ATIVA E VISÍVEL</span>';
+                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-green-600 font-bold tracking-tighter uppercase text-[8px]">ATIVA E VISÍVEL</span>';
                   } else {
-                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-red-600 font-bold">ERRO ' + res.status + '</span>';
+                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-red-600 font-bold uppercase text-[8px]">ERRO ' + res.status + '</span>';
                   }
                 } catch (e) {
-                  el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-red-600 font-bold uppercase">SEM RESPOSTA (DOMÍNIO BLOQUEADO)</span>';
+                  clearTimeout(timeoutId);
+                  if (e.name === 'AbortError') {
+                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-red-600 font-bold uppercase text-[8px]">TIMEOUT (LIGAÇÃO LENTA)</span>';
+                  } else {
+                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-red-600 font-bold uppercase text-[8px]">SEM RESPOSTA (BLOQUEADO)</span>';
+                  }
                 }
               }, 1000);
             `}} />
