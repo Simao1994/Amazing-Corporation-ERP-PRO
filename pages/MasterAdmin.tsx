@@ -295,15 +295,16 @@ const MasterAdmin: React.FC = () => {
 
         setTenantFormSaving(true);
         try {
-            const data = {
-                nome: tenantForm.nome,
-                slug: tenantForm.slug,
-                nif: tenantForm.nif,
-                status: tenantForm.status || 'ativo'
-            };
+            // Usar RPC com SECURITY DEFINER para bypassar RLS completamente
+            const { data, error } = await supabase.rpc('master_create_tenant', {
+                p_nome: tenantForm.nome,
+                p_slug: tenantForm.slug.toLowerCase().replace(/\s+/g, '-'),
+                p_nif: tenantForm.nif || null,
+                p_status: tenantForm.status || 'ativo'
+            });
 
-            const { error } = await supabase.from('saas_tenants').insert([data]);
             if (error) throw error;
+            if (data && !data.success) throw new Error(data.message);
 
             setIsTenantModalOpen(false);
             fetchData();
