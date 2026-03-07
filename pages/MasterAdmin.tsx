@@ -362,7 +362,7 @@ const MasterAdmin: React.FC = () => {
             valor: Number(planForm.valor),
             duracao_meses: Number(planForm.duracao_meses),
             max_users: Number(planForm.max_users),
-            modules: planForm.modules.split(',').map(m => m.trim()).filter(Boolean),
+            modules: planForm.modules.split(',').map(m => m.trim().toUpperCase()).filter(Boolean),
             features: planForm.features.split(',').map(f => f.trim()).filter(Boolean)
         };
 
@@ -408,19 +408,52 @@ const MasterAdmin: React.FC = () => {
         setIsPlanModalOpen(true);
     };
 
+    const [rejectionModalId, setRejectionModalId] = useState<string | null>(null);
+    const [rejectionReason, setRejectionReason] = useState('');
+
+    const MODULE_PRESETS = [
+        'RH', 'PONTO', 'FINANCEIRO', 'LOGISTICA', 'IMOBILIARIO', 'ARENA', 'AGRO', 'EMPRESAS', 'BLOG', 'ALL'
+    ];
+
     const handleApprovePayment = async (subId: string) => {
         if (!confirm('Aprovar este pagamento e activar a licença?')) return;
         try {
             const { error } = await supabase
                 .from('saas_subscriptions')
-                .update({ status: 'ativo' })
+                .update({ 
+                    status: 'ativo',
+                    rejection_reason: null,
+                    data_pagamento: new Date().toISOString()
+                })
                 .eq('id', subId);
             if (error) throw error;
 
-            // DEFER: Fetch data in background
             setTimeout(() => {
                 fetchData();
                 (window as any).notify?.('Pagamento aprovado! Licença activada.', 'success');
+            }, 100);
+        } catch (err: any) {
+            (window as any).notify?.(err.message, 'error');
+        }
+    };
+
+    const handleRejectPayment = async () => {
+        if (!rejectionModalId || !rejectionReason.trim()) return;
+        try {
+            const { error } = await supabase
+                .from('saas_subscriptions')
+                .update({ 
+                    status: 'expirado', // Move to expired if rejected
+                    rejection_reason: rejectionReason 
+                })
+                .eq('id', rejectionModalId);
+            if (error) throw error;
+
+            setRejectionModalId(null);
+            setRejectionReason('');
+            setTimeout(() => {
+                fetchData();
+                (window as any).notify?.('Pagamento rejeitado e empresa notificada.', 'info');
             }, 100);
         } catch (err: any) {
             (window as any).notify?.(err.message, 'error');
@@ -747,14 +780,51 @@ const MasterAdmin: React.FC = () => {
                                                 <a href={sub.comprovativo_url} target="_blank" rel="noreferrer" className="p-3 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white transition-all"><Search size={18} /></a>
                                             )}
                                             <button
+                                                onClick={() => setRejectionModalId(sub.id)}
+                                                className="bg-red-500/20 hover:bg-red-500/40 text-red-400 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                            >
+                                                Rejeitar
+                                            </button>
+                                            <button
                                                 onClick={() => handleApprovePayment(sub.id)}
-                                                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-900/20"
+                                                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-900/20 transition-all"
                                             >
                                                 Aprovar
                                             </button>
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Rejection Modal */}
+                    {rejectionModalId && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                            <div className="bg-[#0f172a] border border-white/10 p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-6">
+                                    <button onClick={() => setRejectionModalId(null)} className="text-slate-500 hover:text-white"><X size={20} /></button>
+                                </div>
+                                <div className="bg-red-500/10 w-16 h-16 rounded-2xl flex items-center justify-center text-red-500 mb-6">
+                                    <AlertTriangle size={32} />
+                                </div>
+                                <h3 className="text-xl font-black uppercase tracking-tight mb-2">Rejeitar Pagamento</h3>
+                                <p className="text-slate-400 text-xs font-medium mb-6">Explique ao cliente o motivo da rejeição para que ele possa corrigir.</p>
+                                
+                                <textarea
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-xs font-bold outline-none focus:ring-2 focus:ring-red-500/50 min-h-[120px] mb-6"
+                                    placeholder="Ex: Valor incorrecto, comprovativo ilegível ou banco não correspondente."
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                />
+
+                                <button
+                                    onClick={handleRejectPayment}
+                                    disabled={!rejectionReason.trim()}
+                                    className="w-full py-4 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-red-900/20"
+                                >
+                                    Confirmar Rejeição
+                                </button>
                             </div>
                         </div>
                     )}
@@ -942,80 +1012,107 @@ const MasterAdmin: React.FC = () => {
 
             {/* ===== PLAN MODAL ===== */}
             {isPlanModalOpen && (
-                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-zinc-950/90 backdrop-blur-xl p-4 animate-in fade-in duration-300">
-                    <form onSubmit={handleSavePlan} className="bg-[#0f172a] w-full max-w-xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95">
-                        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2">
-                            <h2 className="text-xl font-black uppercase tracking-tight">{editingPlan ? 'Editar Plano' : 'Novo Plano'}</h2>
-                            <button type="button" onClick={() => setIsPlanModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-all text-slate-400"><X /></button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-[#0f172a] border border-white/10 p-10 rounded-[3rem] w-full max-w-2xl shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="absolute top-0 right-0 p-8">
+                            <button onClick={() => { setIsPlanModalOpen(false); setEditingPlan(null); }} className="text-slate-500 hover:text-white transition-colors"><X size={24} /></button>
                         </div>
-                        <div className="p-8 space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Nome do Plano</label>
+                        
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="bg-purple-600 p-3 rounded-2xl shadow-lg shadow-purple-900/20">
+                                <Layers size={24} className="text-white" />
+                            </div>
+                            <h3 className="text-2xl font-black uppercase tracking-tight">{editingPlan ? 'Editar Plano' : 'Novo Plano'}</h3>
+                        </div>
+
+                        <form onSubmit={handleSavePlan} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-6 md:col-span-2">
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-2">Identificação do Plano</p>
                                     <input
+                                        placeholder="Nome do Plano (Ex: Professional)"
                                         value={planForm.nome}
-                                        onChange={(e) => setPlanForm(prev => ({ ...prev, nome: e.target.value }))}
+                                        onChange={(e) => setPlanForm({ ...planForm, nome: e.target.value })}
+                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
                                         required
-                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Valor (AOA)</label>
-                                    <input
-                                        type="number"
-                                        value={planForm.valor}
-                                        onChange={(e) => setPlanForm(prev => ({ ...prev, valor: e.target.value }))}
-                                        required
-                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Duração (Meses)</label>
-                                    <input
-                                        type="number"
-                                        value={planForm.duracao_meses}
-                                        onChange={(e) => setPlanForm(prev => ({ ...prev, duracao_meses: e.target.value }))}
-                                        required
-                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Limite Utilizadores</label>
-                                    <input
-                                        type="number"
-                                        value={planForm.max_users}
-                                        onChange={(e) => setPlanForm(prev => ({ ...prev, max_users: e.target.value }))}
-                                        required
-                                        className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 text-white"
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Módulos (separados por vírgula)</label>
-                                <textarea
-                                    value={planForm.modules}
-                                    onChange={(e) => setPlanForm(prev => ({ ...prev, modules: e.target.value }))}
-                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 h-20 text-white"
-                                    placeholder="Ex: RH, FINANCAS, FROTA, ALL"
-                                ></textarea>
+
+                            <div className="space-y-4">
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-2">Financeiro</p>
+                                <input
+                                    type="number"
+                                    placeholder="Valor (AOA)"
+                                    value={planForm.valor}
+                                    onChange={(e) => setPlanForm({ ...planForm, valor: e.target.value })}
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-mono"
+                                    required
+                                />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Recursos (separados por vírgula)</label>
+
+                            <div className="space-y-4">
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-2">Duração (Meses)</p>
+                                <input
+                                    type="number"
+                                    placeholder="Ex: 12"
+                                    value={planForm.duracao_meses}
+                                    onChange={(e) => setPlanForm({ ...planForm, duracao_meses: e.target.value })}
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-2">Limite Utilizadores</p>
+                                <input
+                                    type="number"
+                                    placeholder="Ex: 10"
+                                    value={planForm.max_users}
+                                    onChange={(e) => setPlanForm({ ...planForm, max_users: e.target.value })}
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-4 md:col-span-2">
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-2">Módulos Activos (Presets)</p>
+                                <div className="flex flex-wrap gap-2 p-4 bg-white/2 rounded-2xl border border-white/5">
+                                    {MODULE_PRESETS.map(mod => (
+                                        <button
+                                            key={mod}
+                                            type="button"
+                                            onClick={() => {
+                                                const currentMods = planForm.modules.split(',').map(m => m.trim().toUpperCase()).filter(Boolean);
+                                                const exists = currentMods.includes(mod);
+                                                const newMods = exists ? currentMods.filter(m => m !== mod) : [...currentMods, mod];
+                                                setPlanForm({...planForm, modules: newMods.join(', ')});
+                                            }}
+                                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${
+                                                planForm.modules.toUpperCase().includes(mod) 
+                                                ? 'bg-purple-600 border-purple-500 text-white' 
+                                                : 'bg-white/5 border-white/5 text-slate-500'
+                                            }`}
+                                        >
+                                            {mod}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 md:col-span-2">
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-2">Recursos/Benefícios (Separados por vírgula)</p>
                                 <textarea
+                                    placeholder="Ex: Suporte 24/7, Backups, Formação"
                                     value={planForm.features}
-                                    onChange={(e) => setPlanForm(prev => ({ ...prev, features: e.target.value }))}
-                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 h-20 text-white"
-                                    placeholder="Ex: Suporte 24/7, Servidor Dedicado, Backup Diário"
-                                ></textarea>
+                                    onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })}
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500/50 min-h-[80px]"
+                                />
                             </div>
-                        </div>
-                        <div className="p-8 bg-black/20 flex justify-end gap-4">
-                            <button type="button" onClick={() => setIsPlanModalOpen(false)} className="px-8 py-3 bg-white/5 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">Cancelar</button>
+
                             <button
                                 type="submit"
                                 disabled={planFormSaving}
-                                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-purple-900/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
-                            >
                                 {planFormSaving && <RefreshCcw size={14} className="animate-spin" />}
                                 Guardar Plano
                             </button>

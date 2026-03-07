@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/lib/supabase';
-import { UserPlus, Trash2, RefreshCw, ShieldCheck, User, Search, Eye, EyeOff, Edit2, Key } from 'lucide-react';
+import { UserPlus, Trash2, RefreshCw, ShieldCheck, User, Search, Eye, EyeOff, Edit2, Key, Info } from 'lucide-react';
+import { useSaaS } from '../src/contexts/SaaSContext';
+import { formatAOA } from '../src/utils/subscription';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -63,6 +65,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [editingUser, setEditingUser] = useState<Profile | null>(null);
+    const { saasSub } = useSaaS();
 
     const [form, setForm] = useState({
         nome: '',
@@ -112,7 +115,12 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
         setError('');
         setSuccess('');
 
-        try {
+        // SaaS Limit Check
+        if (!editingUser && saasSub && saasSub.maxUsers > 0 && profiles.length >= saasSub.maxUsers) {
+            setError(`Limite de utilizadores atingido (${saasSub.maxUsers}). Faça upgrade do seu plano para adicionar mais colaboradores.`);
+            setCreating(false);
+            return;
+        }
             // Validação: Mínimo dois nomes
             const nameParts = form.nome.trim().split(/\s+/);
             if (nameParts.length < 2) {

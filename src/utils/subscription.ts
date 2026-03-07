@@ -8,15 +8,17 @@ export interface SubscriptionStatus {
     message?: string;
     modules: string[];
     maxUsers: number;
-    // Full DB record fields (optional for saas_admin simulated status)
+    // Full DB record fields
     id?: string;
     tenant_id?: string;
     plan_id?: string;
     valor_pago?: number;
     data_inicio?: string;
     data_expiracao?: string;
+    data_pagamento?: string; // New field
     auto_renew?: boolean;
     comprovativo_url?: string;
+    rejection_reason?: string; // New field
     created_at?: string;
     // Joined relation
     saas_plans?: {
@@ -24,9 +26,9 @@ export interface SubscriptionStatus {
         nome: string;
         valor: number;
         duracao_meses: number;
-        max_users: number;
-        modules: string[] | Record<string, boolean>;
-        features: string[];
+        max_users: number; // Standardized
+        modules: string[]; // Standardized to array
+        features: string[]; // Standardized to array
     };
 }
 
@@ -112,8 +114,10 @@ export const checkSubscription = async (tenantId: string): Promise<SubscriptionS
             valor_pago: data.valor_pago ? Number(data.valor_pago) : undefined,
             data_inicio: data.data_inicio,
             data_expiracao: data.data_expiracao,
+            data_pagamento: data.data_pagamento, // New field
             auto_renew: data.auto_renew ?? false,
             comprovativo_url: data.comprovativo_url,
+            rejection_reason: data.rejection_reason, // New field
             created_at: data.created_at,
             saas_plans: plan || undefined,
         };
