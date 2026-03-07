@@ -3,7 +3,22 @@
 -- Execute este script no SQL Editor do Supabase.
 -- ================================================================
 
--- 1. Assegurar que as colunas de estatísticas existem na tabela saas_config
+-- 1. Criar tabela saas_config caso o administrador não tenha corrido o script anterior
+CREATE TABLE IF NOT EXISTS public.saas_config (
+    id integer PRIMARY KEY DEFAULT 1,
+    banco text NOT NULL DEFAULT 'Banco BAI',
+    iban text NOT NULL DEFAULT 'AO06 0000 0000 8921 3451 2',
+    beneficiario text NOT NULL DEFAULT 'Amazing Corporation Software LDA',
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now()
+);
+
+-- 2. Inserir a linha inicial se não existir
+INSERT INTO public.saas_config (id, banco, iban, beneficiario)
+VALUES (1, 'Banco BAI', 'AO06 0000 0000 8921 3451 2', 'Amazing Corporation Software LDA')
+ON CONFLICT (id) DO NOTHING;
+
+-- 3. Assegurar que as colunas de estatísticas existem na tabela saas_config
 DO $$
 BEGIN
     IF NOT EXISTS (
