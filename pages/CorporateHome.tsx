@@ -704,6 +704,22 @@ const CorporateHome: React.FC = () => {
     const user = AmazingStorage.get<User | null>(STORAGE_KEYS.USER, null);
     setCurrentUser(user);
     setLoading(false); // Unblock UI immediately
+    
+    // Website tracking logic
+    const trackVisit = async () => {
+      try {
+        const hasVisited = localStorage.getItem('erp_visited');
+        // Increment site stats. If not visited, it counts as new visitor + new view. Otherwise just a view.
+        await supabase.rpc('increment_site_stats', { is_new_visitor: !hasVisited });
+        if (!hasVisited) {
+          localStorage.setItem('erp_visited', 'true');
+        }
+      } catch (err) {
+        console.error('Tracking error:', err);
+      }
+    };
+    // Desacoplado para não bloquear o render da página principal
+    setTimeout(trackVisit, 2000);
   }, []);
   const [contactForm, setContactForm] = useState({
     nome: '',

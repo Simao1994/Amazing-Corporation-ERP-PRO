@@ -3,7 +3,7 @@ import { supabase } from '../src/lib/supabase';
 import {
     Building2, Users, CreditCard, CheckCircle2, XCircle, Clock,
     AlertTriangle, TrendingUp, Search, X, Plus, Edit3, Shield, Globe, Layers, BarChart3,
-    Calendar, RefreshCcw, ChevronDown, Link as LinkIcon
+    Calendar, RefreshCcw, ChevronDown, Link as LinkIcon, Eye
 } from 'lucide-react';
 import { formatAOA } from '../constants';
 import { useAuth } from '../src/contexts/AuthContext';
@@ -566,32 +566,44 @@ const MasterAdmin: React.FC = () => {
             {/* Overview Tab */}
             {activeTab === 'overview' && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-purple-500/30 transition-all group">
-                            <div className="flex items-center gap-4 mb-4 text-slate-500 group-hover:text-purple-400 transition-colors">
-                                <Building2 size={24} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">Empresas Ativas</span>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-purple-500/30 transition-all group">
+                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-purple-400 transition-colors">
+                                <Building2 size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Empresas Ativas</span>
                             </div>
-                            <p className="text-4xl font-black">{tenants.filter(t => t.status === 'ativo').length}</p>
+                            <p className="text-3xl font-black">{tenants.filter(t => t.status === 'ativo').length}</p>
                         </div>
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-blue-500/30 transition-all group">
-                            <div className="flex items-center gap-4 mb-4 text-slate-500 group-hover:text-blue-400 transition-colors">
-                                <Users size={24} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">Total Empresas</span>
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-blue-500/30 transition-all group">
+                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-blue-400 transition-colors">
+                                <Users size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Total Empresas</span>
                             </div>
-                            <p className="text-4xl font-black">{tenants.length}</p>
+                            <p className="text-3xl font-black">{tenants.length}</p>
                         </div>
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-green-500/30 transition-all group">
-                            <div className="flex items-center gap-4 mb-4 text-slate-500 group-hover:text-green-400 transition-colors">
-                                <TrendingUp size={24} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">MRR Estimado</span>
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-cyan-500/30 transition-all group">
+                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-cyan-400 transition-colors">
+                                <Users size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Visitantes APP</span>
                             </div>
-                            <p className="text-4xl font-black text-green-400">
+                            <p className="text-3xl font-black">{saasConfig?.visitors_count || 0}</p>
+                        </div>
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all group">
+                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-indigo-400 transition-colors">
+                                <Eye size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Visualizações</span>
+                            </div>
+                            <p className="text-3xl font-black">{saasConfig?.views_count || 0}</p>
+                        </div>
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-green-500/30 transition-all group relative overflow-hidden">
+                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-green-400 transition-colors relative z-10">
+                                <TrendingUp size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">MRR Est.</span>
+                            </div>
+                            <p className="text-xl md:text-2xl font-black text-green-400 relative z-10">
                                 {formatAOA(subscriptions.filter(s => s.status === 'ativo').reduce((acc, s) => acc + (Number(s.valor_pago) || 0), 0))}
                             </p>
                         </div>
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-orange-500/30 transition-all group">
-                            <div className="flex items-center gap-4 mb-4 text-slate-500 group-hover:text-orange-400 transition-colors">
-                                <AlertTriangle size={24} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">Pendentes</span>
+                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-orange-500/30 transition-all group">
+                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-orange-400 transition-colors">
+                                <AlertTriangle size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Pendentes</span>
                             </div>
-                            <p className="text-4xl font-black text-orange-400">
+                            <p className="text-3xl font-black text-orange-400">
                                 {subscriptions.filter(s => s.status === 'pendente').length}
                             </p>
                         </div>
