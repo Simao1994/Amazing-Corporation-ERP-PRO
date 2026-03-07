@@ -30,7 +30,7 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
    const [showAddModal, setShowAddModal] = useState(false);
    const [selectedFuncId, setSelectedFuncId] = useState('');
 
-   const isHRAdmin = ['admin', 'hr', 'director_hr'].includes(user.role);
+   const isHRAdmin = ['admin', 'hr', 'director_hr', 'saas_admin'].includes(user.role);
 
    const fetchData = async () => {
       setLoading(true);
@@ -75,8 +75,8 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
    const contasFiltradas = contas.filter(c => {
       const matchStatus = filtroStatus === 'todos' ? true : c.status === filtroStatus;
       const term = searchTerm.toLowerCase();
-      const matchBusca = 
-         c.numero_conta.includes(term) || 
+      const matchBusca =
+         c.numero_conta.includes(term) ||
          (c.iban && c.iban.toLowerCase().includes(term)) ||
          c.nome_banco.toLowerCase().includes(term) ||
          c.funcionario?.nome.toLowerCase().includes(term) ||
@@ -153,7 +153,7 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
                </div>
             </div>
          )}
-         
+
          {inAppTab && (
             <div className="flex justify-end gap-4 mb-2">
                <button onClick={fetchData} className="px-5 py-3 bg-white border border-sky-100 text-zinc-600 rounded-xl font-black text-[10px] uppercase hover:bg-zinc-50 transition-all flex items-center gap-2 shadow-sm">
@@ -172,8 +172,8 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
          <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-[2rem] border border-sky-100 shadow-sm">
             <div className="flex-1 bg-zinc-50 p-2 rounded-2xl flex items-center w-full">
                <Search className="ml-4 text-zinc-400" />
-               <input 
-                  placeholder="Pesquisar por IBAN, Nome, Banco, Nº Conta..." 
+               <input
+                  placeholder="Pesquisar por IBAN, Nome, Banco, Nº Conta..."
                   className="w-full bg-transparent border-none focus:ring-0 py-3 px-4 font-bold text-zinc-700"
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
@@ -181,7 +181,7 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
             </div>
             <div className="flex gap-2 p-2 bg-zinc-50 rounded-2xl w-full md:w-auto">
                {(['todos', 'ativo', 'inativo'] as const).map(status => (
-                  <button 
+                  <button
                      key={status}
                      onClick={() => setFiltroStatus(status)}
                      className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase transition-all flex-1 md:flex-none ${filtroStatus === status ? 'bg-white shadow-sm text-zinc-900 border border-zinc-200' : 'text-zinc-400 hover:bg-white/50'}`}
@@ -268,10 +268,10 @@ const ContasBancariasPage: React.FC<ContasBancariasPageProps> = ({ user, inAppTa
                   </div>
                   <div className="p-8 overflow-y-auto w-full">
                      <div className="mb-6 bg-zinc-50 p-6 rounded-3xl border border-sky-100">
-                        <Select 
-                           name="funcionario" 
-                           label="Selecione o Colaborador primeiro" 
-                           value={selectedFuncId} 
+                        <Select
+                           name="funcionario"
+                           label="Selecione o Colaborador primeiro"
+                           value={selectedFuncId}
                            onChange={(e) => setSelectedFuncId(e.target.value)}
                            options={[
                               { value: '', label: '-- Selecione um colaborador --' },

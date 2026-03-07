@@ -23,7 +23,7 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({ funcionarioId, user }
    const [showForm, setShowForm] = useState(false);
    const [editingConta, setEditingConta] = useState<ContaBancariaHR | null>(null);
 
-   const canEdit = ['admin', 'hr', 'director_hr'].includes(user.role);
+   const canEdit = ['admin', 'hr', 'director_hr', 'saas_admin'].includes(user.role);
 
    const [formData, setFormData] = useState({
       nome_banco: '',
@@ -251,7 +251,7 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({ funcionarioId, user }
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      <Input label="Observações (Opcional)" value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} placeholder="Ex: Conta usada apenas para subsídios" />
-                     
+
                      <div className="flex gap-6 items-center bg-zinc-50 px-6 py-4 rounded-xl border border-zinc-100">
                         <label className="flex items-center gap-2 cursor-pointer">
                            <input type="checkbox" checked={formData.principal} onChange={e => setFormData({ ...formData, principal: e.target.checked })} className="w-4 h-4 text-yellow-500 rounded border-zinc-300 focus:ring-yellow-500 accent-yellow-500" />
@@ -294,7 +294,7 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({ funcionarioId, user }
                               <div className={`p-4 rounded-2xl font-mono text-sm tracking-widest text-center ${conta.principal ? 'bg-white/5 border border-white/10 text-yellow-500' : 'bg-zinc-50 border border-zinc-100 text-zinc-700'}`}>
                                  {conta.iban || 'S/ IBAN'}
                               </div>
-                              
+
                               <div className="grid grid-cols-2 gap-2 text-xs">
                                  <div>
                                     <p className={`text-[9px] uppercase font-bold ${conta.principal ? 'text-zinc-500' : 'text-zinc-400'}`}>Nº Conta</p>
