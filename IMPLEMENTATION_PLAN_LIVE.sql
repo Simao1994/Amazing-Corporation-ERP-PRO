@@ -39,7 +39,7 @@ TO authenticated
 WITH CHECK (
     empresa_id IN (
         SELECT id FROM public.saas_tenants 
-        WHERE id = (auth.jwt() ->> 'user_metadata')::jsonb ->> 'tenant_id'::text
+        WHERE id = CAST((auth.jwt() -> 'user_metadata' ->> 'tenant_id') AS uuid)
     )
     OR
     EXISTS (
@@ -57,7 +57,7 @@ TO authenticated
 USING (
     empresa_id IN (
         SELECT id FROM public.saas_tenants 
-        WHERE id = (auth.jwt() ->> 'user_metadata')::jsonb ->> 'tenant_id'::text
+        WHERE id = CAST((auth.jwt() -> 'user_metadata' ->> 'tenant_id') AS uuid)
     )
     OR
     EXISTS (
@@ -75,7 +75,7 @@ TO authenticated
 USING (
     empresa_id IN (
         SELECT id FROM public.saas_tenants 
-        WHERE id = (auth.jwt() ->> 'user_metadata')::jsonb ->> 'tenant_id'::text
+        WHERE id = CAST((auth.jwt() -> 'user_metadata' ->> 'tenant_id') AS uuid)
     )
     OR
     EXISTS (
