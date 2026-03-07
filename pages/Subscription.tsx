@@ -11,7 +11,8 @@ import {
     Trophy,
     ShieldCheck,
     RefreshCcw,
-    Layers
+    Layers,
+    X
 } from 'lucide-react';
 import { formatAOA } from '../constants';
 import Button from '../components/ui/Button';
@@ -24,6 +25,10 @@ const SubscriptionPage: React.FC = () => {
     const [history, setHistory] = useState<any[]>([]);
     const [availablePlans, setAvailablePlans] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(true);
+    const [ibanCopied, setIbanCopied] = useState(false);
+    const [upgradeModalPlan, setUpgradeModalPlan] = useState<any | null>(null);
+    const [requestingUpgrade, setRequestingUpgrade] = useState(false);
+    const [upgradeNote, setUpgradeNote] = useState('');
 
     const fetchExtraData = async () => {
         if (!saasSub?.tenant_id) return;
@@ -113,6 +118,41 @@ const SubscriptionPage: React.FC = () => {
             (window as any).notify?.('Erro ao atualizar renovação automática', 'error');
         } finally {
             setUpdatingAutoRenew(false);
+        }
+    };
+
+    const handleCopyIban = (iban: string) => {
+        navigator.clipboard.writeText(iban.replace(/\s/g, ''));
+        setIbanCopied(true);
+        setTimeout(() => setIbanCopied(false), 2000);
+    };
+
+    const handleRequestUpgrade = async () => {
+        if (!upgradeModalPlan || !saasSub?.tenant_id) return;
+        setRequestingUpgrade(true);
+        try {
+            // Create a new pending subscription for the requested plan
+            const startDate = new Date().toISOString().split('T')[0];
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + (upgradeModalPlan.duracao_meses || 12));
+            const { error } = await supabase.from('saas_subscriptions').insert([{
+                tenant_id: saasSub.tenant_id,
+                plan_id: upgradeModalPlan.id,
+                data_inicio: startDate,
+                data_expiracao: expiryDate.toISOString().split('T')[0],
+                valor_pago: upgradeModalPlan.valor,
+                status: 'pendente',
+                auto_renew: false,
+            }]);
+            if (error) throw error;
+            setUpgradeModalPlan(null);
+            setUpgradeNote('');
+            await refreshSubscription();
+            (window as any).notify?.(`Pedido de upgrade para ${upgradeModalPlan.nome} enviado! Aguarde confirmação.`, 'success');
+        } catch (err: any) {
+            (window as any).notify?.(err.message, 'error');
+        } finally {
+            setRequestingUpgrade(false);
         }
     };
 
@@ -285,20 +325,28 @@ const SubscriptionPage: React.FC = () => {
                             <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.3em] px-4">Expandir Operação / Upgrade</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {availablePlans.filter(p => p.id !== saasSub.plan_id).map(plan => (
-                                    <div key={plan.id} className="bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:border-yellow-500/30 transition-all group">
+                                    <div key={plan.id} className="bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:border-yellow-500/30 transition-all group cursor-pointer" onClick={() => setUpgradeModalPlan(plan)}>
                                         <div className="w-10 h-10 bg-zinc-50 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-yellow-50 group-hover:text-yellow-600 mb-4 transition-colors">
                                             {plans_icons[plan.nome] ? React.createElement(plans_icons[plan.nome], { size: 20 }) : <Zap size={20} />}
                                         </div>
                                         <p className="text-sm font-black text-zinc-900 uppercase mb-1">{plan.nome}</p>
-                                        <p className="text-xl font-black text-zinc-800 mb-4">{formatAOA(plan.valor)}</p>
+                                        <p className="text-xl font-black text-zinc-800 mb-2">{formatAOA(plan.valor)}</p>
                                         <p className="text-[9px] text-zinc-500 font-bold uppercase mb-4 leading-relaxed">
                                             {Array.isArray(plan.features) ? plan.features[0] : 'Vantagens exclusivas'}
                                         </p>
-                                        <button className="w-full py-2.5 bg-zinc-100 text-zinc-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all">
-                                            Solicitar Upgrade
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setUpgradeModalPlan(plan); }}
+                                            className="w-full py-2.5 bg-zinc-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Zap size={12} /> Solicitar Upgrade
                                         </button>
                                     </div>
                                 ))}
+                                {availablePlans.filter(p => p.id !== saasSub.plan_id).length === 0 && (
+                                    <div className="col-span-3 py-10 text-center text-zinc-400 font-bold text-sm">
+                                        Já está no plano mais completo disponível. 🏆
+                                    </div>
+                                )}
                             </div>
                         </section>
                         
@@ -320,7 +368,7 @@ const SubscriptionPage: React.FC = () => {
                                     </thead>
                                     <tbody className="divide-y divide-zinc-50">
                                         {history.map(item => (
-                                            <tr key={item.id} className="hover:bg-zinc-50/50 transition-colors">
+                                            <tr key={item.id} className="hover:bg-zinc-50/50 transition-colors group">
                                                 <td className="px-8 py-4 text-[11px] font-bold text-zinc-500">{new Date(item.created_at).toLocaleDateString()}</td>
                                                 <td className="px-8 py-4 text-[11px] font-black text-zinc-800 uppercase tracking-tighter">{item.saas_plans?.nome}</td>
                                                 <td className="px-8 py-4 text-[11px] font-bold text-zinc-700">{formatAOA(item.valor_pago || 0)}</td>
@@ -333,11 +381,27 @@ const SubscriptionPage: React.FC = () => {
                                                         {item.status}
                                                     </span>
                                                 </td>
+                                                <td className="px-8 py-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {item.comprovativo_url ? (
+                                                        <a href={item.comprovativo_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-yellow-600 hover:text-yellow-700">
+                                                            <FileText size={12} /> Ver
+                                                        </a>
+                                                    ) : <span className="text-[9px] text-zinc-300 font-bold">—</span>}
+                                                </td>
                                             </tr>
                                         ))}
+                                        {history.length === 0 && (
+                                            <tr><td colSpan={5} className="px-8 py-8 text-center text-xs text-zinc-400 font-bold">Nenhum histórico de facturação disponível.</td></tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
+                            {history.length > 0 && (
+                                <div className="px-10 py-4 border-t border-zinc-50 flex items-center justify-between text-zinc-400">
+                                    <p className="text-[9px] font-black uppercase tracking-widest">{history.length} registo(s) encontrado(s)</p>
+                                    <p className="text-[9px] font-bold">Total pago: <span className="font-black text-zinc-700">{formatAOA(history.reduce((a, i) => a + (Number(i.valor_pago) || 0), 0))}</span></p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -363,16 +427,32 @@ const SubscriptionPage: React.FC = () => {
                                     <div className="space-y-8">
                                         <div className="space-y-4">
                                             <p className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em] px-2">Dados de Transferência</p>
-                                            <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 space-y-6">
-                                                <div>
-                                                    <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">Beneficiário</p>
-                                                    <p className="text-sm font-bold tracking-tight">Amazing Corporation Software LDA</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">IBAN Banco BAI</p>
-                                                    <p className="text-sm font-mono text-yellow-500 select-all font-bold">AO06 0000 0000 8921 3451 2</p>
-                                                </div>
-                                            </div>
+                                <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 space-y-6">
+                                    <div>
+                                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">Beneficiário</p>
+                                        <p className="text-sm font-bold tracking-tight">Amazing Corporation Software LDA</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-2">IBAN Banco BAI</p>
+                                        <button
+                                            onClick={() => handleCopyIban('AO06 0000 0000 8921 3451 2')}
+                                            className={`text-sm font-mono font-bold select-all transition-all flex items-center gap-2 px-3 py-2 rounded-xl border ${
+                                                ibanCopied
+                                                    ? 'text-green-400 border-green-500/30 bg-green-500/10'
+                                                    : 'text-yellow-500 border-white/10 hover:border-yellow-500/30 hover:bg-white/5'
+                                            }`}
+                                        >
+                                            {ibanCopied ? <CheckCircle2 size={14} /> : <FileText size={14} />}
+                                            {ibanCopied ? 'Copiado!' : 'AO06 0000 0000 8921 3451 2'}
+                                        </button>
+                                        <p className="text-[9px] text-zinc-600 mt-2 font-bold uppercase tracking-widest">Clique para copiar</p>
+                                    </div>
+                                    <div className="pt-2 border-t border-white/5">
+                                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">Valor a Pagar</p>
+                                        <p className="text-2xl font-black text-yellow-500">{formatAOA(saasSub.valor_pago || 0)}</p>
+                                        <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1">Referente ao plano {saasSub.saas_plans?.nome}</p>
+                                    </div>
+                                </div>
                                         </div>
 
                                         <div className="space-y-4">
@@ -415,6 +495,62 @@ const SubscriptionPage: React.FC = () => {
                     <Button variant="primary" className="px-12 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">
                         Falar com Consultor
                     </Button>
+                </div>
+            )}
+
+            {/* ===== UPGRADE MODAL ===== */}
+            {upgradeModalPlan && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-xl p-4 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="p-10 border-b border-zinc-100 flex justify-between items-center">
+                            <div>
+                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-1">Pedido de Upgrade</p>
+                                <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-tighter">{upgradeModalPlan.nome}</h2>
+                            </div>
+                            <button onClick={() => setUpgradeModalPlan(null)} className="p-2 rounded-full hover:bg-zinc-100 text-zinc-400 transition-all"><X size={20} /></button>
+                        </div>
+                        <div className="p-10 space-y-6">
+                            <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Valor do Plano</p>
+                                    <p className="text-3xl font-black text-zinc-900">{formatAOA(upgradeModalPlan.valor)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Validade</p>
+                                    <p className="text-lg font-black text-zinc-700">{upgradeModalPlan.duracao_meses} meses</p>
+                                </div>
+                            </div>
+                            {Array.isArray(upgradeModalPlan.features) && upgradeModalPlan.features.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Incluído neste plano</p>
+                                    {upgradeModalPlan.features.map((f: string) => (
+                                        <div key={f} className="flex items-center gap-2 text-xs text-zinc-700 font-medium">
+                                            <CheckCircle2 size={14} className="text-yellow-500" /> {f}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-2xl text-[10px] text-yellow-800 font-bold leading-relaxed">
+                                ⚡ Ao confirmar, será criada uma subscrição pendente. Efectue a transferência e carregue o comprovativo para activação.
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setUpgradeModalPlan(null)}
+                                    className="flex-1 py-4 bg-zinc-100 text-zinc-600 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-zinc-200 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleRequestUpgrade}
+                                    disabled={requestingUpgrade}
+                                    className="flex-1 py-4 bg-zinc-900 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {requestingUpgrade ? <RefreshCcw size={14} className="animate-spin" /> : <Zap size={14} />}
+                                    Confirmar Upgrade
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
