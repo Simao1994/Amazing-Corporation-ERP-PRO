@@ -166,6 +166,23 @@ const App: React.FC = () => {
           <p className="text-slate-600 text-[8px] font-mono mt-2 break-all max-w-xs mx-auto">
             URL: {import.meta.env.VITE_SUPABASE_URL || 'NÃO CONFIGURADA'}
           </p>
+          <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 text-left space-y-2 max-w-sm mx-auto">
+            <p className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Debug Infográfico:</p>
+            <div className="grid grid-cols-2 gap-2 text-[8px] font-mono text-slate-400">
+              <span>Token Metadados:</span>
+              <span className={user?.user_metadata?.tenant_id ? "text-green-500" : "text-red-500"}>
+                {user?.user_metadata?.tenant_id ? "Sincronizado" : "Pendente"}
+              </span>
+              <span>Perfil Carregado:</span>
+              <span className={user?.role ? "text-green-500" : "text-red-500"}>
+                {user?.role ? "Sim" : "Não"}
+              </span>
+              <span>Sessão Activa:</span>
+              <span className={session ? "text-green-500" : "text-red-500"}>
+                {session ? "Sim" : "Não"}
+              </span>
+            </div>
+          </div>
         </div>
 
         {showForceLoad && (
