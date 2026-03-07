@@ -689,54 +689,68 @@ const MasterAdmin: React.FC = () => {
             )}
 
             {/* Plans Tab */}
-            {activeTab === 'plans' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
-                    {plans.map(plan => (
-                        <div key={plan.id} className="bg-[#0f172a] rounded-[2.5rem] border border-white/5 p-8 flex flex-col relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-8">
-                                <button onClick={() => openPlanModal(plan)} className="text-slate-500 hover:text-white transition-colors"><Edit3 size={20} /></button>
-                            </div>
-                            <div className="mb-8">
-                                <h3 className="text-2xl font-black uppercase tracking-tight mb-2">{plan.nome}</h3>
-                                <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">{plan.duracao_meses} Meses de Validade</p>
-                            </div>
-                            <div className="mb-10">
-                                <p className="text-4xl font-black mb-1">{formatAOA(plan.valor)}</p>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Pagamento único por período</p>
-                            </div>
-                            <div className="space-y-4 mb-10 flex-1">
-                                <div className="p-4 bg-white/2 rounded-2xl border border-white/5">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Módulos Ativos</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(Array.isArray(plan.modules) ? plan.modules : Object.entries(plan.modules || {}).filter(([, v]) => v).map(([k]) => k)).map((mod: string) => (
-                                            <span key={mod} className="bg-purple-500/10 text-purple-400 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-purple-500/20">{mod}</span>
+            {activeTab === 'plans' && (() => {
+                // Safely parse any JSONB field that could be array, object, string, or null
+                const parseJsonbArray = (val: any): string[] => {
+                    if (!val) return [];
+                    if (Array.isArray(val)) return val.filter(Boolean);
+                    if (typeof val === 'string') {
+                        try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : []; }
+                        catch { return val.split(',').map((s: string) => s.trim()).filter(Boolean); }
+                    }
+                    if (typeof val === 'object') return Object.entries(val).filter(([, v]) => v).map(([k]) => k);
+                    return [];
+                };
+
+                return (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
+                        {plans.map(plan => (
+                            <div key={plan.id} className="bg-[#0f172a] rounded-[2.5rem] border border-white/5 p-8 flex flex-col relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-8">
+                                    <button onClick={() => openPlanModal(plan)} className="text-slate-500 hover:text-white transition-colors"><Edit3 size={20} /></button>
+                                </div>
+                                <div className="mb-8">
+                                    <h3 className="text-2xl font-black uppercase tracking-tight mb-2">{plan.nome}</h3>
+                                    <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">{plan.duracao_meses} Meses de Validade</p>
+                                </div>
+                                <div className="mb-10">
+                                    <p className="text-4xl font-black mb-1">{formatAOA(plan.valor)}</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Pagamento único por período</p>
+                                </div>
+                                <div className="space-y-4 mb-10 flex-1">
+                                    <div className="p-4 bg-white/2 rounded-2xl border border-white/5">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Módulos Ativos</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {parseJsonbArray(plan.modules).map((mod: string) => (
+                                                <span key={mod} className="bg-purple-500/10 text-purple-400 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-purple-500/20">{mod}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Recursos do Plano</p>
+                                        {parseJsonbArray(plan.features).map((feat: string) => (
+                                            <div key={feat} className="flex items-center gap-2 text-xs text-slate-300 font-medium">
+                                                <CheckCircle2 size={14} className="text-green-500" /> {feat}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Recursos do Plano</p>
-                                    {(plan.features || []).map((feat: string) => (
-                                        <div key={feat} className="flex items-center gap-2 text-xs text-slate-300 font-medium">
-                                            <CheckCircle2 size={14} className="text-green-500" /> {feat}
-                                        </div>
-                                    ))}
+                                <div className="bg-white/2 p-4 rounded-2xl border border-white/5 flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Limite de Utilizadores</span>
+                                    <span className="font-black text-purple-400">{plan.max_users}</span>
                                 </div>
                             </div>
-                            <div className="bg-white/2 p-4 rounded-2xl border border-white/5 flex items-center justify-between">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Limite de Utilizadores</span>
-                                <span className="font-black text-purple-400">{plan.max_users}</span>
-                            </div>
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => openPlanModal(null)}
-                        className="bg-transparent border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 text-slate-500 hover:border-purple-500 hover:text-purple-400 transition-all min-h-[400px]"
-                    >
-                        <Plus size={48} />
-                        <span className="font-black uppercase tracking-widest">Novo Plano</span>
-                    </button>
-                </div>
-            )}
+                        ))}
+                        <button
+                            onClick={() => openPlanModal(null)}
+                            className="bg-transparent border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 text-slate-500 hover:border-purple-500 hover:text-purple-400 transition-all min-h-[400px]"
+                        >
+                            <Plus size={48} />
+                            <span className="font-black uppercase tracking-widest">Novo Plano</span>
+                        </button>
+                    </div>
+                );
+            })()}
 
             {/* Subscriptions Tab */}
             {activeTab === 'subscriptions' && (
