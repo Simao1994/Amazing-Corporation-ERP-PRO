@@ -84,14 +84,14 @@ const App: React.FC = () => {
       setShowForceLoad(true);
     }, 5000);
 
-    // BYPASS AUTOMÁTICO: após 8s forçar saída do loading sem intervenção do utilizador
+    // BYPASS AUTOMÁTICO: após 25s forçar saída do loading sem intervenção do utilizador
     const autoBypass = setTimeout(() => {
       if (!forceLoadManual) {
-        console.warn('App: Auto-bypass activado após 8s. Auth ou SaaS não responderam a tempo.');
+        console.warn('App: Auto-bypass activado após 25s. Auth ou SaaS não responderam a tempo.');
         localStorage.setItem('emergency_nuclear_bypass', 'true');
         setForceLoadManual(true);
       }
-    }, 8000);
+    }, 25000);
 
     return () => {
       clearTimeout(timer);

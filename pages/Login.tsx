@@ -67,7 +67,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
       // Timeout de segurança para a autenticação (10 segundos)
       const authPromise = supabase.auth.signInWithPassword({ email, password });
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('A conexão com o servidor de autenticação expirou. Verifique sua internet.')), 10000)
+        setTimeout(() => reject(new Error('A ligação com o servidor de autenticação excedeu o tempo (30s). Verifique a sua internet.')), 30000)
       );
 
       const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any;

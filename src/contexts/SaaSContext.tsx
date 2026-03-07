@@ -66,7 +66,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Timeout protection for subscription check (10 seconds)
                 const subPromise = checkSubscription(effectiveTenantId);
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Subscription check timeout')), 15000)
+                    setTimeout(() => reject(new Error('Subscription check timeout')), 30000)
                 );
 
                 const status = await Promise.race([subPromise, timeoutPromise]) as SubscriptionStatus;
@@ -92,7 +92,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('SaaSContext: FAIL-SAFE disparado!');
                 setLoading(false);
             }
-        }, 15000);
+        }, 30000);
 
         if (!authLoading) {
             refreshSubscription().finally(() => {
