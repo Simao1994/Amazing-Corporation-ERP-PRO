@@ -879,7 +879,7 @@ const MasterAdmin: React.FC = () => {
                         <div className="p-8 space-y-6">
                             {/* Plan Selector */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Plano de Licença</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Identificação do Plano</label>
                                 <div className="relative">
                                     <select
                                         value={licenseForm.plan_id}
