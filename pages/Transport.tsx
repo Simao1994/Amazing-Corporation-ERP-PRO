@@ -13,6 +13,7 @@ import {
    PieChart, Pie, Cell, Legend, AreaChart, Area, CartesianGrid
 } from 'recharts';
 import { supabase } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 import { Motoqueiro } from '../types';
 import { formatAOA } from '../constants';
 import Input from '../components/ui/Input';
@@ -32,6 +33,7 @@ const COLORS = ['#eab308', '#22c55e', '#ef4444', '#3b82f6'];
 const CONTRACT_COLORS = ['#22c55e', '#f59e0b', '#94a3b8']; // Verde (Ativo), Laranja (A terminar), Cinza (Terminado)
 
 const TransportPage: React.FC = () => {
+   const { user } = useAuth();
    const [activeTab, setActiveTab] = useState<'dashboard' | 'frota'>('dashboard');
    const [showModal, setShowModal] = useState(false);
    const [searchTerm, setSearchTerm] = useState('');
@@ -53,6 +55,7 @@ const TransportPage: React.FC = () => {
          const { data, error } = await supabase
             .from('expr_fleet')
             .select('*')
+            .eq('tenant_id', user?.tenant_id)
             .order('created_at', { ascending: false });
          if (error) throw error;
          if (data) setMotoqueiros(data as unknown as Motoqueiro[]);
@@ -344,7 +347,8 @@ const TransportPage: React.FC = () => {
          epi_colete: formDataContract.epi_colete,
          epi_mochila: formDataContract.epi_mochila,
          consumo_mensal_estimado: formDataContract.consumo_mensal_estimado,
-         historico_ocorrencias: formDataContract.historico_ocorrencias
+         historico_ocorrencias: formDataContract.historico_ocorrencias,
+         tenant_id: user?.tenant_id
       } as any;
 
       try {

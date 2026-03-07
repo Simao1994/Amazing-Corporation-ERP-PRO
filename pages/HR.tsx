@@ -289,11 +289,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          console.log("HR: Iniciando sincronização de dados...");
          // 1. Fetch everything in PARALLEL to avoid waterfalls
          const [funcsRes, presRes, recRes, metasRes, corpRes] = await Promise.allSettled([
-            supabase.from('funcionarios').select('*').order('nome', { ascending: true }),
-            supabase.from('hr_presencas').select('*').order('data', { ascending: false }).limit(200),
-            supabase.from('hr_recibos').select('*').order('data_emissao', { ascending: false }).limit(200),
-            supabase.from('hr_metas').select('*').order('status', { ascending: true }),
-            supabase.from('config_sistema').select('*').eq('categoria', 'empresa')
+            supabase.from('funcionarios').select('*').eq('tenant_id', user.tenant_id).order('nome', { ascending: true }),
+            supabase.from('hr_presencas').select('*').eq('tenant_id', user.tenant_id).order('data', { ascending: false }).limit(200),
+            supabase.from('hr_recibos').select('*').eq('tenant_id', user.tenant_id).order('data_emissao', { ascending: false }).limit(200),
+            supabase.from('hr_metas').select('*').eq('tenant_id', user.tenant_id).order('status', { ascending: true }),
+            supabase.from('config_sistema').select('*').eq('tenant_id', user.tenant_id).eq('categoria', 'empresa')
          ]) as any[];
 
          // --- PROCESS EMPLOYEES ---
@@ -393,11 +393,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             const val = formData.get(key) as string;
             newInfo[key] = val;
             await supabase.from('config_sistema').upsert({
+               tenant_id: user.tenant_id,
                categoria: 'empresa',
                chave: key,
                valor: val,
                updated_at: new Date().toISOString()
-            }, { onConflict: 'categoria,chave' });
+            }, { onConflict: 'tenant_id,categoria,chave' });
          }
          setCorporateInfo(newInfo);
          AmazingStorage.save(STORAGE_KEYS.CORPORATE_INFO, newInfo);
@@ -447,8 +448,9 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          titulo: fd.get('titulo') as string,
          progresso: 0,
          prazo: fd.get('prazo') as string,
-         status: 'Em curso'
-      };
+         status: 'Em curso',
+         tenant_id: user.tenant_id
+       };
 
       try {
          const { error } = await supabase.from('hr_metas').insert([nova]);
@@ -516,8 +518,9 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                funcionario_id: funcId,
                data: hoje,
                entrada: agora,
-               status: status
-            }]);
+               status: status,
+               tenant_id: user.tenant_id
+             }]);
 
             if (error) throw error;
             await fetchHRData();

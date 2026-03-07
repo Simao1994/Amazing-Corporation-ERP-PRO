@@ -295,7 +295,6 @@ const MasterAdmin: React.FC = () => {
 
         setTenantFormSaving(true);
         try {
-            // Definição do payload harmonizada com o Schema (id, nome, nif, slug, status)
             const data = {
                 nome: tenantForm.nome,
                 slug: tenantForm.slug,
@@ -303,29 +302,16 @@ const MasterAdmin: React.FC = () => {
                 status: tenantForm.status || 'ativo'
             };
 
-            // PERFORMANCE: Defer API call to unblock UI
-            requestAnimationFrame(async () => {
-                try {
-                    // Fechar modal imediatamente
-                    setIsTenantModalOpen(false);
+            const { error } = await supabase.from('saas_tenants').insert([data]);
+            if (error) throw error;
 
-                    // Delay para animação de fecho
-                    setTimeout(async () => {
-                        const { error } = await supabase.from('saas_tenants').insert([data]);
-                        if (error) throw error;
-
-                        fetchData();
-                        (window as any).notify?.('Empresa registada com sucesso!', 'success');
-                        setTenantFormSaving(false);
-                    }, 50);
-
-                } catch (err: any) {
-                    (window as any).notify?.(`Erro ao registar empresa: ${err.message || 'Verifique se o NIF ou Slug já existem.'}`, "error");
-                    setTenantFormSaving(false);
-                }
-            });
-        } catch (err) {
-            console.error("Erro inesperado:", err);
+            setIsTenantModalOpen(false);
+            fetchData();
+            (window as any).notify?.('Empresa registada com sucesso!', 'success');
+        } catch (err: any) {
+            console.error("Erro ao registar empresa:", err);
+            (window as any).notify?.(`Erro ao registar empresa: ${err.message || 'Verifique se o NIF ou Slug já existem.'}`, "error");
+        } finally {
             setTenantFormSaving(false);
         }
     };
@@ -367,32 +353,23 @@ const MasterAdmin: React.FC = () => {
         };
 
         setPlanFormSaving(true);
-        
-        // PERFORMANCE: Defer API call and state updates to unblock the main thread immediately
-        requestAnimationFrame(async () => {
-            try {
-                // Fechar o modal primeiro para resposta visual instantânea
-                setIsPlanModalOpen(false);
-                setEditingPlan(null);
+        try {
+            const { error } = editingPlan
+                ? await supabase.from('saas_plans').update(planData).eq('id', editingPlan.id)
+                : await supabase.from('saas_plans').insert([planData]);
 
-                // Pequeno delay para garantir que a animação de fecho do modal inicia suavemente
-                setTimeout(async () => {
-                    const { error } = editingPlan
-                        ? await supabase.from('saas_plans').update(planData).eq('id', editingPlan.id)
-                        : await supabase.from('saas_plans').insert([planData]);
-
-                    if (error) throw error;
-                    
-                    fetchData();
-                    (window as any).notify?.('Plano guardado com sucesso!', 'success');
-                    setPlanFormSaving(false);
-                }, 50);
-
-            } catch (err: any) {
-                (window as any).notify?.(err.message, 'error');
-                setPlanFormSaving(false);
-            }
-        });
+            if (error) throw error;
+            
+            setIsPlanModalOpen(false);
+            setEditingPlan(null);
+            fetchData();
+            (window as any).notify?.('Plano guardado com sucesso!', 'success');
+        } catch (err: any) {
+            console.error("Erro ao guardar plano:", err);
+            (window as any).notify?.(err.message, 'error');
+        } finally {
+            setPlanFormSaving(false);
+        }
     };
 
     const openPlanModal = (plan: any | null) => {
@@ -1110,16 +1087,18 @@ const MasterAdmin: React.FC = () => {
                                 />
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={planFormSaving}
-                                {planFormSaving && <RefreshCcw size={14} className="animate-spin" />}
-                                Guardar Plano
-                            </button>
+                                    <button
+                                        type="submit"
+                                        disabled={planFormSaving}
+                                        className="md:col-span-2 py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl shadow-purple-900/20 hover:scale-[1.02] transition-all disabled:opacity-50"
+                                    >
+                                        {planFormSaving && <RefreshCcw size={14} className="animate-spin" />}
+                                        Guardar Alterações do Plano
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-                    </form>
-                </div>
-            )}
+                    )}
             {/* Tenant Registration Modal */}
             {isTenantModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">

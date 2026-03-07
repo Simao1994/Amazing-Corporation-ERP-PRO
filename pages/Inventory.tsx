@@ -15,9 +15,11 @@ import { formatAOA } from '../constants';
 import { InventarioItem, MovimentacaoEstoque } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 import Logo from '../components/Logo';
 
 const InventoryPage: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'estoque' | 'relatorios'>('estoque');
   const [showItemModal, setShowItemModal] = useState(false);
   const [showMovementModal, setShowMovementModal] = useState(false);
@@ -34,7 +36,11 @@ const InventoryPage: React.FC = () => {
   const fetchInventoryData = async () => {
     setLoading(true);
     try {
-      const { data: invData, error: invError } = await supabase.from('inventario').select('*').order('nome');
+      const { data: invData, error: invError } = await supabase
+        .from('inventario')
+        .select('*')
+        .eq('tenant_id', user?.tenant_id)
+        .order('nome');
       if (invError) throw invError;
       let finalItems: InventarioItem[] = [];
       if (invData) {
@@ -57,7 +63,11 @@ const InventoryPage: React.FC = () => {
         setItems(finalItems);
       }
 
-      const { data: movData, error: movError } = await supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false });
+      const { data: movData, error: movError } = await supabase
+        .from('stock_movimentos')
+        .select('*')
+        .eq('tenant_id', user?.tenant_id)
+        .order('created_at', { ascending: false });
       if (movError) throw movError;
       if (movData) {
         setMovimentacoes(movData.map((m: any) => {
@@ -185,7 +195,8 @@ const InventoryPage: React.FC = () => {
       fornecedor_id: itemForm.fornecedor_id || null,
       referencia: itemForm.referencia || null,
       compatibilidade: itemForm.compatibilidade || null,
-      garantia_meses: Number(itemForm.garantia_meses) || 0
+      garantia_meses: Number(itemForm.garantia_meses) || 0,
+      tenant_id: user?.tenant_id
     };
 
     try {
@@ -219,6 +230,7 @@ const InventoryPage: React.FC = () => {
       quantidade: qtd,
       referencia: movementForm.entidade,
       motivo: movementForm.observacao,
+      tenant_id: user?.tenant_id,
       created_at: new Date().toISOString()
     };
 

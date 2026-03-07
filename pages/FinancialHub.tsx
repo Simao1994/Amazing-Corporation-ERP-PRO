@@ -17,6 +17,7 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 import { TransacaoFinanceira, TransacaoTipo, TransacaoStatus, User } from '../types';
 import { formatAOA } from '../constants';
 import Input from '../components/ui/Input';
@@ -36,7 +37,8 @@ const CATEGORIAS_TESOURARIA = [
 ];
 
 const FinancialHubPage: React.FC = () => {
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'comparativo' | 'historico' | 'novo' | 'simulador' | 'conciliacao'>('dashboard');
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'comparativo' | 'historico' | 'novo' | 'simulador' | 'conciliacao'>('dashboard');
    const [searchTerm, setSearchTerm] = useState('');
    const [filterType, setFilterType] = useState<string>('Todas');
    const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -57,7 +59,7 @@ const FinancialHubPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-         let query = supabase.from('fin_transacoes').select('*');
+         let query = supabase.from('fin_transacoes').select('*').eq('tenant_id', user?.tenant_id);
          if (selectedEmpresaId) {
             query = query.eq('empresa_id', selectedEmpresaId);
          }
@@ -85,10 +87,13 @@ const FinancialHubPage: React.FC = () => {
       }
    };
 
-   const fetchEmpresas = async () => {
-      try {
-         const { data, error } = await supabase.from('acc_empresas').select('*');
-         if (error) throw error;
+     const fetchEmpresas = async () => {
+       try {
+          const { data, error } = await supabase
+             .from('acc_empresas')
+             .select('*')
+             .eq('tenant_id', user?.tenant_id);
+          if (error) throw error;
          setEmpresas(data || []);
          if (data && data.length > 0) {
             if (!selectedEmpresaId) setSelectedEmpresaId(data[0].id);
@@ -108,6 +113,7 @@ const FinancialHubPage: React.FC = () => {
          const { data, error } = await supabase
             .from('acc_extratos_bancarios')
             .select('*')
+            .eq('tenant_id', user?.tenant_id)
             .eq('empresa_id', selectedEmpresaId)
             .eq('status', 'Pendente');
          if (error) throw error;
@@ -337,11 +343,12 @@ const FinancialHubPage: React.FC = () => {
          centro_custo: formData.get('centro_custo') as string,
          status: (tipo === 'Reembolso' || tipo === 'Orçamento') ? 'Pendente' : 'Aprovado',
          usuario_id: currentUser?.id || 'sys',
-         usuario_nome: currentUser?.nome || 'Sistema',
-         empresa_id: selectedEmpresaId,
-         data_criacao: new Date().toISOString(),
-         historico_alteracoes: [{ data: new Date().toISOString(), usuario: currentUser?.nome || 'Sistema', acao: 'Registo inicial' }]
-      };
+          usuario_nome: currentUser?.nome || 'Sistema',
+          empresa_id: selectedEmpresaId,
+          tenant_id: user?.tenant_id,
+          data_criacao: new Date().toISOString(),
+          historico_alteracoes: [{ data: new Date().toISOString(), usuario: currentUser?.nome || 'Sistema', acao: 'Registo inicial' }]
+       };
 
       try {
          const { error } = await supabase.from('fin_transacoes').insert([dbData]);

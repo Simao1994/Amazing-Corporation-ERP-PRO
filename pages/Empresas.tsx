@@ -9,8 +9,10 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { EmpresaAfiliada, MarcoHistorico } from '../types';
 import { supabase } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const EmpresasPage: React.FC = () => {
+  const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingItem, setEditingItem] = useState<EmpresaAfiliada | null>(null);
@@ -28,6 +30,7 @@ const EmpresasPage: React.FC = () => {
       const { data, error } = await supabase
         .from('empresas')
         .select('*')
+        .eq('tenant_id', user?.tenant_id)
         .order('nome', { ascending: true });
 
       if (error) throw error;
@@ -105,6 +108,7 @@ const EmpresasPage: React.FC = () => {
       taxa_iva: Number(formData.get('taxa_iva')) || 0,
       taxa_ii: Number(formData.get('taxa_ii')) || 0,
       retencao_fonte: formData.get('retencao_fonte') === 'Sim',
+      tenant_id: user?.tenant_id,
       updated_at: new Date().toISOString()
     };
 

@@ -24,6 +24,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { supabase } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const weeklyData = [
   { name: 'Seg', viagens: 45, receita: 125000 },
@@ -36,6 +37,7 @@ const weeklyData = [
 ];
 
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [showAdModal, setShowAdModal] = useState(false);
 
@@ -69,12 +71,12 @@ const Dashboard: React.FC = () => {
   const fetchMetrics = async () => {
     try {
       const results = await Promise.allSettled([
-        supabase.from('expr_fleet').select('*', { count: 'exact', head: true }),
-        supabase.from('agro_agricultores').select('*', { count: 'exact', head: true }),
-        supabase.from('real_imoveis').select('preco_venda'),
-        supabase.from('arena_tournaments').select('*', { count: 'exact', head: true }),
-        supabase.from('fin_notas').select('valor_total'),
-        supabase.from('funcionarios').select('*', { count: 'exact', head: true })
+        supabase.from('expr_fleet').select('*', { count: 'exact', head: true }).eq('tenant_id', user?.tenant_id),
+        supabase.from('agro_agricultores').select('*', { count: 'exact', head: true }).eq('tenant_id', user?.tenant_id),
+        supabase.from('real_imoveis').select('preco_venda').eq('tenant_id', user?.tenant_id),
+        supabase.from('arena_tournaments').select('*', { count: 'exact', head: true }).eq('tenant_id', user?.tenant_id),
+        supabase.from('fin_notas').select('valor_total').eq('tenant_id', user?.tenant_id),
+        supabase.from('funcionarios').select('*', { count: 'exact', head: true }).eq('tenant_id', user?.tenant_id)
       ]);
 
       const getCount = (res: any) => (res.status === 'fulfilled' && res.value.count) ? res.value.count : 0;
@@ -96,7 +98,11 @@ const Dashboard: React.FC = () => {
 
   const fetchAds = async () => {
     try {
-      const { data, error } = await supabase.from('sys_ads').select('*').eq('active', true);
+      const { data, error } = await supabase
+        .from('sys_ads')
+        .select('*')
+        .eq('active', true)
+        .eq('tenant_id', user?.tenant_id);
       if (error) throw error;
       if (data) {
         setAds(data.map(ad => ({

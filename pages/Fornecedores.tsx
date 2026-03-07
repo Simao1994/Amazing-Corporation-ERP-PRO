@@ -7,8 +7,10 @@ import Select from '../components/ui/Select';
 import { Fornecedor } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const FornecedoresPage: React.FC = () => {
+  const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingItem, setEditingItem] = useState<Fornecedor | null>(null);
@@ -22,6 +24,7 @@ const FornecedoresPage: React.FC = () => {
       const { data, error } = await supabase
         .from('sys_fornecedores')
         .select('*')
+        .eq('tenant_id', user?.tenant_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -92,7 +95,8 @@ const FornecedoresPage: React.FC = () => {
         banco: data.banco,
         telefone: data.telefone,
         morada: data.morada,
-        avaliacao: data.avaliacao
+        avaliacao: data.avaliacao,
+        tenant_id: user?.tenant_id
       };
 
       if (isEditing) {

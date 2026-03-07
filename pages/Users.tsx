@@ -121,6 +121,8 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
             setCreating(false);
             return;
         }
+
+        try {
             // Validação: Mínimo dois nomes
             const nameParts = form.nome.trim().split(/\s+/);
             if (nameParts.length < 2) {
