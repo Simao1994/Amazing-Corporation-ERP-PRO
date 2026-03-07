@@ -68,14 +68,7 @@ const Dashboard: React.FC = () => {
 
   const fetchMetrics = async () => {
     try {
-      const [
-        { count: fleetCount },
-        { count: agroCount },
-        { data: imoveisData },
-        { count: arenaCount },
-        { data: notasData },
-        { count: staffCount }
-      ] = await Promise.all([
+      const results = await Promise.allSettled([
         supabase.from('expr_fleet').select('*', { count: 'exact', head: true }),
         supabase.from('agro_agricultores').select('*', { count: 'exact', head: true }),
         supabase.from('real_imoveis').select('preco_venda'),
@@ -84,14 +77,17 @@ const Dashboard: React.FC = () => {
         supabase.from('funcionarios').select('*', { count: 'exact', head: true })
       ]);
 
+      const getCount = (res: any) => (res.status === 'fulfilled' && res.value.count) ? res.value.count : 0;
+      const getData = (res: any) => (res.status === 'fulfilled' && res.value.data) ? res.value.data : [];
+
       setMetrics({
-        fleetCount: fleetCount || 0,
-        agricultoresCount: agroCount || 0,
-        imoveisCount: imoveisData?.length || 0,
-        imoveisValor: imoveisData?.reduce((acc, i: any) => acc + (Number(i.preco_venda) || 0), 0) || 0,
-        torneiosCount: arenaCount || 0,
-        totalInvoiced: notasData?.reduce((acc, n: any) => acc + (Number(n.valor_total) || 0), 0) || 0,
-        staffCount: staffCount || 0
+        fleetCount: getCount(results[0]),
+        agricultoresCount: getCount(results[1]),
+        imoveisCount: getData(results[2]).length,
+        imoveisValor: getData(results[2]).reduce((acc: number, i: any) => acc + (Number(i.preco_venda) || 0), 0),
+        torneiosCount: getCount(results[3]),
+        totalInvoiced: getData(results[4]).reduce((acc: number, n: any) => acc + (Number(n.valor_total) || 0), 0),
+        staffCount: getCount(results[5])
       });
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error);

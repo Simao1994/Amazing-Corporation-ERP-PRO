@@ -196,58 +196,6 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
             <Home size={18} /> Voltar para Página Inicial
           </button>
 
-          {/* Diagnostic Panel */}
-          <div className="pt-4 mt-2 border-t border-zinc-50">
-            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest text-center mb-2">Auto-Diagnóstico de Infraestrutura</p>
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-center text-[9px]">
-                <span className="text-slate-500">Project Endpoint:</span>
-                <span className="text-slate-700 font-mono truncate max-w-[150px]">{import.meta.env.VITE_SUPABASE_URL}</span>
-              </div>
-              <div id="conn-status" className="flex justify-between items-center text-[9px]">
-                <span className="text-slate-500">Status da Base:</span>
-                <span className="text-yellow-600 animate-pulse font-bold">Verificando...</span>
-              </div>
-            </div>
-            <script dangerouslySetInnerHTML={{
-              __html: `
-              setTimeout(async () => {
-                const el = document.getElementById('conn-status');
-                if (!el) return;
-                
-                // Controller para timeout de 5 segundos
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-                try {
-                  const res = await fetch('${import.meta.env.VITE_SUPABASE_URL}/rest/v1/', {
-                    headers: { 'apikey': '${import.meta.env.VITE_SUPABASE_ANON_KEY}' },
-                    signal: controller.signal
-                  });
-                  clearTimeout(timeoutId);
-                  
-                  if (res.ok || res.status === 401 || res.status === 400) {
-                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-green-600 font-bold tracking-tighter uppercase text-[8px]">ATIVA E VISÍVEL</span>';
-                  } else {
-                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-red-600 font-bold uppercase text-[8px]">ERRO ' + res.status + '</span>';
-                  }
-                } catch (e) {
-                  clearTimeout(timeoutId);
-                  if (e.name === 'AbortError') {
-                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-red-600 font-bold uppercase text-[8px]">TIMEOUT (LIGAÇÃO LENTA)</span>';
-                  } else {
-                    el.innerHTML = '<span class="text-slate-500">Status da Base:</span><span class="text-red-600 font-bold uppercase text-[8px]">SEM RESPOSTA (BLOQUEADO)</span>';
-                  }
-                }
-              }, 1000);
-            `}} />
-          </div>
-        </div>
-
-        {/* Footer info - Part of the centered block for stability */}
-        <div className="mt-6 text-center space-y-1">
-          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">© 2026 Amazing Corporation.</p>
-          <p className="text-slate-300 text-[8px] font-medium italic">Sistema protegido por criptografia ponta-a-ponta.</p>
         </div>
       </div>
     </div>
