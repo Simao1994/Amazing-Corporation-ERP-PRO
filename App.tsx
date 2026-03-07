@@ -13,6 +13,8 @@ const ArenaGames = React.lazy(() => import('./pages/ArenaGames'));
 const CorporateHome = React.lazy(() => import('./pages/CorporateHome'));
 const PublicVagasSite = React.lazy(() => import('./pages/PublicVagasSite'));
 const PublicVagaDetalhes = React.lazy(() => import('./pages/PublicVagaDetalhes'));
+const LiveStreaming = React.lazy(() => import('./pages/LiveStreaming'));
+const PublicLive = React.lazy(() => import('./pages/PublicLive'));
 
 // Standard Imports
 import ContasBancariasPage from './pages/ContasBancariasPage';
@@ -273,6 +275,7 @@ const App: React.FC = () => {
               <Route path="/carreiras/:id" element={<PublicVagaDetalhes />} />
               <Route path="/candidatura-espontanea" element={<PublicCandidaturaEspontanea />} />
               <Route path="/candidatura" element={<RecruitmentPage isPublic={true} />} />
+              <Route path="/empresa/:slug/live" element={<PublicLive />} />
               <Route path="/arena" element={<ArenaGames />} />
               <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
               <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
@@ -312,6 +315,7 @@ const App: React.FC = () => {
                       <Route path="/fornecedores" element={<ProtectedRoute user={user} path="/fornecedores"><FornecedoresPage /></ProtectedRoute>} />
                       <Route path="/empresas" element={<ProtectedRoute user={user} path="/empresas"><EmpresasPage /></ProtectedRoute>} />
                       <Route path="/parceiros" element={<ProtectedRoute user={user} path="/parceiros"><ParceirosPage /></ProtectedRoute>} />
+                      <Route path="/dashboard/transmissoes" element={<ProtectedRoute user={user} path="/dashboard/transmissoes"><LiveStreaming /></ProtectedRoute>} />
                       <Route path="/configuracoes/assinatura" element={<ProtectedRoute user={user} path="/configuracoes"><SubscriptionPage /></ProtectedRoute>} />
                       <Route path="/master" element={<ProtectedRoute user={user} path="/master" customRole="saas_admin"><MasterAdmin /></ProtectedRoute>} />
                       <Route path="*" element={<Navigate to="/" />} />

@@ -5,7 +5,7 @@ import {
   LogOut, Bell, Search, Plus, FileText, Download, Trash2, Edit, Eye, Settings,
   Layers, Share2, Home, Inbox, Handshake, Building2, Newspaper, Image as ImageIcon,
   Factory, Scale, Calculator, PieChart as PieChartIcon, Sprout, Key, ClipboardList,
-  UserPlus, Gamepad2, Files, CreditCard
+  UserPlus, Gamepad2, Files, CreditCard, Video
 } from 'lucide-react';
 import { UserRole } from './types';
 
@@ -43,6 +43,7 @@ export const MENU_ITEMS = [
   { id: 'transportes', label: 'Amazing Express', icon: <Truck size={20} />, path: '/transportes' },
   { id: 'manutencao', label: 'Manutenção', icon: <Wrench size={20} />, path: '/manutencao' },
   { id: 'inventario', label: 'Inventário & Stock', icon: <Package size={20} />, path: '/inventario' },
+  { id: 'live_streaming', label: 'Transmissões Ao Vivo', icon: <Video size={20} />, path: '/dashboard/transmissoes' },
   { id: 'rh', label: 'Recursos Humanos', icon: <Users size={20} />, path: '/rh' },
   { id: 'financeiro', label: 'Finanças', icon: <Wallet size={20} />, path: '/financeiro' },
   { id: 'contabilidade', label: 'Amazing ContábilExpert', icon: <Scale size={20} />, path: '/contabilidade' },
@@ -63,37 +64,37 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
   admin: ['all'],
 
   // Director Amazing Arena Gamer - Apenas Arena + Dashboard + Solicitações
-  director_arena: ['home', 'dashboard', 'arena_admin', 'solicitacoes', 'blog'],
+  director_arena: ['home', 'dashboard', 'arena_admin', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Director Amazing Agro - Apenas Agro + Dashboard + Solicitações
-  director_agro: ['home', 'dashboard', 'agro', 'solicitacoes', 'blog'],
+  director_agro: ['home', 'dashboard', 'agro', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Director da Amazing Express - Apenas Transportes + Dashboard + Solicitações
-  director_express: ['home', 'dashboard', 'transportes', 'solicitacoes', 'blog'],
+  director_express: ['home', 'dashboard', 'transportes', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Amazing Imobiliário - Apenas Imobiliário + Dashboard + Solicitações
-  director_realestate: ['home', 'dashboard', 'imobiliario', 'solicitacoes', 'blog'],
+  director_realestate: ['home', 'dashboard', 'imobiliario', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Director da Amazing ContábilExpress - Apenas Contabilidade + Dashboard + Solicitações
-  director_accounting: ['home', 'dashboard', 'contabilidade', 'solicitacoes', 'blog', 'empresas'],
+  director_accounting: ['home', 'dashboard', 'contabilidade', 'solicitacoes', 'blog', 'empresas', 'live_streaming'],
 
   // Director da Tesouraria - Apenas Tesouraria + Dashboard + Solicitações
-  director_treasury: ['home', 'dashboard', 'tesouraria', 'solicitacoes', 'blog'],
+  director_treasury: ['home', 'dashboard', 'tesouraria', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Director da Manutenção - Apenas Manutenção + Dashboard + Solicitações
-  director_maintenance: ['home', 'dashboard', 'manutencao', 'solicitacoes', 'blog'],
+  director_maintenance: ['home', 'dashboard', 'manutencao', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Responsável de Inventário & Stock - Apenas Inventário + Dashboard + Solicitações
-  manager_inventory: ['home', 'dashboard', 'inventario', 'solicitacoes', 'blog'],
+  manager_inventory: ['home', 'dashboard', 'inventario', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Director de Recursos Humanos - Apenas RH + Dashboard + Solicitações + CANDIDATURAS
-  director_hr: ['home', 'dashboard', 'rh', 'candidaturas', 'solicitacoes', 'blog'],
+  director_hr: ['home', 'dashboard', 'rh', 'candidaturas', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Director de Finanças - Apenas Finanças + Dashboard + Solicitações
-  director_finance: ['home', 'dashboard', 'financeiro', 'solicitacoes', 'blog', 'empresas'],
+  director_finance: ['home', 'dashboard', 'financeiro', 'solicitacoes', 'blog', 'empresas', 'live_streaming'],
 
   // Bibliotecário - Gestão da Biblioteca
-  bibliotecario: ['home', 'dashboard', 'biblioteca', 'solicitacoes', 'blog'],
+  bibliotecario: ['home', 'dashboard', 'biblioteca', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Operário - Acesso limitado a Galeria, Biblioteca, Home e Dashboard
   operario: ['home', 'dashboard', 'galeria_corp', 'biblioteca'],

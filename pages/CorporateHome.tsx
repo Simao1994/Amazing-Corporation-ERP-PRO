@@ -737,6 +737,35 @@ const CorporateHome: React.FC = () => {
     sede_principal: 'Benguela, Angola'
   });
 
+  // State for Public Live Stream
+  const [activeLive, setActiveLive] = useState<any | null>(null);
+
+  useEffect(() => {
+    const fetchActiveLive = async () => {
+      try {
+        // Fetch top priority live stream regardless of tenant (or specifically for the main corp)
+        // Order: ao_vivo first, then agendada
+        const { data, error } = await supabase
+          .from('lives')
+          .select('*, saas_tenants(slug)')
+          .in('status', ['ao_vivo', 'agendada'])
+          .order('status', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (!error && data) {
+          setActiveLive({
+             ...data,
+             slug: data.saas_tenants?.slug || 'amazing'
+          });
+        }
+      } catch (err) {
+        // Silent fail for public
+      }
+    };
+    fetchActiveLive();
+  }, []);
+
   useEffect(() => {
     const fetchCorpInfo = async () => {
       try {
@@ -911,6 +940,39 @@ const CorporateHome: React.FC = () => {
               Conhecer Arena <Gamepad2 size={20} />
             </Link>
           </div>
+
+          {/* Banner de Live Streaming Activo */}
+          {activeLive && (
+             <div className="mt-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+               <Link 
+                  to={`/empresa/${activeLive.slug}/live`} 
+                  className={`inline-flex items-center gap-4 px-8 py-4 backdrop-blur-xl rounded-full border shadow-2xl transition-all hover:scale-105 ${
+                    activeLive.status === 'ao_vivo' 
+                      ? 'bg-red-600/20 border-red-500 text-white hover:bg-red-600/30 shadow-red-500/20'
+                      : 'bg-zinc-900/50 border-zinc-600 text-white hover:bg-zinc-800'
+                  }`}
+               >
+                 {activeLive.status === 'ao_vivo' ? (
+                   <div className="flex items-center justify-center w-10 h-10 bg-red-600 rounded-full shrink-0">
+                     <Video className="animate-pulse" size={20} />
+                   </div>
+                 ) : (
+                   <div className="flex items-center justify-center w-10 h-10 bg-zinc-800 rounded-full shrink-0 border border-zinc-600">
+                     <Calendar size={20} className="text-zinc-300" />
+                   </div>
+                 )}
+                 <div>
+                   <p className="text-[10px] font-black uppercase tracking-widest mb-0.5 text-zinc-300 flex items-center gap-2">
+                     {activeLive.status === 'ao_vivo' ? (
+                       <><span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> ESTAMOS AO VIVO</>
+                     ) : 'EVENTO AGENDADO'}
+                   </p>
+                   <p className="font-bold text-sm truncate max-w-[250px] sm:max-w-md">{activeLive.titulo}</p>
+                 </div>
+                 <ChevronRight size={20} className="text-zinc-400 ml-2" />
+               </Link>
+             </div>
+          )}
         </div>
 
         {/* Scroll Indicator */}
