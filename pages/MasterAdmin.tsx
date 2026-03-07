@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { supabase } from '../src/lib/supabase';
 import {
     Building2, Users, CreditCard, CheckCircle2, XCircle, Clock,
@@ -11,6 +11,7 @@ import { useAuth } from '../src/contexts/AuthContext';
 const MasterAdmin: React.FC = () => {
     const { user, loading: authLoading } = useAuth();
     const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'plans' | 'subscriptions'>('overview');
+    const [, startTabTransition] = useTransition();
     const [tenants, setTenants] = useState<any[]>([]);
     const [plans, setPlans] = useState<any[]>([]);
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -489,7 +490,7 @@ const MasterAdmin: React.FC = () => {
                     ].map(tab => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
+                            onClick={() => startTabTransition(() => setActiveTab(tab.id as any))}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
