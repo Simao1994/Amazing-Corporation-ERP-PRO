@@ -5,9 +5,9 @@
 
 INSERT INTO public.saas_plans (nome, valor, duracao_meses, max_users, features, modules)
 VALUES 
-('Amazing Standard', 15000, 1, 5, ARRAY['Suporte Email', 'Dashboard Básico'], 'FINANCEIRO, RH'),
-('Amazing Professional', 75000, 6, 20, ARRAY['Suporte 24/7', 'Dashboards Avançados', 'Backups'], 'FINANCEIRO, RH, CONTABILIDADE, INVENTARIO'),
-('Amazing Enterprise', 120000, 12, 100, ARRAY['Gestor de Conta', 'Customização Total', 'API Access'], 'FINANCEIRO, RH, CONTABILIDADE, INVENTARIO, CRM, VAGAS')
+('Amazing Standard', 15000, 1, 5, '["Suporte Email", "Dashboard Básico"]'::jsonb, '["FINANCEIRO", "RH"]'::jsonb),
+('Amazing Professional', 75000, 6, 20, '["Suporte 24/7", "Dashboards Avançados", "Backups"]'::jsonb, '["FINANCEIRO", "RH", "CONTABILIDADE", "INVENTARIO"]'::jsonb),
+('Amazing Enterprise', 120000, 12, 100, '["Gestor de Conta", "Customização Total", "API Access"]'::jsonb, '["FINANCEIRO", "RH", "CONTABILIDADE", "INVENTARIO", "CRM", "VAGAS"]'::jsonb)
 ON CONFLICT DO NOTHING;
 
 -- Garantir que as permissões de leitura estão abertas para administradores
