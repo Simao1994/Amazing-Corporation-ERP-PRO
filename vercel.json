@@ -1,8 +1,8 @@
 {
     "rewrites": [
         {
-            "source": "/sbapi/(.*)",
-            "destination": "https://jgktemwegesmmomlftgt.supabase.co/$1"
+            "source": "/sbapi/:path*",
+            "destination": "https://jgktemwegesmmomlftgt.supabase.co/:path*"
         },
         {
             "source": "/(.*)",
