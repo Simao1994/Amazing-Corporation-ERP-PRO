@@ -80,21 +80,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         }, 15000);
 
-        const initAuth = async () => {
+        const initAuth = async (retryCount = 0) => {
             try {
-                // Obter sessão inicial
-                const { data: { session: initialSession } } = await supabase.auth.getSession();
-                setSession(initialSession);
+                // Obter sessão inicial com retry para erros de Lock
+                const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    const isLockError = error.message?.includes('Lock broken') || error.message?.includes('steal');
+                    if (isLockError && retryCount < 3) {
+                        const delay = 500 * (retryCount + 1);
+                        console.warn(`AuthContext: Lock detectado, tentando novamente em ${delay}ms...`);
+                        setTimeout(() => initAuth(retryCount + 1), delay);
+                        return;
+                    }
+                    throw error;
+                }
 
+                setSession(initialSession);
                 if (initialSession) {
                     await refreshProfile(initialSession);
                 }
             } catch (err) {
                 console.error('AuthContext: Erro na inicialização:', err);
             } finally {
-                setLoading(false);
-                isInitialLoad.current = false;
-                clearTimeout(failSafeTimer);
+                if (retryCount === 0 || !loading) {
+                    setLoading(false);
+                    isInitialLoad.current = false;
+                    clearTimeout(failSafeTimer);
+                }
             }
         };
 

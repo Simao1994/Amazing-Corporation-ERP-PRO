@@ -109,10 +109,21 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      
+      // Limpeza profunda de resíduos de sessão
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      showToast("Sessão encerrada com sucesso.", "info");
+      
+      // Pequeno delay e reload forçado para garantir estado limpo
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     } catch (error) {
       console.error("Logout error:", error);
-    } finally {
-      showToast("Sessão encerrada.", "info");
+      localStorage.clear(); // Garantir limpeza mesmo em erro
+      window.location.reload();
     }
   };
 

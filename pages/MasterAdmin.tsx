@@ -126,10 +126,24 @@ const MasterAdmin: React.FC = () => {
         } catch (err: any) {
             console.error('MasterAdmin: Erro ao carregar dados:', err);
 
-            // Se for erro de Lock do Supabase e tivermos menos de 2 retries, tentar de novo
-            if (err.message?.includes('LockManager') && retryCount < 2 && isMounted.current) {
-                console.warn('MasterAdmin: Detectado erro de Lock, a tentar novamente em 1s...');
-                setTimeout(() => fetchData(retryCount + 1), 1000);
+            // Erros de Lock do Supabase (LockManager ou "Lock broken by another request with the 'steal' option")
+            const isLockError = err.message?.includes('LockManager') || 
+                              err.message?.includes('Lock broken') || 
+                              err.message?.includes('steal');
+
+            if (isLockError && retryCount < 3 && isMounted.current) {
+                const delay = 1000 * (retryCount + 1);
+                console.warn(`MasterAdmin: Detectado erro de Lock, a tentar novamente (tentativa ${retryCount + 1}) em ${delay}ms...`);
+                
+                // Se falhou em paralelo, a próxima tentativa será sequencial para ser mais seguro
+                setTimeout(() => {
+                    if (retryCount >= 1) {
+                        console.log("MasterAdmin: Mudando para carregamento sequencial por segurança...");
+                        fetchDataSequential(retryCount + 1);
+                    } else {
+                        fetchData(retryCount + 1);
+                    }
+                }, delay);
                 return;
             }
 
@@ -137,6 +151,38 @@ const MasterAdmin: React.FC = () => {
                 setError(err.message || 'Erro ao carregar dados do dashboard master.');
                 setLoading(false);
                 if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+            }
+        }
+    };
+
+    // Versão sequencial para casos de erro de lock persistente
+    const fetchDataSequential = async (retryCount = 0) => {
+        if (!isMounted.current) return;
+        setLoading(true);
+        
+        try {
+            console.log("MasterAdmin: Iniciando carregamento SEQUENCIAL...");
+            
+            const tenantsRes = await supabase.from('saas_tenants').select('*, saas_subscriptions(*)');
+            if (tenantsRes.error) throw tenantsRes.error;
+            
+            const plansRes = await supabase.from('saas_plans').select('*').order('valor', { ascending: true });
+            if (plansRes.error) throw plansRes.error;
+            
+            const subsRes = await supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false });
+            if (subsRes.error) throw subsRes.error;
+
+            if (isMounted.current) {
+                setTenants(tenantsRes.data || []);
+                setPlans(plansRes.data || []);
+                setSubscriptions(subsRes.data || []);
+                setLoading(false);
+            }
+        } catch (err: any) {
+            console.error("MasterAdmin: Erro no carregamento sequencial:", err);
+            if (isMounted.current) {
+                setError(err.message);
+                setLoading(false);
             }
         }
     };
