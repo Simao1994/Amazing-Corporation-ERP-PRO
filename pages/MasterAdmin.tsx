@@ -362,13 +362,14 @@ const MasterAdmin: React.FC = () => {
         e.preventDefault();
         setConfigFormSaving(true);
         try {
-            const { error } = await supabase.from('saas_config').upsert([{ 
-                id: 1, 
-                banco: configForm.banco, 
-                iban: configForm.iban, 
-                beneficiario: configForm.beneficiario 
-            }]);
+            const { data, error } = await supabase.rpc('master_update_config', {
+                p_banco: configForm.banco,
+                p_iban: configForm.iban,
+                p_beneficiario: configForm.beneficiario
+            });
             if (error) throw error;
+            if (data && !data.success) throw new Error(data.message);
+            
             setIsConfigModalOpen(false);
             setTimeout(() => {
                 fetchData();
