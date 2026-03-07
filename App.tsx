@@ -51,7 +51,6 @@ import ForgotPasswordPage from './pages/ForgotPassword';
 import ResetPasswordPage from './pages/ResetPassword';
 import PublicCandidaturaEspontanea from './pages/PublicCandidaturaEspontanea';
 import AutoLogout from './components/AutoLogout';
-import MasterAdmin from './pages/MasterAdmin';
 import SubscriptionPage from './pages/Subscription';
 
 const App: React.FC = () => {
@@ -313,11 +312,11 @@ const App: React.FC = () => {
                       <Route path="/master" element={<ProtectedRoute user={user} path="/master" customRole="saas_admin"><MasterAdmin /></ProtectedRoute>} />
                       <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
-            </React.Suspense>
                   </Layout>
                 )
               } />
             </Routes>
+          </React.Suspense>
           </div>
         </HashRouter>
       </TenantProvider>
