@@ -51,6 +51,26 @@ export const checkSubscription = async (tenantId: string): Promise<SubscriptionS
             };
         }
 
+        // Guardar de seguranca: subscricao activa mas plano apagado da BD
+        // (chave estrangeira orphan). Conceder acesso total temporariamente.
+        if (!data.saas_plans && data.status === 'ativo') {
+            console.warn('checkSubscription: Plano órfão detectado. A conceder acesso total temporário.');
+            return {
+                active: true,
+                status: 'ativo',
+                daysLeft: 9999,
+                modules: ['ALL'],
+                maxUsers: 9999,
+                id: data.id,
+                tenant_id: data.tenant_id,
+                plan_id: data.plan_id,
+                valor_pago: data.valor_pago ? Number(data.valor_pago) : undefined,
+                data_inicio: data.data_inicio,
+                data_expiracao: data.data_expiracao,
+                auto_renew: data.auto_renew ?? false,
+            };
+        }
+
         const expiry = new Date(data.data_expiracao);
         const today = new Date();
         const diffTime = expiry.getTime() - today.getTime();
