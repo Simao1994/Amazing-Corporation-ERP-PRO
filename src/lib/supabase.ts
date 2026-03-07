@@ -4,9 +4,14 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Revertido o bypass de proxy por causa do bug de KEEP-ALIVE do Node.js (ECONNRESET)
-// Usamos o prefixo /sbapi para que o Vite/Vercel faça proxy da ligação,
-// evitando bloqueios directos de Antivírus ao domínio .supabase.co
-const supabaseUrl = (typeof window !== 'undefined' ? window.location.origin : '') + '/sbapi';
+// O Supabase Client exige um URL absoluto. Em produção, usamos o próprio domínio
+// com o prefixo /sbapi para tunelamento (bypass de antivírus).
+const getBaseURL = () => {
+    if (typeof window !== 'undefined') return window.location.origin;
+    return import.meta.env.VITE_SUPABASE_URL || ''; 
+};
+
+const supabaseUrl = getBaseURL() + '/sbapi';
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
