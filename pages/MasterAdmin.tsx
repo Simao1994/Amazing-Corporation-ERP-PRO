@@ -223,11 +223,16 @@ const MasterAdmin: React.FC = () => {
 
             if (result.error) throw result.error;
 
+            // PERFORMANCE: Close modal immediately to resolve INP/UI blocking
             setIsLicenseModalOpen(false);
             setLicenseModalTenant(null);
             setEditingSubscription(null);
-            await fetchData();
-            (window as any).notify?.(editingSubscription ? 'Licença actualizada com sucesso!' : 'Licença criada com sucesso!', 'success');
+            
+            // DEFER: Fetch data in background
+            setTimeout(() => {
+                fetchData();
+                (window as any).notify?.(editingSubscription ? 'Licença actualizada com sucesso!' : 'Licença criada com sucesso!', 'success');
+            }, 100);
         } catch (err: any) {
             (window as any).notify?.(err.message, 'error');
         } finally {
@@ -246,31 +251,28 @@ const MasterAdmin: React.FC = () => {
         try {
             console.log("MasterAdmin: A registar nova empresa...", tenantForm);
             const { data, error } = await supabase
-                .from('saas_tenants')
-                .insert([
-                    {
-                        nome: tenantForm.nome,
-                        nif: tenantForm.nif || null,
-                        slug: tenantForm.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-                        status: tenantForm.status
-                    }
-                ])
-                .select()
-                .single();
+        
+        // PERFORMANCE: Defer API call to unblock UI
+        requestAnimationFrame(async () => {
+            try {
+                // Fechar modal imediatamente
+                setIsTenantModalOpen(false);
 
-            if (error) throw error;
+                // Delay para animação de fecho
+                setTimeout(async () => {
+                    const { error } = await supabase.from('saas_tenants').insert([data]);
+                    if (error) throw error;
 
-            console.log("MasterAdmin: Empresa registada com sucesso:", data);
-            (window as any).notify?.("Empresa registada com sucesso!", "success");
-            setIsTenantModalOpen(false);
-            setTenantForm({ nome: '', nif: '', slug: '', status: 'ativo' });
-            fetchData();
-        } catch (err: any) {
-            console.error("MasterAdmin: Erro ao registar empresa:", err);
-            (window as any).notify?.(`Erro ao registar empresa: ${err.message || 'Verifique se o NIF ou Slug já existem.'}`, "error");
-        } finally {
-            setTenantFormSaving(false);
-        }
+                    fetchData();
+                    (window as any).notify?.('Empresa registada com sucesso!', 'success');
+                    setTenantFormSaving(false);
+                }, 50);
+
+            } catch (err: any) {
+                (window as any).notify?.(`Erro ao registar empresa: ${err.message || 'Verifique se o NIF ou Slug já existem.'}`, "error");
+                setTenantFormSaving(false);
+            }
+        });
     };
 
     const handleUpdateTenantStatus = async (id: string, newStatus: string) => {
@@ -281,8 +283,12 @@ const MasterAdmin: React.FC = () => {
                 .eq('id', id);
 
             if (error) throw error;
-            fetchData();
-            (window as any).notify?.('Estado da empresa actualizado!', 'success');
+            
+            // DEFER: Fetch data in background
+            setTimeout(() => {
+                fetchData();
+                (window as any).notify?.('Estado da empresa actualizado!', 'success');
+            }, 100);
         } catch (err: any) {
             (window as any).notify?.(err.message, 'error');
         }
@@ -290,6 +296,12 @@ const MasterAdmin: React.FC = () => {
 
     const handleSavePlan = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!planForm.nome || !planForm.valor) {
+            (window as any).notify?.('Preencha o nome e o valor do plano.', 'error');
+            return;
+        }
+
         const planData = {
             nome: planForm.nome,
             valor: Number(planForm.valor),
@@ -299,27 +311,33 @@ const MasterAdmin: React.FC = () => {
             features: planForm.features.split(',').map(f => f.trim()).filter(Boolean)
         };
 
-        if (!planForm.nome || !planForm.valor) {
-            (window as any).notify?.('Preencha o nome e o valor do plano.', 'error');
-            return;
-        }
-
         setPlanFormSaving(true);
-        try {
-            const { error } = editingPlan
-                ? await supabase.from('saas_plans').update(planData).eq('id', editingPlan.id)
-                : await supabase.from('saas_plans').insert([planData]);
+        
+        // PERFORMANCE: Defer API call and state updates to unblock the main thread immediately
+        requestAnimationFrame(async () => {
+            try {
+                // Fechar o modal primeiro para resposta visual instantânea
+                setIsPlanModalOpen(false);
+                setEditingPlan(null);
 
-            if (error) throw error;
-            setIsPlanModalOpen(false);
-            setEditingPlan(null);
-            fetchData();
-            (window as any).notify?.('Plano guardado com sucesso!', 'success');
-        } catch (err: any) {
-            (window as any).notify?.(err.message, 'error');
-        } finally {
-            setPlanFormSaving(false);
-        }
+                // Pequeno delay para garantir que a animação de fecho do modal inicia suavemente
+                setTimeout(async () => {
+                    const { error } = editingPlan
+                        ? await supabase.from('saas_plans').update(planData).eq('id', editingPlan.id)
+                        : await supabase.from('saas_plans').insert([planData]);
+
+                    if (error) throw error;
+                    
+                    fetchData();
+                    (window as any).notify?.('Plano guardado com sucesso!', 'success');
+                    setPlanFormSaving(false);
+                }, 50);
+
+            } catch (err: any) {
+                (window as any).notify?.(err.message, 'error');
+                setPlanFormSaving(false);
+            }
+        });
     };
 
     const openPlanModal = (plan: any | null) => {
@@ -343,8 +361,12 @@ const MasterAdmin: React.FC = () => {
                 .update({ status: 'ativo' })
                 .eq('id', subId);
             if (error) throw error;
-            fetchData();
-            (window as any).notify?.('Pagamento aprovado! Licença activada.', 'success');
+
+            // DEFER: Fetch data in background
+            setTimeout(() => {
+                fetchData();
+                (window as any).notify?.('Pagamento aprovado! Licença activada.', 'success');
+            }, 100);
         } catch (err: any) {
             (window as any).notify?.(err.message, 'error');
         }
