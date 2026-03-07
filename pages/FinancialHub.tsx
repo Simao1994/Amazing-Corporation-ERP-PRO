@@ -90,11 +90,15 @@ const FinancialHubPage: React.FC = () => {
          const { data, error } = await supabase.from('acc_empresas').select('*');
          if (error) throw error;
          setEmpresas(data || []);
-         if (data && data.length > 0 && !selectedEmpresaId) {
-            setSelectedEmpresaId(data[0].id);
+         if (data && data.length > 0) {
+            if (!selectedEmpresaId) setSelectedEmpresaId(data[0].id);
+         } else {
+            // Se não houver empresas, paramos o loading aqui
+            setLoading(false);
          }
       } catch (error) {
          console.error('Error fetching empresas:', error);
+         setLoading(false); // Garante que sai do loading em caso de erro
       }
    };
 
@@ -117,6 +121,13 @@ const FinancialHubPage: React.FC = () => {
 
    useEffect(() => {
       fetchEmpresas();
+
+      // FAIL-SAFE: Forçar saída do loading após 15 segundos
+      const timer = setTimeout(() => {
+         setLoading(false);
+      }, 15000);
+
+      return () => clearTimeout(timer);
    }, []);
 
    useEffect(() => {

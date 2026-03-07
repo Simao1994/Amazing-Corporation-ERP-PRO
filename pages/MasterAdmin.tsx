@@ -249,30 +249,39 @@ const MasterAdmin: React.FC = () => {
 
         setTenantFormSaving(true);
         try {
-            console.log("MasterAdmin: A registar nova empresa...", tenantForm);
-            const { data, error } = await supabase
-        
-        // PERFORMANCE: Defer API call to unblock UI
-        requestAnimationFrame(async () => {
-            try {
-                // Fechar modal imediatamente
-                setIsTenantModalOpen(false);
+            // Definição do payload harmonizada com o Schema (id, nome, nif, slug, status)
+            const data = {
+                nome: tenantForm.nome,
+                slug: tenantForm.slug,
+                nif: tenantForm.nif,
+                status: tenantForm.status || 'ativo'
+            };
 
-                // Delay para animação de fecho
-                setTimeout(async () => {
-                    const { error } = await supabase.from('saas_tenants').insert([data]);
-                    if (error) throw error;
+            // PERFORMANCE: Defer API call to unblock UI
+            requestAnimationFrame(async () => {
+                try {
+                    // Fechar modal imediatamente
+                    setIsTenantModalOpen(false);
 
-                    fetchData();
-                    (window as any).notify?.('Empresa registada com sucesso!', 'success');
+                    // Delay para animação de fecho
+                    setTimeout(async () => {
+                        const { error } = await supabase.from('saas_tenants').insert([data]);
+                        if (error) throw error;
+
+                        fetchData();
+                        (window as any).notify?.('Empresa registada com sucesso!', 'success');
+                        setTenantFormSaving(false);
+                    }, 50);
+
+                } catch (err: any) {
+                    (window as any).notify?.(`Erro ao registar empresa: ${err.message || 'Verifique se o NIF ou Slug já existem.'}`, "error");
                     setTenantFormSaving(false);
-                }, 50);
-
-            } catch (err: any) {
-                (window as any).notify?.(`Erro ao registar empresa: ${err.message || 'Verifique se o NIF ou Slug já existem.'}`, "error");
-                setTenantFormSaving(false);
-            }
-        });
+                }
+            });
+        } catch (err) {
+            console.error("Erro inesperado:", err);
+            setTenantFormSaving(false);
+        }
     };
 
     const handleUpdateTenantStatus = async (id: string, newStatus: string) => {
