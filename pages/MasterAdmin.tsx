@@ -1116,27 +1116,59 @@ const MasterAdmin: React.FC = () => {
                             </div>
 
                             <div className="space-y-4 md:col-span-2">
-                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-2">Módulos Activos (Presets)</p>
-                                <div className="flex flex-wrap gap-2 p-4 bg-white/2 rounded-2xl border border-white/5">
-                                    {MODULE_PRESETS.map(mod => (
-                                        <button
-                                            key={mod}
-                                            type="button"
-                                            onClick={() => {
-                                                const currentMods = planForm.modules.split(',').map(m => m.trim().toUpperCase()).filter(Boolean);
-                                                const exists = currentMods.includes(mod);
-                                                const newMods = exists ? currentMods.filter(m => m !== mod) : [...currentMods, mod];
-                                                setPlanForm({...planForm, modules: newMods.join(', ')});
-                                            }}
-                                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${
-                                                planForm.modules.toUpperCase().includes(mod) 
-                                                ? 'bg-purple-600 border-purple-500 text-white' 
-                                                : 'bg-white/5 border-white/5 text-slate-500'
-                                            }`}
-                                        >
-                                            {mod}
+                                <div className="flex items-center justify-between px-2">
+                                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Módulos Activos</p>
+                                    <div className="flex items-center gap-3">
+                                        <span className="bg-purple-600/20 text-purple-400 border border-purple-500/20 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                                            {planForm.modules.split(',').map((m: string) => m.trim()).filter(Boolean).length} activos
+                                        </span>
+                                        <button type="button" onClick={() => setPlanForm({...planForm, modules: MODULE_PRESETS.join(', ')})}
+                                            className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-purple-400 transition-colors">
+                                            Todos
                                         </button>
-                                    ))}
+                                        <button type="button" onClick={() => setPlanForm({...planForm, modules: ''})}
+                                            className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-red-400 transition-colors">
+                                            Limpar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2 p-5 bg-white/2 rounded-2xl border border-white/5">
+                                    {[
+                                        { id: 'RH', label: 'RH', icon: '👥' },
+                                        { id: 'PONTO', label: 'Ponto', icon: '🕐' },
+                                        { id: 'FINANCEIRO', label: 'Financeiro', icon: '💰' },
+                                        { id: 'CONTABILIDADE', label: 'Contabilidade', icon: '📊' },
+                                        { id: 'LOGISTICA', label: 'Logística', icon: '🚚' },
+                                        { id: 'INVENTARIO', label: 'Inventário', icon: '📦' },
+                                        { id: 'IMOBILIARIO', label: 'Imobiliário', icon: '🏢' },
+                                        { id: 'CRM', label: 'CRM', icon: '🤝' },
+                                        { id: 'VAGAS', label: 'Vagas', icon: '📋' },
+                                        { id: 'ARENA', label: 'Arena', icon: '🎮' },
+                                        { id: 'AGRO', label: 'Agro', icon: '🌾' },
+                                        { id: 'BLOG', label: 'Blog', icon: '✍️' },
+                                        { id: 'EMPRESAS', label: 'Empresas', icon: '🏭' },
+                                        { id: 'ALL', label: 'Tudo', icon: '⭐' },
+                                    ].map(mod => {
+                                        const active = planForm.modules.toUpperCase().split(',').map((m: string) => m.trim()).includes(mod.id);
+                                        return (
+                                            <button
+                                                key={mod.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    const currentMods = planForm.modules.split(',').map((m: string) => m.trim().toUpperCase()).filter(Boolean);
+                                                    const newMods = active ? currentMods.filter((m: string) => m !== mod.id) : [...currentMods, mod.id];
+                                                    setPlanForm({...planForm, modules: newMods.join(', ')});
+                                                }}
+                                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all hover:scale-105 active:scale-95 ${
+                                                    active
+                                                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/30'
+                                                    : 'bg-white/5 border-white/5 text-slate-500 hover:border-purple-500/30 hover:text-slate-300'
+                                                }`}
+                                            >
+                                                <span>{mod.icon}</span> {mod.label}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
