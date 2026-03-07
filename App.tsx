@@ -3,27 +3,33 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import LoginPage from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import HRPage from './pages/HR';
+// Core Lazy Imports
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const HRPage = React.lazy(() => import('./pages/HR'));
+const FinancePage = React.lazy(() => import('./pages/Finance'));
+const AccountingPage = React.lazy(() => import('./pages/Accounting'));
+const MasterAdmin = React.lazy(() => import('./pages/MasterAdmin'));
+const ArenaGames = React.lazy(() => import('./pages/ArenaGames'));
+const CorporateHome = React.lazy(() => import('./pages/CorporateHome'));
+const PublicVagasSite = React.lazy(() => import('./pages/PublicVagasSite'));
+const PublicVagaDetalhes = React.lazy(() => import('./pages/PublicVagaDetalhes'));
+
+// Standard Imports
 import ContasBancariasPage from './pages/ContasBancariasPage';
 import TransportPage from './pages/Transport';
 import MaintenancePage from './pages/Maintenance';
-import FinancePage from './pages/Finance';
-import AccountingPage from './pages/Accounting';
 import FinancialHubPage from './pages/FinancialHub';
 import InventoryPage from './pages/Inventory';
 import AuditPage from './pages/Audit';
 import SettingsPage from './pages/Settings';
 import DepartmentsPage from './pages/Departments';
 import FeedPage from './pages/Feed';
-import CorporateHome from './pages/CorporateHome';
 import RequestsPage from './pages/Requests';
 import BlogPage from './pages/Blog';
 import GaleriaPage from './pages/Galeria';
 import AgroPage from './pages/Agro';
 import RealEstatePage from './pages/RealEstate';
 import RecruitmentPage from './pages/Recruitment';
-import ArenaGames from './pages/ArenaGames';
 import ArenaAdmin from './pages/ArenaAdmin';
 import DashboardGallery from './pages/DashboardGallery';
 import DashboardLibrary from './pages/DashboardLibrary';
@@ -31,8 +37,6 @@ import DashboardFiles from './pages/DashboardFiles';
 import UnauthorizedPage from './pages/Unauthorized';
 import FornecedoresPage from './pages/Fornecedores';
 import ParceirosPage from './pages/Parceiros';
-import PublicVagasSite from './pages/PublicVagasSite';
-import PublicVagaDetalhes from './pages/PublicVagaDetalhes';
 import PublicCandidaturaStatus from './pages/PublicCandidaturaStatus';
 import ProtectedRoute from './components/ProtectedRoute';
 import { TenantProvider } from './src/components/TenantProvider';
@@ -252,7 +256,13 @@ const App: React.FC = () => {
               </div>
             )}
 
-            <Routes>
+            <React.Suspense fallback={
+              <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">Carregando Módulo...</p>
+              </div>
+            }>
+              <Routes>
               {/* Rotas Públicas */}
               <Route path="/" element={<CorporateHome />} />
               <Route path="/carreiras" element={<PublicVagasSite />} />
@@ -303,6 +313,7 @@ const App: React.FC = () => {
                       <Route path="/master" element={<ProtectedRoute user={user} path="/master" customRole="saas_admin"><MasterAdmin /></ProtectedRoute>} />
                       <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
+            </React.Suspense>
                   </Layout>
                 )
               } />

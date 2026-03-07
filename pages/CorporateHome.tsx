@@ -696,19 +696,15 @@ const CorporateHome: React.FC = () => {
   const [selectedLegalDoc, setSelectedLegalDoc] = useState<keyof typeof LEGAL_DOCS | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. Parallelize all public data fetching
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
   useEffect(() => {
-    // 1. Parallelize all public data fetching
-    const fetchAllData = async () => {
-      // Don't await them serially, let them run in background
-      setLoading(false); // Unblock UI immediately
-    };
-    fetchAllData();
+    // Carregar user de forma preguiçosa para não bloquear o render inicial
+    const user = AmazingStorage.get<User | null>(STORAGE_KEYS.USER, null);
+    setCurrentUser(user);
+    setLoading(false); // Unblock UI immediately
   }, []);
-
-  // Get current user to determine button state
-  const currentUser = AmazingStorage.get<User | null>(STORAGE_KEYS.USER, null);
-
-  // Form State for Tickets
   const [contactForm, setContactForm] = useState({
     nome: '',
     email: '',
