@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/sbapi/(.*)",
+            "destination": "https://jgktemwegesmmomlftgt.supabase.co/$1"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

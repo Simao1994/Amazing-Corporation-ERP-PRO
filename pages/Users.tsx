@@ -78,6 +78,13 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
         setLoading(true);
         setError('');
 
+        const timeoutId = setTimeout(() => {
+            if (loading) {
+                console.warn('fetchUsers: Timeout de 10s atingido. Forçando interrupção do loading.');
+                setLoading(false);
+            }
+        }, 10000);
+
         try {
             // Attempt to fetch profiles. If not authenticated, Supabase will return empty or error based on RLS.
             // Since App.tsx now guarantees session before rendering this, we can be more direct.
@@ -101,6 +108,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
             console.error('Error fetching users:', err);
             setError(`Falha ao carregar utilizadores: ${err.message || 'Erro desconhecido'}`);
         } finally {
+            clearTimeout(timeoutId);
             setLoading(false);
         }
     };

@@ -34,6 +34,13 @@ const FinancePage: React.FC = () => {
     // Only show loader if we have no data at all
     if (notas.length === 0) setLoading(true);
 
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('fetchNotas: Timeout de 10s atingido. Forçando interrupção do loading.');
+        setLoading(false);
+      }
+    }, 10000);
+
     try {
       const { data, error } = await supabase
         .from('fin_notas')
@@ -53,6 +60,7 @@ const FinancePage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching invoices:', error);
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };

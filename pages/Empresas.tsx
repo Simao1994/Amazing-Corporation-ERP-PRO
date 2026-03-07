@@ -26,6 +26,13 @@ const EmpresasPage: React.FC = () => {
 
   const fetchEmpresas = async () => {
     setLoading(true);
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('fetchEmpresas: Timeout de 10s atingido. Forçando interrupção do loading.');
+        setLoading(false);
+      }
+    }, 10000);
+
     try {
       const { data, error } = await supabase
         .from('empresas')
@@ -38,6 +45,7 @@ const EmpresasPage: React.FC = () => {
     } catch (err) {
       console.error('Erro ao carregar empresas:', err);
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
