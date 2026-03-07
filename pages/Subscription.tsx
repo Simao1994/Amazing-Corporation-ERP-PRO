@@ -29,26 +29,34 @@ const SubscriptionPage: React.FC = () => {
     const [upgradeModalPlan, setUpgradeModalPlan] = useState<any | null>(null);
     const [requestingUpgrade, setRequestingUpgrade] = useState(false);
     const [upgradeNote, setUpgradeNote] = useState('');
+    const [bancoInfo, setBancoInfo] = useState<any>(null);
 
     const fetchExtraData = async () => {
         if (!saasSub?.tenant_id) return;
         setHistoryLoading(true);
         try {
-            const [histRes, plansRes] = await Promise.all([
+            const [histRes, plansRes, configRes] = await Promise.all([
                 supabase.from('saas_subscriptions')
                     .select('*, saas_plans(nome)')
                     .eq('tenant_id', saasSub.tenant_id)
                     .order('created_at', { ascending: false }),
-                supabase.from('saas_plans').select('*').order('valor', { ascending: true })
+                supabase.from('saas_plans').select('*').order('valor', { ascending: true }),
+                supabase.from('saas_config').select('*').single()
             ]);
             setHistory(histRes.data || []);
             setAvailablePlans(plansRes.data || []);
+            setBancoInfo(configRes.data || {
+                banco: 'Banco BAI',
+                iban: 'AO06 0000 0000 8921 3451 2',
+                beneficiario: 'Amazing Corporation Software LDA'
+            });
         } catch (err) {
             console.error('Error fetching extra saas data:', err);
         } finally {
             setHistoryLoading(false);
         }
     };
+
 
     React.useEffect(() => {
         if (saasSub?.tenant_id) {
@@ -430,12 +438,13 @@ const SubscriptionPage: React.FC = () => {
                                 <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 space-y-6">
                                     <div>
                                         <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">Beneficiário</p>
-                                        <p className="text-sm font-bold tracking-tight">Amazing Corporation Software LDA</p>
+                                        <p className="text-sm font-bold tracking-tight">{bancoInfo?.beneficiario || 'Carregando...'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-2">IBAN Banco BAI</p>
+                                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-2">IBAN {bancoInfo?.banco || ''}</p>
                                         <button
-                                            onClick={() => handleCopyIban('AO06 0000 0000 8921 3451 2')}
+                                            onClick={() => handleCopyIban(bancoInfo?.iban || '')}
+                                            disabled={!bancoInfo}
                                             className={`text-sm font-mono font-bold select-all transition-all flex items-center gap-2 px-3 py-2 rounded-xl border ${
                                                 ibanCopied
                                                     ? 'text-green-400 border-green-500/30 bg-green-500/10'
@@ -443,7 +452,7 @@ const SubscriptionPage: React.FC = () => {
                                             }`}
                                         >
                                             {ibanCopied ? <CheckCircle2 size={14} /> : <FileText size={14} />}
-                                            {ibanCopied ? 'Copiado!' : 'AO06 0000 0000 8921 3451 2'}
+                                            {ibanCopied ? 'Copiado!' : (bancoInfo?.iban || 'Carregando...')}
                                         </button>
                                         <p className="text-[9px] text-zinc-600 mt-2 font-bold uppercase tracking-widest">Clique para copiar</p>
                                     </div>

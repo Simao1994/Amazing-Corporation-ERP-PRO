@@ -58,6 +58,17 @@ const MasterAdmin: React.FC = () => {
         status: 'ativo'
     });
 
+    // Global Config state
+    const [saasConfig, setSaasConfig] = useState<any>(null);
+    const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+    const [configFormSaving, setConfigFormSaving] = useState(false);
+    const [configForm, setConfigForm] = useState({
+        banco: '',
+        iban: '',
+        beneficiario: ''
+    });
+
+
     const isMounted = React.useRef(true);
     const timeoutIdRef = React.useRef<any>(null);
 
@@ -106,10 +117,11 @@ const MasterAdmin: React.FC = () => {
             console.log("MasterAdmin: Iniciando chamadas paralelas ao Supabase...");
 
             // Chamadas paralelas para melhor performance
-            const [tenantsRes, plansRes, subsRes] = await Promise.all([
+            const [tenantsRes, plansRes, subsRes, configRes] = await Promise.all([
                 supabase.from('saas_tenants').select('*, saas_subscriptions(*)'),
                 supabase.from('saas_plans').select('*').order('valor', { ascending: true }),
-                supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false })
+                supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false }),
+                supabase.from('saas_config').select('*').single()
             ]);
 
             if (tenantsRes.error) throw tenantsRes.error;
@@ -121,6 +133,7 @@ const MasterAdmin: React.FC = () => {
                 setTenants(tenantsRes.data || []);
                 setPlans(plansRes.data || []);
                 setSubscriptions(subsRes.data || []);
+                setSaasConfig(configRes.data || { banco: 'Banco BAI', iban: 'AO06 0000 0000 8921 3451 2', beneficiario: 'Amazing Corporation Software LDA' });
                 setLoading(false);
                 if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
             }
@@ -173,10 +186,13 @@ const MasterAdmin: React.FC = () => {
             const subsRes = await supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false });
             if (subsRes.error) throw subsRes.error;
 
+            const configRes = await supabase.from('saas_config').select('*').single();
+
             if (isMounted.current) {
                 setTenants(tenantsRes.data || []);
                 setPlans(plansRes.data || []);
                 setSubscriptions(subsRes.data || []);
+                setSaasConfig(configRes.data || { banco: 'Banco BAI', iban: 'AO06 0000 0000 8921 3451 2', beneficiario: 'Amazing Corporation Software LDA' });
                 setLoading(false);
             }
         } catch (err: any) {
@@ -319,28 +335,49 @@ const MasterAdmin: React.FC = () => {
             (window as any).notify?.("Nome e Slug são obrigatórios.", "error");
             return;
         }
-
         setTenantFormSaving(true);
         try {
-            // Usar RPC com SECURITY DEFINER para bypassar RLS completamente
-            const { data, error } = await supabase.rpc('master_create_tenant', {
+            const result = await supabase.rpc('master_create_tenant', {
                 p_nome: tenantForm.nome,
-                p_slug: tenantForm.slug.toLowerCase().replace(/\s+/g, '-'),
-                p_nif: tenantForm.nif || null,
-                p_status: tenantForm.status || 'ativo'
+                p_slug: tenantForm.slug,
+                p_nif: tenantForm.nif,
+                p_status: tenantForm.status
             });
-
-            if (error) throw error;
-            if (data && !data.success) throw new Error(data.message);
+            if (result.error) throw result.error;
+            if (!result.data.success) throw new Error(result.data.message);
 
             setIsTenantModalOpen(false);
-            fetchData();
-            (window as any).notify?.('Empresa registada com sucesso!', 'success');
+            setTimeout(() => {
+                fetchData();
+                (window as any).notify?.('Empresa criada com sucesso!', 'success');
+            }, 100);
         } catch (err: any) {
-            console.error("Erro ao registar empresa:", err);
-            (window as any).notify?.(`Erro ao registar empresa: ${err.message || 'Verifique se o NIF ou Slug já existem.'}`, "error");
+            (window as any).notify?.(err.message, 'error');
         } finally {
             setTenantFormSaving(false);
+        }
+    };
+
+    const handleSaveConfig = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setConfigFormSaving(true);
+        try {
+            const { error } = await supabase.from('saas_config').upsert([{ 
+                id: 1, 
+                banco: configForm.banco, 
+                iban: configForm.iban, 
+                beneficiario: configForm.beneficiario 
+            }]);
+            if (error) throw error;
+            setIsConfigModalOpen(false);
+            setTimeout(() => {
+                fetchData();
+                (window as any).notify?.('Configurações guardadas com sucesso!', 'success');
+            }, 100);
+        } catch (err: any) {
+            (window as any).notify?.(err.message, 'error');
+        } finally {
+            setConfigFormSaving(false);
         }
     };
 
@@ -581,12 +618,34 @@ const MasterAdmin: React.FC = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="bg-[#0f172a] p-8 rounded-[3rem] border border-white/5 flex flex-col items-center justify-center text-center">
-                            <div className="w-20 h-20 bg-gradient-to-tr from-purple-600 to-blue-600 rounded-full flex items-center justify-center mb-6 shadow-2xl shadow-purple-900/40">
-                                <TrendingUp size={32} />
+                        <div className="bg-[#0f172a] p-8 rounded-[3rem] border border-white/5 flex flex-col justify-between relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-purple-500/20 transition-all"></div>
+                            <div>
+                                <h3 className="text-lg font-black uppercase tracking-tight mb-6">Configurações Base</h3>
+                                <div className="space-y-4 relative z-10">
+                                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Beneficiário</p>
+                                        <p className="text-sm font-bold">{saasConfig?.beneficiario || '—'}</p>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">IBAN {saasConfig?.banco || ''}</p>
+                                        <p className="text-sm font-mono font-bold text-yellow-500">{saasConfig?.iban || '—'}</p>
+                                    </div>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-black uppercase tracking-tight mb-2">Crescimento da Plataforma</h3>
-                            <p className="text-slate-400 text-sm max-w-xs mx-auto">A monitorização de crescimento anual será integrada na v2.0.</p>
+                            <button
+                                onClick={() => {
+                                    setConfigForm({
+                                        banco: saasConfig?.banco || '',
+                                        iban: saasConfig?.iban || '',
+                                        beneficiario: saasConfig?.beneficiario || ''
+                                    });
+                                    setIsConfigModalOpen(true);
+                                }}
+                                className="w-full mt-6 py-3 bg-purple-600/20 text-purple-400 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all border border-purple-500/20 flex items-center justify-center gap-2 relative z-10"
+                            >
+                                <Edit3 size={14} /> Configurar Pagamentos
+                            </button>
                         </div>
                     </div>
                 </div>
