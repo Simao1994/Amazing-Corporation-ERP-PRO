@@ -110,9 +110,16 @@ const App: React.FC = () => {
     try {
       await supabase.auth.signOut();
       
+      // Preservar apenas o flag de emergência se o utilizador já o tiver activo
+      const bypass = localStorage.getItem('emergency_nuclear_bypass');
+      
       // Limpeza profunda de resíduos de sessão
       localStorage.clear();
       sessionStorage.clear();
+      
+      if (bypass) {
+        localStorage.setItem('emergency_nuclear_bypass', bypass);
+      }
       
       showToast("Sessão encerrada com sucesso.", "info");
       
