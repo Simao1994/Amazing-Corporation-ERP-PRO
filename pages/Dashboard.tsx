@@ -129,11 +129,24 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      await Promise.all([fetchMetrics(), fetchAds(), loadProfile()]);
+    // FAIL-SAFE: força o loading a parar após 8 segundos
+    const failSafe = setTimeout(() => {
       setIsLoading(false);
+    }, 8000);
+
+    const init = async () => {
+      try {
+        await Promise.all([fetchMetrics(), fetchAds(), loadProfile()]);
+      } catch (err) {
+        console.error('Dashboard init error:', err);
+      } finally {
+        clearTimeout(failSafe);
+        setIsLoading(false);
+      }
     };
     init();
+
+    return () => clearTimeout(failSafe);
   }, []);
 
   const handleSaveAd = (e: React.FormEvent<HTMLFormElement>) => {

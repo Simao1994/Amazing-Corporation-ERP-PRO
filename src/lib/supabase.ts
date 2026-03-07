@@ -23,7 +23,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
             if (isSettled) return;
             isSettled = true;
             reject(new Error('A ligação excedeu o tempo limite (10s). O seu Antivírus, Firewall ou AdBlocker pode estar a bloquear o acesso à base de dados.'));
-        }, 10000); // 10s strict timeout
+        }, 8000); // 8s strict timeout (alinhado com fail-safes do Auth/SaaS)
 
         fetch(url, options)
             .then(response => {
