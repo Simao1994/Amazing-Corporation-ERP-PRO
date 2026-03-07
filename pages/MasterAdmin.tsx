@@ -287,6 +287,32 @@ const MasterAdmin: React.FC = () => {
         }
     };
 
+    const handleDeleteSubscription = async (subId: string) => {
+        if (!window.confirm('Tem a certeza que quer eliminar esta licença? Esta acção é irreversível.')) return;
+        try {
+            const { error } = await supabase.from('saas_subscriptions').delete().eq('id', subId);
+            if (error) throw error;
+            setTimeout(() => { fetchData(); (window as any).notify?.('Licença eliminada.', 'info'); }, 100);
+        } catch (err: any) {
+            (window as any).notify?.(err.message, 'error');
+        }
+    };
+
+    const openLicenseModalForEdit = (sub: any) => {
+        const tenant = tenants.find((t: any) => t.id === sub.tenant_id) || { id: sub.tenant_id, nome: sub.saas_tenants?.nome || 'Empresa' };
+        setLicenseModalTenant(tenant);
+        setEditingSubscription(sub);
+        setLicenseForm({
+            plan_id: sub.plan_id || '',
+            data_inicio: sub.data_inicio || new Date().toISOString().split('T')[0],
+            data_expiracao: sub.data_expiracao || '',
+            valor_pago: sub.valor_pago?.toString() || '',
+            status: sub.status || 'ativo',
+            auto_renew: sub.auto_renew || false,
+        });
+        setIsLicenseModalOpen(true);
+    };
+
     const handleSaveTenant = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!tenantForm.nome || !tenantForm.slug) {
@@ -837,11 +863,12 @@ const MasterAdmin: React.FC = () => {
                                         <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Plano / Valor</th>
                                         <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Validade</th>
                                         <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Estado</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {subscriptions.map(sub => (
-                                        <tr key={sub.id} className="hover:bg-white/2 transition-colors">
+                                        <tr key={sub.id} className="hover:bg-white/2 transition-colors group">
                                             <td className="px-8 py-6 text-xs text-slate-400 font-bold">{new Date(sub.created_at).toLocaleDateString()}</td>
                                             <td className="px-8 py-6">
                                                 <p className="font-black text-sm uppercase tracking-tight">{sub.saas_tenants?.nome}</p>
@@ -859,6 +886,24 @@ const MasterAdmin: React.FC = () => {
                                                     }`}>
                                                     {sub.status}
                                                 </span>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => openLicenseModalForEdit(sub)}
+                                                        className="p-2 rounded-xl border border-purple-500/30 text-purple-400 hover:bg-purple-500 hover:text-white transition-all"
+                                                        title="Editar Licença"
+                                                    >
+                                                        <Edit3 size={15} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteSubscription(sub.id)}
+                                                        className="p-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+                                                        title="Eliminar Licença"
+                                                    >
+                                                        <XCircle size={15} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
