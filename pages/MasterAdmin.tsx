@@ -344,22 +344,24 @@ const MasterAdmin: React.FC = () => {
             return;
         }
 
-        const planData = {
-            nome: planForm.nome,
-            valor: Number(planForm.valor),
-            duracao_meses: Number(planForm.duracao_meses),
-            max_users: Number(planForm.max_users),
-            modules: planForm.modules.split(',').map(m => m.trim().toUpperCase()).filter(Boolean),
-            features: planForm.features.split(',').map(f => f.trim()).filter(Boolean)
-        };
+        const modulesArray = planForm.modules.split(',').map((m: string) => m.trim().toUpperCase()).filter(Boolean);
+        const featuresArray = planForm.features.split(',').map((f: string) => f.trim()).filter(Boolean);
 
         setPlanFormSaving(true);
         try {
-            const { error } = editingPlan
-                ? await supabase.from('saas_plans').update(planData).eq('id', editingPlan.id)
-                : await supabase.from('saas_plans').insert([planData]);
+            // Usar RPC com SECURITY DEFINER para bypassar RLS completamente
+            const { data, error } = await supabase.rpc('master_upsert_plan', {
+                p_nome: planForm.nome,
+                p_valor: Number(planForm.valor),
+                p_duracao_meses: Number(planForm.duracao_meses),
+                p_max_users: Number(planForm.max_users),
+                p_features: featuresArray,
+                p_modules: modulesArray,
+                p_plan_id: editingPlan?.id || null
+            });
 
             if (error) throw error;
+            if (data && !data.success) throw new Error(data.message);
             
             setIsPlanModalOpen(false);
             setEditingPlan(null);
