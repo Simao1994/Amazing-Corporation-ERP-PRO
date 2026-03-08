@@ -107,6 +107,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setSession(initialSession);
                 if (initialSession) {
                     await refreshProfile(initialSession);
+                } else {
+                    console.log('[Auth] Nenhuma sessão activa encontrada. Limpando cache optimista.');
+                    setUser(null);
+                    localStorage.removeItem('auth_user_cache');
                 }
             } catch (err) {
                 console.error('AuthContext: Erro crítico na inicialização:', err);

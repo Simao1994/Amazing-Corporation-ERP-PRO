@@ -140,10 +140,9 @@ const App: React.FC = () => {
   };
 
   // RULE 1, 2, 3: While loading, show spinner, DO NOT render dashboard, DO NOT redirect
-  // Emergency bypass: if forceLoadManual is true, we stop loading
-  // UI Resilience: Wait for REAL auth confirmation or forced manual bypass
-  // We don't skip loading JUST because of cached user anymore to prevent "auto-login" feel if session is dead
-  const isGlobalLoading = (authLoading || saasLoading) && !forceLoadManual;
+  // UI Resilience: Only block UI if we have NO user in cache and we are still loading.
+  // This allows instant dashboard access for valid remembered sessions, but kicks out if session is dead.
+  const isGlobalLoading = (authLoading || saasLoading) && !user && !forceLoadManual;
 
   if (isGlobalLoading) {
     return (
