@@ -119,7 +119,12 @@ export const AmazingStorage = {
     }
 
     try {
-      const { data, error } = await supabase.from('erp_data').select('key_name, json_data');
+      const fetchPromise = supabase.from('erp_data').select('key_name, json_data');
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Cloud load timeout')), 10000)
+      );
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       if (error) throw error;
       if (data) {
         // Batch update localStorage

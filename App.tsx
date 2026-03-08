@@ -104,12 +104,20 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogin = async (userData: any) => {
-    showToast("Autenticando...");
-    await refreshProfile();
-    showToast("Login realizado com sucesso!");
+    showToast("Login realizado! Sincronizando perfil...", "info");
 
+    // Await profile refresh as it contains critical tenant_id and role info
+    await refreshProfile();
+
+    showToast("Sessão iniciada com sucesso!");
+
+    // Background sync: Do not await this as it can be heavy
     setIsSyncing(true);
-    AmazingStorage.loadAllFromCloud().finally(() => setIsSyncing(false));
+    AmazingStorage.loadAllFromCloud().finally(() => {
+      setIsSyncing(false);
+      console.log("App: Sincronização de nuvem concluída em segundo plano.");
+    });
+
     AmazingStorage.logAction('Login', 'Sessão', `Utilizador acedeu ao sistema`);
   };
 

@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
 
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 12000)
             );
 
             const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (error) {
                     console.error('AuthContext: Erro ao buscar sessão:', error.message);
                     const isLockError = error.message?.includes('Lock broken') || error.message?.includes('steal');
-                    if (isLockError && retryCount < 2) { // Reduzido de 3 para 2 retries
+                    if (isLockError && retryCount < 1) { // Reduzido de 2 para 1 retry para agilizar
                         const delay = 1000 * (retryCount + 1);
                         console.warn(`AuthContext: Lock detectado, tentando novamente em ${delay}ms...`);
                         setTimeout(() => initAuth(retryCount + 1), delay);
