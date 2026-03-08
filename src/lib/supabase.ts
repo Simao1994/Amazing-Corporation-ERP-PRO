@@ -4,20 +4,27 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Revertido o bypass de proxy por causa do bug de KEEP-ALIVE do Node.js (ECONNRESET)
-// O Supabase Client exige um URL absoluto. Em produção, usamos o próprio domínio
-// com o prefixo /sbapi para tunelamento (bypass de antivírus).
 const getBaseURL = () => {
-    if (typeof window !== 'undefined') return window.location.origin;
+    if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('direct') === 'true') {
+            console.warn('[Supabase] Forçando ligação direta (ignore proxy /sbapi)');
+            return import.meta.env.VITE_SUPABASE_URL || '';
+        }
+        return window.location.origin;
+    }
     return import.meta.env.VITE_SUPABASE_URL || '';
 };
 
-const supabaseUrl = getBaseURL() + '/sbapi';
+const supabaseUrl = getBaseURL().includes('supabase.co')
+    ? getBaseURL()
+    : getBaseURL() + '/sbapi';
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
 }
 
-const MAX_RETRIES = 2; // Reduzido para falhar mais rápido se a rede estiver morta
+const MAX_RETRIES = 1;
 
 const customFetch: typeof fetch = async (url, options) => {
     let lastError: any;
@@ -25,7 +32,7 @@ const customFetch: typeof fetch = async (url, options) => {
         try {
             return await new Promise<Response>((resolve, reject) => {
                 let isSettled = false;
-                const timeoutMs = 60000; // 60s timeout (Aumentado de 15s para redes instáveis)
+                const timeoutMs = 15000; // Reduzido para 15s para falhar rápido
 
                 // Forçar no-cache para evitar esquemas corrompidos por proxy
                 const headers = {
@@ -73,6 +80,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storage: localStorage,
+        storageKey: 'sb-amazing-erp-pro-auth-token',
+        // Desactivar o lock do browser para evitar o erro de timeout quando a BD está lenta
+        lock: (name: any, callback: any) => callback()
     },
     global: {
         fetch: customFetch

@@ -87,11 +87,14 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const failSafe = setTimeout(() => {
-            if (loading) {
-                console.error('SaaSContext: FAIL-SAFE disparado!');
-                setLoading(false);
-            }
-        }, 12000);
+            setLoading(current => {
+                if (current) {
+                    console.error('SaaSContext: FAIL-SAFE disparado!');
+                    return false;
+                }
+                return current;
+            });
+        }, 10000);
 
         if (!authLoading) {
             refreshSubscription().finally(() => {

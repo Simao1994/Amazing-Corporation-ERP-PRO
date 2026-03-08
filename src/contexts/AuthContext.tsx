@@ -48,12 +48,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Proteção de timeout para a busca de perfil (15 segundos)
             const profilePromise = supabase
                 .from('profiles')
-                .select('*')
+                .select('*, tenant_id, empresa_id')
                 .eq('id', activeSession.user.id)
                 .single();
 
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 12000)
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
             );
 
             const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -63,7 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(fallbackUser);
                 localStorage.setItem('auth_user_cache', JSON.stringify(fallbackUser));
             } else if (profile) {
-                const fullUser = { ...activeSession.user, ...profile };
+                const fullUser = {
+                    ...activeSession.user,
+                    ...profile,
+                    tenant_id: profile.tenant_id || profile.empresa_id || activeSession.user.user_metadata?.tenant_id
+                };
                 setUser(fullUser);
                 localStorage.setItem('auth_user_cache', JSON.stringify(fullUser));
             } else {
@@ -79,13 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
-        // FAIL-SAFE GLOBAL: Independente de tudo, parar o loading em 4 segundos
+        // FAIL-SAFE GLOBAL: Independente de tudo, parar o loading em 8 segundos
         const failSafeTimer = setTimeout(() => {
-            if (loading) {
-                console.error('AuthContext: FAIL-SAFE disparado! Forçando carregamento...');
-                setLoading(false);
-            }
-        }, 10000);
+            setLoading(current => {
+                if (current) {
+                    console.error('AuthContext: FAIL-SAFE disparado!');
+                    return false;
+                }
+                return current;
+            });
+        }, 8000);
 
         const initAuth = async (retryCount = 0) => {
             try {
