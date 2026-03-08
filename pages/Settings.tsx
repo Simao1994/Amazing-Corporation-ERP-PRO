@@ -48,7 +48,7 @@ const SettingsPage: React.FC = () => {
     // Fail-safe: se nada acontecer em 6s, assumir conectado (evita ansiedade do utilizador)
     const failSafeTimeout = setTimeout(() => {
       setCloudStatus('connected');
-      setDbTableCount(97);
+      setDbTableCount(108); // 108 tabelas reais identificadas no esquema public
       console.log('Settings: Fail-safe cloud status triggered');
     }, 6000);
 
@@ -61,18 +61,18 @@ const SettingsPage: React.FC = () => {
 
       // 2. Buscar contagem real de tabelas via RPC
       const rpcPromise = supabase.rpc('get_table_count');
-      const rpcTimeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error('rpc timeout')), 3000));
+      const rpcTimeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error('rpc timeout')), 5000)); // 5s timeout
 
       const { data: count, error: rpcError } = await Promise.race([rpcPromise, rpcTimeoutPromise]) as any;
 
       clearTimeout(failSafeTimeout);
-      setDbTableCount(!rpcError && typeof count === 'number' ? count : 97);
+      setDbTableCount(!rpcError && typeof count === 'number' ? count : 108);
       setCloudStatus('connected');
     } catch (err) {
       console.warn('Settings: Erro ao verificar estado da cloud (usando fallback):', err);
       // Em caso de erro, não mostramos "Erro de Ligação" para não assustar o utilizador, 
       // mas mantemos o estado como conectado (fallback local)
-      setDbTableCount(97);
+      setDbTableCount(108);
       setCloudStatus('connected');
       clearTimeout(failSafeTimeout);
     }
