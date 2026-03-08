@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import {
   Package, Search, Plus, X, Trash2, Box, Edit, Save, AlertCircle,
   ArrowUpRight, ArrowDownLeft, RefreshCw, FileBarChart, History,
@@ -25,6 +25,7 @@ const InventoryPage: React.FC = () => {
   const [showMovementModal, setShowMovementModal] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [editingItem, setEditingItem] = useState<InventarioItem | null>(null);
   const [selectedItemForMovement, setSelectedItemForMovement] = useState<InventarioItem | null>(null);
 
@@ -268,10 +269,10 @@ const InventoryPage: React.FC = () => {
 
   const filteredItems = useMemo(() => {
     return items.filter(item =>
-      item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
+      item.nome.toLowerCase().includes(deferredSearchTerm.toLowerCase()) ||
+      item.categoria?.toLowerCase().includes(deferredSearchTerm.toLowerCase())
     );
-  }, [searchTerm, items]);
+  }, [deferredSearchTerm, items]);
 
   const reportMovements = useMemo(() => {
     return movimentacoes.filter(m => {

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useDeferredValue } from 'react';
 import {
     Search, ShoppingCart, User, Plus, Minus, Trash2,
-    CreditCard, Banknote, Printer, ChevronLeft, LogOut
+    CreditCard, Banknote, Printer, ChevronLeft, LogOut, Unlock
 } from 'lucide-react';
 import { useAuth } from '../src/contexts/AuthContext';
 import { supabase } from '../src/lib/supabase';
@@ -14,10 +14,13 @@ export default function POS() {
 
     const [cart, setCart] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const deferredSearchTerm = useDeferredValue(searchTerm);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [caixaAtivo, setCaixaAtivo] = useState<any>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showModalAbrir, setShowModalAbrir] = useState(false);
+    const [valorAbertura, setValorAbertura] = useState(0);
 
     const subtotal = cart.reduce((acc, item) => acc + (item.preco_venda * item.qnt), 0);
     const iva = subtotal * 0.14; // IVA Padrão a 14%
@@ -63,12 +66,14 @@ export default function POS() {
             setCaixaAtivo(data || null);
         } catch (error) {
             console.error('Error fetching active caixa:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const filteredProducts = products.filter(p =>
-        p.nome_produto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.codigo_produto.includes(searchTerm)
+        p.nome_produto.toLowerCase().includes(deferredSearchTerm.toLowerCase()) ||
+        p.codigo_produto.includes(deferredSearchTerm)
     );
 
     const addToCart = (product: any) => {
@@ -114,6 +119,37 @@ export default function POS() {
         }));
     };
 
+    const handleAbrirCaixa = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user) return;
+
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('pos_caixa')
+                .insert([{
+                    tenant_id: user.tenant_id,
+                    usuario_id: user.id,
+                    valor_inicial: valorAbertura,
+                    status: 'ABERTO'
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            (window as any).notify?.('Caixa aberto com sucesso', 'success');
+            setCaixaAtivo(data);
+            setShowModalAbrir(false);
+            setValorAbertura(0);
+        } catch (error: any) {
+            console.error('Error opening caixa:', error);
+            (window as any).notify?.('Erro ao abrir caixa: ' + error.message, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleCheckout = async (metodo: string) => {
         if (!caixaAtivo) {
             (window as any).notify?.('Erro: Necessário abrir o caixa primeiro!', 'error');
@@ -127,11 +163,11 @@ export default function POS() {
             const ncf = `NCF${Date.now()}`;
             console.log('Gerando fatura:', ncf);
 
-            // 1. Criar Fatura (empresa_id automático)
+            // 1. Criar Fatura (tenant_id automático)
             const { data: fatura, error: faturaError } = await supabase
                 .from('pos_faturas')
                 .insert([{
-                    empresa_id: user.tenant_id,
+                    tenant_id: user.tenant_id,
                     numero_fatura: ncf,
                     usuario_id: user.id,
                     caixa_id: caixaAtivo.id,
@@ -159,7 +195,7 @@ export default function POS() {
 
                 // Item da Fatura
                 const { error: itemError } = await supabase.from('pos_fatura_itens').insert([{
-                    empresa_id: user.tenant_id,
+                    tenant_id: user.tenant_id,
                     fatura_id: fatura.id,
                     produto_id: item.id,
                     quantidade: item.qnt,
@@ -175,9 +211,9 @@ export default function POS() {
                     throw new Error(`Erro no item ${item.nome_produto}: ${itemError.message}`);
                 }
 
-                // Movimento de Stock (empresa_id automático)
+                // Movimento de Stock (tenant_id automático)
                 const { error: stockMovError } = await supabase.from('pos_movimento_stock').insert([{
-                    empresa_id: user.tenant_id,
+                    tenant_id: user.tenant_id,
                     produto_id: item.id,
                     tipo_movimento: 'VENDA',
                     quantidade: item.qnt,
@@ -187,23 +223,20 @@ export default function POS() {
 
                 if (stockMovError) console.error('Aviso: Erro ao registrar movimento de stock:', stockMovError);
 
-                // Atualizar Quantidade Atual (empresa_id necessário para o match do UPDATE se RLS permitir apenas via WHERE)
-                // Mas o update usa .eq('empresa_id', user.tenant_id). 
-                // Se o RLS já filtra por get_auth_tenant(), podemos tentar omiti-lo no eq() se o DB permitir.
-                // No entanto, para updates, é mais seguro manter o filtro se o tenant_id estiver correto no user.
+                // Atualizar Quantidade Atual
                 const currentStock = item.pos_estoque?.[0]?.quantidade_atual || 0;
                 const { error: stockUpdateError } = await supabase.from('pos_estoque')
                     .update({ quantidade_atual: currentStock - item.qnt })
                     .eq('produto_id', item.id)
-                    .eq('empresa_id', user.tenant_id);
+                    .eq('tenant_id', user.tenant_id);
 
                 if (stockUpdateError) console.error('Aviso: Erro ao atualizar stock:', stockUpdateError);
             }
 
-            // 3. Registrar Movimento de Caixa (empresa_id automático)
+            // 3. Registrar Movimento de Caixa (tenant_id automático)
             console.log('Registrando movimento de caixa...');
             const { error: caixaMovError } = await supabase.from('pos_movimentos_caixa').insert([{
-                empresa_id: user.tenant_id,
+                tenant_id: user.tenant_id,
                 caixa_id: caixaAtivo.id,
                 tipo: 'VENDA',
                 valor: total,
@@ -258,9 +291,12 @@ export default function POS() {
                             Caixa Aberto: {formatAOA(caixaAtivo.valor_inicial)}
                         </div>
                     ) : (
-                        <div className="bg-red-500/10 text-red-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-500/20">
-                            Caixa Fechado
-                        </div>
+                        <button
+                            onClick={() => setShowModalAbrir(true)}
+                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-500/20 transition-all flex items-center gap-2"
+                        >
+                            <Unlock size={14} /> Abrir Caixa
+                        </button>
                     )}
                 </div>
 
@@ -426,6 +462,37 @@ export default function POS() {
                 </div>
 
             </div>
+
+            {/* Modal de Abertura */}
+            {showModalAbrir && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+                    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Unlock className="text-emerald-500" /> Abertura de Caixa
+                            </h3>
+                        </div>
+                        <form onSubmit={handleAbrirCaixa} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-400 mb-2">Troco / Fundo de Maneio (AOA) *</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    value={valorAbertura}
+                                    onChange={e => setValorAbertura(parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-mono text-xl"
+                                />
+                            </div>
+                            <div className="pt-4 flex gap-3">
+                                <button type="button" onClick={() => setShowModalAbrir(false)} className="flex-1 bg-zinc-900 text-white px-4 py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors">Cancelar</button>
+                                <button type="submit" className="flex-1 bg-emerald-500 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors">Confirmar Abertura</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import {
    Users, UserPlus, Search, Edit, Trash2, Camera, Printer, X, Save,
    ShieldCheck, Wallet, Calendar, Briefcase, Phone, MapPin,
@@ -214,6 +214,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const [showMetaModal, setShowMetaModal] = useState(false);
    const [editingItem, setEditingItem] = useState<Funcionario | null>(null);
    const [searchTerm, setSearchTerm] = useState('');
+   const deferredSearchTerm = useDeferredValue(searchTerm);
    const [isProcessing, setIsProcessing] = useState(false);
    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
    const [printingPass, setPrintingPass] = useState<Funcionario | null>(null);
@@ -1126,7 +1127,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-zinc-50 text-sm">
-                              {funcionarios.filter(f => f.nome.toLowerCase().includes(searchTerm.toLowerCase())).map(f => (
+                              {funcionarios.filter(f => f.nome.toLowerCase().includes(deferredSearchTerm.toLowerCase())).map(f => (
                                  <tr key={f.id} className="hover:bg-zinc-50/50">
                                     <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={f.foto_url} className="w-10 h-10 rounded-xl object-cover shadow-md" /><div><p className="font-black text-zinc-900">{f.nome}</p><p className="text-[10px] text-zinc-400">{f.bilhete}</p></div></div></td>
                                     <td className="px-8 py-5"><p className="font-bold text-zinc-700">{f.funcao}</p><p className="text-[10px] font-black text-sky-600 uppercase">{f.departamento_id}</p></td>

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useDeferredValue } from 'react';
 import { supabase } from '../src/lib/supabase';
 import { UserPlus, Trash2, RefreshCw, ShieldCheck, User, Search, Eye, EyeOff, Edit2, Key, Info } from 'lucide-react';
 import { useSaaS } from '../src/contexts/SaaSContext';
@@ -63,6 +63,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
     const [creating, setCreating] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [search, setSearch] = useState('');
+    const deferredSearch = useDeferredValue(search);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -239,9 +240,9 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
     };
 
     const filtered = profiles.filter(p =>
-        p.nome?.toLowerCase().includes(search.toLowerCase()) ||
-        p.email?.toLowerCase().includes(search.toLowerCase()) ||
-        p.role?.toLowerCase().includes(search.toLowerCase())
+        p.nome?.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+        p.email?.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+        p.role?.toLowerCase().includes(deferredSearch.toLowerCase())
     );
 
     return (

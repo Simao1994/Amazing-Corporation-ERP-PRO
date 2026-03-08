@@ -31,7 +31,10 @@ export default function POSCaixa() {
 
     const fetchCaixaAtivo = async () => {
         try {
-            if (!user?.tenant_id) return;
+            if (!user?.tenant_id) {
+                setLoading(false);
+                return;
+            }
 
             const { data, error } = await supabase
                 .from('pos_caixa')
