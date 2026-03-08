@@ -25,7 +25,7 @@ const customFetch: typeof fetch = async (url, options) => {
         try {
             return await new Promise<Response>((resolve, reject) => {
                 let isSettled = false;
-                const timeoutMs = 10000; // 10s timeout (Reduzido de 20s)
+                const timeoutMs = 15000; // 15s timeout (Equilíbrio de performance)
 
                 const timeoutId = setTimeout(() => {
                     if (isSettled) return;

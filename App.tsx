@@ -115,28 +115,23 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-
-      // Preservar apenas o flag de emergência se o utilizador já o tiver activo
+      // 1. Limpeza IMEDIATA de resíduos locais para resposta rápida do UI
       const bypass = localStorage.getItem('emergency_nuclear_bypass');
-
-      // Limpeza profunda de resíduos de sessão
       localStorage.clear();
       sessionStorage.clear();
+      if (bypass) localStorage.setItem('emergency_nuclear_bypass', bypass);
 
-      if (bypass) {
-        localStorage.setItem('emergency_nuclear_bypass', bypass);
-      }
+      // 2. Notificar e redirecionar imediatamente (Fail-fast)
+      showToast("Sessão encerrada localmente. Limpando rastro...", "info");
 
-      showToast("Sessão encerrada com sucesso.", "info");
+      // 3. Tentar o logout no servidor em background sem bloquear o UI
+      supabase.auth.signOut().catch(err => console.warn("Erro ao notificar servidor de logout:", err));
 
-      // Pequeno delay e reload forçado para garantir estado limpo
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 500);
+      // Redirecionamento forçado
+      window.location.href = '/';
     } catch (error) {
       console.error("Logout error:", error);
-      localStorage.clear(); // Garantir limpeza mesmo em erro
+      localStorage.clear();
       window.location.reload();
     }
   };
