@@ -25,7 +25,7 @@ const customFetch: typeof fetch = async (url, options) => {
         try {
             return await new Promise<Response>((resolve, reject) => {
                 let isSettled = false;
-                const timeoutMs = 15000; // 15s timeout (Equilíbrio entre resiliência e UX)
+                const timeoutMs = 60000; // 60s timeout (Aumentado de 15s para redes instáveis)
 
                 // Forçar no-cache para evitar esquemas corrompidos por proxy
                 const headers = {

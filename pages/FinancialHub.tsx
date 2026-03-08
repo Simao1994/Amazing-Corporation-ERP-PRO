@@ -61,7 +61,7 @@ const FinancialHubPage: React.FC = () => {
       try {
          let query = supabase.from('fin_transacoes').select('*').eq('tenant_id', user?.tenant_id);
          if (selectedEmpresaId) {
-            query = query.eq('empresa_id', selectedEmpresaId);
+            query = query.eq('tenant_id', selectedEmpresaId);
          }
 
          const fetchPromise = query.order('data', { ascending: false });
@@ -114,7 +114,7 @@ const FinancialHubPage: React.FC = () => {
             .from('acc_extratos_bancarios')
             .select('*')
             .eq('tenant_id', user?.tenant_id)
-            .eq('empresa_id', selectedEmpresaId)
+            .eq('tenant_id', selectedEmpresaId)
             .eq('status', 'Pendente');
          if (error) throw error;
          setExtratos(data || []);
@@ -344,7 +344,7 @@ const FinancialHubPage: React.FC = () => {
          status: (tipo === 'Reembolso' || tipo === 'Orçamento') ? 'Pendente' : 'Aprovado',
          usuario_id: currentUser?.id || 'sys',
           usuario_nome: currentUser?.nome || 'Sistema',
-          empresa_id: selectedEmpresaId,
+          tenant_id: selectedEmpresaId,
           tenant_id: user?.tenant_id,
           data_criacao: new Date().toISOString(),
           historico_alteracoes: [{ data: new Date().toISOString(), usuario: currentUser?.nome || 'Sistema', acao: 'Registo inicial' }]
@@ -854,7 +854,7 @@ const FinancialHubPage: React.FC = () => {
                                     data: parts[0]?.trim(),
                                     descricao: parts[1]?.trim(),
                                     valor: parseFloat(parts[2]?.trim()),
-                                    empresa_id: selectedEmpresaId,
+                                    tenant_id: selectedEmpresaId,
                                     status: 'Pendente'
                                  };
                               });

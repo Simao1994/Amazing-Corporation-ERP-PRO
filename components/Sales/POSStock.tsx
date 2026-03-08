@@ -35,11 +35,11 @@ export default function POSStock() {
             id, quantidade_atual, data_ultima_entrada, 
             pos_produtos (id, nome_produto, codigo_produto, stock_minimo)
           `)
-                    .eq('empresa_id', user.tenant_id),
+                    .eq('tenant_id', user.tenant_id),
                 supabase
                     .from('pos_produtos')
                     .select('id, nome_produto')
-                    .eq('empresa_id', user.tenant_id)
+                    .eq('tenant_id', user.tenant_id)
                     .eq('ativo', true)
                     .order('nome_produto')
             ]);
@@ -101,7 +101,7 @@ export default function POSStock() {
                 await supabase
                     .from('pos_estoque')
                     .insert([{
-                        empresa_id: user.tenant_id,
+                        tenant_id: user.tenant_id,
                         produto_id: formData.produto_id,
                         quantidade_atual: formData.quantidade
                     }]);
@@ -111,7 +111,7 @@ export default function POSStock() {
             await supabase
                 .from('pos_movimento_stock')
                 .insert([{
-                    empresa_id: user.tenant_id,
+                    tenant_id: user.tenant_id,
                     produto_id: formData.produto_id,
                     usuario_id: user.id || null, // Ensure ID exists
                     tipo: formData.tipo,

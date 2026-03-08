@@ -26,7 +26,7 @@ export default function POSVendas() {
             const { data, error } = await supabase
                 .from('pos_faturas')
                 .select(`*, pos_caixa (id, usuario_id)`)
-                .eq('empresa_id', user.tenant_id)
+                .eq('tenant_id', user.tenant_id)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;

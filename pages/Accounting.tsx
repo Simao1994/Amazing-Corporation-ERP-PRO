@@ -1,4 +1,4 @@
-Ôªø
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
    Calculator, BarChart2, BarChart as LucideBarChart, Receipt, Users, Landmark, Scale,
@@ -33,16 +33,16 @@ const COLORS_PIE = ['#eab308', '#22c55e', '#ef4444', '#3b82f6', '#a855f7', '#f97
 const PGN_PADRAO_ANGOLANO: PlanoConta[] = [
    // Classe 1
    { id: '1', codigo: '1', nome: 'Meios fixos e investimentos', tipo: 'Ativo', natureza: 'Devedora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
-   { id: '1.1', codigo: '1.1', nome: 'Imobiliza√ß√µes corp√≥reas', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '1', e_sintetica: true, aceita_lancamentos: false },
+   { id: '1.1', codigo: '1.1', nome: 'ImobilizaÁıes corpÛreas', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '1', e_sintetica: true, aceita_lancamentos: false },
    { id: '1.1.1', codigo: '1.1.1', nome: 'Terrenos e recursos naturais', tipo: 'Ativo', natureza: 'Devedora', nivel: 3, pai_id: '1.1', e_analitica: true, aceita_lancamentos: true },
-   { id: '1.1.2', codigo: '1.1.2', nome: 'Edif√≠cios e outras constru√ß√µes', tipo: 'Ativo', natureza: 'Devedora', nivel: 3, pai_id: '1.1', e_analitica: true, aceita_lancamentos: true },
-   { id: '1.1.3', codigo: '1.1.3', nome: 'Equipamento b√°sico', tipo: 'Ativo', natureza: 'Devedora', nivel: 3, pai_id: '1.1', e_analitica: true, aceita_lancamentos: true },
-   { id: '1.2', codigo: '1.2', nome: 'Imobiliza√ß√µes incorp√≥reas', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '1', e_sintetica: true, aceita_lancamentos: false },
-   { id: '1.8', codigo: '1.8', nome: 'Amortiza√ß√µes acumuladas', tipo: 'Ativo', natureza: 'Credora', nivel: 2, pai_id: '1', e_analitica: true, aceita_lancamentos: true },
+   { id: '1.1.2', codigo: '1.1.2', nome: 'EdifÌcios e outras construÁıes', tipo: 'Ativo', natureza: 'Devedora', nivel: 3, pai_id: '1.1', e_analitica: true, aceita_lancamentos: true },
+   { id: '1.1.3', codigo: '1.1.3', nome: 'Equipamento b·sico', tipo: 'Ativo', natureza: 'Devedora', nivel: 3, pai_id: '1.1', e_analitica: true, aceita_lancamentos: true },
+   { id: '1.2', codigo: '1.2', nome: 'ImobilizaÁıes incorpÛreas', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '1', e_sintetica: true, aceita_lancamentos: false },
+   { id: '1.8', codigo: '1.8', nome: 'AmortizaÁıes acumuladas', tipo: 'Ativo', natureza: 'Credora', nivel: 2, pai_id: '1', e_analitica: true, aceita_lancamentos: true },
    // Classe 2
-   { id: '2', codigo: '2', nome: 'Exist√™ncias', tipo: 'Ativo', natureza: 'Devedora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
+   { id: '2', codigo: '2', nome: 'ExistÍncias', tipo: 'Ativo', natureza: 'Devedora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
    { id: '2.1', codigo: '2.1', nome: 'Compras', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '2', e_analitica: true, aceita_lancamentos: true },
-   { id: '2.2', codigo: '2.2', nome: 'Mat√©rias-primas e materiais', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '2', e_analitica: true, aceita_lancamentos: true },
+   { id: '2.2', codigo: '2.2', nome: 'MatÈrias-primas e materiais', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '2', e_analitica: true, aceita_lancamentos: true },
    { id: '2.4', codigo: '2.4', nome: 'Mercadorias', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '2', e_analitica: true, aceita_lancamentos: true },
    // Classe 3
    { id: '3', codigo: '3', nome: 'Contas a receber e a pagar', tipo: 'Ativo', natureza: 'Devedora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
@@ -50,12 +50,12 @@ const PGN_PADRAO_ANGOLANO: PlanoConta[] = [
    { id: '3.1.1', codigo: '3.1.1', nome: 'Clientes gerais', tipo: 'Ativo', natureza: 'Devedora', nivel: 3, pai_id: '3.1', e_analitica: true, aceita_lancamentos: true },
    { id: '3.2', codigo: '3.2', nome: 'Fornecedores', tipo: 'Passivo', natureza: 'Credora', nivel: 2, pai_id: '3', e_sintetica: true, aceita_lancamentos: false },
    { id: '3.2.1', codigo: '3.2.1', nome: 'Fornecedores gerais', tipo: 'Passivo', natureza: 'Credora', nivel: 3, pai_id: '3.2', e_analitica: true, aceita_lancamentos: true },
-   { id: '3.3', codigo: '3.3', nome: 'Empr√©stimos bank', tipo: 'Passivo', natureza: 'Credora', nivel: 2, pai_id: '3', e_analitica: true, aceita_lancamentos: true },
+   { id: '3.3', codigo: '3.3', nome: 'EmprÈstimos bank', tipo: 'Passivo', natureza: 'Credora', nivel: 2, pai_id: '3', e_analitica: true, aceita_lancamentos: true },
    { id: '3.4', codigo: '3.4', nome: 'Estado', tipo: 'Passivo', natureza: 'Credora', nivel: 2, pai_id: '3', e_sintetica: true, aceita_lancamentos: false },
    { id: '3.4.1', codigo: '3.4.1', nome: 'IVA a pagar', tipo: 'Passivo', natureza: 'Credora', nivel: 3, pai_id: '3.4', e_analitica: true, aceita_lancamentos: true },
    { id: '3.4.2', codigo: '3.4.2', nome: 'IRT', tipo: 'Passivo', natureza: 'Credora', nivel: 3, pai_id: '3.4', e_analitica: true, aceita_lancamentos: true },
    // Classe 4
-   { id: '4', codigo: '4', nome: 'Meios monet√°rios', tipo: 'Ativo', natureza: 'Devedora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
+   { id: '4', codigo: '4', nome: 'Meios monet·rios', tipo: 'Ativo', natureza: 'Devedora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
    { id: '4.1', codigo: '4.1', nome: 'Caixa', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '4', e_analitica: true, aceita_lancamentos: true },
    { id: '4.2', codigo: '4.2', nome: 'Bancos - DO', tipo: 'Ativo', natureza: 'Devedora', nivel: 2, pai_id: '4', e_analitica: true, aceita_lancamentos: true },
    // Classe 5
@@ -65,17 +65,17 @@ const PGN_PADRAO_ANGOLANO: PlanoConta[] = [
    // Classe 6
    { id: '6', codigo: '6', nome: 'Proveitos e ganhos', tipo: 'Receita', natureza: 'Credora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
    { id: '6.1', codigo: '6.1', nome: 'Vendas', tipo: 'Receita', natureza: 'Credora', nivel: 2, pai_id: '6', e_analitica: true, aceita_lancamentos: true },
-   { id: '6.2', codigo: '6.2', nome: 'Presta√ß√µes de servi√ßos', tipo: 'Receita', natureza: 'Credora', nivel: 2, pai_id: '6', e_analitica: true, aceita_lancamentos: true },
+   { id: '6.2', codigo: '6.2', nome: 'PrestaÁıes de serviÁos', tipo: 'Receita', natureza: 'Credora', nivel: 2, pai_id: '6', e_analitica: true, aceita_lancamentos: true },
    // Classe 7
    { id: '7', codigo: '7', nome: 'Custos e perdas', tipo: 'Despesa', natureza: 'Devedora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
-   { id: '7.1', codigo: '7.1', nome: 'Custo exist√™ncias vendidas', tipo: 'Despesa', natureza: 'Devedora', nivel: 2, pai_id: '7', e_analitica: true, aceita_lancamentos: true },
+   { id: '7.1', codigo: '7.1', nome: 'Custo existÍncias vendidas', tipo: 'Despesa', natureza: 'Devedora', nivel: 2, pai_id: '7', e_analitica: true, aceita_lancamentos: true },
    { id: '7.2', codigo: '7.2', nome: 'Custos com pessoal', tipo: 'Despesa', natureza: 'Devedora', nivel: 2, pai_id: '7', e_sintetica: true, aceita_lancamentos: false },
-   { id: '7.2.1', codigo: '7.2.1', nome: 'Remunera√ß√µes', tipo: 'Despesa', natureza: 'Devedora', nivel: 3, pai_id: '7.2', e_analitica: true, aceita_lancamentos: true },
+   { id: '7.2.1', codigo: '7.2.1', nome: 'RemuneraÁıes', tipo: 'Despesa', natureza: 'Devedora', nivel: 3, pai_id: '7.2', e_analitica: true, aceita_lancamentos: true },
    { id: '7.5', codigo: '7.5', nome: 'FST', tipo: 'Despesa', natureza: 'Devedora', nivel: 2, pai_id: '7', e_sintetica: true, aceita_lancamentos: false },
-   { id: '7.5.1', codigo: '7.5.1', nome: 'Comunica√ß√µes', tipo: 'Despesa', natureza: 'Devedora', nivel: 3, pai_id: '7.5', e_analitica: true, aceita_lancamentos: true },
+   { id: '7.5.1', codigo: '7.5.1', nome: 'ComunicaÁıes', tipo: 'Despesa', natureza: 'Devedora', nivel: 3, pai_id: '7.5', e_analitica: true, aceita_lancamentos: true },
    // Classe 8
    { id: '8', codigo: '8', nome: 'Resultados', tipo: 'Capital', natureza: 'Credora', nivel: 1, e_sintetica: true, aceita_lancamentos: false },
-   { id: '8.8', codigo: '8.8', nome: 'Resultados l√≠quidos', tipo: 'Capital', natureza: 'Credora', nivel: 2, pai_id: '8', e_analitica: true, aceita_lancamentos: true },
+   { id: '8.8', codigo: '8.8', nome: 'Resultados lÌquidos', tipo: 'Capital', natureza: 'Credora', nivel: 2, pai_id: '8', e_analitica: true, aceita_lancamentos: true },
 ];
 
 // --- COMPONENTES AUXILIARES ---
@@ -116,7 +116,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [showReceiptModal, setShowReceiptModal] = useState(false);
    const [selectedFolha, setSelectedFolha] = useState<FolhaPagamento | null>(null);
 
-   // --- ESTADO DE RELAT√ìRIOS ---
+   // --- ESTADO DE RELAT”RIOS ---
    const [activeReport, setActiveReport] = useState<{ id: string; title: string; data: any[] } | null>(null);
    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
@@ -132,13 +132,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       centro_custo_id: ''
    });
 
-   // --- ESTADO DE FATURA√á√ÉO ---
+   // --- ESTADO DE FATURA«√O ---
    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
    const [isSavingInvoice, setIsSavingInvoice] = useState(false);
    const [invoiceForm, setInvoiceForm] = useState({
       cliente_id: '',
       cliente_nome: '',
-      tipo: 'Factura' as 'Factura' | 'Pr√≥-forma' | 'Guia' | 'Encomenda',
+      tipo: 'Factura' as 'Factura' | 'PrÛ-forma' | 'Guia' | 'Encomenda',
       data_emissao: new Date().toISOString().split('T')[0],
       itens: [] as { id: string; nome: string; qtd: number; preco_unitario: number; total: number }[],
       observacoes: ''
@@ -203,7 +203,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       return imposto;
    };
 
-   // --- ESTADO DE INVENT√ÅRIO (CATEGORIAS E ITENS) ---
+   // --- ESTADO DE INVENT¡RIO (CATEGORIAS E ITENS) ---
    const [categorias, setCategorias] = useState<any[]>(() => AmazingStorage.get(STORAGE_KEYS.ACC_CATEGORIAS, []));
    const [showCategoryModal, setShowCategoryModal] = useState(false);
    const [isSavingCategory, setIsSavingCategory] = useState(false);
@@ -241,7 +241,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
    const handleAddCustomItem = () => {
-      if (!customItem.nome || customItem.preco <= 0) return alert("Preencha o nome e o pre√ßo do item.");
+      if (!customItem.nome || customItem.preco <= 0) return alert("Preencha o nome e o preÁo do item.");
       handleAddInvoiceItem({
          id: `C${Date.now()}`,
          nome: customItem.nome,
@@ -288,16 +288,16 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             data_emissao: invoiceForm.data_emissao,
             valor_total: totalGeral,
             status: 'Pendente',
-            empresa_id: selectedEmpresaId,
+            tenant_id: selectedEmpresaId,
             tipo: invoiceForm.tipo,
             metadata: { itens: invoiceForm.itens, subtotal: totalLiquido, iva: iva, observacoes: invoiceForm.observacoes }
          }).select().single();
 
          if (invError) throw invError;
 
-         // Actualizar Stock (Simula√ß√£o de Movimento)
+         // Actualizar Stock (SimulaÁ„o de Movimento)
          for (const item of invoiceForm.itens) {
-            // Decrementar no Invent√°rio
+            // Decrementar no Invent·rio
             const target = extInventario.find(i => i.id === item.id);
             if (target) {
                const novaQtd = (Number(target.quantidade_atual) || 0) - item.qtd;
@@ -334,7 +334,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
    const handleAnularFatura = async (fatura: any) => {
-      if (!confirm(`Tem a certeza que deseja ANULAR o documento ${fatura.numero_fatura}? Esta ac√ß√£o √© irrevers√≠vel e o stock ser√° restaurado.`)) return;
+      if (!confirm(`Tem a certeza que deseja ANULAR o documento ${fatura.numero_fatura}? Esta acÁ„o È irreversÌvel e o stock ser· restaurado.`)) return;
 
       try {
          const { error } = await supabase.from('contabil_faturas')
@@ -356,7 +356,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                      tipo: 'entrada',
                      quantidade: item.qtd,
                      referencia: fatura.numero_fatura,
-                     motivo: `Restauro Autom√°tico (Anula√ß√£o de ${fatura.tipo || 'Venda'})`
+                     motivo: `Restauro Autom·tico (AnulaÁ„o de ${fatura.tipo || 'Venda'})`
                   });
                }
             }
@@ -371,11 +371,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
 
-   // --- L√ìGICA DE PER√çODOS ---
+   // --- L”GICA DE PERÕODOS ---
    const handleOpenYear = async () => {
       if (!selectedEmpresaId) return alert("Selecione uma empresa primeiro.");
 
-      const companyPeriods = (periodos || []).filter(p => p.empresa_id === selectedEmpresaId);
+      const companyPeriods = (periodos || []).filter(p => p.tenant_id === selectedEmpresaId);
       let targetYear = new Date().getFullYear();
 
       if (companyPeriods.length > 0) {
@@ -383,39 +383,39 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          targetYear = lastYear + 1;
       }
 
-      if (!confirm(`Deseja abrir o exerc√≠cio fiscal de ${targetYear}?`)) return;
+      if (!confirm(`Deseja abrir o exercÌcio fiscal de ${targetYear}?`)) return;
 
       try {
-         // Verificar se j√° existe QUALQUER m√™s aberto para este ano
+         // Verificar se j· existe QUALQUER mÍs aberto para este ano
          const { data: exists } = await supabase.from('acc_periodos')
             .select('id')
-            .eq('empresa_id', selectedEmpresaId)
+            .eq('tenant_id', selectedEmpresaId)
             .eq('ano', targetYear)
             .limit(1)
             .maybeSingle();
 
-         if (exists) return alert(`O exerc√≠cio de ${targetYear} j√° possui per√≠odos abertos.`);
+         if (exists) return alert(`O exercÌcio de ${targetYear} j· possui perÌodos abertos.`);
 
          const { error } = await supabase.from('acc_periodos').insert({
             ano: targetYear,
             mes: 1,
             status: 'Aberto',
-            empresa_id: selectedEmpresaId
+            tenant_id: selectedEmpresaId
          });
 
          if (error) throw error;
-         alert(`Exerc√≠cio ${targetYear} (M√™s 1) aberto com sucesso.`);
+         alert(`ExercÌcio ${targetYear} (MÍs 1) aberto com sucesso.`);
          await fetchAccountingData();
       } catch (error: any) {
          console.error("Open Year Error:", error);
-         alert(`Erro ao abrir novo ano: ${error.message || 'Erro de conex√£o'}`);
+         alert(`Erro ao abrir novo ano: ${error.message || 'Erro de conex„o'}`);
       }
    };
 
    const handleOpenMonth = async () => {
       if (!selectedEmpresaId) return alert("Selecione uma empresa primeiro.");
 
-      const currentPeriods = (periodos || []).filter(p => p.empresa_id === selectedEmpresaId);
+      const currentPeriods = (periodos || []).filter(p => p.tenant_id === selectedEmpresaId);
       let nextMes = 1;
       let nextAno = new Date().getFullYear();
 
@@ -429,77 +429,77 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          nextAno = last.mes === 12 ? last.ano + 1 : last.ano;
       }
 
-      if (!confirm(`Abrir per√≠odo cont√°bil de ${nextMes}/${nextAno}?`)) return;
+      if (!confirm(`Abrir perÌodo cont·bil de ${nextMes}/${nextAno}?`)) return;
 
       try {
          // Verificar duplicado
          const { data: exists } = await supabase.from('acc_periodos')
             .select('id')
-            .eq('empresa_id', selectedEmpresaId)
+            .eq('tenant_id', selectedEmpresaId)
             .eq('ano', nextAno)
             .eq('mes', nextMes)
             .maybeSingle();
 
-         if (exists) return alert(`O m√™s ${nextMes}/${nextAno} j√° se encontra aberto.`);
+         if (exists) return alert(`O mÍs ${nextMes}/${nextAno} j· se encontra aberto.`);
 
          const { error } = await supabase.from('acc_periodos').insert({
             ano: nextAno,
             mes: nextMes,
             status: 'Aberto',
-            empresa_id: selectedEmpresaId
+            tenant_id: selectedEmpresaId
          });
 
          if (error) throw error;
-         alert(`M√™s ${nextMes}/${nextAno} aberto.`);
+         alert(`MÍs ${nextMes}/${nextAno} aberto.`);
          await fetchAccountingData();
       } catch (error: any) {
          console.error("Open Month Error:", error);
-         alert(`Erro ao abrir novo m√™s: ${error.message || 'Erro de conex√£o'}`);
+         alert(`Erro ao abrir novo mÍs: ${error.message || 'Erro de conex„o'}`);
       }
    };
 
    const handleOpenPlanPadrao = async () => {
-      if (!confirm("Deseja importar os modelos padr√µes de lan√ßamentos para venda, compra e folha?")) return;
+      if (!confirm("Deseja importar os modelos padrıes de lanÁamentos para venda, compra e folha?")) return;
       alert("Modelos importados com sucesso.");
    };
 
    const sidebarItems = [
-      { id: 'dashboard', label: 'Vis√£o Global', icon: <BarChart2 size={20} /> },
+      { id: 'dashboard', label: 'Vis„o Global', icon: <BarChart2 size={20} /> },
       { id: 'facturas', label: 'Facturas', icon: <FileText size={20} /> },
-      { id: 'proformas', label: 'Pr√≥-formas', icon: <FilePieChart size={20} /> },
+      { id: 'proformas', label: 'PrÛ-formas', icon: <FilePieChart size={20} /> },
       { id: 'guias', label: 'Guias', icon: <Briefcase size={20} /> },
       { id: 'encomendas', label: 'Encomendas', icon: <ShoppingCart size={20} /> },
       { id: 'contactos', label: 'Contactos', icon: <Users size={20} /> },
       { id: 'itens', label: 'Itens', icon: <Plus size={20} /> },
-      { id: 'relatorios', label: 'Relat√≥rios', icon: <PieChartIcon size={20} /> },
+      { id: 'relatorios', label: 'RelatÛrios', icon: <PieChartIcon size={20} /> },
    ] as const;
 
    const reportCards = [
       { id: 'cta_corrente', title: 'Conta Corrente de Cliente', icon: <Users className="text-blue-500" />, desc: 'Extrato detalhado de movimentos por cliente.' },
-      { id: 'pag_falta', title: 'Pagamentos em Falta', icon: <AlertTriangle className="text-red-500" />, desc: 'Listagem de faturas vencidas e n√£o pagas.' },
-      { id: 'liq_impostos', title: 'Liquida√ß√£o de Impostos', icon: <Scale className="text-yellow-600" />, desc: 'C√°lculo de IVA, IRT e Imposto Industrial.' },
-      { id: 'fact_item', title: 'Factura√ß√£o por Item', icon: <ShoppingCart className="text-purple-500" />, desc: 'An√°lise de vendas detalhada por produto.' },
-      { id: 'rel_fact', title: 'Relat√≥rio de Factura√ß√£o', icon: <FileText className="text-blue-600" />, desc: 'Resumo mensal e anual de toda fatura√ß√£o.' },
-      { id: 'mapa_impostos', title: 'Mapa de Impostos', icon: <Landmark className="text-emerald-500" />, desc: 'Gera√ß√£o de mapas oficiais para AGT.' },
-      { id: 'rel_colab', title: 'Relat√≥rio por Colaborador', icon: <Users className="text-orange-500" />, desc: 'Performance e custos de pessoal.' },
-      { id: 'pag_efet', title: 'Pagamentos Efectuados', icon: <CheckCircle2 className="text-green-500" />, desc: 'Hist√≥rico de liquida√ß√µes e sa√≠das.' },
+      { id: 'pag_falta', title: 'Pagamentos em Falta', icon: <AlertTriangle className="text-red-500" />, desc: 'Listagem de faturas vencidas e n„o pagas.' },
+      { id: 'liq_impostos', title: 'LiquidaÁ„o de Impostos', icon: <Scale className="text-yellow-600" />, desc: 'C·lculo de IVA, IRT e Imposto Industrial.' },
+      { id: 'fact_item', title: 'FacturaÁ„o por Item', icon: <ShoppingCart className="text-purple-500" />, desc: 'An·lise de vendas detalhada por produto.' },
+      { id: 'rel_fact', title: 'RelatÛrio de FacturaÁ„o', icon: <FileText className="text-blue-600" />, desc: 'Resumo mensal e anual de toda faturaÁ„o.' },
+      { id: 'mapa_impostos', title: 'Mapa de Impostos', icon: <Landmark className="text-emerald-500" />, desc: 'GeraÁ„o de mapas oficiais para AGT.' },
+      { id: 'rel_colab', title: 'RelatÛrio por Colaborador', icon: <Users className="text-orange-500" />, desc: 'Performance e custos de pessoal.' },
+      { id: 'pag_efet', title: 'Pagamentos Efectuados', icon: <CheckCircle2 className="text-green-500" />, desc: 'HistÛrico de liquidaÁıes e saÌdas.' },
    ];
 
    const handleClosePeriod = async (id: string) => {
-      if (!confirm("Tem certeza que deseja fechar este per√≠odo? Novos lan√ßamentos ser√£o bloqueados.")) return;
+      if (!confirm("Tem certeza que deseja fechar este perÌodo? Novos lanÁamentos ser„o bloqueados.")) return;
       try {
          const { error } = await supabase.from('acc_periodos').update({ status: 'Fechado' }).eq('id', id);
          if (error) throw error;
          fetchAccountingData();
       } catch (error) {
-         alert('Erro ao fechar per√≠odo.');
+         alert('Erro ao fechar perÌodo.');
       }
    };
 
    const handleCreateAccount = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
-         // Determinar N√≠vel e Pai automaticamente se n√£o fornecido
+         // Determinar NÌvel e Pai automaticamente se n„o fornecido
          let nivel = Number(newAccount.nivel);
          if (newAccount.codigo.includes('.')) {
             nivel = newAccount.codigo.split('.').length;
@@ -508,8 +508,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          const { error } = await supabase.from('acc_contas').insert({
             ...newAccount,
             nivel: nivel,
-            empresa_id: selectedEmpresaId,
-            e_sintetica: !newAccount.aceita_lancamentos, // Se n√£o aceita lan√ßamentos, √© sint√©tica
+            tenant_id: selectedEmpresaId,
+            e_sintetica: !newAccount.aceita_lancamentos, // Se n„o aceita lanÁamentos, È sintÈtica
             data_criacao: new Date().toISOString()
          });
          if (error) throw error;
@@ -531,7 +531,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [integrityResult, setIntegrityResult] = useState<{ status: string; unbalanced_entries: number; check_date: string } | null>(null);
    const [ledgerEntries, setLedgerEntries] = useState<any[]>([]);
 
-   // Form State para Novo Lan√ßamento
+   // Form State para Novo LanÁamento
    const [newEntry, setNewEntry] = useState({
       descricao: '',
       contaDebito: '7.5',
@@ -558,7 +558,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [extratos, setExtratos] = useState<any[]>([]);
    const [isSuggestingAccounts, setIsSuggestingAccounts] = useState(false);
 
-   // --- M√ìDULOS EXTERNOS (INTEGRA√á√ÉO AUTOM√ÅTICA) ---
+   // --- M”DULOS EXTERNOS (INTEGRA«√O AUTOM¡TICA) ---
    const [extFaturas, setExtFaturas] = useState<any[]>(() => AmazingStorage.get('amazing_ext_faturas', []));
    const [extTesouraria, setExtTesouraria] = useState<any[]>(() => AmazingStorage.get('amazing_ext_tesouraria', []));
    const [extRhRecibos, setExtRhRecibos] = useState<any[]>(() => AmazingStorage.get('amazing_ext_rh_recibos', []));
@@ -567,7 +567,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const [isSyncingModules, setIsSyncingModules] = useState(false);
    const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
 
-   // --- MODELOS E REGRAS AUTOM√ÅTICAS ---
+   // --- MODELOS E REGRAS AUTOM¡TICAS ---
    const [isAutoLaunching, setIsAutoLaunching] = useState(false);
 
    // --- PLANO DE CONTAS INTELIGENTE ---
@@ -587,18 +587,18 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
    const handleImportPlanoPadrao = async () => {
-      if (!confirm("Isso exportar√° o PGC Angolano padr√£o para a base de dados. Deseja continuar?")) return;
+      if (!confirm("Isso exportar· o PGC Angolano padr„o para a base de dados. Deseja continuar?")) return;
       try {
          setIsAnalyzing(true);
-         // O sistema j√° tem os dados no DB via migra√ß√£o, mas podemos for√ßar um Refresh ou Inser√ß√£o se necess√°rio.
-         // Para este ERP, vamos assumir que o 'Importar' garante que a tabela est√° populada.
+         // O sistema j· tem os dados no DB via migraÁ„o, mas podemos forÁar um Refresh ou InserÁ„o se necess·rio.
+         // Para este ERP, vamos assumir que o 'Importar' garante que a tabela est· populada.
          const { error } = await supabase.rpc('importar_pgc_padrao'); // Se existisse uma RPC seria ideal
          if (error) throw error;
          alert("Plano PGC Angolano importado com sucesso!");
          fetchAccountingData();
       } catch (e) {
-         // Fallback manual se RPC n√£o existir - mas j√° fizemos via migra√ß√£o
-         alert("Opera√ß√£o conclu√≠da. O PGC j√° est√° dispon√≠vel.");
+         // Fallback manual se RPC n„o existir - mas j· fizemos via migraÁ„o
+         alert("OperaÁ„o concluÌda. O PGC j· est· disponÌvel.");
          fetchAccountingData();
       } finally {
          setIsAnalyzing(false);
@@ -610,7 +610,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       try {
          const { error } = await supabase.from('acc_centros_custo').insert({
             ...newCentroCusto,
-            empresa_id: selectedEmpresaId
+            tenant_id: selectedEmpresaId
          });
          if (error) throw error;
          alert("Centro de Custo criado!");
@@ -624,14 +624,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    // --- CONTACTOS ---
    const handleCreateContact = async (e?: any) => {
       if (e) e.preventDefault();
-      if (!newContact.nome) return alert("O nome √© obrigat√≥rio.");
+      if (!newContact.nome) return alert("O nome È obrigatÛrio.");
       if (!selectedEmpresaId) return alert("Seleccione uma empresa primeiro.");
 
       setIsSavingContact(true);
       try {
          const { error } = await supabase.from('acc_contactos').insert({
             ...newContact,
-            empresa_id: selectedEmpresaId
+            tenant_id: selectedEmpresaId
          });
          if (error) throw error;
          alert("Contacto criado com sucesso!");
@@ -659,7 +659,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    });
    const [isSavingCompra, setIsSavingCompra] = useState(false);
 
-   // --- APROVA√á√ÉO DE LAN√áAMENTOS ---
+   // --- APROVA«√O DE LAN«AMENTOS ---
    const [isApprovingId, setIsApprovingId] = useState<string | null>(null);
    const [showApprovalModal, setShowApprovalModal] = useState(false);
    const [approvalTarget, setApprovalTarget] = useState<any | null>(null);
@@ -668,7 +668,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    // --- ESTORNO ---
    const [isEstornandoId, setIsEstornandoId] = useState<string | null>(null);
 
-   // --- L√ìGICA DE INTEGRIDADE DO LEDGER ---
+   // --- L”GICA DE INTEGRIDADE DO LEDGER ---
    const handleCheckLedgerIntegrity = async () => {
       setIsCheckingIntegrity(true);
       try {
@@ -718,7 +718,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          const effEmpId = selectedEmpresaId || emps[0]?.id;
 
          const [funcs, dataContas, dataPeriodos] = await Promise.all([
-            fetchQuery(supabase.from('funcionarios').select('*').eq('empresa_id', effEmpId).order('nome'), 'Equipa'),
+            fetchQuery(supabase.from('funcionarios').select('*').eq('tenant_id', effEmpId).order('nome'), 'Equipa'),
             fetchQuery(supabase.from('acc_contas').select('*').order('codigo'), 'Plano de Contas'),
             fetchQuery(supabase.from('acc_periodos').select('*').order('ano', { ascending: false }).order('mes', { ascending: false }), 'Ciclos Fiscais')
          ]);
@@ -735,7 +735,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             setPeriodos(dataPeriodos as any);
             AmazingStorage.save(STORAGE_KEYS.ACC_PERIODOS, dataPeriodos);
             if (!selectedPeriodoId) {
-               const initialPeriod = (dataPeriodos as any[]).find(p => p.empresa_id === effEmpId);
+               const initialPeriod = (dataPeriodos as any[]).find(p => p.tenant_id === effEmpId);
                if (initialPeriod) setSelectedPeriodoId(initialPeriod.id);
             }
          }
@@ -749,7 +749,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          setLoading(false);
 
          const [lnc, lncItens, flh, obl, centros, configs, sLogs, faturas, tesouraria, rhRecibos, inventarioItems, comprasData, contactosData, categoriasData] = await Promise.all([
-            fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }), 'Di√°rio'),
+            fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }), 'Di·rio'),
             fetchQuery(supabase.from('acc_lancamento_itens').select('*'), 'Itens'),
             fetchQuery(supabase.from('acc_folhas').select('*').order('mes_referencia', { ascending: false }), 'Processamento'),
             fetchQuery(supabase.from('acc_obrigacoes').select('*').order('data_limite'), 'Fiscal'),
@@ -759,10 +759,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             fetchQuery(supabase.from('contabil_faturas').select('*').order('created_at', { ascending: false }), 'Facturas'),
             fetchQuery(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }), 'Tesouraria'),
             fetchQuery(supabase.from('rh_recibos').select('*').order('data_emissao', { ascending: false }), 'Recibos'),
-            fetchQuery(supabase.from('inventario').select('*').eq('empresa_id', effEmpId).order('nome'), 'Invent√°rio'),
+            fetchQuery(supabase.from('inventario').select('*').eq('tenant_id', effEmpId).order('nome'), 'Invent·rio'),
             fetchQuery(supabase.from('compras').select('*').order('data_compra', { ascending: false }), 'Compras'),
             fetchQuery(supabase.from('acc_contactos').select('*').order('nome'), 'Contactos'),
-            fetchQuery(supabase.from('acc_categorias').select('*').eq('empresa_id', effEmpId).order('nome'), 'Categorias')
+            fetchQuery(supabase.from('acc_categorias').select('*').eq('tenant_id', effEmpId).order('nome'), 'Categorias')
          ]);
 
          const mergedLnc = (lnc || []).map((l: any) => ({
@@ -815,7 +815,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          setLoadingStatus('');
       } catch (error) {
          console.error('Critical Error in fetchAccountingData:', error);
-         setLoadingStatus('Falha na sincroniza√ß√£o');
+         setLoadingStatus('Falha na sincronizaÁ„o');
       } finally {
          setLoading(false);
       }
@@ -823,12 +823,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
    const handleCreateCategory = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!newCategory.nome) return alert("O nome da categoria √© obrigat√≥rio.");
+      if (!newCategory.nome) return alert("O nome da categoria È obrigatÛrio.");
       setIsSavingCategory(true);
       try {
          const { error } = await supabase.from('acc_categorias').insert({
             ...newCategory,
-            empresa_id: selectedEmpresaId
+            tenant_id: selectedEmpresaId
          });
          if (error) throw error;
          alert("Categoria criada com sucesso!");
@@ -844,12 +844,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
    const handleCreateItem = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!newInventoryItem.nome || !newInventoryItem.categoria_id) return alert("Nome e Categoria s√£o obrigat√≥rios.");
+      if (!newInventoryItem.nome || !newInventoryItem.categoria_id) return alert("Nome e Categoria s„o obrigatÛrios.");
       setIsSavingItem(true);
       try {
          const { error } = await supabase.from('inventario').insert({
             ...newInventoryItem,
-            empresa_id: selectedEmpresaId
+            tenant_id: selectedEmpresaId
          });
          if (error) throw error;
          alert("Item adicionado com sucesso!");
@@ -871,11 +871,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       fetchAccountingData();
    }, [selectedEmpresaId]);
 
-   // Garantir que o per√≠odo selecionado pertence √† empresa selecionada
+   // Garantir que o perÌodo selecionado pertence ‡ empresa selecionada
    useEffect(() => {
       if (!selectedEmpresaId || periodos.length === 0) return;
 
-      const companyPeriods = periodos.filter(p => p.empresa_id === selectedEmpresaId);
+      const companyPeriods = periodos.filter(p => p.tenant_id === selectedEmpresaId);
       const isPeriodValid = companyPeriods.some(p => p.id === selectedPeriodoId);
 
       if (!isPeriodValid && companyPeriods.length > 0) {
@@ -887,7 +887,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
    const currentEmpresa = empresas?.find(e => e.id === selectedEmpresaId) || empresas?.[0];
 
-   // --- DADOS INTEGRADOS (USADOS EM M√öLTIPLAS ABAS) ---
+   // --- DADOS INTEGRADOS (USADOS EM M⁄LTIPLAS ABAS) ---
    const { extFinanceiroNotas, totalFacturado, totalPendente, totalCaixa, totalEntradas, totalSaidas, totalSalarios, totalBruto, totalInventarioValor, itensCriticos } = useMemo(() => {
       const notas = [
          ...extFaturas.map(f => ({ ...f, valor: Number(f.valor_total) || 0, entidade: f.cliente_nome, numero: f.numero_fatura, data: f.data_emissao, tipo: 'Venda' })),
@@ -924,16 +924,16 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       };
    }, [extFaturas, extTesouraria, extRhRecibos, extInventario]);
 
-   // --- L√ìGICA DE GR√ÅFICOS E RELAT√ìRIOS (ULTRA DEFENSIVA) ---
+   // --- L”GICA DE GR¡FICOS E RELAT”RIOS (ULTRA DEFENSIVA) ---
    const chartData = useMemo(() => {
       try {
          const filterEmpAndPeriod = (arr: LancamentoContabil[]) => (arr || []).filter(l =>
-            l && l.empresa_id === selectedEmpresaId &&
+            l && l.tenant_id === selectedEmpresaId &&
             (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)
          );
          const empLancamentos = filterEmpAndPeriod(lancamentos);
 
-         // 1. Dados para Gr√°fico de Barras
+         // 1. Dados para Gr·fico de Barras
          const monthlyStats: Record<string, { receita: number, despesa: number }> = {};
          const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
          meses.forEach(m => monthlyStats[m] = { receita: 0, despesa: 0 });
@@ -988,8 +988,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
          const finalPieData = pieChartData.length > 0 ? pieChartData : [
             { name: 'Pessoal', value: 450000 },
-            { name: 'Manuten√ß√£o', value: 120000 },
-            { name: 'Servi√ßos Terceiros', value: 80000 },
+            { name: 'ManutenÁ„o', value: 120000 },
+            { name: 'ServiÁos Terceiros', value: 80000 },
             { name: 'Impostos', value: 50000 },
          ];
 
@@ -1000,11 +1000,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       }
    }, [selectedEmpresaId, selectedPeriodoId, lancamentos]);
 
-   // --- L√ìGICA DE BALAN√áO E DRE (ULTRA DEFENSIVA) ---
+   // --- L”GICA DE BALAN«O E DRE (ULTRA DEFENSIVA) ---
    const financeReports = useMemo(() => {
       try {
          const filterEmpAndPeriod = (arr: LancamentoContabil[]) => (arr || []).filter(l =>
-            l && l.empresa_id === selectedEmpresaId &&
+            l && l.tenant_id === selectedEmpresaId &&
             (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)
          );
          const empLancamentos = filterEmpAndPeriod(lancamentos);
@@ -1055,11 +1055,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       }
    }, [selectedEmpresaId, selectedPeriodoId, lancamentos, planoContas]);
 
-   // --- L√ìGICA DE IA ---
+   // --- L”GICA DE IA ---
    const handleAIAnalysis = async () => {
       const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
       if (!apiKey) {
-         setIaResponse("A chave da API (GEMINI_API_KEY) n√£o foi configurada. Contacte o administrador.");
+         setIaResponse("A chave da API (GEMINI_API_KEY) n„o foi configurada. Contacte o administrador.");
          return;
       }
 
@@ -1071,9 +1071,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 - Receita: ${safeFormatAOA(financeReports.receitaTotal)}
 - Despesa: ${safeFormatAOA(financeReports.despesaTotal)}
 - Lucro: ${safeFormatAOA(financeReports.lucroLiquido)}
-- Patrim√≥nio L√≠quido: ${safeFormatAOA(financeReports.ativos - financeReports.passivos)}
+- PatrimÛnio LÌquido: ${safeFormatAOA(financeReports.ativos - financeReports.passivos)}
       
-      Forne√ßa 3 sugest√µes estrat√©gicas para redu√ß√£o de custos e 1 alerta sobre conformidade fiscal(IVA / IRT).`;
+      ForneÁa 3 sugestıes estratÈgicas para reduÁ„o de custos e 1 alerta sobre conformidade fiscal(IVA / IRT).`;
 
          const result = await ai.models.generateContent({
             model: 'gemini-1.5-pro',
@@ -1083,7 +1083,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          setIaResponse(result.text || "Sem resposta da IA.");
       } catch (error) {
          console.error('AI Error:', error);
-         setIaResponse("A IA est√° processando auditorias externas. Tente novamente em instantes.");
+         setIaResponse("A IA est· processando auditorias externas. Tente novamente em instantes.");
       } finally {
          setIsAnalyzing(false);
       }
@@ -1096,9 +1096,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       setIsSuggestingAccounts(true);
       try {
          const ai = new GoogleGenAI({ apiKey });
-         const prompt = `Com base no Plano Geral de Contas de Angola (PGC) e na descri√ß√£o "${descricao}", sugira apenas o c√≥digo da conta de D√©bito e o c√≥digo da conta de Cr√©dito. 
+         const prompt = `Com base no Plano Geral de Contas de Angola (PGC) e na descriÁ„o "${descricao}", sugira apenas o cÛdigo da conta de DÈbito e o cÛdigo da conta de CrÈdito. 
          Retorne APENAS um JSON no formato: {"debito": "codigo", "credito": "codigo"}.
-         Exemplos de contas: 1.1 (Caixa), 7.2 (Sal√°rios), 6.1 (Vendas), 3.1 (Invent√°rios).`;
+         Exemplos de contas: 1.1 (Caixa), 7.2 (Sal·rios), 6.1 (Vendas), 3.1 (Invent·rios).`;
 
          const result = await ai.models.generateContent({
             model: 'gemini-1.5-flash',
@@ -1145,12 +1145,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             outros_descontos_base: newEmployee.outros_descontos_base,
             nif: newEmployee.nif,
             numero_ss: newEmployee.numero_ss,
-            empresa_id: selectedEmpresaId,
+            tenant_id: selectedEmpresaId,
             status: 'ativo',
             data_admissao: new Date().toISOString().split('T')[0]
          });
          if (error) throw error;
-         alert("Funcion√°rio registado com sucesso!");
+         alert("Funcion·rio registado com sucesso!");
          setShowEmployeeModal(false);
          setNewEmployee({
             nome: '', funcao: '', bilhete: '', telefone: '', salario_base: 0,
@@ -1162,36 +1162,36 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          });
          fetchAccountingData();
       } catch (e: any) {
-         alert(`Erro ao registar funcion√°rio: ${e.message}`);
+         alert(`Erro ao registar funcion·rio: ${e.message}`);
       } finally {
          setIsProcessingPayroll(false);
       }
    };
 
-   // --- L√ìGICA DE PAYROLL ---
+   // --- L”GICA DE PAYROLL ---
    const runPayroll = async () => {
       if (!selectedEmpresaId || !selectedPeriodoId) {
-         alert("Selecione uma empresa e um per√≠odo aberto antes de processar a folha.");
+         alert("Selecione uma empresa e um perÌodo aberto antes de processar a folha.");
          return;
       }
 
       const activePeriodo = periodos.find(p => p.id === selectedPeriodoId);
       if (!activePeriodo || activePeriodo.status === 'Fechado') {
-         alert("O per√≠odo selecionado est√° fechado.");
+         alert("O perÌodo selecionado est· fechado.");
          return;
       }
 
       const funcionariosAtivos = funcionarios.filter(f =>
          (f.status === 'ativo' || f.status === 'Ativo') &&
-         (f as any).empresa_id === selectedEmpresaId
+         (f as any).tenant_id === selectedEmpresaId
       );
 
       if (funcionariosAtivos.length === 0) {
-         alert("N√£o h√° funcion√°rios ativos vinculados a esta empresa para processar.");
+         alert("N„o h· funcion·rios ativos vinculados a esta empresa para processar.");
          return;
       }
 
-      if (!confirm(`Confirmar processamento da folha para ${funcionariosAtivos.length} colaboradores para o per√≠odo ${activePeriodo.mes}/${activePeriodo.ano}?`)) return;
+      if (!confirm(`Confirmar processamento da folha para ${funcionariosAtivos.length} colaboradores para o perÌodo ${activePeriodo.mes}/${activePeriodo.ano}?`)) return;
 
       setIsProcessingPayroll(true);
 
@@ -1203,21 +1203,21 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             const bonifBase = Number((f as any).outras_bonificacoes_base) || 0;
             const hExtras = Number((f as any).valor_hora_extra_base) || 0;
             const adiantamento = Number((f as any).adiantamento_padrao) || 0;
-            const descAtrasos = 0; // Logica autom√°tica para atrasos (poderia ser baseado em faltas/checkpoint)
-            const descFerias = 0; // Desconto de f√©rias se aplic√°vel
+            const descAtrasos = 0; // Logica autom·tica para atrasos (poderia ser baseado em faltas/checkpoint)
+            const descFerias = 0; // Desconto de fÈrias se aplic·vel
 
-            // C√°lculos Autom√°ticos
+            // C·lculos Autom·ticos
             let natal = 0;
             let ferias = 0;
 
-            // Subs√≠dio de Natal autom√°tico em Dezembro
+            // SubsÌdio de Natal autom·tico em Dezembro
             if (activePeriodo.mes === 12) natal = Number((f as any).subsidio_natal_base) || base;
-            // Subs√≠dio de F√©rias autom√°tico em Junho
+            // SubsÌdio de FÈrias autom·tico em Junho
             if (activePeriodo.mes === 6) ferias = Number((f as any).subsidio_ferias_base) || base;
 
             const salarioBruto = base + subAlim + subTrans + bonifBase + natal + ferias + hExtras;
             const inss = calculateINSS(base + bonifBase + hExtras); // INSS incide sobre base e complementos de rendimento
-            const irt = calculateIRT(salarioBruto - inss.trabalhador - subAlim - subTrans); // IRT sobre rendimento l√≠quido de INSS e isento de subs√≠dios (simplificado)
+            const irt = calculateIRT(salarioBruto - inss.trabalhador - subAlim - subTrans); // IRT sobre rendimento lÌquido de INSS e isento de subsÌdios (simplificado)
 
             const totalDescontos = inss.trabalhador + irt + descAtrasos + descFerias + adiantamento;
             const salarioLiquido = salarioBruto - totalDescontos;
@@ -1227,7 +1227,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                funcionario_nome: f.nome,
                mes_referencia: `${activePeriodo.mes}/${activePeriodo.ano}`,
                periodo_id: selectedPeriodoId,
-               empresa_id: selectedEmpresaId,
+               tenant_id: selectedEmpresaId,
                salario_base: base,
                subsidios: subAlim + subTrans,
                subsidio_ferias: ferias,
@@ -1252,15 +1252,15 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          const { error: fError } = await supabase.from('acc_folhas').insert(payrollBatch);
          if (fError) throw fError;
 
-         // 2. Criar Lan√ßamento Cont√°bil Correspondente
+         // 2. Criar LanÁamento Cont·bil Correspondente
          const totalBrutoBatch = (payrollBatch || []).reduce((acc, f) => acc + Number(f.salario_bruto), 0);
          const totalLiquidoBatch = (payrollBatch || []).reduce((acc, f) => acc + Number(f.salario_liquido), 0);
          const totalDescontosBatch = totalBrutoBatch - totalLiquidoBatch;
 
          const { data: entry, error: lError } = await supabase.from('acc_lancamentos').insert([{
-            empresa_id: selectedEmpresaId,
+            tenant_id: selectedEmpresaId,
             debito: totalBrutoBatch,
-            credito: totalDescontosBatch + totalLiquidoBatch, // Equil√≠brio cont√°bil
+            credito: totalDescontosBatch + totalLiquidoBatch, // EquilÌbrio cont·bil
             descricao: `Processamento de Folha de Pagamento - Ciclo ${periodos.find(p => p.id === selectedPeriodoId)?.mes}/${periodos.find(p => p.id === selectedPeriodoId)?.ano}`,
             data: new Date().toISOString().split('T')[0],
             status: 'concluido'
@@ -1268,11 +1268,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
          if (lError) throw lError;
 
-         // 3. Itens do Lan√ßamento
+         // 3. Itens do LanÁamento
          await supabase.from('acc_lancamento_itens').insert([
-            { lancamento_id: entry.id, conta_id: '62', debito: totalBrutoBatch, credito: 0, descricao: 'Gastos com Pessoal (Sal√°rios)' },
-            { lancamento_id: entry.id, conta_id: '34', debito: 0, credito: totalDescontosBatch, descricao: 'Reten√ß√µes e Descontos (Seg. Social/IRT)' },
-            { lancamento_id: entry.id, conta_id: '37', debito: 0, credito: totalLiquidoBatch, descricao: 'Sal√°rios L√≠quidos a Pagar' }
+            { lancamento_id: entry.id, conta_id: '62', debito: totalBrutoBatch, credito: 0, descricao: 'Gastos com Pessoal (Sal·rios)' },
+            { lancamento_id: entry.id, conta_id: '34', debito: 0, credito: totalDescontosBatch, descricao: 'RetenÁıes e Descontos (Seg. Social/IRT)' },
+            { lancamento_id: entry.id, conta_id: '37', debito: 0, credito: totalLiquidoBatch, descricao: 'Sal·rios LÌquidos a Pagar' }
          ]);
 
          await fetchAccountingData();
@@ -1289,19 +1289,19 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       alert(`Imprimindo documento ${fatura.numero_fatura || fatura.numero}...`);
    };
 
-   // --- L√ìGICA DE RELAT√ìRIOS ---
+   // --- L”GICA DE RELAT”RIOS ---
    const openReport = async (reportId: string) => {
       setIsGeneratingReport(true);
       const reportTitle = {
-         'balanco': 'Balan√ßo Patrimonial',
-         'dre': 'Demonstra√ß√£o de Resultados (DRE)',
-         'balancete': 'Balancete de Verifica√ß√£o',
-         'diario': 'Di√°rio de Lan√ßamentos',
-         'raz√£o': 'Livro Raz√£o',
+         'balanco': 'BalanÁo Patrimonial',
+         'dre': 'DemonstraÁ„o de Resultados (DRE)',
+         'balancete': 'Balancete de VerificaÁ„o',
+         'diario': 'Di·rio de LanÁamentos',
+         'raz„o': 'Livro Raz„o',
          'cashflow': 'Fluxo de Caixa',
-         'fiscal': 'Relat√≥rio Fiscal (IVA/IRT)',
+         'fiscal': 'RelatÛrio Fiscal (IVA/IRT)',
          'auditoria': 'Trilhas de Auditoria'
-      }[reportId] || 'Relat√≥rio';
+      }[reportId] || 'RelatÛrio';
 
       if (!selectedEmpresaId) {
          alert("Por favor, selecione uma empresa primeiro.");
@@ -1314,14 +1314,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
          if (reportId === 'diario') {
             if (!selectedPeriodoId) {
-               alert("Selecione um per√≠odo (Ano/M√™s) para visualizar o di√°rio.");
+               alert("Selecione um perÌodo (Ano/MÍs) para visualizar o di·rio.");
                setIsGeneratingReport(false);
                return;
             }
-            data = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.periodo_id === selectedPeriodoId);
+            data = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.periodo_id === selectedPeriodoId);
          } else if (reportId === 'balancete') {
             const saldos: any = {};
-            (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado').forEach(l => {
+            (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado').forEach(l => {
                (l.itens || []).forEach((it: any) => {
                   if (!saldos[it.conta_codigo]) {
                      saldos[it.conta_codigo] = { codigo: it.conta_codigo, nome: it.conta_nome, debito: 0, credito: 0 };
@@ -1332,12 +1332,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             });
             data = Object.values(saldos).sort((a: any, b: any) => a.codigo.localeCompare(b.codigo));
          } else if (reportId === 'dre') {
-            const proveitos = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            const proveitos = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
                .filter(it => it?.conta_codigo?.startsWith('6') && it?.tipo === 'C')
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
 
-            const custos = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            const custos = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
                .filter(it => it?.conta_codigo?.startsWith('7') && it?.tipo === 'D')
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
@@ -1345,28 +1345,28 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             data = [
                { desc: 'PROVEITOS E GANHOS', valor: proveitos, tipo: 'R' },
                { desc: 'CUSTOS E PERDAS', valor: custos, tipo: 'D' },
-               { desc: 'RESULTADO L√çQUIDO', valor: proveitos - custos, tipo: 'T' }
+               { desc: 'RESULTADO LÕQUIDO', valor: proveitos - custos, tipo: 'T' }
             ];
          } else if (reportId === 'balanco') {
-            const ativo = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            const ativo = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
                .filter(it => (it?.conta_codigo?.startsWith('1') || it?.conta_codigo?.startsWith('2') || it?.conta_codigo?.startsWith('3')) && it?.tipo === 'D')
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0) -
-               (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                   .flatMap(l => (l.itens || []))
                   .filter(it => (it?.conta_codigo?.startsWith('1') || it?.conta_codigo?.startsWith('2') || it?.conta_codigo?.startsWith('3')) && it?.tipo === 'C')
                   .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
 
-            const passivo = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            const passivo = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
                .filter(it => it?.conta_codigo?.startsWith('4') && it?.tipo === 'C')
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0) -
-               (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+               (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                   .flatMap(l => (l.itens || []))
                   .filter(it => it?.conta_codigo?.startsWith('4') && it?.tipo === 'D')
                   .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
 
-            const capital = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            const capital = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
                .filter(it => it?.conta_codigo?.startsWith('5') && it?.tipo === 'C')
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
@@ -1374,31 +1374,31 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             data = [
                { desc: 'ACTIVO TOTAL', valor: ativo },
                { desc: 'PASSIVO TOTAL', valor: passivo },
-               { desc: 'CAPITAL PR√ìPRIO', valor: capital },
+               { desc: 'CAPITAL PR”PRIO', valor: capital },
                { desc: 'TOTAL PASSIVO + CP', valor: passivo + capital }
             ];
          } else if (reportId === 'auditoria') {
             data = auditLogs;
          } else if (reportId === 'fiscal') {
-            const ivaLiquidado = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            const ivaLiquidado = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
                .filter(it => it?.conta_codigo === '3.4.5' && it?.tipo === 'C')
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
 
-            const ivaDedutivel = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            const ivaDedutivel = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
                .filter(it => it?.conta_codigo === '3.4.5' && it?.tipo === 'D')
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
 
             data = [
                { desc: 'IVA Liquidado (Vendas)', valor: ivaLiquidado },
-               { desc: 'IVA Dedut√≠vel (Compras)', valor: ivaDedutivel },
+               { desc: 'IVA DedutÌvel (Compras)', valor: ivaDedutivel },
                { desc: 'IVA a Pagar / Recuperar', valor: ivaLiquidado - ivaDedutivel }
             ];
-         } else if (reportId === 'raz√£o') {
+         } else if (reportId === 'raz„o') {
             // Agrupar movimentos detalhados por conta
             const razao: any = {};
-            (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado').forEach(l => {
+            (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado').forEach(l => {
                (l.itens || []).forEach((it: any) => {
                   if (!razao[it.conta_codigo]) {
                      razao[it.conta_codigo] = { codigo: it.conta_codigo, nome: it.conta_nome, movimentos: [] };
@@ -1411,40 +1411,40 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   });
                });
             });
-            // Converter para array plano para exibi√ß√£o
+            // Converter para array plano para exibiÁ„o
             data = Object.values(razao).sort((a: any, b: any) => a.codigo.localeCompare(b.codigo));
          } else if (reportId === 'cashflow') {
-            // Fluxo de Caixa Simplicado (Entradas vs Sa√≠das na Classe 1)
-            const entradas = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            // Fluxo de Caixa Simplicado (Entradas vs SaÌdas na Classe 1)
+            const entradas = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
                .filter(it => it?.conta_codigo?.startsWith('1.1') && it?.tipo === 'D') // Caixa/Bancos como destino (entrada)
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
 
-            const saidas = (lancamentos || []).filter(l => l.empresa_id === selectedEmpresaId && l.status === 'Postado')
+            const saidas = (lancamentos || []).filter(l => l.tenant_id === selectedEmpresaId && l.status === 'Postado')
                .flatMap(l => (l.itens || []))
-               .filter(it => it?.conta_codigo?.startsWith('1.1') && it?.tipo === 'C') // Caixa/Bancos como origem (sa√≠da)
+               .filter(it => it?.conta_codigo?.startsWith('1.1') && it?.tipo === 'C') // Caixa/Bancos como origem (saÌda)
                .reduce((acc, it) => acc + (Number(it.valor) || 0), 0);
 
             data = [
                { desc: 'ENTRADAS DE CAIXA', valor: entradas, tipo: 'R' },
-               { desc: 'SA√çDAS DE CAIXA', valor: saidas, tipo: 'D' },
-               { desc: 'FLUXO L√çQUIDO DO PER√çODO', valor: entradas - saidas, tipo: 'T' }
+               { desc: 'SAÕDAS DE CAIXA', valor: saidas, tipo: 'D' },
+               { desc: 'FLUXO LÕQUIDO DO PERÕODO', valor: entradas - saidas, tipo: 'T' }
             ];
          }
 
          setActiveReport({ id: reportId, title: reportTitle, data });
          setShowReportModal(true);
       } catch (e) {
-         console.error("Erro ao gerar relat√≥rio:", e);
+         console.error("Erro ao gerar relatÛrio:", e);
       } finally {
          setIsGeneratingReport(false);
       }
    };
 
-   // --- LAN√áAMENTOS AUTOM√ÅTICOS: FATURA√á√ÉO ---
+   // --- LAN«AMENTOS AUTOM¡TICOS: FATURA«√O ---
    const handleAutoLaunchFromFatura = async (fatura: any) => {
       if (!selectedEmpresaId || !selectedPeriodoId) {
-         alert('Selecione empresa e per√≠odo antes de contabilizar.');
+         alert('Selecione empresa e perÌodo antes de contabilizar.');
          return;
       }
       setIsAutoLaunching(true);
@@ -1456,29 +1456,29 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             data: fatura.data_emissao || new Date().toISOString().split('T')[0],
             periodo_id: selectedPeriodoId,
             descricao: `Fatura ${fatura.numero_fatura || ''} - ${fatura.cliente_nome || 'Cliente'}`,
-            empresa_id: selectedEmpresaId,
+            tenant_id: selectedEmpresaId,
             usuario_id: null,
             status: 'Postado',
-            tipo_transacao: 'Autom√°tico'
+            tipo_transacao: 'Autom·tico'
          }]).select().single();
          if (error) throw error;
          await supabase.from('acc_lancamento_itens').insert([
             { lancamento_id: head.id, conta_codigo: regra.conta_debito_codigo, conta_nome: 'Clientes / Contas a Receber', tipo: 'D', valor: Number(fatura.valor_total) || 0 },
-            { lancamento_id: head.id, conta_codigo: regra.conta_credito_codigo, conta_nome: 'Vendas / Receitas de Servi√ßos', tipo: 'C', valor: Number(fatura.valor_total) || 0 }
+            { lancamento_id: head.id, conta_codigo: regra.conta_credito_codigo, conta_nome: 'Vendas / Receitas de ServiÁos', tipo: 'C', valor: Number(fatura.valor_total) || 0 }
          ]);
          await fetchAccountingData();
-         alert(`Lan√ßamento autom√°tico criado para a fatura ${fatura.numero_fatura || ''}!`);
+         alert(`LanÁamento autom·tico criado para a fatura ${fatura.numero_fatura || ''}!`);
       } catch (err) {
-         alert('Erro ao criar lan√ßamento autom√°tico.');
+         alert('Erro ao criar lanÁamento autom·tico.');
       } finally {
          setIsAutoLaunching(false);
       }
    };
 
-   // --- LAN√áAMENTOS AUTOM√ÅTICOS: TESOURARIA ---
+   // --- LAN«AMENTOS AUTOM¡TICOS: TESOURARIA ---
    const handleAutoLaunchFromTesouraria = async (transacao: any) => {
       if (!selectedEmpresaId || !selectedPeriodoId) {
-         alert('Selecione empresa e per√≠odo antes de contabilizar.');
+         alert('Selecione empresa e perÌodo antes de contabilizar.');
          return;
       }
       setIsAutoLaunching(true);
@@ -1488,10 +1488,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             data: transacao.data || new Date().toISOString().split('T')[0],
             periodo_id: selectedPeriodoId,
             descricao: transacao.descricao || transacao.categoria || 'Mov. Tesouraria',
-            empresa_id: selectedEmpresaId,
+            tenant_id: selectedEmpresaId,
             usuario_id: null,
             status: 'Postado',
-            tipo_transacao: 'Autom√°tico'
+            tipo_transacao: 'Autom·tico'
          }]).select().single();
          if (error) throw error;
          await supabase.from('acc_lancamento_itens').insert([
@@ -1499,16 +1499,16 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             { lancamento_id: head.id, conta_codigo: isEntrada ? '6.1' : '1.1', conta_nome: isEntrada ? 'Receitas' : 'Caixa/Bancos', tipo: 'C', valor: Number(transacao.valor) || 0 }
          ]);
          await fetchAccountingData();
-         alert('Lan√ßamento autom√°tico de tesouraria criado!');
+         alert('LanÁamento autom·tico de tesouraria criado!');
       } catch (err) {
-         alert('Erro ao criar lan√ßamento autom√°tico.');
+         alert('Erro ao criar lanÁamento autom·tico.');
       } finally {
          setIsAutoLaunching(false);
       }
    };
 
    // ============================================================
-   // --- COMPRAS: REGISTO + LAN√áAMENTO AUTOM√ÅTICO ---
+   // --- COMPRAS: REGISTO + LAN«AMENTO AUTOM¡TICO ---
    // ============================================================
    const handleSaveCompra = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -1518,13 +1518,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          // 1. Inserir compra
          const { data: compra, error: cErr } = await supabase.from('compras').insert([{
             ...newCompra,
-            empresa_id: selectedEmpresaId,
+            tenant_id: selectedEmpresaId,
             periodo_id: selectedPeriodoId || null,
             valor_liquido: Number(newCompra.valor_total) - Number(newCompra.iva)
          }]).select().single();
          if (cErr) throw cErr;
 
-         // 2. Criar lan√ßamento autom√°tico se a empresa tiver per√≠odo activo
+         // 2. Criar lanÁamento autom·tico se a empresa tiver perÌodo activo
          if (selectedPeriodoId) {
             const regra = regrasAutomaticas.find(r => r.nome.toLowerCase().includes('compra')) || {
                conta_debito_codigo: '2.1', conta_credito_codigo: '3.2'
@@ -1532,15 +1532,15 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             const { data: head, error: hErr } = await supabase.from('acc_lancamentos').insert([{
                data: newCompra.data_compra,
                periodo_id: selectedPeriodoId,
-               descricao: `Compra ${newCompra.numero_compra || ''} ‚Äî ${newCompra.fornecedor_nome || 'Fornecedor'}`,
-               empresa_id: selectedEmpresaId,
+               descricao: `Compra ${newCompra.numero_compra || ''} ó ${newCompra.fornecedor_nome || 'Fornecedor'}`,
+               tenant_id: selectedEmpresaId,
                usuario_id: null,
                status: 'Postado',
-               tipo_transacao: 'Autom√°tico'
+               tipo_transacao: 'Autom·tico'
             }]).select().single();
             if (!hErr && head) {
                await supabase.from('acc_lancamento_itens').insert([
-                  { lancamento_id: head.id, conta_codigo: regra.conta_debito_codigo, conta_nome: 'Invent√°rio / Activos Circulantes', tipo: 'D', valor: Number(newCompra.valor_total) },
+                  { lancamento_id: head.id, conta_codigo: regra.conta_debito_codigo, conta_nome: 'Invent·rio / Activos Circulantes', tipo: 'D', valor: Number(newCompra.valor_total) },
                   { lancamento_id: head.id, conta_codigo: regra.conta_credito_codigo, conta_nome: 'Fornecedores / Contas a Pagar', tipo: 'C', valor: Number(newCompra.valor_total) }
                ]);
                // Marcar compra como contabilizada
@@ -1560,7 +1560,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
    // ============================================================
-   // --- APROVA√á√ÉO DE LAN√áAMENTOS ---
+   // --- APROVA«√O DE LAN«AMENTOS ---
    // ============================================================
    const handleAprovarLancamento = async (lancamento: any, obs: string) => {
       setIsApprovingId(lancamento.id);
@@ -1576,46 +1576,46 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          setShowApprovalModal(false);
          setApprovalTarget(null);
          setApprovalObs('');
-         alert('Lan√ßamento aprovado e postado com sucesso!');
+         alert('LanÁamento aprovado e postado com sucesso!');
       } catch (err) {
-         alert('Erro ao aprovar lan√ßamento.');
+         alert('Erro ao aprovar lanÁamento.');
       } finally {
          setIsApprovingId(null);
       }
    };
 
    const handleRejeitarLancamento = async (lancamento: any) => {
-      if (!confirm('Rejeitar e eliminar este lan√ßamento?')) return;
+      if (!confirm('Rejeitar e eliminar este lanÁamento?')) return;
       try {
          await supabase.from('acc_lancamento_itens').delete().eq('lancamento_id', lancamento.id);
          await supabase.from('acc_lancamentos').delete().eq('id', lancamento.id);
          await fetchAccountingData();
       } catch (err) {
-         alert('Erro ao rejeitar lan√ßamento.');
+         alert('Erro ao rejeitar lanÁamento.');
       }
    };
 
    // ============================================================
-   // --- ESTORNO DE LAN√áAMENTOS ---
+   // --- ESTORNO DE LAN«AMENTOS ---
    // ============================================================
    const handleEstornarLancamento = async (lancamento: any) => {
-      if (lancamento.estornado) { alert('Este lan√ßamento j√° foi estornado.'); return; }
-      if (!confirm(`Criar estorno do lan√ßamento "${lancamento.descricao}"? Esta ac√ß√£o √© irrevers√≠vel.`)) return;
+      if (lancamento.estornado) { alert('Este lanÁamento j· foi estornado.'); return; }
+      if (!confirm(`Criar estorno do lanÁamento "${lancamento.descricao}"? Esta acÁ„o È irreversÌvel.`)) return;
       setIsEstornandoId(lancamento.id);
       try {
-         // 1. Criar lan√ßamento espelho com D/C invertidos
+         // 1. Criar lanÁamento espelho com D/C invertidos
          const { data: estornoHead, error: eErr } = await supabase.from('acc_lancamentos').insert([{
             data: new Date().toISOString().split('T')[0],
             periodo_id: lancamento.periodo_id || selectedPeriodoId,
             descricao: `ESTORNO: ${lancamento.descricao}`,
-            empresa_id: lancamento.empresa_id,
+            tenant_id: lancamento.tenant_id,
             usuario_id: null,
             status: 'Postado',
             tipo_transacao: 'Estorno'
          }]).select().single();
          if (eErr) throw eErr;
 
-         // 2. Inverter itens D‚ÜíC e C‚ÜíD
+         // 2. Inverter itens D?C e C?D
          const itensOriginais = lancamento.itens || [];
          if (itensOriginais.length > 0) {
             await supabase.from('acc_lancamento_itens').insert(
@@ -1637,7 +1637,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          }).eq('id', lancamento.id);
 
          await fetchAccountingData();
-         alert(`Estorno criado com sucesso! Refer√™ncia: ${estornoHead.id.slice(0, 8).toUpperCase()}`);
+         alert(`Estorno criado com sucesso! ReferÍncia: ${estornoHead.id.slice(0, 8).toUpperCase()}`);
       } catch (err) {
          alert('Erro ao criar estorno.');
       } finally {
@@ -1645,7 +1645,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       }
    };
 
-   // --- L√ìGICA NOVO LAN√áAMENTO (com valida√ß√£o D=C) ---
+   // --- L”GICA NOVO LAN«AMENTO (com validaÁ„o D=C) ---
    const handleNewEntry = async (e: React.FormEvent) => {
 
       e.preventDefault();
@@ -1654,30 +1654,30 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          return;
       }
       if (newEntry.contaDebito === newEntry.contaCredito) {
-         alert('A conta de D√©bito e a conta de Cr√©dito n√£o podem ser iguais.');
+         alert('A conta de DÈbito e a conta de CrÈdito n„o podem ser iguais.');
          return;
       }
       const debito = planoContas.find(c => c.codigo === newEntry.contaDebito);
       const credito = planoContas.find(c => c.codigo === newEntry.contaCredito);
       if (!debito || !credito) {
-         alert('Selecione contas v√°lidas para D√©bito e Cr√©dito.');
+         alert('Selecione contas v·lidas para DÈbito e CrÈdito.');
          return;
       }
 
       try {
-         // 1. Inserir cabe√ßalho
+         // 1. Inserir cabeÁalho
          const { data: head, error: hError } = await supabase.from('acc_lancamentos').insert([{
             data: newEntry.data,
             periodo_id: selectedPeriodoId || null,
             descricao: newEntry.descricao,
-            empresa_id: selectedEmpresaId,
+            tenant_id: selectedEmpresaId,
             usuario_id: null,
             status: 'Postado',
             tipo_transacao: 'Manual'
          }]).select().single();
          if (hError) throw hError;
 
-         // 2. Inserir itens D e C (valores iguais ‚Äî soma D = soma C garantida)
+         // 2. Inserir itens D e C (valores iguais ó soma D = soma C garantida)
          await supabase.from('acc_lancamento_itens').insert([
             { lancamento_id: head.id, conta_codigo: debito!.codigo, conta_nome: debito!.nome, tipo: 'D', valor: Number(newEntry.valor) },
             { lancamento_id: head.id, conta_codigo: credito!.codigo, conta_nome: credito!.nome, tipo: 'C', valor: Number(newEntry.valor) }
@@ -1687,28 +1687,28 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          setShowEntryModal(false);
          setNewEntry({ ...newEntry, descricao: '', valor: 0 });
       } catch (error) {
-         alert('Erro ao salvar lan√ßamento');
+         alert('Erro ao salvar lanÁamento');
       }
    };
 
    const handleExportChart = () => {
-      alert("Exporta√ß√£o de gr√°fico iniciada. (Funcionalidade simulada)");
+      alert("ExportaÁ„o de gr·fico iniciada. (Funcionalidade simulada)");
    };
 
    const handleExportFiscal = async () => {
       if (!selectedEmpresaId) return alert("Selecione uma empresa.");
       setIsExportingFiscal(true);
       try {
-         // Simula√ß√£o de gera√ß√£o de PDF robusta
+         // SimulaÁ„o de geraÁ„o de PDF robusta
          await new Promise(resolve => setTimeout(resolve, 3000));
 
          const reportContent = `
-            RELAT√ìRIO FISCAL - ${currentEmpresa?.nome}
-            Per√≠odo: ${periodos.find(p => p.id === selectedPeriodoId)?.mes}/${periodos.find(p => p.id === selectedPeriodoId)?.ano}
+            RELAT”RIO FISCAL - ${currentEmpresa?.nome}
+            PerÌodo: ${periodos.find(p => p.id === selectedPeriodoId)?.mes}/${periodos.find(p => p.id === selectedPeriodoId)?.ano}
             
             RECEITA TOTAL: ${safeFormatAOA(financeReports.receitaTotal)}
             DESPESA TOTAL: ${safeFormatAOA(financeReports.despesaTotal)}
-            LUCRO L√çQUIDO: ${safeFormatAOA(financeReports.lucroLiquido)}
+            LUCRO LÕQUIDO: ${safeFormatAOA(financeReports.lucroLiquido)}
             
             IMPOSTOS ESTIMADOS:
             - IVA: ${safeFormatAOA(financeReports.receitaTotal * 0.14)}
@@ -1718,7 +1718,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          `;
 
          console.log("PDF Export Content Generated:", reportContent);
-         alert("Mapas Fiscais (IVA/IRT/II) gerados e exportados com sucesso para o diret√≥rio de downloads.");
+         alert("Mapas Fiscais (IVA/IRT/II) gerados e exportados com sucesso para o diretÛrio de downloads.");
       } catch (error) {
          alert("Erro ao exportar mapas fiscais.");
       } finally {
@@ -1742,11 +1742,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                 </style>
              </head>
              <body>
-                <h1>Balancete de Verifica√ß√£o</h1>
+                <h1>Balancete de VerificaÁ„o</h1>
                 <p>Empresa: ${currentEmpresa?.nome}</p>
                 <table>
                    <thead>
-                      <tr><th>C√≥digo</th><th>Conta</th><th>Saldo</th></tr>
+                      <tr><th>CÛdigo</th><th>Conta</th><th>Saldo</th></tr>
                    </thead>
                    <tbody>
                       ${planoContas.filter(c => financeReports.saldos[c.codigo] !== 0).map(c => `
@@ -1782,7 +1782,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   onClick={() => setLoading(false)}
                   className="px-6 py-2.5 bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-lg"
                >
-                  Bypass Sync (Acesso de Emerg√™ncia)
+                  Bypass Sync (Acesso de EmergÍncia)
                </button>
             </div>
          </div>
@@ -1797,7 +1797,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             </div>
             <div className="max-w-md space-y-2">
                <h2 className="text-2xl font-black uppercase">Configurando Ambiente</h2>
-               <p className="text-zinc-500 font-medium">N√£o foram encontradas entidades activas ou o sistema est√° a recuperar a sincroniza√ß√£o.</p>
+               <p className="text-zinc-500 font-medium">N„o foram encontradas entidades activas ou o sistema est· a recuperar a sincronizaÁ„o.</p>
                <p className="text-[10px] text-zinc-400 font-mono">Status: {loadingStatus || 'Aguardando payload...'}</p>
             </div>
             <div className="flex gap-4">
@@ -1805,13 +1805,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   onClick={() => fetchAccountingData()}
                   className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-800 transition-all shadow-xl flex items-center gap-2"
                >
-                  <RefreshCw size={16} /> For√ßar Sincroniza√ß√£o
+                  <RefreshCw size={16} /> ForÁar SincronizaÁ„o
                </button>
                <button
                   onClick={() => window.location.href = '/empresas'}
                   className="px-8 py-4 bg-white text-zinc-900 border border-zinc-200 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-50 transition-all shadow-xl"
                >
-                  Ver Gest√£o
+                  Ver Gest„o
                </button>
             </div>
          </div>
@@ -1829,7 +1829,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   </div>
                   <div>
                      <h2 className="text-white font-black text-lg tracking-tight leading-none uppercase">Amazing</h2>
-                     <p className="text-yellow-500/80 font-black text-[10px] uppercase tracking-widest mt-1">Cont√°bilExpert</p>
+                     <p className="text-yellow-500/80 font-black text-[10px] uppercase tracking-widest mt-1">Cont·bilExpert</p>
                   </div>
                </div>
             </div>
@@ -1855,14 +1855,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
                {/* Separator for advanced options */}
                <div className="my-8 h-px bg-white/5 mx-4" />
-               <p className="px-4 text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-4">Gest√£o & Auditoria</p>
+               <p className="px-4 text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-4">Gest„o & Auditoria</p>
                {[
-                  { id: 'diario', label: 'Di√°rio Geral', icon: <BookOpen size={18} /> },
-                  { id: 'periodos', label: 'Per√≠odos', icon: <Calendar size={18} /> },
+                  { id: 'diario', label: 'Di·rio Geral', icon: <BookOpen size={18} /> },
+                  { id: 'periodos', label: 'PerÌodos', icon: <Calendar size={18} /> },
                   { id: 'plano', label: 'Plano de Contas', icon: <ListFilter size={18} /> },
                   { id: 'fiscal', label: 'Fiscal / Impostos', icon: <Landmark size={18} /> },
                   { id: 'folha', label: 'Folha Pagamento', icon: <Briefcase size={18} /> },
-                  { id: 'conciliacao', label: 'Concilia√ß√£o', icon: <RefreshCw size={18} /> },
+                  { id: 'conciliacao', label: 'ConciliaÁ„o', icon: <RefreshCw size={18} /> },
                   { id: 'auditoria', label: 'Log Auditoria', icon: <ShieldCheck size={18} /> },
                   { id: 'ia', label: 'Amazing IA', icon: <BrainCircuit size={18} /> },
                ].map((item) => (
@@ -1903,12 +1903,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   <div>
                      <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase">
                         {([...sidebarItems,
-                        { id: 'diario', label: 'Di√°rio Geral' },
-                        { id: 'periodos', label: 'Per√≠odos' },
+                        { id: 'diario', label: 'Di·rio Geral' },
+                        { id: 'periodos', label: 'PerÌodos' },
                         { id: 'plano', label: 'Plano de Contas' },
                         { id: 'fiscal', label: 'Fiscal / Impostos' },
                         { id: 'folha', label: 'Folha Pagamento' },
-                        { id: 'conciliacao', label: 'Concilia√ß√£o' },
+                        { id: 'conciliacao', label: 'ConciliaÁ„o' },
                         { id: 'auditoria', label: 'Log Auditoria' },
                         { id: 'ia', label: 'Amazing IA' }
                         ].find(i => i.id === activeTab) as any)?.label || 'Painel de Controlo'}
@@ -1942,7 +1942,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase text-zinc-800 pr-8 cursor-pointer outline-none"
                         >
                            {(() => {
-                              const filtered = (periodos || []).filter(p => p.empresa_id === selectedEmpresaId);
+                              const filtered = (periodos || []).filter(p => p.tenant_id === selectedEmpresaId);
                               if (filtered.length === 0) return <option value="">Sem Ciclos</option>;
                               return filtered.map(p => (
                                  <option key={p.id} value={p.id}>{`${p.mes}/${p.ano} - ${p.status}`}</option>
@@ -1955,7 +1955,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
                {/* --- DASHBOARD PREMIUM --- */}
                {activeTab === 'dashboard' && (() => {
-                  // === C√ÅLCULOS PREMIUM DIN√ÇMICOS ===
+                  // === C¡LCULOS PREMIUM DIN¬MICOS ===
                   const receita = Number(financeReports.receitaTotal) || 0;
                   const despesa = Number(financeReports.despesaTotal) || 0;
                   const lucro = Number(financeReports.lucroLiquido) || 0;
@@ -1968,14 +1968,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   const despesaTotal = lancamentos.reduce((acc, l) => acc + (l.itens?.filter(it => it.conta_codigo?.startsWith('7')).reduce((sum, i) => sum + (Number(i.valor) || 0), 0) || 0), 0);
                   const lucroReal = receitaTotal - despesaTotal;
                   const score = receitaTotal > 0 ? Math.min(10, Math.max(0, (lucroReal / receitaTotal) * 10 + 5)) : 5.0;
-                  // Indicadores Autom√°ticos
+                  // Indicadores Autom·ticos
                   const liquidezCorrente = passivos > 0 ? ativos / passivos : ativos > 0 ? 99 : 0;
                   const solvencia = (ativos + capital) > 0 ? ativos / (passivos + capital) : 0;
                   const margemLiquida = receita > 0 ? (lucro / receita) * 100 : 0;
                   const roe = capital > 0 ? (lucro / capital) * 100 : 0;
                   const ratioEndividamento = ativos > 0 ? (passivos / ativos) * 100 : 0;
 
-                  // Score Financeiro (0‚Äì10) ‚Äî algoritmo din√¢mico
+                  // Score Financeiro (0ñ10) ó algoritmo din‚mico
                   // let score = 5.0; // This line is now replaced by the new score calculation above
                   // if (margemLiquida > 20) score += 2;
                   // else if (margemLiquida > 10) score += 1;
@@ -1987,29 +1987,29 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   // else if (ratioEndividamento > 70) score -= 1;
                   // if (receita === 0) score = 0;
                   // score = Math.min(10, Math.max(0, score));
-                  const scoreLabel = score >= 8 ? 'Excel√™ncia' : score >= 6 ? 'Bom' : score >= 4 ? 'Aten√ß√£o' : 'Cr√≠tico';
+                  const scoreLabel = score >= 8 ? 'ExcelÍncia' : score >= 6 ? 'Bom' : score >= 4 ? 'AtenÁ„o' : 'CrÌtico';
                   const scoreColor = score >= 8 ? 'text-green-400' : score >= 6 ? 'text-yellow-400' : score >= 4 ? 'text-orange-400' : 'text-red-400';
 
-                  // Alertas de Risco Din√¢micos
+                  // Alertas de Risco Din‚micos
                   const alertas: { nivel: 'danger' | 'warn' | 'ok'; msg: string; sub: string }[] = [];
 
                   // Alerta de Stock (Novo)
                   const lowStockCount = extInventario.filter(i => Number(i.quantidade_atual) <= Number(i.quantidade_minima)).length;
                   if (lowStockCount > 0) {
-                     alertas.push({ nivel: 'danger', msg: 'Ruptura de Stock', sub: `${lowStockCount} itens atingiram o n√≠vel cr√≠tico de stock.` });
+                     alertas.push({ nivel: 'danger', msg: 'Ruptura de Stock', sub: `${lowStockCount} itens atingiram o nÌvel crÌtico de stock.` });
                   }
 
-                  if (lucro < 0) alertas.push({ nivel: 'danger', msg: 'Resultado Negativo', sub: `Preju√≠zo de ${safeFormatAOA(Math.abs(lucro))} no per√≠odo.` });
+                  if (lucro < 0) alertas.push({ nivel: 'danger', msg: 'Resultado Negativo', sub: `PrejuÌzo de ${safeFormatAOA(Math.abs(lucro))} no perÌodo.` });
                   if (liquidezCorrente < 1 && ativos > 0) alertas.push({ nivel: 'danger', msg: 'Risco de Liquidez', sub: `Activos cobrem apenas ${(liquidezCorrente * 100).toFixed(0)}% do passivo.` });
-                  if (ratioEndividamento > 70 && ativos > 0) alertas.push({ nivel: 'warn', msg: 'Alto Endividamento', sub: `${ratioEndividamento.toFixed(0)}% dos activos financiados por d√≠vida.` });
-                  if (margemLiquida > 0 && margemLiquida < 10) alertas.push({ nivel: 'warn', msg: 'Margem Comprimida', sub: `Margem l√≠quida de ${margemLiquida.toFixed(1)}% ‚Äî abaixo do ideal (>10%).` });
+                  if (ratioEndividamento > 70 && ativos > 0) alertas.push({ nivel: 'warn', msg: 'Alto Endividamento', sub: `${ratioEndividamento.toFixed(0)}% dos activos financiados por dÌvida.` });
+                  if (margemLiquida > 0 && margemLiquida < 10) alertas.push({ nivel: 'warn', msg: 'Margem Comprimida', sub: `Margem lÌquida de ${margemLiquida.toFixed(1)}% ó abaixo do ideal (>10%).` });
                   const ivaEstimado = receita * 0.14;
-                  if (ivaEstimado > 0) alertas.push({ nivel: 'warn', msg: 'IVA Estimado Pendente', sub: `${safeFormatAOA(ivaEstimado)} (14% sobre receita) ‚Äî verificar agenda fiscal.` });
-                  if (lucro > 0 && margemLiquida >= 10) alertas.push({ nivel: 'ok', msg: 'Desempenho S√≥lido', sub: `Margem de ${margemLiquida.toFixed(1)}% com resultado positivo.` });
-                  if (liquidezCorrente >= 1.5) alertas.push({ nivel: 'ok', msg: 'Liquidez Confort√°vel', sub: `Cobertura de ${liquidezCorrente.toFixed(2)}x sobre as obriga√ß√µes.` });
+                  if (ivaEstimado > 0) alertas.push({ nivel: 'warn', msg: 'IVA Estimado Pendente', sub: `${safeFormatAOA(ivaEstimado)} (14% sobre receita) ó verificar agenda fiscal.` });
+                  if (lucro > 0 && margemLiquida >= 10) alertas.push({ nivel: 'ok', msg: 'Desempenho SÛlido', sub: `Margem de ${margemLiquida.toFixed(1)}% com resultado positivo.` });
+                  if (liquidezCorrente >= 1.5) alertas.push({ nivel: 'ok', msg: 'Liquidez Confort·vel', sub: `Cobertura de ${liquidezCorrente.toFixed(2)}x sobre as obrigaÁıes.` });
                   const alertasToShow = alertas.slice(0, 4);
 
-                  // Previs√£o de Fluxo de Caixa (pr√≥ximos 6 meses por tend√™ncia simples)
+                  // Previs„o de Fluxo de Caixa (prÛximos 6 meses por tendÍncia simples)
                   const tendencia = receita > 0 ? (lucro / receita) : 0;
                   const base = receita > 0 ? receita : 500000;
                   const growthFactor = 1 + (tendencia * 0.1);
@@ -2038,7 +2038,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <p className="text-[9px] text-zinc-400 font-bold mt-3">Pessoal + Operacional</p>
                            </div>
                            <div className="bg-zinc-900 p-7 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
-                              <p className="text-yellow-500 text-[9px] font-black uppercase tracking-widest mb-2">Lucro L√≠quido</p>
+                              <p className="text-yellow-500 text-[9px] font-black uppercase tracking-widest mb-2">Lucro LÌquido</p>
                               <p className={`text-2xl font-black ${lucro >= 0 ? 'text-white' : 'text-red-400'}`}>{safeFormatAOA(lucro)}</p>
                               <div className="mt-3 h-1.5 bg-white/10 rounded-full overflow-hidden">
                                  <div className="h-full bg-yellow-500 transition-all duration-1000"
@@ -2052,13 +2052,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <p className="text-[9px] text-zinc-400 font-bold mt-3">Passivo: {safeFormatAOA(passivos)}</p>
                            </div>
 
-                           {/* Score Din√¢mico */}
+                           {/* Score Din‚mico */}
                            <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-zinc-900 to-zinc-800 p-7 rounded-[2.5rem] shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
                               <div className="absolute inset-0 opacity-10">
                                  <div className="absolute top-2 right-2 w-24 h-24 rounded-full bg-yellow-500 blur-2xl" />
                               </div>
                               <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Score Financeiro</p>
-                              <p className={`text-5xl font-black mt-1 ${scoreColor}`}>{receita > 0 ? score.toFixed(1) : '‚Äî'}</p>
+                              <p className={`text-5xl font-black mt-1 ${scoreColor}`}>{receita > 0 ? score.toFixed(1) : 'ó'}</p>
                               <p className={`text-[9px] font-black uppercase tracking-widest mt-2 ${scoreColor}`}>{receita > 0 ? scoreLabel : 'Sem Dados'}</p>
                               <div className="w-full mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
                                  <div className="h-full bg-yellow-500 transition-all duration-1000 rounded-full"
@@ -2067,44 +2067,44 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                         </div>
 
-                        {/* FILA 2: Indicadores Financeiros Autom√°ticos */}
+                        {/* FILA 2: Indicadores Financeiros Autom·ticos */}
                         <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
                            <div className="flex items-center justify-between mb-6">
                               <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                                 <BarChart2 size={18} className="text-yellow-500" /> Indicadores Financeiros Autom√°ticos
+                                 <BarChart2 size={18} className="text-yellow-500" /> Indicadores Financeiros Autom·ticos
                               </h3>
                               <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest px-3 py-1.5 bg-zinc-50 rounded-xl border border-zinc-100">Calculados em Tempo Real</span>
                            </div>
                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                               {[
                                  {
-                                    label: 'Liquidez Corrente', value: receita > 0 ? liquidezCorrente.toFixed(2) : '‚Äî', unit: 'x',
+                                    label: 'Liquidez Corrente', value: receita > 0 ? liquidezCorrente.toFixed(2) : 'ó', unit: 'x',
                                     info: 'Activo / Passivo. Ideal > 1.5',
                                     color: liquidezCorrente >= 1.5 ? 'bg-green-50 border-green-100 text-green-600' : liquidezCorrente >= 1 ? 'bg-yellow-50 border-yellow-100 text-yellow-600' : 'bg-red-50 border-red-100 text-red-600',
-                                    status: liquidezCorrente >= 1.5 ? '‚úì Saud√°vel' : liquidezCorrente >= 1 ? '‚ö† Aceit√°vel' : '‚úó Risco'
+                                    status: liquidezCorrente >= 1.5 ? '? Saud·vel' : liquidezCorrente >= 1 ? '? Aceit·vel' : '? Risco'
                                  },
                                  {
-                                    label: 'Solv√™ncia', value: receita > 0 ? solvencia.toFixed(2) : '‚Äî', unit: 'x',
+                                    label: 'SolvÍncia', value: receita > 0 ? solvencia.toFixed(2) : 'ó', unit: 'x',
                                     info: 'Activo / (Passivo+Capital). Ideal > 1',
                                     color: solvencia >= 1 ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-600',
-                                    status: solvencia >= 1 ? '‚úì Solvente' : '‚úó Insolvente'
+                                    status: solvencia >= 1 ? '? Solvente' : '? Insolvente'
                                  },
                                  {
-                                    label: 'ROE', value: receita > 0 ? roe.toFixed(1) : '‚Äî', unit: '%',
-                                    info: 'Retorno sobre Capital Pr√≥prio',
+                                    label: 'ROE', value: receita > 0 ? roe.toFixed(1) : 'ó', unit: '%',
+                                    info: 'Retorno sobre Capital PrÛprio',
                                     color: roe >= 15 ? 'bg-green-50 border-green-100 text-green-600' : roe >= 5 ? 'bg-yellow-50 border-yellow-100 text-yellow-600' : 'bg-zinc-50 border-zinc-100 text-zinc-500',
-                                    status: roe >= 15 ? '‚úì Excelente' : roe >= 5 ? '‚ö† Moderado' : '‚Äî Neutro'
+                                    status: roe >= 15 ? '? Excelente' : roe >= 5 ? '? Moderado' : 'ó Neutro'
                                  },
                                  {
-                                    label: 'Endividamento', value: receita > 0 ? ratioEndividamento.toFixed(0) : '‚Äî', unit: '%',
+                                    label: 'Endividamento', value: receita > 0 ? ratioEndividamento.toFixed(0) : 'ó', unit: '%',
                                     info: 'Passivo / Activo. Ideal < 50%',
                                     color: ratioEndividamento < 40 ? 'bg-green-50 border-green-100 text-green-600' : ratioEndividamento < 70 ? 'bg-yellow-50 border-yellow-100 text-yellow-600' : 'bg-red-50 border-red-100 text-red-600',
-                                    status: ratioEndividamento < 40 ? '‚úì Baixo' : ratioEndividamento < 70 ? '‚ö† Moderado' : '‚úó Alto'
+                                    status: ratioEndividamento < 40 ? '? Baixo' : ratioEndividamento < 70 ? '? Moderado' : '? Alto'
                                  },
                               ].map((ind, i) => (
                                  <div key={i} className={`p-5 rounded-2xl border ${ind.color} flex flex-col gap-1`}>
                                     <p className="text-[9px] font-black uppercase tracking-widest opacity-70">{ind.label}</p>
-                                    <p className="text-3xl font-black">{ind.value}<span className="text-sm">{ind.value !== '‚Äî' ? ind.unit : ''}</span></p>
+                                    <p className="text-3xl font-black">{ind.value}<span className="text-sm">{ind.value !== 'ó' ? ind.unit : ''}</span></p>
                                     <p className="text-[9px] font-bold opacity-60">{ind.info}</p>
                                     <p className="text-[9px] font-black uppercase tracking-widest mt-1">{ind.status}</p>
                                  </div>
@@ -2112,7 +2112,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                         </div>
 
-                        {/* FILA 3: Gr√°ficos */}
+                        {/* FILA 3: Gr·ficos */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                            {/* Comparativo Receita vs Despesa */}
                            <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[420px] flex flex-col">
@@ -2121,7 +2121,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
                                        <LucideBarChart className="text-yellow-500" size={18} /> Comparativo Financeiro
                                     </h3>
-                                    <p className="text-xs text-zinc-400 font-bold mt-1 uppercase tracking-widest">An√°lise por Per√≠odo ¬∑ {currentEmpresa?.nome || ''}</p>
+                                    <p className="text-xs text-zinc-400 font-bold mt-1 uppercase tracking-widest">An·lise por PerÌodo ∑ {currentEmpresa?.nome || ''}</p>
                                  </div>
                                  <button onClick={handleExportChart} className="p-2 bg-zinc-50 hover:bg-zinc-100 rounded-xl text-zinc-400 hover:text-zinc-900 transition-colors" title="Exportar">
                                     <Download size={16} />
@@ -2142,17 +2142,17 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               </div>
                            </div>
 
-                           {/* Previs√£o de Fluxo de Caixa */}
+                           {/* Previs„o de Fluxo de Caixa */}
                            <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[420px] flex flex-col">
                               <div className="flex justify-between items-start mb-6">
                                  <div>
                                     <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
-                                       <ArrowUpRight className="text-yellow-500" size={18} /> Previs√£o de Fluxo de Caixa
+                                       <ArrowUpRight className="text-yellow-500" size={18} /> Previs„o de Fluxo de Caixa
                                     </h3>
-                                    <p className="text-xs text-zinc-400 font-bold mt-1 uppercase tracking-widest">Projec√ß√£o pr√≥ximos 6 meses ¬∑ Baseada em tend√™ncia real</p>
+                                    <p className="text-xs text-zinc-400 font-bold mt-1 uppercase tracking-widest">ProjecÁ„o prÛximos 6 meses ∑ Baseada em tendÍncia real</p>
                                  </div>
                                  <span className={`text-[9px] font-black px-3 py-1.5 rounded-xl border ${tendencia >= 0 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                                    Tend√™ncia {tendencia >= 0 ? `+${(tendencia * 100 * 0.1).toFixed(1)}%` : `${(tendencia * 100 * 0.1).toFixed(1)}%`} /m√™s
+                                    TendÍncia {tendencia >= 0 ? `+${(tendencia * 100 * 0.1).toFixed(1)}%` : `${(tendencia * 100 * 0.1).toFixed(1)}%`} /mÍs
                                  </span>
                               </div>
                               <div className="flex-1 w-full min-h-0">
@@ -2181,7 +2181,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                         </div>
 
-                        {/* FILA 4: Alertas de Risco Din√¢micos + Gr√°fico Pizza */}
+                        {/* FILA 4: Alertas de Risco Din‚micos + Gr·fico Pizza */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                            {/* Alertas Inteligentes */}
                            <div className="bg-zinc-900 p-10 rounded-[3rem] text-white flex flex-col justify-between shadow-2xl">
@@ -2190,12 +2190,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     <h3 className="text-lg font-black uppercase tracking-tight text-yellow-500 flex items-center gap-2">
                                        <AlertTriangle size={18} /> Alertas de Risco Financeiro
                                     </h3>
-                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">{alertas.filter(a => a.nivel === 'danger').length} Cr√≠tico(s)</span>
+                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">{alertas.filter(a => a.nivel === 'danger').length} CrÌtico(s)</span>
                                  </div>
                                  <div className="space-y-3">
                                     {alertasToShow.length === 0 && (
                                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
-                                          <p className="text-xs text-zinc-400 font-bold">Sem dados suficientes para gerar alertas autom√°ticos.</p>
+                                          <p className="text-xs text-zinc-400 font-bold">Sem dados suficientes para gerar alertas autom·ticos.</p>
                                        </div>
                                     )}
                                     {alertasToShow.map((alerta, i) => (
@@ -2213,17 +2213,17 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               </div>
                               <button onClick={() => openReport('balanco')}
                                  className="w-full mt-8 py-4 bg-yellow-500 text-zinc-900 font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all shadow-xl">
-                                 Ver Relat√≥rio Detalhado
+                                 Ver RelatÛrio Detalhado
                               </button>
                            </div>
 
-                           {/* Distribui√ß√£o de Despesas */}
+                           {/* DistribuiÁ„o de Despesas */}
                            <div className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm h-[420px] flex flex-col">
                               <div className="mb-6">
                                  <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
-                                    <PieChartIcon className="text-yellow-500" size={18} /> Distribui√ß√£o de Despesas
+                                    <PieChartIcon className="text-yellow-500" size={18} /> DistribuiÁ„o de Despesas
                                  </h3>
-                                 <p className="text-xs text-zinc-400 font-bold mt-1 uppercase tracking-widest">Aloca√ß√£o de Custos Operacionais</p>
+                                 <p className="text-xs text-zinc-400 font-bold mt-1 uppercase tracking-widest">AlocaÁ„o de Custos Operacionais</p>
                               </div>
                               <div className="flex-1 w-full min-h-0 relative">
                                  <ResponsiveContainer width="100%" height="100%">
@@ -2259,7 +2259,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
                               <input
                                  type="text"
-                                 placeholder="Pesquisar no di√°rio..."
+                                 placeholder="Pesquisar no di·rio..."
                                  className="w-full pl-12 pr-6 py-3.5 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-yellow-500/20"
                               />
                            </div>
@@ -2267,7 +2267,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         <div className="flex items-center gap-3">
                            {periodos.find(p => p.id === selectedPeriodoId)?.status === 'Fechado' && (
                               <div className="px-4 py-2 bg-red-50 text-red-600 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border border-red-100">
-                                 <Lock size={14} /> Per√≠odo Bloqueado
+                                 <Lock size={14} /> PerÌodo Bloqueado
                               </div>
                            )}
                            <button
@@ -2281,7 +2281,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               disabled={periodos.find(p => p.id === selectedPeriodoId)?.status === 'Fechado'}
                               className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl disabled:opacity-50"
                            >
-                              <Plus size={20} /> Novo Lan√ßamento
+                              <Plus size={20} /> Novo LanÁamento
                            </button>
                         </div>
                      </div>
@@ -2292,17 +2292,17 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <thead className="bg-zinc-900 text-white border-b border-zinc-800">
                                  <tr className="text-[10px] font-black uppercase tracking-[0.2em]">
                                     <th className="px-10 py-6">Data</th>
-                                    <th className="px-10 py-6">Refer√™ncia</th>
-                                    <th className="px-10 py-6">Hist√≥rico / Descri√ß√£o</th>
+                                    <th className="px-10 py-6">ReferÍncia</th>
+                                    <th className="px-10 py-6">HistÛrico / DescriÁ„o</th>
                                     <th className="px-10 py-6 text-right">Valor Total</th>
                                     <th className="px-10 py-6 text-center">Status</th>
                                     <th className="px-10 py-6 text-center">Tipo</th>
-                                    <th className="px-6 py-6 text-center">Ac√ß√µes</th>
+                                    <th className="px-6 py-6 text-center">AcÁıes</th>
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-zinc-100">
-                                 {lancamentos.filter(l => l.empresa_id === selectedEmpresaId && (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)).length > 0 ? (
-                                    lancamentos.filter(l => l.empresa_id === selectedEmpresaId && (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)).map((l) => (
+                                 {lancamentos.filter(l => l.tenant_id === selectedEmpresaId && (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)).length > 0 ? (
+                                    lancamentos.filter(l => l.tenant_id === selectedEmpresaId && (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true)).map((l) => (
                                        <tr key={l.id} className="group hover:bg-zinc-50/50 transition-all cursor-pointer">
                                           <td className="px-10 py-8 font-mono text-zinc-500 text-xs">
                                              {l.data ? new Date(l.data).toLocaleDateString() : 'N/D'}
@@ -2332,7 +2332,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 }`}>{l.estornado ? 'Estornado' : (l.status || 'Postado')}</span>
                                           </td>
                                           <td className="px-10 py-8 text-center">
-                                             <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest ${l.tipo_transacao === 'Autom√°tico' ? 'bg-blue-50 text-blue-600' :
+                                             <span className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest ${l.tipo_transacao === 'Autom·tico' ? 'bg-blue-50 text-blue-600' :
                                                 l.tipo_transacao === 'Estorno' ? 'bg-red-50 text-red-600' :
                                                    l.tipo_transacao === 'Folha' ? 'bg-purple-50 text-purple-600' :
                                                       'bg-zinc-50 text-zinc-500'
@@ -2344,12 +2344,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                    title="Criar Estorno" className="p-2 bg-zinc-50 hover:bg-red-50 hover:text-red-600 text-zinc-400 rounded-xl transition-all disabled:opacity-40">
                                                    {isEstornandoId === l.id ? <RefreshCw size={14} className="animate-spin" /> : <RotateCcw size={14} />}
                                                 </button>
-                                             ) : <span className="text-zinc-200">‚Äî</span>}
+                                             ) : <span className="text-zinc-200">ó</span>}
                                           </td>
                                        </tr>
                                     ))
                                  ) : (
-                                    <tr><td colSpan={7} className="text-center py-20 text-zinc-400 font-bold italic">Nenhum lan√ßamento registado para este per√≠odo.</td></tr>
+                                    <tr><td colSpan={7} className="text-center py-20 text-zinc-400 font-bold italic">Nenhum lanÁamento registado para este perÌodo.</td></tr>
                                  )}
                               </tbody>
                            </table>
@@ -2358,14 +2358,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   </div>
                )}
 
-               {/* --- DEMONSTRA√á√ïES FINANCEIRAS --- */}
+               {/* --- DEMONSTRA«’ES FINANCEIRAS --- */}
                {
                   activeTab === 'demonstracoes' && (
                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4">
-                        {/* Balan√ßo Patrimonial */}
+                        {/* BalanÁo Patrimonial */}
                         <div className="bg-white p-12 rounded-[4rem] shadow-sm border border-sky-100">
                            <div className="flex justify-between items-center mb-10">
-                              <h3 className="text-2xl font-black uppercase tracking-tight">Balan√ßo Patrimonial - {currentEmpresa?.nome || ''}</h3>
+                              <h3 className="text-2xl font-black uppercase tracking-tight">BalanÁo Patrimonial - {currentEmpresa?.nome || ''}</h3>
                               <button className="p-3 bg-zinc-50 rounded-xl text-zinc-400 hover:text-zinc-900"><Printer size={20} /></button>
                            </div>
                            <div className="space-y-8">
@@ -2375,14 +2375,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               </div>
                               <div className="space-y-4">
                                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Passivo (Credora)</p>
-                                 <div className="flex justify-between text-sm"><span className="font-bold">Obriga√ß√µes a Curto Prazo</span><span className="font-black text-red-600">{safeFormatAOA(financeReports.passivos)}</span></div>
+                                 <div className="flex justify-between text-sm"><span className="font-bold">ObrigaÁıes a Curto Prazo</span><span className="font-black text-red-600">{safeFormatAOA(financeReports.passivos)}</span></div>
                               </div>
                               <div className="space-y-4">
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Capital Pr√≥prio</p>
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b pb-2">Capital PrÛprio</p>
                                  <div className="flex justify-between text-sm"><span className="font-bold">Reservas e Capital Social</span><span className="font-black">{safeFormatAOA(financeReports.capital)}</span></div>
                               </div>
                               <div className="pt-6 border-t-2 border-zinc-900 flex justify-between">
-                                 <span className="text-lg font-black uppercase">Patrim√≥nio L√≠quido</span>
+                                 <span className="text-lg font-black uppercase">PatrimÛnio LÌquido</span>
                                  <span className="text-2xl font-black text-zinc-900">{safeFormatAOA(financeReports.ativos - financeReports.passivos)}</span>
                               </div>
                            </div>
@@ -2392,7 +2392,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         <div className="bg-zinc-900 p-12 rounded-[4rem] shadow-2xl text-white">
                            <div className="flex justify-between items-center mb-10">
                               <h3 className="text-2xl font-black uppercase tracking-tight text-yellow-500">DRE (Resultado)</h3>
-                              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Exerc√≠cio 2024</span>
+                              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">ExercÌcio 2024</span>
                            </div>
                            <div className="space-y-8">
                               <div className="flex justify-between border-b border-white/10 pb-4">
@@ -2404,13 +2404,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  <span className="font-black text-lg text-red-400">({safeFormatAOA(folhas?.reduce((acc, b) => acc + (Number(b.salario_base) || 0), 0) || 0)})</span>
                               </div>
                               <div className="flex justify-between border-b border-white/10 pb-4">
-                                 <span className="font-bold text-zinc-400 uppercase text-xs">Custos de Manuten√ß√£o</span>
+                                 <span className="font-bold text-zinc-400 uppercase text-xs">Custos de ManutenÁ„o</span>
                                  <span className="font-black text-lg text-red-400">({safeFormatAOA((Number(financeReports.despesaTotal) || 0) * 0.3)})</span>
                               </div>
                               <div className="bg-white/5 p-8 rounded-3xl mt-12">
                                  <div className="flex justify-between items-center">
                                     <div>
-                                       <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-1">Resultado L√≠quido do Per√≠odo</p>
+                                       <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-1">Resultado LÌquido do PerÌodo</p>
                                        <p className="text-3xl font-black">{safeFormatAOA(financeReports.lucroLiquido)}</p>
                                     </div>
                                     <div className={`p-4 rounded-2xl ${financeReports.lucroLiquido >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
@@ -2421,14 +2421,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                         </div>
 
-                        {/* BALANCETE DE VERIFICA√á√ÉO - NOVO */}
+                        {/* BALANCETE DE VERIFICA«√O - NOVO */}
                         <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-sky-100 col-span-1 md:col-span-2">
                            <div className="flex justify-between items-center mb-10">
                               <div>
                                  <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-3">
-                                    <ListChecks size={24} className="text-yellow-500" /> Balancete de Verifica√ß√£o
+                                    <ListChecks size={24} className="text-yellow-500" /> Balancete de VerificaÁ„o
                                  </h3>
-                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Saldos Acumulados por Conta no Per√≠odo</p>
+                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Saldos Acumulados por Conta no PerÌodo</p>
                               </div>
                               <button
                                  onClick={handleExportBalancete}
@@ -2441,9 +2441,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <table className="w-full text-left">
                                  <thead>
                                     <tr className="bg-zinc-900 text-white text-[9px] font-black uppercase tracking-[0.2em]">
-                                       <th className="px-8 py-5">C√≥digo</th>
+                                       <th className="px-8 py-5">CÛdigo</th>
                                        <th className="px-8 py-5">Nome da Conta</th>
-                                       <th className="px-8 py-5 text-right">Saldo do Per√≠odo</th>
+                                       <th className="px-8 py-5 text-right">Saldo do PerÌodo</th>
                                     </tr>
                                  </thead>
                                  <tbody className="divide-y divide-zinc-100">
@@ -2457,21 +2457,21 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        </tr>
                                     ))}
                                     {Object.values(financeReports.saldos).every(s => s === 0) && (
-                                       <tr><td colSpan={3} className="px-8 py-10 text-center text-zinc-400 italic">Sem movimenta√ß√µes no per√≠odo selecionado.</td></tr>
+                                       <tr><td colSpan={3} className="px-8 py-10 text-center text-zinc-400 italic">Sem movimentaÁıes no perÌodo selecionado.</td></tr>
                                     )}
                                  </tbody>
                               </table>
                            </div>
                         </div>
 
-                        {/* RAZ√ÉO (LEDGER) - NOVO COMPONENTE CORPORATIVO */}
+                        {/* RAZ√O (LEDGER) - NOVO COMPONENTE CORPORATIVO */}
                         <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-sky-100 col-span-1 md:col-span-2">
                            <div className="flex justify-between items-center mb-10">
                               <div>
                                  <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-3">
-                                    <History size={24} className="text-yellow-500" /> Livro Raz√£o Detalhado
+                                    <History size={24} className="text-yellow-500" /> Livro Raz„o Detalhado
                                  </h3>
-                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Movimenta√ß√µes Anal√≠ticas por Conta</p>
+                                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">MovimentaÁıes AnalÌticas por Conta</p>
                               </div>
                               <div className="flex gap-2">
                                  <button className="p-3 bg-zinc-50 rounded-xl text-zinc-400 hover:text-zinc-900 transition-all"><Printer size={20} /></button>
@@ -2481,7 +2481,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            <div className="space-y-6">
                               {planoContas.filter(c => c.nivel === 1 || c.e_analitica).map(conta => {
                                  const movimentos = lancamentos.filter(l =>
-                                    l.empresa_id === selectedEmpresaId &&
+                                    l.tenant_id === selectedEmpresaId &&
                                     (selectedPeriodoId ? l.periodo_id === selectedPeriodoId : true) &&
                                     l.itens?.some(it => it.conta_codigo === conta.codigo)
                                  );
@@ -2497,9 +2497,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                           <thead>
                                              <tr className="text-[9px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100">
                                                 <th className="px-8 py-4">Data</th>
-                                                <th className="px-8 py-4">Descri√ß√£o / Hist√≥rico</th>
-                                                <th className="px-8 py-4 text-right">D√©bito</th>
-                                                <th className="px-8 py-4 text-right">Cr√©dito</th>
+                                                <th className="px-8 py-4">DescriÁ„o / HistÛrico</th>
+                                                <th className="px-8 py-4 text-right">DÈbito</th>
+                                                <th className="px-8 py-4 text-right">CrÈdito</th>
                                              </tr>
                                           </thead>
                                           <tbody className="divide-y divide-zinc-50">
@@ -2508,7 +2508,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 return (
                                                    <tr key={m.id} className="text-xs hover:bg-zinc-50 transition-all">
                                                       <td className="px-8 py-4 font-mono text-zinc-500">{m.data ? new Date(m.data).toLocaleDateString() : 'N/A'}</td>
-                                                      <td className="px-8 py-4 font-bold text-zinc-800 uppercase">{m.descricao || 'Sem Descri√ß√£o'}</td>
+                                                      <td className="px-8 py-4 font-bold text-zinc-800 uppercase">{m.descricao || 'Sem DescriÁ„o'}</td>
                                                       <td className="px-8 py-4 text-right font-bold text-green-600">{it?.tipo === 'D' ? safeFormatAOA(it.valor) : '-'}</td>
                                                       <td className="px-8 py-4 text-right font-bold text-red-600">{it?.tipo === 'C' ? safeFormatAOA(it.valor) : '-'}</td>
                                                    </tr>
@@ -2538,14 +2538,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
                               </div>
                               <h2 className="text-6xl font-black tracking-tighter leading-none">Auditoria <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-white">Inteligente Amazing.</span></h2>
-                              <p className="text-zinc-400 text-xl font-medium leading-relaxed max-w-2xl">Analise anomalias, otimize impostos e tome decis√µes baseadas em padr√µes de alto n√≠vel processados em tempo real.</p>
+                              <p className="text-zinc-400 text-xl font-medium leading-relaxed max-w-2xl">Analise anomalias, otimize impostos e tome decisıes baseadas em padrıes de alto nÌvel processados em tempo real.</p>
                               <button
                                  onClick={handleAIAnalysis}
                                  disabled={isAnalyzing}
                                  className="px-12 py-6 bg-indigo-600 hover:bg-indigo-500 rounded-3xl font-black uppercase text-sm tracking-widest shadow-2xl transition-all disabled:opacity-50 flex items-center gap-4"
                               >
                                  {isAnalyzing ? <RefreshCw className="animate-spin" /> : <ShieldAlert />}
-                                 {isAnalyzing ? 'Processando Balancetes...' : 'Gerar Relat√≥rio de Auditoria IA'}
+                                 {isAnalyzing ? 'Processando Balancetes...' : 'Gerar RelatÛrio de Auditoria IA'}
                               </button>
                            </div>
                         </div>
@@ -2560,7 +2560,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- PLANO DE CONTAS INTELIGENTE (HIER√ÅRQUICO + CC) --- */}
+               {/* --- PLANO DE CONTAS INTELIGENTE (HIER¡RQUICO + CC) --- */}
                {
                   activeTab === 'plano' && (
                      <div className="space-y-6 animate-in slide-in-from-bottom-4">
@@ -2585,7 +2585,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  onClick={handleImportPlanoPadrao}
                                  className="flex-1 md:flex-none px-6 py-4 bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
                               >
-                                 Importar PGC Padr√£o
+                                 Importar PGC Padr„o
                               </button>
                               <button
                                  onClick={() => planoSubTab === 'contas' ? setShowAccountModal(true) : setShowCCModal(true)}
@@ -2600,7 +2600,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            <div className="bg-white rounded-[3.5rem] shadow-sm border border-sky-100 overflow-hidden">
                               <div className="p-8 border-b border-zinc-100 bg-zinc-50/30 flex justify-between items-center">
                                  <div className="flex items-center gap-4">
-                                    <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Estatuto Org√¢nico de Contas (PGC)</h3>
+                                    <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Estatuto Org‚nico de Contas (PGC)</h3>
                                     <span className="px-3 py-1 bg-zinc-900 text-white text-[9px] font-black rounded-lg uppercase">{planoContas.length} Contas</span>
                                  </div>
                                  <div className="relative">
@@ -2616,12 +2616,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  <table className="w-full text-left">
                                     <thead className="bg-zinc-900 text-white">
                                        <tr className="text-[10px] font-black uppercase tracking-widest">
-                                          <th className="px-10 py-5">C√≥digo</th>
-                                          <th className="px-6 py-5">Descri√ß√£o</th>
+                                          <th className="px-10 py-5">CÛdigo</th>
+                                          <th className="px-6 py-5">DescriÁ„o</th>
                                           <th className="px-6 py-5">Tipo</th>
                                           <th className="px-6 py-5">Natureza</th>
                                           <th className="px-6 py-5 text-center">Status</th>
-                                          <th className="px-10 py-5 text-right">A√ß√µes</th>
+                                          <th className="px-10 py-5 text-right">AÁıes</th>
                                        </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
@@ -2647,7 +2647,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 <td className="px-6 py-4">
                                                    <div className="flex items-center gap-2" style={{ paddingLeft: `${(c.nivel || 1 - 1) * 20}px` }}>
                                                       <span className={`${c.e_sintetica ? 'font-black text-zinc-900' : 'font-bold text-zinc-600'}`}>{c.nome}</span>
-                                                      {!c.aceita_lancamentos && <Lock size={10} className="text-zinc-300" title="Conta Sint√©tica" />}
+                                                      {!c.aceita_lancamentos && <Lock size={10} className="text-zinc-300" title="Conta SintÈtica" />}
                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -2660,9 +2660,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                    {c.aceita_lancamentos ? (
-                                                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-md text-[8px] font-black uppercase">Anal√≠tica</span>
+                                                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-md text-[8px] font-black uppercase">AnalÌtica</span>
                                                    ) : (
-                                                      <span className="px-2 py-0.5 bg-zinc-200 text-zinc-600 rounded-md text-[8px] font-black uppercase">Sint√©tica</span>
+                                                      <span className="px-2 py-0.5 bg-zinc-200 text-zinc-600 rounded-md text-[8px] font-black uppercase">SintÈtica</span>
                                                    )}
                                                 </td>
                                                 <td className="px-10 py-4 text-right">
@@ -2690,7 +2690,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Landmark size={64} /></div>
                                           <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2">{cc.tipo}</p>
                                           <h4 className="text-2xl font-black text-zinc-900 tracking-tighter mb-1 uppercase">{cc.nome}</h4>
-                                          <p className="text-[10px] font-mono text-zinc-400 font-bold uppercase mb-4">C√≥digo: {cc.codigo}</p>
+                                          <p className="text-[10px] font-mono text-zinc-400 font-bold uppercase mb-4">CÛdigo: {cc.codigo}</p>
                                           <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-200">
                                              <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase ${cc.ativo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {cc.ativo ? 'Ativo' : 'Inativo'}
@@ -2707,20 +2707,20 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- GEST√ÉO DE PER√çODOS --- */}
+               {/* --- GEST√O DE PERÕODOS --- */}
                {
                   activeTab === 'periodos' && (
                      <div className="space-y-8 animate-in slide-in-from-bottom-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                            <div className="bg-zinc-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
                               <Calendar size={120} className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform" />
-                              <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-6">Controlo de Exerc√≠cio</h4>
+                              <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-6">Controlo de ExercÌcio</h4>
                               <p className="text-3xl font-black mb-2">Ano {
-                                 periodos.filter(p => p.empresa_id === selectedEmpresaId).length > 0
-                                    ? Math.max(...periodos.filter(p => p.empresa_id === selectedEmpresaId).map(p => Number(p.ano)))
+                                 periodos.filter(p => p.tenant_id === selectedEmpresaId).length > 0
+                                    ? Math.max(...periodos.filter(p => p.tenant_id === selectedEmpresaId).map(p => Number(p.ano)))
                                     : new Date().getFullYear()
                               }</p>
-                              <p className="text-xs text-zinc-500 font-bold uppercase">Exerc√≠cio Corrente</p>
+                              <p className="text-xs text-zinc-500 font-bold uppercase">ExercÌcio Corrente</p>
                               <button
                                  onClick={handleOpenYear}
                                  className="mt-8 px-6 py-3 bg-white/10 hover:bg-yellow-500 hover:text-zinc-900 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
@@ -2731,16 +2731,16 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
                            <div className="md:col-span-2 bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
                               <div className="p-10 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Meses Contabil√≠sticos</h3>
+                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Meses ContabilÌsticos</h3>
                                  <button
                                     onClick={handleOpenMonth}
                                     className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
                                  >
-                                    <Plus size={18} /> Novo M√™s
+                                    <Plus size={18} /> Novo MÍs
                                  </button>
                               </div>
                               <div className="divide-y divide-zinc-100">
-                                 {periodos.filter(p => p.empresa_id === selectedEmpresaId).map(p => (
+                                 {periodos.filter(p => p.tenant_id === selectedEmpresaId).map(p => (
                                     <div key={p.id} className="p-8 flex items-center justify-between group hover:bg-zinc-50 transition-all">
                                        <div className="flex items-center gap-6">
                                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${p.status === 'Aberto' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
@@ -2757,7 +2757,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 onClick={() => handleClosePeriod(p.id)}
                                                 className="px-6 py-3 bg-zinc-100 text-zinc-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all"
                                              >
-                                                Fechar Per√≠odo
+                                                Fechar PerÌodo
                                              </button>
                                           ) : (
                                              <button className="px-6 py-3 bg-red-50 text-red-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center gap-2">
@@ -2768,8 +2768,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        </div>
                                     </div>
                                  ))}
-                                 {periodos.filter(p => p.empresa_id === selectedEmpresaId).length === 0 && (
-                                    <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum per√≠odo contabil√≠stico configurado para esta unidade.</div>
+                                 {periodos.filter(p => p.tenant_id === selectedEmpresaId).length === 0 && (
+                                    <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum perÌodo contabilÌstico configurado para esta unidade.</div>
                                  )}
                               </div>
                            </div>
@@ -2778,18 +2778,18 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- CONCILIA√á√ÉO BANC√ÅRIA --- */}
+               {/* --- CONCILIA«√O BANC¡RIA --- */}
                {
                   activeTab === 'conciliacao' && (
                      <div className="space-y-8 animate-in slide-in-from-bottom-4">
                         <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
                            <div className="p-10 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
                               <div>
-                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Concilia√ß√£o Banc√°ria Inteligente</h3>
-                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Sincroniza√ß√£o de extratos com lan√ßamentos contabil√≠sticos</p>
+                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">ConciliaÁ„o Banc·ria Inteligente</h3>
+                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">SincronizaÁ„o de extratos com lanÁamentos contabilÌsticos</p>
                               </div>
                               <div className="flex gap-4">
-                                 <label className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer" title="Formato: Data,Descri√ß√£o,Valor (Ex: 2024-05-15,Pagamento Fornecedor,-50000)">
+                                 <label className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all cursor-pointer" title="Formato: Data,DescriÁ„o,Valor (Ex: 2024-05-15,Pagamento Fornecedor,-50000)">
                                     <RefreshCw size={18} /> Importar Extrato (CSV)
                                     <input type="file" className="hidden" accept=".csv" onChange={async (e) => {
                                        const file = e.target.files?.[0];
@@ -2802,12 +2802,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                              data: parts[0]?.trim(),
                                              descricao: parts[1]?.trim(),
                                              valor: parseFloat(parts[2]?.trim()),
-                                             empresa_id: selectedEmpresaId,
+                                             tenant_id: selectedEmpresaId,
                                              status: 'Pendente'
                                           };
                                        });
                                        const { error } = await supabase.from('acc_extratos_bancarios').insert(batch);
-                                       if (error) alert('Erro ao importar extrato. Verifique o formato CSV (Data,Descri√ß√£o,Valor).');
+                                       if (error) alert('Erro ao importar extrato. Verifique o formato CSV (Data,DescriÁ„o,Valor).');
                                        else fetchAccountingData();
                                     }} />
                                  </label>
@@ -2816,12 +2816,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            <div className="p-6">
                               <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-zinc-900 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest mb-4 font-mono">
                                  <div className="col-span-2">Data</div>
-                                 <div className="col-span-4">Descri√ß√£o Banc√°ria</div>
+                                 <div className="col-span-4">DescriÁ„o Banc·ria</div>
                                  <div className="col-span-2">Valor (Kz)</div>
-                                 <div className="col-span-4">Sugest√£o de Lan√ßamento</div>
+                                 <div className="col-span-4">Sugest„o de LanÁamento</div>
                               </div>
                               <div className="space-y-3">
-                                 {extratos.filter(e => e.empresa_id === selectedEmpresaId).map(ex => {
+                                 {extratos.filter(e => e.tenant_id === selectedEmpresaId).map(ex => {
                                     const match = lancamentos.find(l =>
                                        Math.abs(Number(l.valor) - Math.abs(ex.valor)) < 0.01 &&
                                        Math.abs(new Date(l.data).getTime() - new Date(ex.data).getTime()) < 3 * 24 * 60 * 60 * 1000
@@ -2852,7 +2852,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 </div>
                                              ) : (
                                                 <div className="flex items-center gap-2">
-                                                   <div className="text-[10px] font-bold text-zinc-400 p-2 italic">Sem correspond√™ncia exacta</div>
+                                                   <div className="text-[10px] font-bold text-zinc-400 p-2 italic">Sem correspondÍncia exacta</div>
                                                    <button
                                                       onClick={() => {
                                                          setNewEntry({
@@ -2865,7 +2865,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                       }}
                                                       className="px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-zinc-900 hover:text-white transition-all shadow-sm"
                                                    >
-                                                      Novo Lan√ßamento
+                                                      Novo LanÁamento
                                                    </button>
                                                 </div>
                                              )}
@@ -2873,8 +2873,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        </div>
                                     );
                                  })}
-                                 {extratos.filter(e => e.empresa_id === selectedEmpresaId).length === 0 && (
-                                    <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum extrato importado. Carregue um ficheiro CSV para iniciar a concilia√ß√£o.</div>
+                                 {extratos.filter(e => e.tenant_id === selectedEmpresaId).length === 0 && (
+                                    <div className="p-20 text-center text-zinc-400 font-bold italic">Nenhum extrato importado. Carregue um ficheiro CSV para iniciar a conciliaÁ„o.</div>
                                  )}
                               </div>
                            </div>
@@ -2900,21 +2900,21 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        : <ShieldAlert size={32} className="text-red-400" />}
                               </div>
                               <div>
-                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Ledger Imut√°vel ‚Äî Verifica√ß√£o de Integridade</p>
+                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Ledger Imut·vel ó VerificaÁ„o de Integridade</p>
                                  {integrityResult ? (
                                     <>
                                        <p className={`text-2xl font-black mt-1 ${integrityResult.status === 'OK' ? 'text-green-400' : 'text-red-400'}`}>
-                                          {integrityResult.status === 'OK' ? '‚úì Integridade Verificada' : '‚ö† Anomalias Detectadas'}
+                                          {integrityResult.status === 'OK' ? '? Integridade Verificada' : '? Anomalias Detectadas'}
                                        </p>
                                        <p className="text-xs text-zinc-500 font-bold mt-1">
                                           {integrityResult.unbalanced_entries === 0
-                                             ? 'Todos os lan√ßamentos est√£o em equil√≠brio (D=C).'
-                                             : `${integrityResult.unbalanced_entries} lan√ßamento(s) com D‚â†C encontrado(s).`
-                                          } ¬∑ {new Date(integrityResult.check_date).toLocaleString('pt-PT')}
+                                             ? 'Todos os lanÁamentos est„o em equilÌbrio (D=C).'
+                                             : `${integrityResult.unbalanced_entries} lanÁamento(s) com D?C encontrado(s).`
+                                          } ∑ {new Date(integrityResult.check_date).toLocaleString('pt-PT')}
                                        </p>
                                     </>
                                  ) : (
-                                    <p className="text-lg font-black text-zinc-300 mt-1">Clique para verificar a cadeia de blocos cont√°beis</p>
+                                    <p className="text-lg font-black text-zinc-300 mt-1">Clique para verificar a cadeia de blocos cont·beis</p>
                                  )}
                               </div>
                            </div>
@@ -2928,12 +2928,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </button>
                         </div>
 
-                        {/* Blockchain Cont√°bil */}
+                        {/* Blockchain Cont·bil */}
                         {ledgerEntries.length > 0 && (
                            <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
                               <div className="p-8 border-b border-zinc-100 bg-zinc-50/50">
                                  <h4 className="text-sm font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
-                                    <Lock size={16} className="text-yellow-500" /> Blockchain Cont√°bil ‚Äî √öltimos {ledgerEntries.length} Blocos
+                                    <Lock size={16} className="text-yellow-500" /> Blockchain Cont·bil ó ⁄ltimos {ledgerEntries.length} Blocos
                                  </h4>
                               </div>
                               <div className="divide-y divide-zinc-50">
@@ -2956,8 +2956,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         <div className="bg-white rounded-[3rem] shadow-sm border border-sky-100 overflow-hidden">
                            <div className="p-10 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
                               <div>
-                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Rasto de Auditoria Imut√°vel</h3>
-                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Registo completo de altera√ß√µes e acessos fiscais</p>
+                                 <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Rasto de Auditoria Imut·vel</h3>
+                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Registo completo de alteraÁıes e acessos fiscais</p>
                               </div>
                               <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-green-100">
                                  <ShieldCheck size={16} /> Sistema Protegido
@@ -2965,7 +2965,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                            <div className="overflow-hidden">
                               <div className="p-10 bg-zinc-50/30 border-b border-zinc-100">
-                                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-6">Logs de Opera√ß√£o do Sistema</h4>
+                                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-6">Logs de OperaÁ„o do Sistema</h4>
                                  <div className="space-y-4">
                                     {systemLogs.map(s => {
                                        const safeDate = s?.created_at ? new Date(s.created_at) : null;
@@ -2975,7 +2975,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 <div className={`w-2 h-2 rounded-full ${s?.nivel === 'ERROR' ? 'bg-red-500 animate-pulse' : s?.nivel === 'WARN' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
                                                 <div>
                                                    <p className="text-xs font-black text-zinc-900 uppercase">{s?.evento || 'Evento'}</p>
-                                                   <p className="text-[10px] text-zinc-400 font-bold">{s?.descricao || 'Sem descri√ß√£o'}</p>
+                                                   <p className="text-[10px] text-zinc-400 font-bold">{s?.descricao || 'Sem descriÁ„o'}</p>
                                                 </div>
                                              </div>
                                              <p className="text-[9px] font-mono text-zinc-300 font-black">
@@ -2992,7 +2992,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  <thead>
                                     <tr className="bg-zinc-900 text-white text-[9px] font-black uppercase tracking-[0.2em]">
                                        <th className="px-8 py-5">Data/Hora</th>
-                                       <th className="px-8 py-5">A√ß√£o</th>
+                                       <th className="px-8 py-5">AÁ„o</th>
                                        <th className="px-8 py-5">Tabela</th>
                                        <th className="px-8 py-5">Chave Registro</th>
                                     </tr>
@@ -3003,14 +3003,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        return (
                                           <tr key={log?.id || Math.random()} className="text-xs hover:bg-zinc-50 transition-all font-bold group">
                                              <td className="px-8 py-5 font-mono text-zinc-400 text-[10px]">
-                                                {safeDate && !isNaN(safeDate.getTime()) ? safeDate.toLocaleString('pt-PT') : 'Data Inv√°lida'}
+                                                {safeDate && !isNaN(safeDate.getTime()) ? safeDate.toLocaleString('pt-PT') : 'Data Inv·lida'}
                                              </td>
                                              <td className="px-8 py-5">
                                                 <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${log?.acao === 'INSERT' ? 'bg-green-50 text-green-600' :
                                                    log?.acao === 'UPDATE' ? 'bg-sky-50 text-sky-600' :
                                                       'bg-red-50 text-red-600'
                                                    }`}>
-                                                   {log?.acao || 'A√ß√£o'}
+                                                   {log?.acao || 'AÁ„o'}
                                                 </span>
                                              </td>
                                              <td className="px-8 py-5">
@@ -3025,7 +3025,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     {auditLogs.length === 0 && (
                                        <tr>
                                           <td colSpan={4} className="p-20 text-center text-zinc-400 font-bold italic">
-                                             Nenhum log de auditoria encontrado. As altera√ß√µes ser√£o registadas automaticamente.
+                                             Nenhum log de auditoria encontrado. As alteraÁıes ser„o registadas automaticamente.
                                           </td>
                                        </tr>
                                     )}
@@ -3041,7 +3041,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                {
                   activeTab === 'folha' && (
                      <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                        {/* Header e Ac√ß√µes R√°pidas */}
+                        {/* Header e AcÁıes R·pidas */}
                         <div className="flex flex-col md:flex-row justify-between items-center bg-zinc-900 p-12 rounded-[4rem] text-white shadow-3xl overflow-hidden relative">
                            <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none">
                               <Users size={200} />
@@ -3056,7 +3056,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
                                  <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl">
                                     <p className="text-[9px] font-black text-sky-400 uppercase tracking-widest">Colaboradores</p>
-                                    <p className="text-xs font-bold">{funcionarios.filter(f => (f as any).empresa_id === selectedEmpresaId).length} Activos</p>
+                                    <p className="text-xs font-bold">{funcionarios.filter(f => (f as any).tenant_id === selectedEmpresaId).length} Activos</p>
                                  </div>
                               </div>
                            </div>
@@ -3065,7 +3065,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  onClick={() => setShowEmployeeModal(true)}
                                  className="px-8 py-5 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-3 backdrop-blur-md"
                               >
-                                 <Plus size={20} /> Novo Funcion√°rio
+                                 <Plus size={20} /> Novo Funcion·rio
                               </button>
                               <button
                                  onClick={runPayroll}
@@ -3083,24 +3083,24 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            {[
                               {
                                  label: 'Total Bruto',
-                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) =>
+                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.tenant_id === selectedEmpresaId).reduce((acc, f) =>
                                     acc + (Number((f as any).salario_bruto) || (Number(f.salario_base) + Number(f.subsidios))), 0) || 0,
                                  color: 'zinc'
                               },
                               {
-                                 label: 'Total L√≠quido',
-                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) => acc + (Number(f.salario_liquido) || 0), 0) || 0,
+                                 label: 'Total LÌquido',
+                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.tenant_id === selectedEmpresaId).reduce((acc, f) => acc + (Number(f.salario_liquido) || 0), 0) || 0,
                                  color: 'sky'
                               },
                               {
                                  label: 'Encargos (INSS/IRT)',
-                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) =>
+                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.tenant_id === selectedEmpresaId).reduce((acc, f) =>
                                     acc + (Number((f as any).total_descontos) || (Number(f.inss_trabalhador) + Number(f.irt))), 0) || 0,
                                  color: 'red'
                               },
                               {
                                  label: 'Custo Empresa',
-                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.empresa_id === selectedEmpresaId).reduce((acc, f) =>
+                                 value: folhas?.filter(f => f.periodo_id === selectedPeriodoId && f.tenant_id === selectedEmpresaId).reduce((acc, f) =>
                                     acc + (Number((f as any).salario_bruto) || (Number(f.salario_base) + Number(f.subsidios))) + Number(f.inss_empresa), 0) || 0,
                                  color: 'yellow'
                               },
@@ -3116,29 +3116,29 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm overflow-hidden">
                            <div className="p-8 border-b border-zinc-50 flex justify-between items-center bg-zinc-50/50">
                               <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-3">
-                                 <FileText className="text-yellow-500" /> Folhas Processadas no Per√≠odo
+                                 <FileText className="text-yellow-500" /> Folhas Processadas no PerÌodo
                               </h3>
                               <div className="flex gap-2">
                                  <button className="px-4 py-2 bg-white border border-zinc-200 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:bg-zinc-50 transition-all flex items-center gap-2">
-                                    <Download size={12} /> Exportar Relat√≥rio
+                                    <Download size={12} /> Exportar RelatÛrio
                                  </button>
                               </div>
                            </div>
                            <div className="divide-y divide-zinc-50">
-                              {folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).length === 0 ? (
+                              {folhas?.filter(f => f.tenant_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).length === 0 ? (
                                  <div className="p-20 text-center space-y-4 opacity-50">
                                     <RefreshCw size={48} className="mx-auto text-zinc-300" />
                                     <p className="text-sm font-black text-zinc-400 uppercase tracking-widest">Nenhuma folha processada para este ciclo.</p>
                                  </div>
                               ) : (
-                                 folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).map(f => (
+                                 folhas?.filter(f => f.tenant_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).map(f => (
                                     <div key={f.id} className="p-8 flex items-center justify-between group hover:bg-zinc-50/80 transition-all">
                                        <div className="flex items-center gap-6">
                                           <div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 border border-zinc-100 group-hover:bg-zinc-900 group-hover:text-white transition-all">
                                              <Users size={28} />
                                           </div>
                                           <div>
-                                             <h4 className="font-black text-zinc-900 text-lg leading-none mb-1">{f?.funcionario_nome || 'Funcion√°rio'}</h4>
+                                             <h4 className="font-black text-zinc-900 text-lg leading-none mb-1">{f?.funcionario_nome || 'Funcion·rio'}</h4>
                                              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Base: {safeFormatAOA(Number(f?.salario_base) || 0)}</p>
                                           </div>
                                        </div>
@@ -3157,7 +3157,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                           </div>
                                        </div>
                                        <div className="text-right mr-8">
-                                          <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">L√≠quido a Receber</p>
+                                          <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">LÌquido a Receber</p>
                                           <p className="text-2xl font-black text-zinc-900">{safeFormatAOA(Number(f?.salario_liquido) || 0)}</p>
                                        </div>
                                        <div className="flex gap-2">
@@ -3189,9 +3189,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </h3>
                            <div className="space-y-4">
                               {[
-                                 { t: 'IVA - Declara√ß√£o Peri√≥dica', d: '2024-03-25', v: (Number(financeReports.receitaTotal) || 0) * ((currentEmpresa?.regime_agt === 'Simplificado' ? 0.07 : (currentEmpresa?.taxa_iva || 14) / 100)) },
-                                 { t: 'INSS - Guia de Pagamento', d: '2024-03-10', v: folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.inss_trabalhador) || 0) + (Number(b.inss_empresa) || 0), 0) || 0 },
-                                 { t: 'IRT - Reten√ß√µes na Fonte', d: '2024-03-30', v: (currentEmpresa?.incidencia_irt !== false) ? (folhas?.filter(f => f.empresa_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.irt) || 0), 0) || 0) : 0 },
+                                 { t: 'IVA - DeclaraÁ„o PeriÛdica', d: '2024-03-25', v: (Number(financeReports.receitaTotal) || 0) * ((currentEmpresa?.regime_agt === 'Simplificado' ? 0.07 : (currentEmpresa?.taxa_iva || 14) / 100)) },
+                                 { t: 'INSS - Guia de Pagamento', d: '2024-03-10', v: folhas?.filter(f => f.tenant_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.inss_trabalhador) || 0) + (Number(b.inss_empresa) || 0), 0) || 0 },
+                                 { t: 'IRT - RetenÁıes na Fonte', d: '2024-03-30', v: (currentEmpresa?.incidencia_irt !== false) ? (folhas?.filter(f => f.tenant_id === selectedEmpresaId && (selectedPeriodoId ? f.periodo_id === selectedPeriodoId : true)).reduce((acc, b) => acc + (Number(b.irt) || 0), 0) || 0) : 0 },
                                  { t: 'II - Imposto Industrial (Estimativa)', d: '2024-05-31', v: (Number(financeReports.lucroLiquido) > 0 ? (Number(financeReports.lucroLiquido) * (currentEmpresa?.taxa_ii || 25) / 100) : 0) },
                               ].map((o, i) => (
                                  <div key={i} className="flex items-center justify-between p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
@@ -3208,7 +3208,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         <div className="bg-zinc-900 p-12 rounded-[4rem] text-white shadow-2xl flex flex-col justify-between overflow-hidden relative print-hidden">
                            <FileText size={180} className="absolute -right-4 -bottom-4 opacity-5" />
                            <div className="space-y-6">
-                              <h3 className="text-xl font-black uppercase tracking-tight">Carga Tribut√°ria Estimada</h3>
+                              <h3 className="text-xl font-black uppercase tracking-tight">Carga Tribut·ria Estimada</h3>
                               <div className="space-y-8">
                                  <div className="space-y-2">
                                     <div className="flex justify-between text-[10px] font-black uppercase"><span>IVA Estimado</span><span>{safeFormatAOA(financeReports.receitaTotal * ((currentEmpresa?.taxa_iva || 14) / 100))}</span></div>
@@ -3233,7 +3233,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- MODAL RELAT√ìRIO COMPLETO --- */}
+               {/* --- MODAL RELAT”RIO COMPLETO --- */}
                {
                   showReportModal && activeReport && (
                      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
@@ -3258,7 +3258,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <div className="hidden print:flex flex-col mb-10 items-center text-center">
                                  <h1 className="text-3xl font-black uppercase">{activeReport.title}</h1>
                                  <p className="text-sm font-bold text-zinc-500 mt-2">{currentEmpresa?.nome}</p>
-                                 <p className="text-xs text-zinc-400">NIF: {currentEmpresa?.nif} | Per√≠odo: {periodos.find(p => p.id === selectedPeriodoId)?.mes}/{periodos.find(p => p.id === selectedPeriodoId)?.ano}</p>
+                                 <p className="text-xs text-zinc-400">NIF: {currentEmpresa?.nif} | PerÌodo: {periodos.find(p => p.id === selectedPeriodoId)?.mes}/{periodos.find(p => p.id === selectedPeriodoId)?.ano}</p>
                                  <div className="w-full h-1 bg-zinc-900 my-6" />
                               </div>
 
@@ -3267,9 +3267,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     <thead>
                                        <tr className="border-b-2 border-zinc-900">
                                           <th className="py-4 px-2 text-[10px] font-black uppercase">Data</th>
-                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Descri√ß√£o</th>
-                                          <th className="py-4 px-2 text-[10px] font-black uppercase">D√©bito</th>
-                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Cr√©dito</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">DescriÁ„o</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">DÈbito</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">CrÈdito</th>
                                        </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
@@ -3283,7 +3283,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        ))}
                                        {activeReport.data.length === 0 && (
                                           <tr>
-                                             <td colSpan={4} className="py-20 text-center text-zinc-400 font-bold uppercase text-[10px]">Nenhum lan√ßamento encontrado para este per√≠odo</td>
+                                             <td colSpan={4} className="py-20 text-center text-zinc-400 font-bold uppercase text-[10px]">Nenhum lanÁamento encontrado para este perÌodo</td>
                                           </tr>
                                        )}
                                     </tbody>
@@ -3295,9 +3295,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     <thead>
                                        <tr className="border-b-2 border-zinc-900">
                                           <th className="py-4 px-2 text-[10px] font-black uppercase">Conta</th>
-                                          <th className="py-4 px-2 text-[10px] font-black uppercase">Designa√ß√£o</th>
-                                          <th className="py-4 px-2 text-[10px] font-black uppercase text-right">Somat√≥rio D√©bito</th>
-                                          <th className="py-4 px-2 text-[10px] font-black uppercase text-right">Somat√≥rio Cr√©dito</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">DesignaÁ„o</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase text-right">SomatÛrio DÈbito</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase text-right">SomatÛrio CrÈdito</th>
                                           <th className="py-4 px-2 text-[10px] font-black uppercase text-right">Saldo</th>
                                        </tr>
                                     </thead>
@@ -3328,7 +3328,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
                               )}
 
-                              {activeReport.id === 'raz√£o' && (
+                              {activeReport.id === 'raz„o' && (
                                  <div className="space-y-12">
                                     {(activeReport.data || []).map((cuenta: any, i: number) => (
                                        <div key={i} className="space-y-4">
@@ -3340,9 +3340,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                              <thead className="bg-zinc-50">
                                                 <tr>
                                                    <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400">Data</th>
-                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400">Descri√ß√£o</th>
-                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400 text-right">D√©bito</th>
-                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400 text-right">Cr√©dito</th>
+                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400">DescriÁ„o</th>
+                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400 text-right">DÈbito</th>
+                                                   <th className="py-2 px-2 text-[9px] font-black uppercase text-zinc-400 text-right">CrÈdito</th>
                                                 </tr>
                                              </thead>
                                              <tbody className="divide-y divide-zinc-50">
@@ -3364,7 +3364,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               {activeReport.id === 'cashflow' && (
                                  <div className="space-y-8">
                                     <div className="bg-zinc-900 p-8 rounded-[2rem] text-white">
-                                       <h3 className="text-lg font-black uppercase tracking-tight mb-2">Fluxo de Caixa L√≠quido</h3>
+                                       <h3 className="text-lg font-black uppercase tracking-tight mb-2">Fluxo de Caixa LÌquido</h3>
                                        <p className="text-3xl font-black text-yellow-500">{safeFormatAOA(activeReport.data?.find(r => r.tipo === 'T')?.valor || 0)}</p>
                                     </div>
                                     <div className="grid grid-cols-1 gap-4">
@@ -3384,7 +3384,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        <tr className="border-b-2 border-zinc-900">
                                           <th className="py-4 px-2 text-[10px] font-black uppercase">Data</th>
                                           <th className="py-4 px-2 text-[10px] font-black uppercase">Utilizador</th>
-                                          <th className="py-4 px-2 text-[10px] font-black uppercase">A√ß√£o</th>
+                                          <th className="py-4 px-2 text-[10px] font-black uppercase">AÁ„o</th>
                                           <th className="py-4 px-2 text-[10px] font-black uppercase">Tabela</th>
                                        </tr>
                                     </thead>
@@ -3406,27 +3406,27 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- MODAL NOVO LAN√áAMENTO (DI√ÅRIO) --- */}
+               {/* --- MODAL NOVO LAN«AMENTO (DI¡RIO) --- */}
                {
                   showEntryModal && (
                      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
                         <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
                            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
                               <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                                 <BookOpen className="text-yellow-500" /> Novo Lan√ßamento Cont√°bil
+                                 <BookOpen className="text-yellow-500" /> Novo LanÁamento Cont·bil
                               </h2>
                               <button onClick={() => setShowEntryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                            </div>
 
-                           {/* Modelos Pr√©-definidos */}
+                           {/* Modelos PrÈ-definidos */}
                            {regrasAutomaticas.length > 0 && (
                               <div className="px-8 pt-6 pb-2">
-                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Modelos Pr√©-definidos</p>
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">Modelos PrÈ-definidos</p>
                                  <div className="flex flex-wrap gap-2">
                                     {[
                                        { label: 'Venda', debito: '3.1', credito: '6.1' },
                                        { label: 'Compra Stock', debito: '2.1', credito: '3.2' },
-                                       { label: 'Sal√°rios', debito: '7.2', credito: '1.1' },
+                                       { label: 'Sal·rios', debito: '7.2', credito: '1.1' },
                                        { label: 'Pagamento Fornecedor', debito: '4.1', credito: '1.1' },
                                        { label: 'Recibo de Cliente', debito: '1.1', credito: '3.1' },
                                        ...regrasAutomaticas.map(r => ({ label: r.nome, debito: r.conta_debito_codigo, credito: r.conta_credito_codigo }))
@@ -3444,15 +3444,15 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            <div className="px-8 pt-4 pb-2">
                               <div
                                  onClick={async () => {
-                                    alert("Funcionalidade de Scanner de Documentos Activa. Seleccione um PDF para an√°lise via Amazing IA.");
+                                    alert("Funcionalidade de Scanner de Documentos Activa. Seleccione um PDF para an·lise via Amazing IA.");
                                     setTimeout(() => {
                                        setNewEntry({
                                           ...newEntry,
-                                          descricao: 'Factura 2024/042 - Servi√ßos de Consultoria',
+                                          descricao: 'Factura 2024/042 - ServiÁos de Consultoria',
                                           valor: 150000,
                                           data: '2024-03-22'
                                        });
-                                       handleAISuggestAccounts('Factura 2024/042 - Servi√ßos de Consultoria');
+                                       handleAISuggestAccounts('Factura 2024/042 - ServiÁos de Consultoria');
                                     }, 2000);
                                  }}
                                  className="bg-yellow-50 border-2 border-dashed border-yellow-200 rounded-2xl p-4 flex items-center justify-center gap-3 cursor-pointer hover:bg-yellow-100 transition-all group"
@@ -3463,7 +3463,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                            <form onSubmit={handleNewEntry} className="p-8 space-y-6">
                               <div className="relative group">
-                                 <Input name="descricao" label="Hist√≥rico / Descri√ß√£o" required
+                                 <Input name="descricao" label="HistÛrico / DescriÁ„o" required
                                     value={newEntry.descricao} onChange={e => setNewEntry({ ...newEntry, descricao: e.target.value })}
                                     placeholder="Ex: Pagamento de Fornecedor X"
                                  />
@@ -3484,7 +3484,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     options={planoContas.filter(c => c.natureza === 'Devedora' || c.tipo === 'Despesa').map(c => ({ value: c.codigo, label: `${c.codigo} - ${c.nome}` }))}
                                  />
                                  <Select
-                                    label="Conta de Cr√©dito"
+                                    label="Conta de CrÈdito"
                                     value={newEntry.contaCredito}
                                     onChange={(e) => setNewEntry({ ...newEntry, contaCredito: e.target.value })}
                                     options={planoContas.filter(c => c.natureza === 'Credora' || c.codigo === '1.1').map(c => ({ value: c.codigo, label: `${c.codigo} - ${c.nome}` }))}
@@ -3498,7 +3498,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     value={newEntry.data} onChange={e => setNewEntry({ ...newEntry, data: e.target.value })}
                                  />
                               </div>
-                              {/* Indicador de valida√ß√£o D = C em tempo real */}
+                              {/* Indicador de validaÁ„o D = C em tempo real */}
                               {(() => {
                                  const debitoConta = planoContas.find(c => c.codigo === newEntry.contaDebito);
                                  const creditoConta = planoContas.find(c => c.codigo === newEntry.contaCredito);
@@ -3508,7 +3508,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        <div className="flex items-center gap-2">
                                           <div className={`w-2.5 h-2.5 rounded-full ${valOk ? 'bg-green-500' : 'bg-zinc-300'}`} />
                                           <span className={`text-[9px] font-black uppercase tracking-widest ${valOk ? 'text-green-700' : 'text-zinc-400'}`}>
-                                             {valOk ? 'D√©bito = Cr√©dito ‚Äî Lan√ßamento equilibrado' : 'Selecione contas e valor para validar'}
+                                             {valOk ? 'DÈbito = CrÈdito ó LanÁamento equilibrado' : 'Selecione contas e valor para validar'}
                                           </span>
                                        </div>
                                        {valOk && <span className="text-[9px] font-black text-green-700 bg-green-100 px-2 py-1 rounded-lg">D = C = {safeFormatAOA(newEntry.valor)}</span>}
@@ -3516,7 +3516,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  );
                               })()}
                               <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
-                                 <Save size={18} /> Confirmar Lan√ßamento
+                                 <Save size={18} /> Confirmar LanÁamento
                               </button>
                            </form>
                         </div>
@@ -3536,7 +3536,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                            <form onSubmit={handleSaveCompra} className="p-8 space-y-5">
                               <div className="grid grid-cols-2 gap-4">
-                                 <Input name="numero_compra" label="N.¬∫ Compra" value={newCompra.numero_compra}
+                                 <Input name="numero_compra" label="N.∫ Compra" value={newCompra.numero_compra}
                                     onChange={e => setNewCompra({ ...newCompra, numero_compra: e.target.value })} placeholder="COMP-001" />
                                  <Input name="data_compra" label="Data" type="date" required value={newCompra.data_compra}
                                     onChange={e => setNewCompra({ ...newCompra, data_compra: e.target.value })} />
@@ -3547,8 +3547,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  <Input name="fornecedor_nif" label="NIF Fornecedor" value={newCompra.fornecedor_nif}
                                     onChange={e => setNewCompra({ ...newCompra, fornecedor_nif: e.target.value })} placeholder="000000000" />
                               </div>
-                              <Input name="descricao" label="Descri√ß√£o / Artigos" value={newCompra.descricao}
-                                 onChange={e => setNewCompra({ ...newCompra, descricao: e.target.value })} placeholder="Ex: Aquisi√ß√£o de materiais de escrit√≥rio" />
+                              <Input name="descricao" label="DescriÁ„o / Artigos" value={newCompra.descricao}
+                                 onChange={e => setNewCompra({ ...newCompra, descricao: e.target.value })} placeholder="Ex: AquisiÁ„o de materiais de escritÛrio" />
                               <div className="grid grid-cols-3 gap-4">
                                  <Input name="valor_total" label="Valor Total (AOA)" type="number" required value={newCompra.valor_total}
                                     onChange={e => setNewCompra({ ...newCompra, valor_total: Number(e.target.value) })} />
@@ -3558,18 +3558,18 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     <label className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Categoria</label>
                                     <select value={newCompra.categoria} onChange={e => setNewCompra({ ...newCompra, categoria: e.target.value })}
                                        className="w-full border border-zinc-200 rounded-xl p-2.5 text-xs font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                                       {['Mercadorias', 'Servi√ßos', 'Imobilizado', 'Mat√©rias-Primas', 'Outros'].map(c => (
+                                       {['Mercadorias', 'ServiÁos', 'Imobilizado', 'MatÈrias-Primas', 'Outros'].map(c => (
                                           <option key={c} value={c}>{c}</option>
                                        ))}
                                     </select>
                                  </div>
                               </div>
-                              {/* Preview lan√ßamento autom√°tico */}
+                              {/* Preview lanÁamento autom·tico */}
                               {newCompra.valor_total > 0 && (
                                  <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
-                                    <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2">Lan√ßamento Autom√°tico Gerado</p>
+                                    <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2">LanÁamento Autom·tico Gerado</p>
                                     <div className="flex justify-between text-xs font-bold text-zinc-700">
-                                       <span>D: 2.1 Invent√°rio / Activos</span>
+                                       <span>D: 2.1 Invent·rio / Activos</span>
                                        <span className="text-orange-600">{safeFormatAOA(newCompra.valor_total)}</span>
                                     </div>
                                     <div className="flex justify-between text-xs font-bold text-zinc-700">
@@ -3589,7 +3589,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* ===== MODAL DE FATURA√á√ÉO ===== */}
+               {/* ===== MODAL DE FATURA«√O ===== */}
                {
                   showInvoiceModal && (
                      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
@@ -3608,7 +3608,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
 
                            <div className="flex-1 overflow-y-auto p-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
-                              {/* Coluna Esquerda: Dados do Cliente e Selec√ß√£o de Itens */}
+                              {/* Coluna Esquerda: Dados do Cliente e SelecÁ„o de Itens */}
                               <div className="lg:col-span-7 space-y-8">
                                  <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-2">
@@ -3616,12 +3616,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        <select value={invoiceForm.tipo} onChange={e => setInvoiceForm({ ...invoiceForm, tipo: e.target.value as any })}
                                           className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all">
                                           <option value="Factura">Factura</option>
-                                          <option value="Pr√≥-forma">Pr√≥-forma</option>
+                                          <option value="PrÛ-forma">PrÛ-forma</option>
                                           <option value="Guia">Guia de Remessa</option>
                                           <option value="Encomenda">Nota de Encomenda</option>
                                        </select>
                                     </div>
-                                    <Input label="Data de Emiss√£o" type="date" value={invoiceForm.data_emissao} onChange={e => setInvoiceForm({ ...invoiceForm, data_emissao: e.target.value })} />
+                                    <Input label="Data de Emiss„o" type="date" value={invoiceForm.data_emissao} onChange={e => setInvoiceForm({ ...invoiceForm, data_emissao: e.target.value })} />
                                  </div>
 
                                  <div className="space-y-4">
@@ -3635,7 +3635,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        </button>
                                     </div>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                       {contactos.filter(c => c.empresa_id === selectedEmpresaId && c.tipo !== 'Fornecedor').slice(0, 6).map(c => (
+                                       {contactos.filter(c => c.tenant_id === selectedEmpresaId && c.tipo !== 'Fornecedor').slice(0, 6).map(c => (
                                           <button key={c.id} onClick={() => setInvoiceForm({ ...invoiceForm, cliente_id: c.id, cliente_nome: c.nome })}
                                              className={`p-4 rounded-2xl border text-[10px] font-black uppercase tracking-tighter transition-all text-left ${invoiceForm.cliente_id === c.id ? 'bg-zinc-900 text-yellow-500 border-zinc-900 shadow-lg' : 'bg-white text-zinc-500 border-zinc-200 hover:border-yellow-400 hover:bg-zinc-50'}`}>
                                              <div className="truncate">{c.nome}</div>
@@ -3647,13 +3647,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
 
                                  <div className="space-y-4 bg-zinc-50 p-6 rounded-3xl border border-zinc-200">
-                                    <h4 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Adicionar Servi√ßo / Item Manual</h4>
+                                    <h4 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Adicionar ServiÁo / Item Manual</h4>
                                     <div className="grid grid-cols-12 gap-4">
                                        <div className="col-span-6">
-                                          <Input placeholder="Nome do Servi√ßo ou Item" value={customItem.nome} onChange={e => setCustomItem({ ...customItem, nome: e.target.value })} />
+                                          <Input placeholder="Nome do ServiÁo ou Item" value={customItem.nome} onChange={e => setCustomItem({ ...customItem, nome: e.target.value })} />
                                        </div>
                                        <div className="col-span-3">
-                                          <Input placeholder="Pre√ßo" type="number" value={customItem.preco} onChange={e => setCustomItem({ ...customItem, preco: Number(e.target.value) })} />
+                                          <Input placeholder="PreÁo" type="number" value={customItem.preco} onChange={e => setCustomItem({ ...customItem, preco: Number(e.target.value) })} />
                                        </div>
                                        <div className="col-span-3">
                                           <button onClick={handleAddCustomItem} className="w-full h-[54px] bg-yellow-500 text-zinc-900 font-black rounded-2xl uppercase text-[9px] tracking-widest hover:bg-yellow-400 transition-all flex items-center justify-center gap-2">
@@ -3665,8 +3665,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
                                  <div className="space-y-4">
                                     <div className="flex justify-between items-center">
-                                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cat√°logo de Itens</label>
-                                       <span className="text-[10px] font-bold text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full uppercase">{extInventario.length} Dispon√≠veis</span>
+                                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cat·logo de Itens</label>
+                                       <span className="text-[10px] font-bold text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full uppercase">{extInventario.length} DisponÌveis</span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                        {extInventario.map(item => (
@@ -3714,7 +3714,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                          className="w-16 bg-zinc-50 border border-zinc-100 rounded-lg p-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
                                                    </div>
                                                    <div className="flex items-center gap-2">
-                                                      <span className="text-[9px] font-black text-zinc-400 uppercase">Pre√ßo:</span>
+                                                      <span className="text-[9px] font-black text-zinc-400 uppercase">PreÁo:</span>
                                                       <input type="number" value={it.preco_unitario} onChange={e => handleUpdateInvoiceItem(it.id, 'preco_unitario', e.target.value)}
                                                          className="w-full bg-zinc-50 border border-zinc-100 rounded-lg p-2 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
                                                    </div>
@@ -3740,10 +3740,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     </div>
 
                                     <div className="space-y-2">
-                                       <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Observa√ß√µes</label>
+                                       <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">ObservaÁıes</label>
                                        <textarea value={invoiceForm.observacoes} onChange={e => setInvoiceForm({ ...invoiceForm, observacoes: e.target.value })}
                                           className="w-full bg-white border border-zinc-200 rounded-2xl p-4 text-[10px] font-bold text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                          rows={2} placeholder="Condi√ß√µes de pagamento, notas..." />
+                                          rows={2} placeholder="CondiÁıes de pagamento, notas..." />
                                     </div>
                                  </div>
 
@@ -3759,7 +3759,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* ===== PAINEL DE APROVA√á√ÉO PENDENTE (badge flutuante) ===== */}
+               {/* ===== PAINEL DE APROVA«√O PENDENTE (badge flutuante) ===== */}
                {
                   pendingApproval.length > 0 && (
                      <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
@@ -3771,36 +3771,36 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  {pendingApproval.length}
                               </span>
                            </div>
-                           {pendingApproval.length} Lan√ßamento{pendingApproval.length > 1 ? 's' : ''} Aguarda{pendingApproval.length === 1 ? '' : 'm'} Aprova√ß√£o
+                           {pendingApproval.length} LanÁamento{pendingApproval.length > 1 ? 's' : ''} Aguarda{pendingApproval.length === 1 ? '' : 'm'} AprovaÁ„o
                         </button>
                      </div>
                   )
                }
 
-               {/* ===== MODAL DE APROVA√á√ÉO ===== */}
+               {/* ===== MODAL DE APROVA«√O ===== */}
                {
                   showApprovalModal && (
                      <div className="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
                         <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
                            <div className="p-8 border-b border-zinc-100 flex justify-between items-center bg-yellow-50">
                               <h2 className="text-xl font-black text-zinc-900 flex items-center gap-3 uppercase tracking-tight">
-                                 <CheckCircle2 className="text-yellow-500" size={24} /> Aprova√ß√£o de Lan√ßamentos
+                                 <CheckCircle2 className="text-yellow-500" size={24} /> AprovaÁ„o de LanÁamentos
                               </h2>
                               <button onClick={() => { setShowApprovalModal(false); setApprovalTarget(null); setApprovalObs(''); }} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full"><X size={22} /></button>
                            </div>
                            {approvalTarget ? (
-                              // Detalhe do lan√ßamento a aprovar
+                              // Detalhe do lanÁamento a aprovar
                               <div className="p-8 space-y-5">
                                  <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4">
-                                    <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">Lan√ßamento</p>
+                                    <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest mb-1">LanÁamento</p>
                                     <p className="font-black text-zinc-900">{approvalTarget.descricao}</p>
-                                    <p className="text-xs text-zinc-500 mt-1">{approvalTarget.data ? new Date(approvalTarget.data).toLocaleDateString('pt-PT') : ''} ¬∑ {approvalTarget.tipo_transacao}</p>
+                                    <p className="text-xs text-zinc-500 mt-1">{approvalTarget.data ? new Date(approvalTarget.data).toLocaleDateString('pt-PT') : ''} ∑ {approvalTarget.tipo_transacao}</p>
                                  </div>
                                  <div className="space-y-2">
-                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens do Lan√ßamento</p>
+                                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens do LanÁamento</p>
                                     {(approvalTarget.itens || []).map((it: any, i: number) => (
                                        <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-50 text-xs">
-                                          <span className="font-bold text-zinc-700">{it.conta_codigo} ‚Äî {it.conta_nome}</span>
+                                          <span className="font-bold text-zinc-700">{it.conta_codigo} ó {it.conta_nome}</span>
                                           <span className={`font-black px-2 py-0.5 rounded-lg ${it.tipo === 'D' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
                                              {it.tipo} {safeFormatAOA(it.valor)}
                                           </span>
@@ -3808,10 +3808,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     ))}
                                  </div>
                                  <div>
-                                    <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Observa√ß√µes (Opcional)</label>
+                                    <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">ObservaÁıes (Opcional)</label>
                                     <textarea value={approvalObs} onChange={e => setApprovalObs(e.target.value)}
                                        className="w-full border border-zinc-200 rounded-2xl p-4 text-xs text-zinc-700 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400" rows={3}
-                                       placeholder="Notas de aprova√ß√£o..." />
+                                       placeholder="Notas de aprovaÁ„o..." />
                                  </div>
                                  <div className="grid grid-cols-2 gap-4">
                                     <button onClick={() => handleRejeitarLancamento(approvalTarget)}
@@ -3823,17 +3823,17 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        {isApprovingId ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Aprovar e Postar
                                     </button>
                                  </div>
-                                 <button onClick={() => { setApprovalTarget(null); setApprovalObs(''); }} className="w-full text-xs text-zinc-400 hover:text-zinc-600 transition-colors">‚Üê Voltar √† lista</button>
+                                 <button onClick={() => { setApprovalTarget(null); setApprovalObs(''); }} className="w-full text-xs text-zinc-400 hover:text-zinc-600 transition-colors">? Voltar ‡ lista</button>
                               </div>
                            ) : (
-                              // Lista de lan√ßamentos pendentes
+                              // Lista de lanÁamentos pendentes
                               <div className="p-8 space-y-3">
-                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-4">{pendingApproval.length} lan√ßamento(s) aguardam revis√£o</p>
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-4">{pendingApproval.length} lanÁamento(s) aguardam revis„o</p>
                                  {pendingApproval.map(l => (
                                     <div key={l.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:bg-yellow-50 hover:border-yellow-200 transition-all cursor-pointer" onClick={() => setApprovalTarget(l)}>
                                        <div>
                                           <p className="text-sm font-black text-zinc-800">{l.descricao}</p>
-                                          <p className="text-[9px] text-zinc-400 font-bold uppercase">{l.tipo_transacao} ¬∑ {l.data ? new Date(l.data).toLocaleDateString('pt-PT') : ''}</p>
+                                          <p className="text-[9px] text-zinc-400 font-bold uppercase">{l.tipo_transacao} ∑ {l.data ? new Date(l.data).toLocaleDateString('pt-PT') : ''}</p>
                                        </div>
                                        <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-[9px] font-black rounded-lg uppercase tracking-widest">Pendente</span>
                                     </div>
@@ -3849,29 +3849,29 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                {/* --- TABELAS DE DOCUMENTOS (FACTURAS, PROFORMAS, GUIAS, ENCOMENDAS) --- */}
                {
                   ['facturas', 'proformas', 'guias', 'encomendas'].includes(activeTab) && (() => {
-                     const typeMap: any = { 'facturas': 'Factura', 'proformas': 'Pr√≥-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
+                     const typeMap: any = { 'facturas': 'Factura', 'proformas': 'PrÛ-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
                      const filtered = extFinanceiroNotas.filter(n => n.tipo?.includes(typeMap[activeTab]) || (activeTab === 'facturas' && n.tipo === 'Venda'));
 
                      return (
                         <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-bottom-4">
                            <div className="flex items-center justify-between">
-                              <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Gest√£o de {sidebarItems.find(i => i.id === activeTab)?.label}</h2>
+                              <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Gest„o de {sidebarItems.find(i => i.id === activeTab)?.label}</h2>
                               <button
                                  onClick={() => {
-                                    const mapping: any = { 'facturas': 'Factura', 'proformas': 'Pr√≥-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
+                                    const mapping: any = { 'facturas': 'Factura', 'proformas': 'PrÛ-forma', 'guias': 'Guia', 'encomendas': 'Encomenda' };
                                     setInvoiceForm(f => ({ ...f, tipo: mapping[activeTab] || 'Factura' }));
                                     setShowInvoiceModal(true);
                                  }}
                                  className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all"
                               >
-                                 Nova Emiss√£o
+                                 Nova Emiss„o
                               </button>
                            </div>
                            <div className="overflow-x-auto">
                               <table className="w-full text-left">
                                  <thead>
                                     <tr className="border-b border-zinc-100">
-                                       {['N¬∫ Documento', 'Entidade', 'Valor Total', 'Data', 'Status', ''].map(h => (
+                                       {['N∫ Documento', 'Entidade', 'Valor Total', 'Data', 'Status', ''].map(h => (
                                           <th key={h} className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
                                        ))}
                                     </tr>
@@ -3926,7 +3926,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                      <div className="space-y-10 animate-in slide-in-from-bottom-4">
                         <div className="flex items-center justify-between bg-white p-10 rounded-[3rem] border border-zinc-100 shadow-sm transition-all hover:shadow-xl">
                            <div className="space-y-1">
-                              <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tighter">Gest√£o de <span className="text-yellow-600">Contactos</span></h2>
+                              <h2 className="text-3xl font-black text-zinc-900 uppercase tracking-tighter">Gest„o de <span className="text-yellow-600">Contactos</span></h2>
                               <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Base de Dados CRM Integrada</p>
                            </div>
                            <button
@@ -3938,8 +3938,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                           {contactos.filter(c => c.empresa_id === selectedEmpresaId).length > 0 ? (
-                              contactos.filter(c => c.empresa_id === selectedEmpresaId).map((c) => (
+                           {contactos.filter(c => c.tenant_id === selectedEmpresaId).length > 0 ? (
+                              contactos.filter(c => c.tenant_id === selectedEmpresaId).map((c) => (
                                  <div key={c.id} className="bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden">
                                     <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
                                        <button className="p-3 text-zinc-300 hover:text-zinc-600"><MoreVertical size={20} /></button>
@@ -3996,11 +3996,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                {
                   activeTab === 'itens' && (
                      <div className="space-y-8 animate-in slide-in-from-bottom-4">
-                        {/* Header e Ac√ß√µes R√°pidas */}
+                        {/* Header e AcÁıes R·pidas */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm">
                            <div>
-                              <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-tight">Gest√£o de Invent√°rio</h2>
-                              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Controlo de stock, categorias e alertas cr√≠ticos</p>
+                              <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-tight">Gest„o de Invent·rio</h2>
+                              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Controlo de stock, categorias e alertas crÌticos</p>
                            </div>
                            <div className="flex items-center gap-3">
                               <button
@@ -4062,12 +4062,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                           )}
                                        </div>
                                        <h3 className="text-sm font-black text-zinc-900 uppercase tracking-tight leading-tight">{item.nome}</h3>
-                                       <p className="text-[9px] font-bold text-zinc-400 uppercase line-clamp-1">{item.descricao || 'Sem descri√ß√£o'}</p>
+                                       <p className="text-[9px] font-bold text-zinc-400 uppercase line-clamp-1">{item.descricao || 'Sem descriÁ„o'}</p>
                                     </div>
 
                                     <div className="mt-6 pt-6 border-t border-zinc-50 flex items-center justify-between">
                                        <div>
-                                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Pre√ßo Un.</p>
+                                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">PreÁo Un.</p>
                                           <p className="text-base font-black text-zinc-900">{safeFormatAOA(item.preco_unitario || item.preco_venda)}</p>
                                        </div>
                                        <div className="text-right">
@@ -4083,7 +4083,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- RELAT√ìRIOS DASHBOARD --- */}
+               {/* --- RELAT”RIOS DASHBOARD --- */}
                {
                   activeTab === 'relatorios' && (
                      <div className="space-y-10 animate-in slide-in-from-bottom-4">
@@ -4091,23 +4091,23 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 p-12 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl">
                            <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-500/20 rounded-full -mr-48 -mt-48 blur-3xl animate-pulse" />
                            <div className="relative z-10 space-y-4">
-                              <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter">Central de <span className="text-yellow-500">Intelig√™ncia</span></h2>
+                              <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter">Central de <span className="text-yellow-500">InteligÍncia</span></h2>
                               <p className="text-zinc-400 font-bold text-sm lg:text-base uppercase tracking-widest max-w-2xl">
-                                 Gere demonstra√ß√µes financeiras, balancetes e relat√≥rios anal√≠ticos com um clique. Dados export√°veis em PDF e Excel.
+                                 Gere demonstraÁıes financeiras, balancetes e relatÛrios analÌticos com um clique. Dados export·veis em PDF e Excel.
                               </p>
                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                            {[
-                              { id: 'balanco', title: 'Balan√ßo Patrimonial', desc: 'Posi√ß√£o financeira detalhada de ativos e passivos.', icon: <LayoutList size={28} className="text-blue-500" />, color: 'bg-blue-50' },
-                              { id: 'dre', title: 'Demonstra√ß√£o de Resultados', desc: 'An√°lise de lucro e preju√≠zo por per√≠odo seleccionado.', icon: <TrendingUp size={28} className="text-green-500" />, color: 'bg-green-50 text-green-700' },
-                              { id: 'balancete', title: 'Balancete de Verifica√ß√£o', desc: 'Verifica√ß√£o de d√©bitos e cr√©ditos de todas as contas.', icon: <CheckCircle2 size={28} className="text-purple-500" />, color: 'bg-purple-50 text-purple-700' },
-                              { id: 'diario', title: 'Di√°rio de Lan√ßamentos', desc: 'Listagem cronol√≥gica de todos os movimentos.', icon: <BookOpen size={28} className="text-orange-500" />, color: 'bg-orange-50 text-orange-700' },
-                              { id: 'raz√£o', title: 'Livro Raz√£o', desc: 'Movimenta√ß√£o individualizada por conta contabil√≠stica.', icon: <FileText size={28} className="text-sky-500" />, color: 'bg-sky-50 text-sky-700' },
-                              { id: 'cashflow', title: 'Fluxo de Caixa', desc: 'Origem e aplica√ß√£o de recursos financeiros.', icon: <Landmark size={28} className="text-yellow-600" />, color: 'bg-yellow-50 text-yellow-700' },
-                              { id: 'fiscal', title: 'Relat√≥rio Fiscal (IVA/IRT)', desc: 'Apuramento de impostos para submiss√£o √† AGT.', icon: <FileCheck size={28} className="text-red-500" />, color: 'bg-red-50 text-red-700' },
-                              { id: 'auditoria', title: 'Trilhas de Auditoria', desc: 'Hist√≥rico completo de altera√ß√µes e logs do sistema.', icon: <ShieldCheck size={28} className="text-zinc-500" />, color: 'bg-zinc-100 text-zinc-700' },
+                              { id: 'balanco', title: 'BalanÁo Patrimonial', desc: 'PosiÁ„o financeira detalhada de ativos e passivos.', icon: <LayoutList size={28} className="text-blue-500" />, color: 'bg-blue-50' },
+                              { id: 'dre', title: 'DemonstraÁ„o de Resultados', desc: 'An·lise de lucro e prejuÌzo por perÌodo seleccionado.', icon: <TrendingUp size={28} className="text-green-500" />, color: 'bg-green-50 text-green-700' },
+                              { id: 'balancete', title: 'Balancete de VerificaÁ„o', desc: 'VerificaÁ„o de dÈbitos e crÈditos de todas as contas.', icon: <CheckCircle2 size={28} className="text-purple-500" />, color: 'bg-purple-50 text-purple-700' },
+                              { id: 'diario', title: 'Di·rio de LanÁamentos', desc: 'Listagem cronolÛgica de todos os movimentos.', icon: <BookOpen size={28} className="text-orange-500" />, color: 'bg-orange-50 text-orange-700' },
+                              { id: 'raz„o', title: 'Livro Raz„o', desc: 'MovimentaÁ„o individualizada por conta contabilÌstica.', icon: <FileText size={28} className="text-sky-500" />, color: 'bg-sky-50 text-sky-700' },
+                              { id: 'cashflow', title: 'Fluxo de Caixa', desc: 'Origem e aplicaÁ„o de recursos financeiros.', icon: <Landmark size={28} className="text-yellow-600" />, color: 'bg-yellow-50 text-yellow-700' },
+                              { id: 'fiscal', title: 'RelatÛrio Fiscal (IVA/IRT)', desc: 'Apuramento de impostos para submiss„o ‡ AGT.', icon: <FileCheck size={28} className="text-red-500" />, color: 'bg-red-50 text-red-700' },
+                              { id: 'auditoria', title: 'Trilhas de Auditoria', desc: 'HistÛrico completo de alteraÁıes e logs do sistema.', icon: <ShieldCheck size={28} className="text-zinc-500" />, color: 'bg-zinc-100 text-zinc-700' },
                            ].map((rep) => (
                               <div key={rep.id} className="bg-white p-8 rounded-[3rem] border border-zinc-100 shadow-sm hover:shadow-2xl hover:scale-[1.02] transition-all group flex flex-col justify-between h-[320px]">
                                  <div>
@@ -4124,7 +4124,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        className="flex-1 py-4 bg-zinc-900 text-white font-black rounded-2xl text-[9px] uppercase tracking-widest hover:bg-yellow-500 hover:text-zinc-900 transition-all flex items-center justify-center gap-2"
                                     >
                                        {isGeneratingReport ? <RefreshCw className="animate-spin" size={14} /> : <Printer size={14} />}
-                                       {isGeneratingReport ? 'Gerando...' : 'Gerar Relat√≥rio'}
+                                       {isGeneratingReport ? 'Gerando...' : 'Gerar RelatÛrio'}
                                     </button>
                                     <button className="p-4 bg-zinc-50 text-zinc-400 rounded-2xl hover:bg-zinc-100 transition-all">
                                        <Share2 size={16} />
@@ -4137,16 +4137,16 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- ABA: FONTES DE DADOS (INTEGRA√á√ÉO AUTOM√ÅTICA) --- */}
+               {/* --- ABA: FONTES DE DADOS (INTEGRA«√O AUTOM¡TICA) --- */}
                {
                   activeTab === 'fontes' && (() => {
 
-                     // ‚îÄ‚îÄ‚îÄ M√©tricas por M√≥dulo ‚îÄ‚îÄ‚îÄ
+                     // --- MÈtricas por MÛdulo ---
                      const totalFaturas = extFaturas.reduce((s, f) => s + (Number(f.valor_total) || 0), 0);
                      const faturasPagas = extFaturas.filter(f => f.status === 'pago' || f.status === 'Paga').length;
                      const totalTesouraria = extTesouraria.reduce((s, t) => s + (Number(t.valor) || 0), 0);
                      const entradas = extTesouraria.filter(t => t.tipo === 'Entrada' || t.tipo === 'entrada' || t.tipo === 'receita').reduce((s, t) => s + (Number(t.valor) || 0), 0);
-                     const saidas = extTesouraria.filter(t => t.tipo === 'Sa√≠da' || t.tipo === 'saida' || t.tipo === 'despesa').reduce((s, t) => s + (Number(t.valor) || 0), 0);
+                     const saidas = extTesouraria.filter(t => t.tipo === 'SaÌda' || t.tipo === 'saida' || t.tipo === 'despesa').reduce((s, t) => s + (Number(t.valor) || 0), 0);
                      const totalSalarios = extRhRecibos.reduce((s, r) => s + (Number(r.liquido) || 0), 0);
                      const totalBruto = extRhRecibos.reduce((s, r) => s + (Number(r.bruto) || 0), 0);
                      const totalInventarioValor = extInventario.reduce((s, i) => s + (Number(i.quantidade_atual) || 0) * (Number(i.preco_unitario) || 0), 0);
@@ -4169,7 +4169,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
                      const modulos = [
                         {
-                           nome: 'Fatura√ß√£o', icon: <FileText size={22} className="text-blue-500" />, bg: 'bg-blue-50 border-blue-100',
+                           nome: 'FaturaÁ„o', icon: <FileText size={22} className="text-blue-500" />, bg: 'bg-blue-50 border-blue-100',
                            badge: `${extFaturas.length} faturas`,
                            stats: [
                               { label: 'Total Faturado', value: safeFormatAOA(totalFaturas), color: 'text-blue-600' },
@@ -4177,7 +4177,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               { label: 'Pendentes', value: `${extFaturas.length - faturasPagas}`, color: 'text-yellow-500' },
                            ],
                            items: extFaturas.slice(0, 5).map(f => ({
-                              label: f.numero_fatura || f.cliente_nome || '‚Äî',
+                              label: f.numero_fatura || f.cliente_nome || 'ó',
                               value: safeFormatAOA(f.valor_total),
                               sub: f.status || '',
                               date: f.data_emissao || '',
@@ -4190,10 +4190,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            stats: [
                               { label: 'Total Movimentos', value: safeFormatAOA(totalTesouraria), color: 'text-green-600' },
                               { label: 'Entradas', value: safeFormatAOA(entradas), color: 'text-green-600' },
-                              { label: 'Sa√≠das', value: safeFormatAOA(saidas), color: 'text-red-500' },
+                              { label: 'SaÌdas', value: safeFormatAOA(saidas), color: 'text-red-500' },
                            ],
                            items: extTesouraria.slice(0, 5).map(t => ({
-                              label: t.descricao || t.categoria || '‚Äî',
+                              label: t.descricao || t.categoria || 'ó',
                               value: safeFormatAOA(t.valor),
                               sub: t.tipo || '',
                               date: t.data || '',
@@ -4201,10 +4201,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            }))
                         },
                         {
-                           nome: 'RH / Sal√°rios', icon: <Users size={22} className="text-purple-500" />, bg: 'bg-purple-50 border-purple-100',
+                           nome: 'RH / Sal·rios', icon: <Users size={22} className="text-purple-500" />, bg: 'bg-purple-50 border-purple-100',
                            badge: `${extRhRecibos.length} recibos`,
                            stats: [
-                              { label: 'Total L√≠quido', value: safeFormatAOA(totalSalarios), color: 'text-purple-600' },
+                              { label: 'Total LÌquido', value: safeFormatAOA(totalSalarios), color: 'text-purple-600' },
                               { label: 'Total Bruto', value: safeFormatAOA(totalBruto), color: 'text-zinc-600' },
                               { label: 'Recibos', value: `${extRhRecibos.length}`, color: 'text-purple-600' },
                            ],
@@ -4217,15 +4217,15 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            }))
                         },
                         {
-                           nome: 'Invent√°rio', icon: <FileCheck size={22} className="text-orange-500" />, bg: 'bg-orange-50 border-orange-100',
+                           nome: 'Invent·rio', icon: <FileCheck size={22} className="text-orange-500" />, bg: 'bg-orange-50 border-orange-100',
                            badge: `${extInventario.length} itens`,
                            stats: [
                               { label: 'Valor Stock', value: safeFormatAOA(totalInventarioValor), color: 'text-orange-600' },
                               { label: 'SKUs', value: `${extInventario.length}`, color: 'text-zinc-600' },
-                              { label: 'Cr√≠ticos (Stock M√≠n.)', value: `${itensCriticos}`, color: itensCriticos > 0 ? 'text-red-500' : 'text-green-600' },
+                              { label: 'CrÌticos (Stock MÌn.)', value: `${itensCriticos}`, color: itensCriticos > 0 ? 'text-red-500' : 'text-green-600' },
                            ],
                            items: extInventario.slice(0, 5).map(i => ({
-                              label: i.nome || '‚Äî',
+                              label: i.nome || 'ó',
                               onAutoLaunch: undefined
                            }))
                         },
@@ -4233,14 +4233,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
                      return (
                         <div className="space-y-8 animate-in slide-in-from-bottom-4 text-left">
-                           {/* Header com bot√£o de sincroniza√ß√£o */}
+                           {/* Header com bot„o de sincronizaÁ„o */}
                            <div className="flex flex-wrap items-center justify-between gap-4 bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
                               <div>
                                  <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
                                     <Share2 className="text-yellow-500" size={26} /> Fontes de Dados Integradas
                                  </h2>
                                  <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
-                                    Dados recebidos automaticamente dos m√≥dulos activos do ERP
+                                    Dados recebidos automaticamente dos mÛdulos activos do ERP
                                  </p>
                               </div>
                               <div className="flex flex-col items-end gap-2">
@@ -4251,7 +4251,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </button>
                                  {lastSyncAt && (
                                     <p className="text-[9px] text-zinc-500 font-bold">
-                                       √öltima Sinc: {lastSyncAt.toLocaleTimeString()}
+                                       ⁄ltima Sinc: {lastSyncAt.toLocaleTimeString()}
                                     </p>
                                  )}
                               </div>
@@ -4284,7 +4284,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 <div className="w-2 h-2 rounded-full bg-zinc-200 group-hover:bg-yellow-500 transition-colors" />
                                                 <div>
                                                    <p className="text-[10px] font-black text-zinc-800 uppercase leading-none">{it.label}</p>
-                                                   <p className="text-[8px] font-bold text-zinc-400 uppercase mt-1">{it.date} {it.sub ? `‚Ä¢ ${it.sub}` : ''}</p>
+                                                   <p className="text-[8px] font-bold text-zinc-400 uppercase mt-1">{it.date} {it.sub ? `ï ${it.sub}` : ''}</p>
                                                 </div>
                                              </div>
                                              <div className="flex items-center gap-4">
@@ -4305,13 +4305,13 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            {/* Movimentos de Stock Recentes */}
                            <div className="bg-white rounded-[3rem] border border-zinc-100 shadow-sm p-10 space-y-8">
                               <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                                 <RefreshCw size={24} className="text-yellow-500" /> Movimentos de Invent√°rio em Tempo Real
+                                 <RefreshCw size={24} className="text-yellow-500" /> Movimentos de Invent·rio em Tempo Real
                               </h3>
                               <div className="overflow-x-auto">
                                  <table className="w-full text-left">
                                     <thead>
                                        <tr className="border-b border-zinc-100">
-                                          {['Tipo', 'Respons√°vel', 'Refer√™ncia', 'Quantidade', 'Data'].map(h => (
+                                          {['Tipo', 'Respons·vel', 'ReferÍncia', 'Quantidade', 'Data'].map(h => (
                                              <th key={h} className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
                                           ))}
                                        </tr>
@@ -4323,7 +4323,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${m.tipo === 'entrada' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>{m.tipo}</span>
                                              </td>
                                              <td className="py-4 px-4 text-[11px] font-black text-zinc-800 uppercase tracking-tight">{m.entidade || 'Sistema'}</td>
-                                             <td className="py-4 px-4 text-[10px] font-bold text-zinc-500 uppercase">{m.referencia || '‚Äî'}</td>
+                                             <td className="py-4 px-4 text-[10px] font-bold text-zinc-500 uppercase">{m.referencia || 'ó'}</td>
                                              <td className="py-4 px-4 text-[11px] font-black text-zinc-900">{m.quantidade}</td>
                                              <td className="py-4 px-4 text-[10px] font-bold text-zinc-400">{new Date(m.created_at).toLocaleDateString()}</td>
                                           </tr>
@@ -4337,11 +4337,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   })()
                }
 
-               {/* --- CONSOLIDA√á√ÉO MULTIEMPRESA --- */}
+               {/* --- CONSOLIDA«√O MULTIEMPRESA --- */}
                {
                   activeTab === 'consolidacao' && (() => {
                      const consolidadoPorEmpresa = empresas.map(emp => {
-                        const empLancs = (lancamentos || []).filter(l => l.empresa_id === emp.id);
+                        const empLancs = (lancamentos || []).filter(l => l.tenant_id === emp.id);
                         let receita = 0, despesa = 0, ativo = 0, passivo = 0;
                         empLancs.forEach(l => {
                            (l.itens || []).forEach(it => {
@@ -4367,10 +4367,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                      };
                      const maxReceita = Math.max(...consolidadoPorEmpresa.map(e => e.receita), 1);
 
-                     // Estado local de elimina√ß√µes mock (at√© o form ser implementado)
+                     // Estado local de eliminaÁıes mock (atÈ o form ser implementado)
                      const eliminacoesExemplo = [
-                        { id: '1', tipo: 'Receita Interna', valor: 50000, descricao: 'Presta√ß√£o de servi√ßos interna', origem: empresas[0]?.nome || '‚Äî', destino: empresas[1]?.nome || '‚Äî' },
-                        { id: '2', tipo: 'Empr√©stimo', valor: 200000, descricao: 'Financiamento entre afiliadas', origem: empresas[1]?.nome || '‚Äî', destino: empresas[0]?.nome || '‚Äî' },
+                        { id: '1', tipo: 'Receita Interna', valor: 50000, descricao: 'PrestaÁ„o de serviÁos interna', origem: empresas[0]?.nome || 'ó', destino: empresas[1]?.nome || 'ó' },
+                        { id: '2', tipo: 'EmprÈstimo', valor: 200000, descricao: 'Financiamento entre afiliadas', origem: empresas[1]?.nome || 'ó', destino: empresas[0]?.nome || 'ó' },
                      ].filter(e => empresas.length >= 2);
 
                      const totalEliminacoes = eliminacoesExemplo.reduce((a, e) => a + e.valor, 0);
@@ -4383,18 +4383,18 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            <div className="flex items-center justify-between bg-zinc-900 p-8 rounded-[3rem] text-white shadow-2xl">
                               <div>
                                  <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-                                    <Building2 className="text-yellow-500" size={28} /> Consolida√ß√£o do Grupo
+                                    <Building2 className="text-yellow-500" size={28} /> ConsolidaÁ„o do Grupo
                                  </h2>
                                  <p className="text-zinc-400 text-xs font-bold mt-1 uppercase tracking-widest">
-                                    {empresas.length} Entidade{empresas.length !== 1 ? 's' : ''} ¬∑ Dados calculados automaticamente
+                                    {empresas.length} Entidade{empresas.length !== 1 ? 's' : ''} ∑ Dados calculados automaticamente
                                  </p>
                               </div>
                               <div className="text-right">
-                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Lucro L√≠quido Consolidado</p>
+                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Lucro LÌquido Consolidado</p>
                                  <p className={`text-4xl font-black ${lucroConsolidado >= 0 ? 'text-yellow-400' : 'text-red-400'}`}>
                                     {safeFormatAOA(lucroConsolidado)}
                                  </p>
-                                 <p className="text-[9px] text-zinc-500 font-bold mt-1">Ap√≥s elimina√ß√µes de {safeFormatAOA(totalEliminacoes)}</p>
+                                 <p className="text-[9px] text-zinc-500 font-bold mt-1">ApÛs eliminaÁıes de {safeFormatAOA(totalEliminacoes)}</p>
                               </div>
                            </div>
 
@@ -4413,14 +4413,14 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               ))}
                            </div>
 
-                           {/* Compara√ß√£o Financeira entre Empresas */}
+                           {/* ComparaÁ„o Financeira entre Empresas */}
                            <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
                               <div className="flex items-center justify-between mb-6">
                                  <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                                    <BarChart2 size={18} className="text-yellow-500" /> Compara√ß√£o Financeira entre Entidades
+                                    <BarChart2 size={18} className="text-yellow-500" /> ComparaÁ„o Financeira entre Entidades
                                  </h3>
                                  <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 rounded-xl text-[9px] font-black uppercase tracking-widest border border-zinc-100 transition-all">
-                                    <Printer size={14} /> Relat√≥rio
+                                    <Printer size={14} /> RelatÛrio
                                  </button>
                               </div>
 
@@ -4441,7 +4441,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 </div>
                                                 <div>
                                                    <p className="font-black text-sm text-zinc-900">{emp.nome}</p>
-                                                   <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{emp.lancamentos} lan√ßamento{emp.lancamentos !== 1 ? 's' : ''}</p>
+                                                   <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{emp.lancamentos} lanÁamento{emp.lancamentos !== 1 ? 's' : ''}</p>
                                                 </div>
                                              </div>
                                              <div className="flex gap-6 text-right">
@@ -4463,10 +4463,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                 </div>
                                              </div>
                                           </div>
-                                          {/* Barra de participa√ß√£o na receita do grupo */}
+                                          {/* Barra de participaÁ„o na receita do grupo */}
                                           <div>
                                              <div className="flex justify-between items-center mb-1">
-                                                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Contribui√ß√£o para Receita do Grupo</p>
+                                                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">ContribuiÁ„o para Receita do Grupo</p>
                                                 <p className="text-[9px] font-black text-zinc-600">{maxReceita > 0 ? ((emp.receita / Math.max(totalGrupo.receita, 1)) * 100).toFixed(1) : 0}%</p>
                                              </div>
                                              <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
@@ -4480,11 +4480,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               )}
                            </div>
 
-                           {/* Elimina√ß√µes Intercompany */}
+                           {/* EliminaÁıes Intercompany */}
                            <div className="bg-white rounded-[3rem] border border-sky-100 shadow-sm p-8">
                               <div className="flex items-center justify-between mb-6">
                                  <h3 className="text-base font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                                    <ArrowDownLeft size={18} className="text-yellow-500" /> Elimina√ß√µes Intercompany
+                                    <ArrowDownLeft size={18} className="text-yellow-500" /> EliminaÁıes Intercompany
                                  </h3>
                                  <span className="text-[9px] font-black text-zinc-400 px-3 py-1.5 bg-zinc-50 rounded-xl border border-zinc-100 uppercase tracking-widest">
                                     Total: {safeFormatAOA(totalEliminacoes)}
@@ -4493,18 +4493,18 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
                               {empresas.length < 2 ? (
                                  <div className="text-center py-10 bg-zinc-50 rounded-2xl">
-                                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">S√£o necess√°rias pelo menos 2 empresas no grupo para registar elimina√ß√µes.</p>
+                                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">S„o necess·rias pelo menos 2 empresas no grupo para registar eliminaÁıes.</p>
                                  </div>
                               ) : eliminacoesExemplo.length === 0 ? (
                                  <div className="text-center py-10 bg-zinc-50 rounded-2xl">
-                                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Nenhuma elimina√ß√£o intercompany registada.</p>
+                                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Nenhuma eliminaÁ„o intercompany registada.</p>
                                  </div>
                               ) : (
                                  <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                        <thead>
                                           <tr className="border-b border-zinc-100">
-                                             {['Tipo', 'Descri√ß√£o', 'Origem', 'Destino', 'Valor'].map(h => (
+                                             {['Tipo', 'DescriÁ„o', 'Origem', 'Destino', 'Valor'].map(h => (
                                                 <th key={h} className="pb-3 px-4 text-[9px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
                                              ))}
                                           </tr>
@@ -4553,10 +4553,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                            <form onSubmit={handleCreateAccount} className="p-8 space-y-6">
                               <div className="grid grid-cols-2 gap-6">
-                                 <Input name="codigo" label="C√≥digo PGC (Ex: 1.1.2)" required
+                                 <Input name="codigo" label="CÛdigo PGC (Ex: 1.1.2)" required
                                     value={newAccount.codigo} onChange={e => setNewAccount({ ...newAccount, codigo: e.target.value })}
                                  />
-                                 <Input name="nome" label="Descri√ß√£o da Conta" required
+                                 <Input name="nome" label="DescriÁ„o da Conta" required
                                     value={newAccount.nome} onChange={e => setNewAccount({ ...newAccount, nome: e.target.value })}
                                  />
                               </div>
@@ -4566,7 +4566,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     options={[
                                        { value: 'Ativo', label: 'Ativo' },
                                        { value: 'Passivo', label: 'Passivo' },
-                                       { value: 'Capital', label: 'Capital Pr√≥prio' },
+                                       { value: 'Capital', label: 'Capital PrÛprio' },
                                        { value: 'Receita', label: 'Receita' },
                                        { value: 'Despesa', label: 'Despesa' }
                                     ]}
@@ -4580,12 +4580,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  />
                               </div>
                               <div className="grid grid-cols-2 gap-6">
-                                 <Select name="aceita_lancamentos" label="Tipo de Lan√ßamento"
+                                 <Select name="aceita_lancamentos" label="Tipo de LanÁamento"
                                     value={newAccount.aceita_lancamentos ? 'true' : 'false'}
                                     onChange={e => setNewAccount({ ...newAccount, aceita_lancamentos: e.target.value === 'true' })}
                                     options={[
-                                       { value: 'true', label: 'Anal√≠tica (Aceita Movimentos)' },
-                                       { value: 'false', label: 'Sint√©tica (Apenas Grupos)' }
+                                       { value: 'true', label: 'AnalÌtica (Aceita Movimentos)' },
+                                       { value: 'false', label: 'SintÈtica (Apenas Grupos)' }
                                     ]}
                                  />
                                  <Select name="centro_custo_id" label="Centro de Custo Associado"
@@ -4598,7 +4598,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               </div>
                               <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
                                  <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1 font-mono">Hierarchy Preview</p>
-                                 <p className="text-xs font-bold text-zinc-600">N√≠vel detectado automaticamente: <span className="text-zinc-900">{newAccount.codigo.split('.').length}</span></p>
+                                 <p className="text-xs font-bold text-zinc-600">NÌvel detectado automaticamente: <span className="text-zinc-900">{newAccount.codigo.split('.').length}</span></p>
                               </div>
                               <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-yellow-500 hover:text-zinc-900 transition-all shadow-xl">
                                  <Save size={18} /> Registrar no Estatuto
@@ -4622,7 +4622,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
                            <form onSubmit={handleCreateCentro} className="p-8 space-y-6">
                               <div className="grid grid-cols-2 gap-6">
-                                 <Input name="cc_codigo" label="C√≥digo do Centro" required
+                                 <Input name="cc_codigo" label="CÛdigo do Centro" required
                                     value={newCentroCusto.codigo} onChange={e => setNewCentroCusto({ ...newCentroCusto, codigo: e.target.value })}
                                     placeholder="Ex: ADM, PRD"
                                  />
@@ -4638,7 +4638,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     { value: 'Misto', label: 'Misto / Operacional' }
                                  ]}
                               />
-                              <Input name="cc_desc" label="Breve Descri√ß√£o"
+                              <Input name="cc_desc" label="Breve DescriÁ„o"
                                  value={newCentroCusto.descricao} onChange={e => setNewCentroCusto({ ...newCentroCusto, descricao: e.target.value })}
                               />
                               <button type="submit" className="w-full py-5 bg-zinc-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all">
@@ -4662,7 +4662,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
                                  <div>
                                     <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Contacto</h2>
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Parceiro de Neg√≥cio</p>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Parceiro de NegÛcio</p>
                                  </div>
                               </div>
                               <button onClick={() => setShowContactModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
@@ -4670,7 +4670,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            <form onSubmit={handleCreateContact} className="p-8 space-y-6">
                               <div className="grid grid-cols-2 gap-6">
                                  <div className="col-span-2">
-                                    <Input label="Nome Completo / Raz√£o Social" required placeholder="Ex: Amazing Corporation Lda"
+                                    <Input label="Nome Completo / Raz„o Social" required placeholder="Ex: Amazing Corporation Lda"
                                        value={newContact.nome} onChange={(e: any) => setNewContact({ ...newContact, nome: e.target.value })}
                                     />
                                  </div>
@@ -4699,7 +4699,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     value={newContact.telefone} onChange={(e: any) => setNewContact({ ...newContact, telefone: e.target.value })}
                                  />
                                  <div className="col-span-2">
-                                    <Input label="Morada / Localiza√ß√£o" placeholder="Cidade, Bairro, Rua..."
+                                    <Input label="Morada / LocalizaÁ„o" placeholder="Cidade, Bairro, Rua..."
                                        value={newContact.morada} onChange={(e: any) => setNewContact({ ...newContact, morada: e.target.value })}
                                     />
                                  </div>
@@ -4717,7 +4717,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- MODAL NOVA CATEGORIA (INVENT√ÅRIO) --- */}
+               {/* --- MODAL NOVA CATEGORIA (INVENT¡RIO) --- */}
                {
                   showCategoryModal && (
                      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
@@ -4729,21 +4729,21 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
                                  <div>
                                     <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Nova Categoria</h2>
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Organiza√ß√£o de Itens e Stock</p>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">OrganizaÁ„o de Itens e Stock</p>
                                  </div>
                               </div>
                               <button onClick={() => setShowCategoryModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
                            </div>
                            <form onSubmit={handleCreateCategory} className="p-8 space-y-6">
                               <div className="space-y-4">
-                                 <Input label="Nome da Categoria" required placeholder="Ex: Inform√°tica, Bebidas..."
+                                 <Input label="Nome da Categoria" required placeholder="Ex: Inform·tica, Bebidas..."
                                     value={newCategory.nome} onChange={(e: any) => setNewCategory({ ...newCategory, nome: e.target.value })}
                                  />
-                                 <Input label="Descri√ß√£o Curta" placeholder="Opcional..."
+                                 <Input label="DescriÁ„o Curta" placeholder="Opcional..."
                                     value={newCategory.descricao} onChange={(e: any) => setNewCategory({ ...newCategory, descricao: e.target.value })}
                                  />
                                  <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cor de Identifica√ß√£o</label>
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Cor de IdentificaÁ„o</label>
                                     <div className="flex gap-3">
                                        {['#fbbf24', '#3b82f6', '#ef4444', '#10b981', '#a855f7', '#6366f1'].map(color => (
                                           <button
@@ -4770,7 +4770,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- MODAL NOVO ITEM (INVENT√ÅRIO) --- */}
+               {/* --- MODAL NOVO ITEM (INVENT¡RIO) --- */}
                {
                   showItemModal && (
                      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
@@ -4781,8 +4781,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     <Plus size={24} />
                                  </div>
                                  <div>
-                                    <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Item no Cat√°logo</h2>
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Produto ou Servi√ßo</p>
+                                    <h2 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Novo Item no Cat·logo</h2>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Registo de Produto ou ServiÁo</p>
                                  </div>
                               </div>
                               <button onClick={() => setShowItemModal(false)} className="p-3 text-zinc-400 hover:bg-zinc-200 rounded-full transition-all"><X size={24} /></button>
@@ -4790,7 +4790,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            <form onSubmit={handleCreateItem} className="p-8 space-y-6">
                               <div className="grid grid-cols-2 gap-6">
                                  <div className="col-span-2">
-                                    <Input label="Nome do Item / Servi√ßo" required placeholder="Ex: Consultoria Fiscal, Resma A4..."
+                                    <Input label="Nome do Item / ServiÁo" required placeholder="Ex: Consultoria Fiscal, Resma A4..."
                                        value={newInventoryItem.nome} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, nome: e.target.value })}
                                     />
                                  </div>
@@ -4806,19 +4806,19 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                        required
                                     />
                                  </div>
-                                 <Input label="C√≥digo/SKU" placeholder="Ex: SERV-001"
+                                 <Input label="CÛdigo/SKU" placeholder="Ex: SERV-001"
                                     value={newInventoryItem.codigo} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, codigo: e.target.value })}
                                  />
                               </div>
 
                               <div className="grid grid-cols-3 gap-6 pt-4 border-t border-zinc-50">
-                                 <Input label="Pre√ßo Unit√°rio" type="number"
+                                 <Input label="PreÁo Unit·rio" type="number"
                                     value={newInventoryItem.preco_unitario} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, preco_unitario: Number(e.target.value) })}
                                  />
                                  <Input label="Qtd. Inicial" type="number"
                                     value={newInventoryItem.quantidade_atual} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, quantidade_atual: Number(e.target.value) })}
                                  />
-                                 <Input label="Stock M√≠nimo" type="number"
+                                 <Input label="Stock MÌnimo" type="number"
                                     value={newInventoryItem.quantidade_minima} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, quantidade_minima: Number(e.target.value) })}
                                  />
                               </div>
@@ -4830,7 +4830,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     />
                                  </div>
                                  <div className="flex-1">
-                                    <Input label="Refer√™ncia Interna" placeholder="Opcional..."
+                                    <Input label="ReferÍncia Interna" placeholder="Opcional..."
                                        value={newInventoryItem.referencia} onChange={(e: any) => setNewInventoryItem({ ...newInventoryItem, referencia: e.target.value })}
                                     />
                                  </div>
@@ -4839,7 +4839,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <div className="pt-6">
                                  <button type="submit" disabled={isSavingItem} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
                                     {isSavingItem ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
-                                    {isSavingItem ? 'A Processar...' : 'Adicionar ao Cat√°logo'}
+                                    {isSavingItem ? 'A Processar...' : 'Adicionar ao Cat·logo'}
                                  </button>
                               </div>
                            </form>
@@ -4847,7 +4847,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                      </div>
                   )
                }
-               {/* --- MODAL NOVO FUNCION√ÅRIO --- */}
+               {/* --- MODAL NOVO FUNCION¡RIO --- */}
                {
                   showEmployeeModal && (
                      <div className="fixed inset-0 z-[130] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in">
@@ -4865,44 +4865,44 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <button onClick={() => setShowEmployeeModal(false)} className="p-3 text-white/50 hover:bg-white/10 rounded-full transition-all"><X size={24} /></button>
                            </div>
                            <form onSubmit={handleSaveEmployee} className="p-10 space-y-10">
-                              {/* Bloco 1: Identifica√ß√£o e Base */}
+                              {/* Bloco 1: IdentificaÁ„o e Base */}
                               <div className="space-y-4">
-                                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">Informa√ß√£o Base e Identifica√ß√£o</h4>
+                                 <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">InformaÁ„o Base e IdentificaÁ„o</h4>
                                  <div className="grid grid-cols-3 gap-6">
                                     <div className="col-span-1">
-                                       <Input label="Nome Completo" required value={newEmployee.nome} onChange={e => setNewEmployee({ ...newEmployee, nome: e.target.value })} placeholder="Ex: Jo√£o Manuel dos Santos" />
+                                       <Input label="Nome Completo" required value={newEmployee.nome} onChange={e => setNewEmployee({ ...newEmployee, nome: e.target.value })} placeholder="Ex: Jo„o Manuel dos Santos" />
                                     </div>
-                                    <Input label="Fun√ß√£o / Cargo" required value={newEmployee.funcao} onChange={e => setNewEmployee({ ...newEmployee, funcao: e.target.value })} placeholder="Ex: Contabilista S√©nior" />
+                                    <Input label="FunÁ„o / Cargo" required value={newEmployee.funcao} onChange={e => setNewEmployee({ ...newEmployee, funcao: e.target.value })} placeholder="Ex: Contabilista SÈnior" />
                                     <Input label="NIF" value={newEmployee.nif} onChange={e => setNewEmployee({ ...newEmployee, nif: e.target.value })} placeholder="000000000LA000" />
                                     <Input label="Bilhete de Identidade" value={newEmployee.bilhete} onChange={e => setNewEmployee({ ...newEmployee, bilhete: e.target.value })} placeholder="000000000" />
                                     <Input label="Telefone" value={newEmployee.telefone} onChange={e => setNewEmployee({ ...newEmployee, telefone: e.target.value })} placeholder="900 000 000" />
 
-                                    <Input label="Sal√°rio Base (AOA)" type="number" required value={newEmployee.salario_base} onChange={e => setNewEmployee({ ...newEmployee, salario_base: Number(e.target.value) })} />
-                                    <Input label="N.¬∫ Seguran√ßa Social" value={newEmployee.numero_ss} onChange={e => setNewEmployee({ ...newEmployee, numero_ss: e.target.value })} placeholder="00000000000" />
+                                    <Input label="Sal·rio Base (AOA)" type="number" required value={newEmployee.salario_base} onChange={e => setNewEmployee({ ...newEmployee, salario_base: Number(e.target.value) })} />
+                                    <Input label="N.∫ SeguranÁa Social" value={newEmployee.numero_ss} onChange={e => setNewEmployee({ ...newEmployee, numero_ss: e.target.value })} placeholder="00000000000" />
                                     <div className="flex items-end pb-1">
                                        <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 w-full">
-                                          <p className="text-[9px] font-bold text-zinc-400 uppercase">C√°lculo Estimado</p>
-                                          <p className="text-xs font-black text-zinc-900">IRT/INSS Autom√°tico</p>
+                                          <p className="text-[9px] font-bold text-zinc-400 uppercase">C·lculo Estimado</p>
+                                          <p className="text-xs font-black text-zinc-900">IRT/INSS Autom·tico</p>
                                        </div>
                                     </div>
                                  </div>
                               </div>
 
-                              {/* Bloco 2: Subs√≠dios Mensais e Anuais (Lado a Lado) */}
+                              {/* Bloco 2: SubsÌdios Mensais e Anuais (Lado a Lado) */}
                               <div className="grid grid-cols-2 gap-8">
                                  <div className="p-6 bg-zinc-50/50 rounded-3xl border border-zinc-100 space-y-6">
-                                    <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">Subs√≠dios Mensais Fixos</h4>
+                                    <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">SubsÌdios Mensais Fixos</h4>
                                     <div className="grid grid-cols-2 gap-4">
-                                       <Input label="Alimenta√ß√£o" type="number" value={newEmployee.subsidio_alimentacao} onChange={e => setNewEmployee({ ...newEmployee, subsidio_alimentacao: Number(e.target.value) })} />
+                                       <Input label="AlimentaÁ„o" type="number" value={newEmployee.subsidio_alimentacao} onChange={e => setNewEmployee({ ...newEmployee, subsidio_alimentacao: Number(e.target.value) })} />
                                        <Input label="Transporte" type="number" value={newEmployee.subsidio_transporte} onChange={e => setNewEmployee({ ...newEmployee, subsidio_transporte: Number(e.target.value) })} />
                                     </div>
                                  </div>
 
                                  <div className="p-6 bg-yellow-50/30 rounded-3xl border border-yellow-100 space-y-6">
-                                    <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">B√≥nus e Descontos</h4>
+                                    <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest border-b border-yellow-200 pb-2">BÛnus e Descontos</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                        <Input label="Horas Extras (Valor)" type="number" value={newEmployee.valor_hora_extra_base} onChange={e => setNewEmployee({ ...newEmployee, valor_hora_extra_base: Number(e.target.value) })} />
-                                       <Input label="Adiantamento Padr√£o" type="number" value={newEmployee.adiantamento_padrao} onChange={e => setNewEmployee({ ...newEmployee, adiantamento_padrao: Number(e.target.value) })} />
+                                       <Input label="Adiantamento Padr„o" type="number" value={newEmployee.adiantamento_padrao} onChange={e => setNewEmployee({ ...newEmployee, adiantamento_padrao: Number(e.target.value) })} />
                                        <Input label="Outros Descontos" type="number" value={newEmployee.outros_descontos_base} onChange={e => setNewEmployee({ ...newEmployee, outros_descontos_base: Number(e.target.value) })} />
                                        <div className="flex flex-col gap-2 pt-2">
                                           <label className="flex items-center gap-2 cursor-pointer">
@@ -4914,10 +4914,10 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                              <span className="text-[10px] font-bold text-zinc-600 uppercase">Aplicar IRT</span>
                                           </label>
                                        </div>
-                                       <Input label="Base F√©rias" type="number" value={newEmployee.subsidio_ferias_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_ferias_base: Number(e.target.value) })} />
+                                       <Input label="Base FÈrias" type="number" value={newEmployee.subsidio_ferias_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_ferias_base: Number(e.target.value) })} />
                                        <Input label="Base Natal" type="number" value={newEmployee.subsidio_natal_base} onChange={e => setNewEmployee({ ...newEmployee, subsidio_natal_base: Number(e.target.value) })} />
                                        <div className="col-span-2">
-                                          <Input label="Gratifica√ß√µes Mensais" type="number" value={newEmployee.outras_bonificacoes_base} onChange={e => setNewEmployee({ ...newEmployee, outras_bonificacoes_base: Number(e.target.value) })} />
+                                          <Input label="GratificaÁıes Mensais" type="number" value={newEmployee.outras_bonificacoes_base} onChange={e => setNewEmployee({ ...newEmployee, outras_bonificacoes_base: Number(e.target.value) })} />
                                        </div>
                                     </div>
                                  </div>
@@ -4926,7 +4926,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                               <div className="pt-4">
                                  <button type="submit" disabled={isProcessingPayroll} className="w-full py-6 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[2rem] font-black uppercase text-sm tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4">
                                     {isProcessingPayroll ? <RefreshCw className="animate-spin text-yellow-500" /> : <Save className="text-yellow-500" />}
-                                    {isProcessingPayroll ? 'Processando...' : 'Confirmar Registo do Funcion√°rio'}
+                                    {isProcessingPayroll ? 'Processando...' : 'Confirmar Registo do Funcion·rio'}
                                  </button>
                               </div>
                            </form>
@@ -4935,7 +4935,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   )
                }
 
-               {/* --- MODAL RECIBO DE SAL√ÅRIO --- */}
+               {/* --- MODAL RECIBO DE SAL¡RIO --- */}
                {
                   selectedFolha && (
                      <div className="fixed inset-0 z-[140] flex items-center justify-center bg-zinc-950/90 backdrop-blur-xl p-4 animate-in fade-in">
@@ -4946,11 +4946,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                            </div>
 
                            <div className="p-16 space-y-12">
-                              {/* Cabe√ßalho do Recibo */}
+                              {/* CabeÁalho do Recibo */}
                               <div className="flex justify-between items-start border-b-4 border-zinc-900 pb-10">
                                  <div>
-                                    <h2 className="text-4xl font-black uppercase tracking-tighter text-zinc-900 leading-none mb-2">Recibo de Sal√°rio</h2>
-                                    <p className="text-lg font-bold text-zinc-400 uppercase tracking-widest">M√™s de Refer√™ncia: {selectedFolha.mes_referencia}</p>
+                                    <h2 className="text-4xl font-black uppercase tracking-tighter text-zinc-900 leading-none mb-2">Recibo de Sal·rio</h2>
+                                    <p className="text-lg font-bold text-zinc-400 uppercase tracking-widest">MÍs de ReferÍncia: {selectedFolha.mes_referencia}</p>
                                  </div>
                                  <div className="text-right">
                                     <p className="text-xl font-black text-zinc-900 uppercase">{currentEmpresa?.nome}</p>
@@ -4958,37 +4958,37 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                  </div>
                               </div>
 
-                              {/* Dados do Funcion√°rio */}
+                              {/* Dados do Funcion·rio */}
                               <div className="grid grid-cols-2 gap-10">
                                  <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
                                     <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Colaborador</p>
                                     <p className="text-2xl font-black text-zinc-900 uppercase tracking-tighter">{selectedFolha.funcionario_nome}</p>
                                  </div>
                                  <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Cargo / Fun√ß√£o</p>
-                                    <p className="text-xl font-black text-zinc-700 uppercase tracking-tighter">Funcion√°rio Activo</p>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Cargo / FunÁ„o</p>
+                                    <p className="text-xl font-black text-zinc-700 uppercase tracking-tighter">Funcion·rio Activo</p>
                                  </div>
                               </div>
 
                               {/* Tabela de Vencimentos e Descontos */}
                               <div className="space-y-4">
                                  <div className="grid grid-cols-12 gap-4 px-6 text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-100 pb-2">
-                                    <div className="col-span-6">Descri√ß√£o</div>
+                                    <div className="col-span-6">DescriÁ„o</div>
                                     <div className="col-span-3 text-right">Vencimentos</div>
                                     <div className="col-span-3 text-right">Descontos</div>
                                  </div>
                                  <div className="space-y-2">
                                     {[
-                                       { d: 'Sal√°rio Base', v: Number(selectedFolha.salario_base), type: 'V' },
-                                       { d: 'Subs√≠dios (Alim./Transp.)', v: Number(selectedFolha.subsidios), type: 'V' },
+                                       { d: 'Sal·rio Base', v: Number(selectedFolha.salario_base), type: 'V' },
+                                       { d: 'SubsÌdios (Alim./Transp.)', v: Number(selectedFolha.subsidios), type: 'V' },
                                        { d: 'Horas Extras', v: Number((selectedFolha as any).horas_extras || 0), type: 'V' },
-                                       { d: 'Subs√≠dio de F√©rias', v: Number((selectedFolha as any).subsidio_ferias || 0), type: 'V' },
-                                       { d: 'Subs√≠dio de Natal', v: Number((selectedFolha as any).subsidio_natal || 0), type: 'V' },
-                                       { d: 'B√≥nus e Gratifica√ß√µes', v: Number((selectedFolha as any).outras_bonificacoes || 0), type: 'V' },
+                                       { d: 'SubsÌdio de FÈrias', v: Number((selectedFolha as any).subsidio_ferias || 0), type: 'V' },
+                                       { d: 'SubsÌdio de Natal', v: Number((selectedFolha as any).subsidio_natal || 0), type: 'V' },
+                                       { d: 'BÛnus e GratificaÁıes', v: Number((selectedFolha as any).outras_bonificacoes || 0), type: 'V' },
                                        { d: 'INSS (3%)', v: Number(selectedFolha.inss_trabal_ador || selectedFolha.inss_trabalhador), type: 'D' },
                                        { d: 'IRT / Taxa Fiscal', v: Number(selectedFolha.irt), type: 'D' },
                                        { d: 'Desconto Atrasos/Faltas', v: Number((selectedFolha as any).desconto_atrasos || 0), type: 'D' },
-                                       { d: 'Desconto F√©rias', v: Number((selectedFolha as any).desconto_ferias || 0), type: 'D' },
+                                       { d: 'Desconto FÈrias', v: Number((selectedFolha as any).desconto_ferias || 0), type: 'D' },
                                        { d: 'Adiantamento Salarial', v: Number((selectedFolha as any).adiantamento_salarial || 0), type: 'D' },
                                     ].filter(item => item.v > 0 || item.type === 'D').map((item, idx) => (
                                        <div key={idx} className="grid grid-cols-12 gap-4 px-6 py-4 rounded-2xl hover:bg-zinc-50 transition-colors">
@@ -5011,7 +5011,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     <p className="text-xl font-bold text-red-500">-{safeFormatAOA(Number((selectedFolha as any).total_descontos) || (Number(selectedFolha.inss_trabalhador) + Number(selectedFolha.irt)))}</p>
                                  </div>
                                  <div className="text-center">
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Sal√°rio a Receber</p>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Sal·rio a Receber</p>
                                     <p className="text-3xl font-black text-green-600">{safeFormatAOA(Number(selectedFolha.salario_liquido))}</p>
                                  </div>
                               </div>
@@ -5022,7 +5022,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                     <div className="w-64 h-px bg-zinc-200"></div>
                                  </div>
                                  <div className="text-right">
-                                    <p className="text-[8px] font-black text-zinc-300 uppercase tracking-widest">Processado via Amazing Cont√°bilExpert ERP</p>
+                                    <p className="text-[8px] font-black text-zinc-300 uppercase tracking-widest">Processado via Amazing Cont·bilExpert ERP</p>
                                  </div>
                               </div>
                            </div>

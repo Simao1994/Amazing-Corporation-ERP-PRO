@@ -36,7 +36,7 @@ export default function POSCaixa() {
             const { data, error } = await supabase
                 .from('pos_caixa')
                 .select('*')
-                .eq('empresa_id', user.tenant_id)
+                .eq('tenant_id', user.tenant_id)
                 .eq('status', 'ABERTO')
                 .order('data_abertura', { ascending: false })
                 .limit(1)
@@ -103,7 +103,7 @@ export default function POSCaixa() {
             const tenantId = user?.tenant_id || user?.user_metadata?.tenant_id || profile.tenant_id;
 
             const payload = {
-                empresa_id: tenantId,
+                tenant_id: tenantId,
                 usuario_id: user.id,
                 valor_inicial: valorAbertura,
                 status: 'ABERTO'

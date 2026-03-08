@@ -146,9 +146,16 @@ const Dashboard: React.FC = () => {
         setIsLoading(false);
       }
     };
-    init();
 
-    return () => clearTimeout(failSafe);
+    // Defer coordination of heavy metrics loading to improve INP (Interaction to Next Paint)
+    const transitionTimer = setTimeout(() => {
+      init();
+    }, 100);
+
+    return () => {
+      clearTimeout(failSafe);
+      clearTimeout(transitionTimer);
+    };
   }, []);
 
   const handleSaveAd = (e: React.FormEvent<HTMLFormElement>) => {

@@ -122,10 +122,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         initAuth();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+            console.log(`[Auth] Evento detectado: ${event}`, { hasSession: !!newSession });
             setSession(newSession);
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                if (newSession) await refreshProfile(newSession);
+                if (newSession) {
+                    console.log(`[Auth] Actualizando perfil para o utilizador: ${newSession.user.id}`);
+                    await refreshProfile(newSession);
+                }
             } else if (event === 'SIGNED_OUT') {
+                console.warn('[Auth] Sessão encerrada pelo servidor ou utilizador.');
                 setUser(null);
                 setSession(null);
                 localStorage.removeItem('auth_user_cache');

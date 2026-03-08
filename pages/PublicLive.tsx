@@ -8,7 +8,7 @@ import Button from '../components/ui/Button';
 
 interface LiveStream {
     id: string;
-    empresa_id: string;
+    tenant_id: string;
     titulo: string;
     descricao: string;
     plataforma: 'youtube' | 'vimeo' | 'facebook' | 'custom';
@@ -50,7 +50,7 @@ const PublicLive: React.FC = () => {
             const { data: livesData, error: livesErr } = await supabase
                 .from('lives')
                 .select('*')
-                .eq('empresa_id', tenantData.id)
+                .eq('tenant_id', tenantData.id)
                 .in('status', ['ao_vivo', 'agendada', 'encerrada'])
                 .order('status', { ascending: false }) // 'ao_vivo' usually comes first if ordered right, but let's just pick the main one.
                 .order('created_at', { ascending: false })

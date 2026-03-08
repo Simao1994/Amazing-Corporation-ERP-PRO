@@ -35,7 +35,7 @@ export default function POS() {
             const { data, error } = await supabase
                 .from('pos_produtos')
                 .select('*, pos_estoque(quantidade_atual)')
-                .eq('empresa_id', user.tenant_id)
+                .eq('tenant_id', user.tenant_id)
                 .eq('ativo', true)
                 .order('nome_produto');
 
@@ -53,7 +53,7 @@ export default function POS() {
             const { data, error } = await supabase
                 .from('pos_caixa')
                 .select('*')
-                .eq('empresa_id', user.tenant_id)
+                .eq('tenant_id', user.tenant_id)
                 .eq('status', 'ABERTO')
                 .order('data_abertura', { ascending: false })
                 .limit(1)

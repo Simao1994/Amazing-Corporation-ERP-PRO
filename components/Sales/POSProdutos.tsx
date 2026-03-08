@@ -37,8 +37,8 @@ export default function POSProdutos() {
             if (!user?.tenant_id) return;
 
             const [prodRes, catRes] = await Promise.all([
-                supabase.from('pos_produtos').select('*, pos_categorias(nome_categoria)').eq('empresa_id', user.tenant_id).order('nome_produto'),
-                supabase.from('pos_categorias').select('id, nome_categoria').eq('empresa_id', user.tenant_id)
+                supabase.from('pos_produtos').select('*, pos_categorias(nome_categoria)').eq('tenant_id', user.tenant_id).order('nome_produto'),
+                supabase.from('pos_categorias').select('id, nome_categoria').eq('tenant_id', user.tenant_id)
             ]);
 
             if (prodRes.error) throw prodRes.error;
@@ -71,7 +71,7 @@ export default function POSProdutos() {
             const qr_code = await generateQRCode(formData.codigo_produto);
             const payload = {
                 ...formData,
-                empresa_id: user.tenant_id,
+                tenant_id: user.tenant_id,
                 qr_code
             };
 

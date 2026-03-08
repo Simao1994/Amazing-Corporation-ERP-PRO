@@ -87,29 +87,34 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
   // --- LOAD DATA (Chat & Notifications) ---
   useEffect(() => {
-    // Chat Load
-    const allMessages = AmazingStorage.get<ChatMessage[]>(STORAGE_KEYS.CHAT_MESSAGES, []);
-    setMessages(allMessages);
+    // Defer non-critical loading to allow route transition to complete smoothly (INP Optimization)
+    const deferTimer = setTimeout(() => {
+      // Chat Load
+      const allMessages = AmazingStorage.get<ChatMessage[]>(STORAGE_KEYS.CHAT_MESSAGES, []);
+      setMessages(allMessages);
 
-    // Chat Contacts
-    const mockContacts: ChatContact[] = [
-      { id: 'admin_sys', nome: 'Eng. Simão Puca', role: 'Suporte TI', avatar: '', online: true, lastSeen: new Date().toISOString(), unreadCount: 0 },
-    ];
-    setContacts(mockContacts);
-
-    // Notifications Load (Simulação inicial se vazio)
-    const savedNotifs = AmazingStorage.get<Notification[]>('amazing_notifications', []);
-    if (savedNotifs.length === 0) {
-      const initialNotifs: Notification[] = [
-        { id: '1', title: 'Manutenção Pendente', message: 'Veículo Toyota Hilux (LD-22-44) requer revisão.', type: 'warning', timestamp: new Date().toISOString(), read: false },
-        { id: '2', title: 'Folha Processada', message: 'O processamento salarial de Março foi concluído.', type: 'success', timestamp: new Date(Date.now() - 86400000).toISOString(), read: false },
-        { id: '3', title: 'Novo Contrato', message: 'Contrato imobiliário #402 assinado digitalmente.', type: 'info', timestamp: new Date(Date.now() - 172800000).toISOString(), read: true },
+      // Chat Contacts
+      const mockContacts: ChatContact[] = [
+        { id: 'admin_sys', nome: 'Eng. Simão Puca', role: 'Suporte TI', avatar: '', online: true, lastSeen: new Date().toISOString(), unreadCount: 0 },
       ];
-      setNotifications(initialNotifs);
-      AmazingStorage.save('amazing_notifications', initialNotifs);
-    } else {
-      setNotifications(savedNotifs);
-    }
+      setContacts(mockContacts);
+
+      // Notifications Load (Simulação inicial se vazio)
+      const savedNotifs = AmazingStorage.get<Notification[]>('amazing_notifications', []);
+      if (savedNotifs.length === 0) {
+        const initialNotifs: Notification[] = [
+          { id: '1', title: 'Manutenção Pendente', message: 'Veículo Toyota Hilux (LD-22-44) requer revisão.', type: 'warning', timestamp: new Date().toISOString(), read: false },
+          { id: '2', title: 'Folha Processada', message: 'O processamento salarial de Março foi concluído.', type: 'success', timestamp: new Date(Date.now() - 86400000).toISOString(), read: false },
+          { id: '3', title: 'Novo Contrato', message: 'Contrato imobiliário #402 assinado digitalmente.', type: 'info', timestamp: new Date(Date.now() - 172800000).toISOString(), read: true },
+        ];
+        setNotifications(initialNotifs);
+        AmazingStorage.save('amazing_notifications', initialNotifs);
+      } else {
+        setNotifications(savedNotifs);
+      }
+    }, 1500); // Wait 1.5s after mount before doing heavy localStorage work
+
+    return () => clearTimeout(deferTimer);
   }, []);
 
   const [rolesLoaded, setRolesLoaded] = useState(false);

@@ -107,7 +107,7 @@ const LiveStreaming: React.FC = () => {
             if (!user?.tenant_id) throw new Error("Tenant ID não encontrado.");
 
             const liveData = {
-                empresa_id: user.tenant_id,
+                tenant_id: user.tenant_id,
                 titulo,
                 descricao,
                 plataforma,
