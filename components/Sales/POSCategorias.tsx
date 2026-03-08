@@ -50,10 +50,11 @@ export default function POSCategorias() {
         try {
             const payload = {
                 nome_categoria: formData.nome_categoria,
-                descricao: formData.descricao
+                descricao: formData.descricao,
+                empresa_id: user.tenant_id
             };
 
-            console.log('A guardar categoria (empresa_id será automático):', { editingId, payload });
+            console.log('A guardar categoria (explicit empresa_id):', { editingId, payload });
 
             if (editingId) {
                 const { error } = await supabase.from('pos_categorias').update(payload).eq('id', editingId);
