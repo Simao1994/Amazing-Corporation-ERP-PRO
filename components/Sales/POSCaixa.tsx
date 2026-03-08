@@ -112,7 +112,7 @@ export default function POSCaixa() {
                 status: 'ABERTO'
             };
 
-            console.log('Iniciando abertura de caixa com PAYLOAD VALIDADO:', payload);
+            console.log('POSCaixa DEBUG: Iniciando insert no DB com payload:', payload);
 
             const { data, error } = await supabase
                 .from('pos_caixa')
@@ -120,8 +120,10 @@ export default function POSCaixa() {
                 .select()
                 .single();
 
+            console.log('POSCaixa DEBUG: Resposta do DB:', { data, error });
+
             if (error) {
-                console.error('Erro RLS Detalhado ao abrir caixa:', error);
+                console.error('POSCaixa DEBUG: Erro no Insert:', error);
                 if (error.message.includes('row-level security')) {
                     const msg = `Erro de Segurança (RLS). Enivando Empresa ID: ${tenantId.substring(0, 8)}. O DB esperava o ID do teu Perfil: ${profile.tenant_id.substring(0, 8)}. Verifica se os IDs coincidem.`;
                     (window as any).notify?.(msg, 'error');
