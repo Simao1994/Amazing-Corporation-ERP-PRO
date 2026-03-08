@@ -83,16 +83,24 @@ export default function POSCaixa() {
         }
 
         try {
-            // Nota: empresa_id será preenchido automaticamente pelo DEFAULT na DB (get_auth_tenant)
-            // Isso garante que o RLS não seja violado por inconsistência no frontend.
-            // Tenta obter o tenant_id do user
-            const tenantId = user?.tenant_id || user?.user_metadata?.tenant_id;
+            setLoading(true);
 
-            if (!tenantId) {
-                console.error('DIAGNÓSTICO RLS: tenant_id não encontrado no objeto user!', user);
-                (window as any).notify?.('Erro: Identificador de empresa ausente. Faça Logout e Login novamente.', 'error');
+            // 1. Verificação Preemptiva do Perfil (Auto-diagnóstico)
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('tenant_id, role')
+                .eq('id', user.id)
+                .single();
+
+            if (profileError || !profile?.tenant_id) {
+                console.error('DIAGNÓSTICO RLS: O teu perfil na base de dados está incompleto ou inacessível!', profileError);
+                (window as any).notify?.('Erro: A tua conta não está associada a nenhuma empresa na base de dados. Contacta o administrador ou corre o script de reparo.', 'error');
+                setLoading(false);
                 return;
             }
+
+            // Tenta obter o tenant_id do user (frontend vs backend sync check)
+            const tenantId = user?.tenant_id || user?.user_metadata?.tenant_id || profile.tenant_id;
 
             const payload = {
                 empresa_id: tenantId,
@@ -101,7 +109,7 @@ export default function POSCaixa() {
                 status: 'ABERTO'
             };
 
-            console.log('Iniciando abertura de caixa com PAYLOAD COMPLETO:', payload);
+            console.log('Iniciando abertura de caixa com PAYLOAD VALIDADO:', payload);
 
             const { data, error } = await supabase
                 .from('pos_caixa')
@@ -110,9 +118,17 @@ export default function POSCaixa() {
                 .single();
 
             if (error) {
-                console.error('Erro Supabase ao abrir caixa:', error);
-                throw error;
+                console.error('Erro RLS Detalhado ao abrir caixa:', error);
+                if (error.message.includes('row-level security')) {
+                    (window as any).notify?.('Erro de Segurança (RLS): A base de dados não autorizou esta empresa. Verifica o teu perfil.', 'error');
+                } else {
+                    (window as any).notify?.(`Erro ao abrir caixa: ${error.message}`, 'error');
+                }
+                setLoading(false);
+                return;
             }
+
+
 
             (window as any).notify?.('Caixa aberto com sucesso', 'success');
             setShowModalAbrir(false);
