@@ -8,7 +8,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 // com o prefixo /sbapi para tunelamento (bypass de antivírus).
 const getBaseURL = () => {
     if (typeof window !== 'undefined') return window.location.origin;
-    return import.meta.env.VITE_SUPABASE_URL || ''; 
+    return import.meta.env.VITE_SUPABASE_URL || '';
 };
 
 const supabaseUrl = getBaseURL() + '/sbapi';
@@ -17,7 +17,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
 }
 
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 1;
 
 const customFetch: typeof fetch = async (url, options) => {
     let lastError: any;
@@ -25,7 +25,7 @@ const customFetch: typeof fetch = async (url, options) => {
         try {
             return await new Promise<Response>((resolve, reject) => {
                 let isSettled = false;
-                const timeoutMs = 20000; // 20s timeout
+                const timeoutMs = 10000; // 10s timeout (Reduzido de 20s)
 
                 const timeoutId = setTimeout(() => {
                     if (isSettled) return;
@@ -51,7 +51,7 @@ const customFetch: typeof fetch = async (url, options) => {
             lastError = err;
             console.warn(`Supabase Fetch Falhou (Tentativa ${i + 1}):`, err.message);
             if (i < MAX_RETRIES) {
-                await new Promise(r => setTimeout(r, 1000 * (i + 1))); 
+                await new Promise(r => setTimeout(r, 1000 * (i + 1)));
             }
         }
     }

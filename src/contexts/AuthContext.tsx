@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
 
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 30000)
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
             );
 
             const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -78,13 +78,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('AuthContext: FAIL-SAFE disparado! Forçando carregamento...');
                 setLoading(false);
             }
-        }, 30000);
+        }, 10000);
 
         const initAuth = async (retryCount = 0) => {
             try {
                 // Obter sessão inicial com retry para erros de Lock
                 const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-                
+
                 if (error) {
                     console.error('AuthContext: Erro ao buscar sessão:', error.message);
                     const isLockError = error.message?.includes('Lock broken') || error.message?.includes('steal');
