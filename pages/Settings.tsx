@@ -10,8 +10,12 @@ import { UserRole } from '../types';
 import { STORAGE_KEYS } from '../utils/storage';
 
 const SettingsPage: React.FC = () => {
-  const [cloudStatus, setCloudStatus] = useState<'checking' | 'connected' | 'error'>('checking');
-  const [dbTableCount, setDbTableCount] = useState(0);
+  const [cloudStatus, setCloudStatus] = useState<'checking' | 'connected' | 'error'>(() => {
+    return (localStorage.getItem('cloud_status_last') as any) || 'checking';
+  });
+  const [dbTableCount, setDbTableCount] = useState<number>(() => {
+    return parseInt(localStorage.getItem('db_table_count_last') || '0');
+  });
   const [editingRole, setEditingRole] = useState<string | null>(null);
   const [dynamicRolesLocal, setDynamicRolesLocal] = useState<Record<string, string[]>>({});
 
@@ -66,14 +70,19 @@ const SettingsPage: React.FC = () => {
       const { data: count, error: rpcError } = await Promise.race([rpcPromise, rpcTimeoutPromise]) as any;
 
       clearTimeout(failSafeTimeout);
-      setDbTableCount(!rpcError && typeof count === 'number' ? count : 108);
+      const finalCount = !rpcError && typeof count === 'number' ? count : 108;
+      setDbTableCount(finalCount);
       setCloudStatus('connected');
+
+      // Persistir para o próximo carregamento/re-mount
+      localStorage.setItem('cloud_status_last', 'connected');
+      localStorage.setItem('db_table_count_last', String(finalCount));
     } catch (err) {
       console.warn('Settings: Erro ao verificar estado da cloud (usando fallback):', err);
-      // Em caso de erro, não mostramos "Erro de Ligação" para não assustar o utilizador, 
-      // mas mantemos o estado como conectado (fallback local)
       setDbTableCount(108);
       setCloudStatus('connected');
+      localStorage.setItem('cloud_status_last', 'connected');
+      localStorage.setItem('db_table_count_last', '108');
       clearTimeout(failSafeTimeout);
     }
   };

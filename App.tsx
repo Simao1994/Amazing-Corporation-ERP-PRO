@@ -138,7 +138,9 @@ const App: React.FC = () => {
 
   // RULE 1, 2, 3: While loading, show spinner, DO NOT render dashboard, DO NOT redirect
   // Emergency bypass: if forceLoadManual is true, we stop loading
-  const isGlobalLoading = (authLoading || saasLoading) && !forceLoadManual;
+  // UI Resilience: Only block UI with loading spinner if we don't have a user yet.
+  // This prevents the "restart" feeling during background session refreshes or proxy blips.
+  const isGlobalLoading = (authLoading || saasLoading) && !user && !forceLoadManual;
 
   if (isGlobalLoading) {
     return (

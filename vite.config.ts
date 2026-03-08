@@ -14,6 +14,24 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           ws: true, // Habilitar suporte a WebSocket para Supabase Realtime
           rewrite: (path) => path.replace(/^\/sbapi/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.error('[Vite Proxy Error]:', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              // Garantir que o Host está correto para evitar rejeição do Supabase
+              const targetURL = new URL(env.VITE_SUPABASE_URL || 'https://jgktemwegesmmomlftgt.supabase.co');
+              proxyReq.setHeader('Host', targetURL.host);
+              // Forçar fechamento de conexão se o proxy estiver segurando sockets mortos
+              proxyReq.setHeader('Connection', 'keep-alive');
+              console.log(`[Proxy Request]: ${req.method} ${req.url}`);
+            });
+            proxy.on('proxyRes', (proxyRes, req, _res) => {
+              if (proxyRes.statusCode && proxyRes.statusCode >= 400) {
+                console.warn(`[Proxy Response Error]: ${proxyRes.statusCode} for ${req.url}`);
+              }
+            });
+          },
         },
       },
     },
