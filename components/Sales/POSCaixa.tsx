@@ -19,6 +19,14 @@ export default function POSCaixa() {
 
     useEffect(() => {
         fetchCaixaAtivo();
+
+        // Diagnóstico de RLS
+        const checkRLS = async () => {
+            if (!user?.id) return;
+            const { data, error } = await supabase.from('profiles').select('id, tenant_id').eq('id', user.id).single();
+            console.log('DIAGNÓSTICO RLS - Perfil DB:', { data, error, auth_uid: user.id });
+        };
+        checkRLS();
     }, [user]);
 
     const fetchCaixaAtivo = async () => {
@@ -29,18 +37,18 @@ export default function POSCaixa() {
                 .from('pos_caixa')
                 .select('*')
                 .eq('empresa_id', user.tenant_id)
-                .eq('status', 'aberto')
+                .eq('status', 'ABERTO')
                 .order('data_abertura', { ascending: false })
                 .limit(1)
                 .single();
 
             if (error && error.code !== 'PGRST116') throw error; // PGRST116 é não encontrado
 
-            setCaixaAtivo(data || null);
-
             if (data) {
+                setCaixaAtivo(data);
                 fetchMovimentos(data.id);
             } else {
+                setCaixaAtivo(null);
                 setMovimentos([]);
             }
         } catch (error) {

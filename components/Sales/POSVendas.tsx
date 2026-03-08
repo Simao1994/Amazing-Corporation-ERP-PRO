@@ -130,13 +130,10 @@ export default function POSVendas() {
                                             {venda.cliente_nif && <span className="block text-xs text-zinc-500 font-mono">NIF: {venda.cliente_nif}</span>}
                                         </td>
                                         <td className="p-4 font-black text-yellow-500 font-mono">
-                                            {formatAOA(venda.total_geral)}
+                                            {formatAOA(venda.total)}
                                         </td>
                                         <td className="p-4 text-center">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${venda.status === 'pago' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                                                : venda.status === 'anulado' ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                                                    : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                                                }`}>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${venda.status === 'PAGA' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-zinc-500/10 text-zinc-500 border border-zinc-500/20'}`}>
                                                 {venda.status}
                                             </span>
                                         </td>
@@ -169,110 +166,108 @@ export default function POSVendas() {
                         </div>
                     )}
                 </div>
-            )}
+            )
+            }
 
 
             {/* Modal View Invoice */}
-            {showModalInfo && vendaSelecionada && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 w-full max-w-2xl animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-start mb-6 border-b border-zinc-800 pb-4">
-                            <div>
-                                <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
-                                    <Receipt className="text-zinc-500" /> Detalhes da {vendaSelecionada.tipo === 'fatura_recibo' ? 'Fatura/Recibo' : 'Venda Dinheiro'}
-                                </h3>
-                                <p className="font-mono text-yellow-500 font-bold">{vendaSelecionada.numero_fatura}</p>
+            {
+                showModalInfo && vendaSelecionada && (
+                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+                        <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 w-full max-w-2xl animate-in zoom-in-95 duration-200">
+                            <div className="flex justify-between items-start mb-6 border-b border-zinc-800 pb-4">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
+                                        <Receipt className="text-zinc-500" /> Detalhes da {vendaSelecionada.tipo === 'fatura_recibo' ? 'Fatura/Recibo' : 'Venda Dinheiro'}
+                                    </h3>
+                                    <p className="font-mono text-yellow-500 font-bold">{vendaSelecionada.numero_fatura}</p>
+                                </div>
+                                <button onClick={() => setShowModalInfo(false)} className="text-zinc-500 hover:text-white transition-colors">
+                                    Cancelar
+                                </button>
                             </div>
-                            <button onClick={() => setShowModalInfo(false)} className="text-zinc-500 hover:text-white transition-colors">
-                                Cancelar
-                            </button>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
-                            <div>
-                                <p className="text-zinc-500 uppercase tracking-widest text-[10px] font-bold">Cliente</p>
-                                <p className="text-white font-bold">{vendaSelecionada.cliente_nome || 'Consumidor Final'}</p>
-                                <p className="text-zinc-400 font-mono">{vendaSelecionada.cliente_nif || 'NIF: N/D'}</p>
+                            <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+                                <div>
+                                    <p className="text-zinc-500 uppercase tracking-widest text-[10px] font-bold">Cliente</p>
+                                    <p className="text-white font-bold">{vendaSelecionada.cliente_nome || 'Consumidor Final'}</p>
+                                    <p className="text-zinc-400 font-mono">{vendaSelecionada.cliente_nif || 'NIF: N/D'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-zinc-500 uppercase tracking-widest text-[10px] font-bold">Data de Emissão</p>
+                                    <p className="text-white font-mono">{new Date(vendaSelecionada.created_at).toLocaleString('pt-PT')}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-zinc-500 uppercase tracking-widest text-[10px] font-bold">Data de Emissão</p>
-                                <p className="text-white font-mono">{new Date(vendaSelecionada.created_at).toLocaleString('pt-PT')}</p>
-                            </div>
-                        </div>
 
-                        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden mb-6">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-zinc-800/50">
-                                    <tr>
-                                        <th className="p-3 text-zinc-400 font-medium">Qtd</th>
-                                        <th className="p-3 text-zinc-400 font-medium">Artigo</th>
-                                        <th className="p-3 text-zinc-400 font-medium text-right">P. Unit</th>
-                                        <th className="p-3 text-zinc-400 font-medium text-right">IVA</th>
-                                        <th className="p-3 text-zinc-400 font-medium text-right">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-zinc-800/50">
-                                    {loadingItens ? (
-                                        <tr><td colSpan={5} className="p-4 text-center text-zinc-500">Caregando itens...</td></tr>
-                                    ) : itensVenda.map(item => (
-                                        <tr key={item.id}>
-                                            <td className="p-3 font-mono text-white">{item.quantidade}x</td>
-                                            <td className="p-3 text-zinc-300">{item.pos_produtos?.nome_produto || 'Produto Removido'}</td>
-                                            <td className="p-3 text-right font-mono text-zinc-400">{formatAOA(item.preco_unitario)}</td>
-                                            <td className="p-3 text-right font-mono text-zinc-400">{formatAOA(item.valor_imposto)}</td>
-                                            <td className="p-3 text-right font-mono text-white font-bold">{formatAOA(item.total)}</td>
+                            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden mb-6">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-zinc-800/50">
+                                        <tr>
+                                            <th className="p-3 text-zinc-400 font-medium">Qtd</th>
+                                            <th className="p-3 text-zinc-400 font-medium">Artigo</th>
+                                            <th className="p-3 text-zinc-400 font-medium text-right">P. Unit</th>
+                                            <th className="p-3 text-zinc-400 font-medium text-right">IVA</th>
+                                            <th className="p-3 text-zinc-400 font-medium text-right">Total</th>
                                         </tr>
-                                    ))}
-                                    {itensVenda.length === 0 && !loadingItens && (
-                                        <tr><td colSpan={5} className="p-4 text-center text-zinc-500">Sem itens registados.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-800/50">
+                                        {loadingItens ? (
+                                            <tr><td colSpan={5} className="p-4 text-center text-zinc-500">Caregando itens...</td></tr>
+                                        ) : itensVenda.map(item => (
+                                            <tr key={item.id}>
+                                                <td className="p-3 font-mono text-white">{item.quantidade}x</td>
+                                                <td className="p-3 text-zinc-300">{item.pos_produtos?.nome_produto || 'Produto Removido'}</td>
+                                                <td className="p-3 text-right font-mono text-zinc-400">{formatAOA(item.preco_venda)}</td>
+                                                <td className="p-3 text-right font-mono text-zinc-400">{formatAOA(item.iva)}</td>
+                                                <td className="p-3 text-right font-mono text-white font-bold">{formatAOA(item.total)}</td>
+                                            </tr>
+                                        ))}
+                                        {itensVenda.length === 0 && !loadingItens && (
+                                            <tr><td colSpan={5} className="p-4 text-center text-zinc-500">Sem itens registados.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        <div className="flex justify-end bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-                            <div className="w-full max-w-xs space-y-2 text-sm">
-                                <div className="flex justify-between text-zinc-400">
-                                    <span>Total Ilíquido</span>
-                                    <span className="font-mono">{formatAOA(vendaSelecionada.total_iliquido)}</span>
-                                </div>
-                                <div className="flex justify-between text-zinc-400">
-                                    <span>Total IVA</span>
-                                    <span className="font-mono">{formatAOA(vendaSelecionada.total_imposto)}</span>
-                                </div>
-                                {vendaSelecionada.total_desconto > 0 && (
-                                    <div className="flex justify-between text-emerald-500">
-                                        <span>Desconto</span>
-                                        <span className="font-mono">-{formatAOA(vendaSelecionada.total_desconto)}</span>
+                            <div className="flex justify-end bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                                <div className="w-full max-w-xs space-y-2 text-sm">
+                                    <div className="flex justify-between text-zinc-400">
+                                        <span>Total Ilíquido</span>
+                                        <span className="font-mono">{formatAOA(vendaSelecionada.subtotal)}</span>
                                     </div>
-                                )}
-                                <div className="border-t border-zinc-800 my-2"></div>
-                                <div className="flex justify-between items-end">
-                                    <span className="text-white font-bold uppercase tracking-widest text-xs">Total AOA</span>
-                                    <span className="font-black text-2xl text-yellow-500 font-mono tracking-tighter">
-                                        {formatAOA(vendaSelecionada.total_geral)}
-                                    </span>
+                                    <div className="flex justify-between text-zinc-400">
+                                        <span>Total IVA</span>
+                                        <span className="font-mono">{formatAOA(vendaSelecionada.iva_total)}</span>
+                                    </div>
+
+                                    <div className="border-t border-zinc-800 my-2"></div>
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-white font-bold uppercase tracking-widest text-xs">Total AOA</span>
+                                        <span className="font-black text-2xl text-yellow-500 font-mono tracking-tighter">
+                                            {formatAOA(vendaSelecionada.total)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="pt-6 flex justify-end gap-3">
-                            <button
-                                onClick={() => handleImprimirRecibo(vendaSelecionada)}
-                                className="bg-zinc-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-zinc-700 transition-colors flex items-center gap-2"
-                            >
-                                <Printer size={20} /> Imprimir 2ª Via
-                            </button>
-                            <button
-                                onClick={() => setShowModalInfo(false)}
-                                className="bg-yellow-500 text-zinc-900 px-6 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors"
-                            >
-                                Fechar Menu
-                            </button>
+                            <div className="pt-6 flex justify-end gap-3">
+                                <button
+                                    onClick={() => handleImprimirRecibo(vendaSelecionada)}
+                                    className="bg-zinc-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                                >
+                                    <Printer size={20} /> Imprimir 2ª Via
+                                </button>
+                                <button
+                                    onClick={() => setShowModalInfo(false)}
+                                    className="bg-yellow-500 text-zinc-900 px-6 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors"
+                                >
+                                    Fechar Menu
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

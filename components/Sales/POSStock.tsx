@@ -32,7 +32,7 @@ export default function POSStock() {
                 supabase
                     .from('pos_estoque')
                     .select(`
-            id, quantidade, data_ultima_entrada, 
+            id, quantidade_atual, data_ultima_entrada, 
             pos_produtos (id, nome_produto, codigo_produto, stock_minimo)
           `)
                     .eq('empresa_id', user.tenant_id),
@@ -77,18 +77,21 @@ export default function POSStock() {
 
             if (existingStock) {
                 if (formData.tipo === 'saida') {
-                    newAmount = existingStock.quantidade - formData.quantidade;
+                    newAmount = existingStock.quantidade_atual - formData.quantidade;
                     if (newAmount < 0) {
                         (window as any).notify?.('Estoque insuficiente para esta saída', 'error');
                         return;
                     }
                 } else {
-                    newAmount = existingStock.quantidade + formData.quantidade;
+                    newAmount = existingStock.quantidade_atual + formData.quantidade;
                 }
 
                 await supabase
                     .from('pos_estoque')
-                    .update({ quantidade: newAmount, data_ultima_entrada: formData.tipo === 'entrada' ? new Date().toISOString() : existingStock.data_ultima_entrada })
+                    .update({
+                        quantidade_atual: newAmount,
+                        data_ultima_entrada: formData.tipo === 'entrada' ? new Date().toISOString() : existingStock.data_ultima_entrada
+                    })
                     .eq('id', existingStock.id);
             } else {
                 if (formData.tipo === 'saida') {
@@ -100,7 +103,7 @@ export default function POSStock() {
                     .insert([{
                         empresa_id: user.tenant_id,
                         produto_id: formData.produto_id,
-                        quantidade: formData.quantidade
+                        quantidade_atual: formData.quantidade
                     }]);
             }
 
@@ -130,6 +133,10 @@ export default function POSStock() {
         item.pos_produtos?.nome_produto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.pos_produtos?.codigo_produto?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const checkLowStock = (item: any) => {
+        return item.quantidade_atual <= (item.pos_produtos?.stock_minimo || 0);
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in">
@@ -163,7 +170,7 @@ export default function POSStock() {
                 <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl">
                     <h3 className="text-zinc-400 text-sm font-bold uppercase tracking-widest mb-2">Stock Baixo Alertas</h3>
                     <p className="text-3xl font-black text-red-500">
-                        {estoque.filter(i => i.quantidade <= (i.pos_produtos?.stock_minimo || 0)).length}
+                        {estoque.filter(i => checkLowStock(i)).length}
                     </p>
                 </div>
                 <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl">
@@ -199,7 +206,7 @@ export default function POSStock() {
                             </thead>
                             <tbody className="divide-y divide-zinc-800/50">
                                 {filteredEstoque.map(item => {
-                                    const isLowStock = item.quantidade <= (item.pos_produtos?.stock_minimo || 0);
+                                    const isLowStock = checkLowStock(item);
 
                                     return (
                                         <tr key={item.id} className="hover:bg-zinc-800/30 transition-colors">
@@ -212,14 +219,14 @@ export default function POSStock() {
                                             <td className="p-4">
                                                 <div className="flex justify-center">
                                                     <span className={`text-xl font-black ${isLowStock ? 'text-red-500' : 'text-white'}`}>
-                                                        {item.quantidade}
+                                                        {item.quantidade_atual}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${isLowStock
-                                                        ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                                                        : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                                                    ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                                                    : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                                                     }`}>
                                                     {isLowStock ? 'Stock Baixo' : 'Normal'}
                                                 </span>
