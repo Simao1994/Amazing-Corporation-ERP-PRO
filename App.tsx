@@ -22,6 +22,8 @@ import TransportPage from './pages/Transport';
 import MaintenancePage from './pages/Maintenance';
 import FinancialHubPage from './pages/FinancialHub';
 import InventoryPage from './pages/Inventory';
+import SalesHubPage from './pages/SalesHub';
+import POSPage from './pages/POS';
 import AuditPage from './pages/Audit';
 import SettingsPage from './pages/Settings';
 import DepartmentsPage from './pages/Departments';
@@ -114,20 +116,20 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      
+
       // Preservar apenas o flag de emergência se o utilizador já o tiver activo
       const bypass = localStorage.getItem('emergency_nuclear_bypass');
-      
+
       // Limpeza profunda de resíduos de sessão
       localStorage.clear();
       sessionStorage.clear();
-      
+
       if (bypass) {
         localStorage.setItem('emergency_nuclear_bypass', bypass);
       }
-      
+
       showToast("Sessão encerrada com sucesso.", "info");
-      
+
       // Pequeno delay e reload forçado para garantir estado limpo
       setTimeout(() => {
         window.location.href = '/';
@@ -268,63 +270,65 @@ const App: React.FC = () => {
               </div>
             }>
               <Routes>
-              {/* Rotas Públicas */}
-              <Route path="/" element={<CorporateHome />} />
-              <Route path="/carreiras" element={<PublicVagasSite />} />
-              <Route path="/carreiras/estado" element={<PublicCandidaturaStatus />} />
-              <Route path="/carreiras/:id" element={<PublicVagaDetalhes />} />
-              <Route path="/candidatura-espontanea" element={<PublicCandidaturaEspontanea />} />
-              <Route path="/candidatura" element={<RecruitmentPage isPublic={true} />} />
-              <Route path="/empresa/:slug/live" element={<PublicLive />} />
-              <Route path="/arena" element={<ArenaGames />} />
-              <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-              <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
+                {/* Rotas Públicas */}
+                <Route path="/" element={<CorporateHome />} />
+                <Route path="/carreiras" element={<PublicVagasSite />} />
+                <Route path="/carreiras/estado" element={<PublicCandidaturaStatus />} />
+                <Route path="/carreiras/:id" element={<PublicVagaDetalhes />} />
+                <Route path="/candidatura-espontanea" element={<PublicCandidaturaEspontanea />} />
+                <Route path="/candidatura" element={<RecruitmentPage isPublic={true} />} />
+                <Route path="/empresa/:slug/live" element={<PublicLive />} />
+                <Route path="/arena" element={<ArenaGames />} />
+                <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
+                <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
 
-              {/* Rotas Protegidas (Exigem Login) */}
-              <Route path="/*" element={
-                !user ? (
-                  <LoginPage onLogin={handleLogin} />
-                ) : (
-                  <Layout user={user} onLogout={handleLogout}>
-                    <Routes>
-                      <Route path="/unauthorized" element={<UnauthorizedPage />} />
-                      <Route path="/utilizadores" element={<ProtectedRoute user={user} path="/utilizadores"><UsersPage user={user} /></ProtectedRoute>} />
-                      <Route path="/dashboard" element={<ProtectedRoute user={user} path="/dashboard"><Dashboard /></ProtectedRoute>} />
-                      <Route path="/dashboard/galeria" element={<ProtectedRoute user={user} path="/dashboard/galeria"><DashboardGallery user={user} /></ProtectedRoute>} />
-                      <Route path="/dashboard/biblioteca" element={<ProtectedRoute user={user} path="/dashboard/biblioteca"><DashboardLibrary user={user} /></ProtectedRoute>} />
-                      <Route path="/dashboard/arquivos" element={<ProtectedRoute user={user} path="/dashboard/arquivos"><DashboardFiles user={user} /></ProtectedRoute>} />
-                      <Route path="/arena/admin" element={<ProtectedRoute user={user} path="/arena/admin"><ArenaAdmin /></ProtectedRoute>} />
-                      <Route path="/recrutamento" element={<ProtectedRoute user={user} path="/recrutamento"><RecruitmentPage /></ProtectedRoute>} />
-                      <Route path="/tesouraria" element={<ProtectedRoute user={user} path="/tesouraria"><FinancialHubPage /></ProtectedRoute>} />
-                      <Route path="/solicitacoes" element={<ProtectedRoute user={user} path="/solicitacoes"><RequestsPage /></ProtectedRoute>} />
-                      <Route path="/blog" element={<ProtectedRoute user={user} path="/blog"><BlogPage user={user} /></ProtectedRoute>} />
-                      <Route path="/galeria" element={<ProtectedRoute user={user} path="/galeria"><GaleriaPage /></ProtectedRoute>} />
-                      <Route path="/feed" element={<ProtectedRoute user={user} path="/feed"><FeedPage /></ProtectedRoute>} />
-                      <Route path="/transportes" element={<ProtectedRoute user={user} path="/transportes"><TransportPage /></ProtectedRoute>} />
-                      <Route path="/rh" element={<ProtectedRoute user={user} path="/rh"><HRPage user={user} /></ProtectedRoute>} />
-                      <Route path="/rh/contas" element={<ProtectedRoute user={user} path="/rh/contas"><ContasBancariasPage user={user} /></ProtectedRoute>} />
-                      <Route path="/departamentos" element={<ProtectedRoute user={user} path="/departamentos"><DepartmentsPage user={user} /></ProtectedRoute>} />
-                      <Route path="/financeiro" element={<ProtectedRoute user={user} path="/financeiro"><FinancePage /></ProtectedRoute>} />
-                      <Route path="/contabilidade" element={<ProtectedRoute user={user} path="/contabilidade"><AccountingPage user={user} /></ProtectedRoute>} />
-                      <Route path="/inventario" element={<ProtectedRoute user={user} path="/inventario"><InventoryPage /></ProtectedRoute>} />
-                      <Route path="/manutencao" element={<ProtectedRoute user={user} path="/manutencao"><MaintenancePage /></ProtectedRoute>} />
-                      <Route path="/auditoria" element={<ProtectedRoute user={user} path="/auditoria"><AuditPage /></ProtectedRoute>} />
-                      <Route path="/configuracoes" element={<ProtectedRoute user={user} path="/configuracoes"><SettingsPage /></ProtectedRoute>} />
-                      <Route path="/agro" element={<ProtectedRoute user={user} path="/agro"><AgroPage /></ProtectedRoute>} />
-                      <Route path="/imobiliario" element={<ProtectedRoute user={user} path="/imobiliario"><RealEstatePage /></ProtectedRoute>} />
-                      <Route path="/fornecedores" element={<ProtectedRoute user={user} path="/fornecedores"><FornecedoresPage /></ProtectedRoute>} />
-                      <Route path="/empresas" element={<ProtectedRoute user={user} path="/empresas"><EmpresasPage /></ProtectedRoute>} />
-                      <Route path="/parceiros" element={<ProtectedRoute user={user} path="/parceiros"><ParceirosPage /></ProtectedRoute>} />
-                      <Route path="/dashboard/transmissoes" element={<ProtectedRoute user={user} path="/dashboard/transmissoes"><LiveStreaming /></ProtectedRoute>} />
-                      <Route path="/configuracoes/assinatura" element={<ProtectedRoute user={user} path="/configuracoes"><SubscriptionPage /></ProtectedRoute>} />
-                      <Route path="/master" element={<ProtectedRoute user={user} path="/master" customRole="saas_admin"><MasterAdmin /></ProtectedRoute>} />
-                      <Route path="*" element={<Navigate to="/" />} />
-                    </Routes>
-                  </Layout>
-                )
-              } />
-            </Routes>
-          </React.Suspense>
+                {/* Rotas Protegidas (Exigem Login) */}
+                <Route path="/*" element={
+                  !user ? (
+                    <LoginPage onLogin={handleLogin} />
+                  ) : (
+                    <Layout user={user} onLogout={handleLogout}>
+                      <Routes>
+                        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+                        <Route path="/utilizadores" element={<ProtectedRoute user={user} path="/utilizadores"><UsersPage user={user} /></ProtectedRoute>} />
+                        <Route path="/dashboard" element={<ProtectedRoute user={user} path="/dashboard"><Dashboard /></ProtectedRoute>} />
+                        <Route path="/dashboard/galeria" element={<ProtectedRoute user={user} path="/dashboard/galeria"><DashboardGallery user={user} /></ProtectedRoute>} />
+                        <Route path="/dashboard/biblioteca" element={<ProtectedRoute user={user} path="/dashboard/biblioteca"><DashboardLibrary user={user} /></ProtectedRoute>} />
+                        <Route path="/dashboard/arquivos" element={<ProtectedRoute user={user} path="/dashboard/arquivos"><DashboardFiles user={user} /></ProtectedRoute>} />
+                        <Route path="/arena/admin" element={<ProtectedRoute user={user} path="/arena/admin"><ArenaAdmin /></ProtectedRoute>} />
+                        <Route path="/recrutamento" element={<ProtectedRoute user={user} path="/recrutamento"><RecruitmentPage /></ProtectedRoute>} />
+                        <Route path="/tesouraria" element={<ProtectedRoute user={user} path="/tesouraria"><FinancialHubPage /></ProtectedRoute>} />
+                        <Route path="/solicitacoes" element={<ProtectedRoute user={user} path="/solicitacoes"><RequestsPage /></ProtectedRoute>} />
+                        <Route path="/blog" element={<ProtectedRoute user={user} path="/blog"><BlogPage user={user} /></ProtectedRoute>} />
+                        <Route path="/galeria" element={<ProtectedRoute user={user} path="/galeria"><GaleriaPage /></ProtectedRoute>} />
+                        <Route path="/feed" element={<ProtectedRoute user={user} path="/feed"><FeedPage /></ProtectedRoute>} />
+                        <Route path="/transportes" element={<ProtectedRoute user={user} path="/transportes"><TransportPage /></ProtectedRoute>} />
+                        <Route path="/rh" element={<ProtectedRoute user={user} path="/rh"><HRPage user={user} /></ProtectedRoute>} />
+                        <Route path="/rh/contas" element={<ProtectedRoute user={user} path="/rh/contas"><ContasBancariasPage user={user} /></ProtectedRoute>} />
+                        <Route path="/departamentos" element={<ProtectedRoute user={user} path="/departamentos"><DepartmentsPage user={user} /></ProtectedRoute>} />
+                        <Route path="/financeiro" element={<ProtectedRoute user={user} path="/financeiro"><FinancePage /></ProtectedRoute>} />
+                        <Route path="/contabilidade" element={<ProtectedRoute user={user} path="/contabilidade"><AccountingPage user={user} /></ProtectedRoute>} />
+                        <Route path="/inventario" element={<ProtectedRoute user={user} path="/inventario"><InventoryPage /></ProtectedRoute>} />
+                        <Route path="/vendas" element={<ProtectedRoute user={user} path="/vendas"><SalesHubPage /></ProtectedRoute>} />
+                        <Route path="/pos" element={<ProtectedRoute user={user} path="/pos"><POSPage /></ProtectedRoute>} />
+                        <Route path="/manutencao" element={<ProtectedRoute user={user} path="/manutencao"><MaintenancePage /></ProtectedRoute>} />
+                        <Route path="/auditoria" element={<ProtectedRoute user={user} path="/auditoria"><AuditPage /></ProtectedRoute>} />
+                        <Route path="/configuracoes" element={<ProtectedRoute user={user} path="/configuracoes"><SettingsPage /></ProtectedRoute>} />
+                        <Route path="/agro" element={<ProtectedRoute user={user} path="/agro"><AgroPage /></ProtectedRoute>} />
+                        <Route path="/imobiliario" element={<ProtectedRoute user={user} path="/imobiliario"><RealEstatePage /></ProtectedRoute>} />
+                        <Route path="/fornecedores" element={<ProtectedRoute user={user} path="/fornecedores"><FornecedoresPage /></ProtectedRoute>} />
+                        <Route path="/empresas" element={<ProtectedRoute user={user} path="/empresas"><EmpresasPage /></ProtectedRoute>} />
+                        <Route path="/parceiros" element={<ProtectedRoute user={user} path="/parceiros"><ParceirosPage /></ProtectedRoute>} />
+                        <Route path="/dashboard/transmissoes" element={<ProtectedRoute user={user} path="/dashboard/transmissoes"><LiveStreaming /></ProtectedRoute>} />
+                        <Route path="/configuracoes/assinatura" element={<ProtectedRoute user={user} path="/configuracoes"><SubscriptionPage /></ProtectedRoute>} />
+                        <Route path="/master" element={<ProtectedRoute user={user} path="/master" customRole="saas_admin"><MasterAdmin /></ProtectedRoute>} />
+                        <Route path="*" element={<Navigate to="/" />} />
+                      </Routes>
+                    </Layout>
+                  )
+                } />
+              </Routes>
+            </React.Suspense>
           </div>
         </HashRouter>
       </TenantProvider>

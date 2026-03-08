@@ -13,6 +13,7 @@ export type UserRole =
   | 'director_treasury'
   | 'director_maintenance'
   | 'manager_inventory'
+  | 'manager_sales'
   | 'director_hr'
   | 'director_finance'
   | 'bibliotecario'

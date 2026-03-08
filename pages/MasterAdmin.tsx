@@ -1327,6 +1327,60 @@ const MasterAdmin: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Application Config Modal */}
+            {isConfigModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                    <div className="bg-[#0f172a] w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border border-white/10 animate-in zoom-in-95">
+                        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2">
+                            <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 text-white">
+                                <CreditCard className="text-purple-500" /> Configurar Pagamentos
+                            </h2>
+                            <button onClick={() => setIsConfigModalOpen(false)} className="p-3 hover:bg-white/10 rounded-full transition-all text-slate-400"><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleSaveConfig} className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Beneficiário</label>
+                                <input
+                                    required
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-text font-mono"
+                                    placeholder="Ex: Amazing Corp S.A."
+                                    value={configForm.beneficiario}
+                                    onChange={e => setConfigForm({ ...configForm, beneficiario: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Banco</label>
+                                <input
+                                    required
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-text font-mono"
+                                    placeholder="Ex: BAI, BFA, Atlântico"
+                                    value={configForm.banco}
+                                    onChange={e => setConfigForm({ ...configForm, banco: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">IBAN</label>
+                                <input
+                                    required
+                                    className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-sm font-bold text-yellow-500 outline-none focus:ring-2 focus:ring-purple-500/50 transition-all cursor-text font-mono"
+                                    placeholder="AO06 ..."
+                                    value={configForm.iban}
+                                    onChange={e => setConfigForm({ ...configForm, iban: e.target.value })}
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={configFormSaving}
+                                className="w-full py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black rounded-2xl uppercase text-xs tracking-[0.2em] shadow-xl shadow-purple-900/40 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                            >
+                                {configFormSaving ? <RefreshCcw className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
+                                {configFormSaving ? 'A GUARDAR...' : 'GUARDAR CONFIGURAÇÕES'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

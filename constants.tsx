@@ -5,7 +5,7 @@ import {
   LogOut, Bell, Search, Plus, FileText, Download, Trash2, Edit, Eye, Settings,
   Layers, Share2, Home, Inbox, Handshake, Building2, Newspaper, Image as ImageIcon,
   Factory, Scale, Calculator, PieChart as PieChartIcon, Sprout, Key, ClipboardList,
-  UserPlus, Gamepad2, Files, CreditCard, Video
+  UserPlus, Gamepad2, Files, CreditCard, Video, ShoppingCart
 } from 'lucide-react';
 import { UserRole } from './types';
 
@@ -31,6 +31,7 @@ export const COLORS = {
 export const MENU_ITEMS = [
   { id: 'home', label: 'Home Corporativo', icon: <Home size={20} />, path: '/' },
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
+  { id: 'vendas', label: 'Vendas & POS', icon: <ShoppingCart size={20} />, path: '/vendas' },
   { id: 'arena_admin', label: 'Arena Gamer', icon: <Gamepad2 size={20} />, path: '/arena/admin' },
   { id: 'candidaturas', label: 'Candidatura Online', icon: <UserPlus size={20} />, path: '/recrutamento' },
   { id: 'solicitacoes', label: 'Solicitações', icon: <Inbox size={20} />, path: '/solicitacoes' },
@@ -61,7 +62,7 @@ export const MENU_ITEMS = [
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
   // Administrador tem acesso total
-  admin: ['all'],
+  admin: ['all', 'vendas'],
 
   // Director Amazing Arena Gamer - Apenas Arena + Dashboard + Solicitações
   director_arena: ['home', 'dashboard', 'arena_admin', 'solicitacoes', 'blog', 'live_streaming'],
@@ -84,14 +85,17 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
   // Director da Manutenção - Apenas Manutenção + Dashboard + Solicitações
   director_maintenance: ['home', 'dashboard', 'manutencao', 'solicitacoes', 'blog', 'live_streaming'],
 
-  // Responsável de Inventário & Stock - Apenas Inventário + Dashboard + Solicitações
-  manager_inventory: ['home', 'dashboard', 'inventario', 'solicitacoes', 'blog', 'live_streaming'],
+  // Responsável de Inventário & Stock - Apenas Inventário + Dashboard + Solicitações + Vendas
+  manager_inventory: ['home', 'dashboard', 'inventario', 'solicitacoes', 'blog', 'live_streaming', 'vendas'],
+
+  // Manager Vendas - Novo perfil logico
+  manager_sales: ['home', 'dashboard', 'vendas', 'solicitacoes', 'blog', 'live_streaming'],
 
   // Director de Recursos Humanos - Apenas RH + Dashboard + Solicitações + CANDIDATURAS
   director_hr: ['home', 'dashboard', 'rh', 'candidaturas', 'solicitacoes', 'blog', 'live_streaming'],
 
-  // Director de Finanças - Apenas Finanças + Dashboard + Solicitações
-  director_finance: ['home', 'dashboard', 'financeiro', 'solicitacoes', 'blog', 'empresas', 'live_streaming'],
+  // Director de Finanças - Apenas Finanças + Dashboard + Solicitações + Vendas
+  director_finance: ['home', 'dashboard', 'financeiro', 'solicitacoes', 'blog', 'empresas', 'live_streaming', 'vendas'],
 
   // Bibliotecário - Gestão da Biblioteca
   bibliotecario: ['home', 'dashboard', 'biblioteca', 'solicitacoes', 'blog', 'live_streaming'],
@@ -100,7 +104,7 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
   operario: ['home', 'dashboard', 'galeria_corp', 'biblioteca'],
 
   // Master Admin (SaaS)
-  saas_admin: ['all', 'master'],
+  saas_admin: ['all', 'master', 'vendas'],
 };
 
 export const formatAOA = (value: number) => {
