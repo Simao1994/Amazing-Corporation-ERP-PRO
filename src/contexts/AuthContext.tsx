@@ -14,6 +14,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 1. Iniciar imediatamente com dados do cache se disponíveis para evitar tela branca
     const [user, setUser] = useState<any | null>(() => {
         const cached = localStorage.getItem('auth_user_cache');
+        if (cached) console.log('[Auth] Carregando utilizador do cache local para inicialização');
         return cached ? JSON.parse(cached) : null;
     });
 

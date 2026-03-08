@@ -70,9 +70,7 @@ const App: React.FC = () => {
   };
 
   const [showForceLoad, setShowForceLoad] = useState(false);
-  const [forceLoadManual, setForceLoadManual] = useState(() => {
-    return localStorage.getItem('emergency_nuclear_bypass') === 'true';
-  });
+  const [forceLoadManual, setForceLoadManual] = useState(false);
 
   const clearEverything = () => {
     localStorage.clear();
@@ -92,7 +90,6 @@ const App: React.FC = () => {
     const autoBypass = setTimeout(() => {
       if (!forceLoadManual) {
         console.warn('App: Auto-bypass activado após 12s. Rede instável detectada.');
-        localStorage.setItem('emergency_nuclear_bypass', 'true');
         setForceLoadManual(true);
       }
     }, 12000);
@@ -124,10 +121,8 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       // 1. Limpeza IMEDIATA de resíduos locais para resposta rápida do UI
-      const bypass = localStorage.getItem('emergency_nuclear_bypass');
       localStorage.clear();
       sessionStorage.clear();
-      if (bypass) localStorage.setItem('emergency_nuclear_bypass', bypass);
 
       // 2. Notificar e redirecionar imediatamente (Fail-fast)
       showToast("Sessão encerrada localmente. Limpando rastro...", "info");
@@ -146,9 +141,9 @@ const App: React.FC = () => {
 
   // RULE 1, 2, 3: While loading, show spinner, DO NOT render dashboard, DO NOT redirect
   // Emergency bypass: if forceLoadManual is true, we stop loading
-  // UI Resilience: Only block UI with loading spinner if we don't have a user yet.
-  // This prevents the "restart" feeling during background session refreshes or proxy blips.
-  const isGlobalLoading = (authLoading || saasLoading) && !user && !forceLoadManual;
+  // UI Resilience: Wait for REAL auth confirmation or forced manual bypass
+  // We don't skip loading JUST because of cached user anymore to prevent "auto-login" feel if session is dead
+  const isGlobalLoading = (authLoading || saasLoading) && !forceLoadManual;
 
   if (isGlobalLoading) {
     return (
@@ -217,7 +212,6 @@ const App: React.FC = () => {
               </button>
               <button
                 onClick={() => {
-                  localStorage.setItem('emergency_nuclear_bypass', 'true');
                   setForceLoadManual(true);
                 }}
                 className="bg-purple-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-500 transition-all shadow-xl border border-purple-400/30"
