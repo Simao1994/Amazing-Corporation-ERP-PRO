@@ -85,13 +85,23 @@ export default function POSCaixa() {
         try {
             // Nota: empresa_id será preenchido automaticamente pelo DEFAULT na DB (get_auth_tenant)
             // Isso garante que o RLS não seja violado por inconsistência no frontend.
+            // Tenta obter o tenant_id do user
+            const tenantId = user?.tenant_id || user?.user_metadata?.tenant_id;
+
+            if (!tenantId) {
+                console.error('DIAGNÓSTICO RLS: tenant_id não encontrado no objeto user!', user);
+                (window as any).notify?.('Erro: Identificador de empresa ausente. Faça Logout e Login novamente.', 'error');
+                return;
+            }
+
             const payload = {
+                empresa_id: tenantId,
                 usuario_id: user.id,
                 valor_inicial: valorAbertura,
                 status: 'ABERTO'
             };
 
-            console.log('Payload de abertura (sem empresa_id, DB usará default):', payload);
+            console.log('Iniciando abertura de caixa com PAYLOAD COMPLETO:', payload);
 
             const { data, error } = await supabase
                 .from('pos_caixa')

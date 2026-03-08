@@ -131,6 +131,7 @@ export default function POS() {
             const { data: fatura, error: faturaError } = await supabase
                 .from('pos_faturas')
                 .insert([{
+                    empresa_id: user.tenant_id,
                     numero_fatura: ncf,
                     usuario_id: user.id,
                     caixa_id: caixaAtivo.id,
@@ -158,6 +159,7 @@ export default function POS() {
 
                 // Item da Fatura
                 const { error: itemError } = await supabase.from('pos_fatura_itens').insert([{
+                    empresa_id: user.tenant_id,
                     fatura_id: fatura.id,
                     produto_id: item.id,
                     quantidade: item.qnt,
@@ -175,6 +177,7 @@ export default function POS() {
 
                 // Movimento de Stock (empresa_id automático)
                 const { error: stockMovError } = await supabase.from('pos_movimento_stock').insert([{
+                    empresa_id: user.tenant_id,
                     produto_id: item.id,
                     tipo_movimento: 'VENDA',
                     quantidade: item.qnt,
@@ -200,6 +203,7 @@ export default function POS() {
             // 3. Registrar Movimento de Caixa (empresa_id automático)
             console.log('Registrando movimento de caixa...');
             const { error: caixaMovError } = await supabase.from('pos_movimentos_caixa').insert([{
+                empresa_id: user.tenant_id,
                 caixa_id: caixaAtivo.id,
                 tipo: 'VENDA',
                 valor: total,
