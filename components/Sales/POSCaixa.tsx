@@ -67,21 +67,33 @@ export default function POSCaixa() {
 
     const handleAbrirCaixa = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user?.tenant_id) return;
+        console.log('Iniciando abertura de caixa...', { user, valorAbertura });
+
+        if (!user?.tenant_id) {
+            (window as any).notify?.('Erro: Empresa não identificada', 'error');
+            return;
+        }
 
         try {
+            const payload = {
+                empresa_id: user.tenant_id,
+                usuario_id: user.id,
+                valor_inicial: valorAbertura,
+                status: 'ABERTO'
+            };
+
+            console.log('Payload de abertura:', payload);
+
             const { data, error } = await supabase
                 .from('pos_caixa')
-                .insert([{
-                    empresa_id: user.tenant_id,
-                    usuario_id: user.id || null,
-                    valor_inicial: valorAbertura,
-                    status: 'ABERTO'
-                }])
+                .insert([payload])
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erro Supabase ao abrir caixa:', error);
+                throw error;
+            }
 
             (window as any).notify?.('Caixa aberto com sucesso', 'success');
             setShowModalAbrir(false);
@@ -89,8 +101,9 @@ export default function POSCaixa() {
             setCaixaAtivo(data);
             fetchMovimentos(data.id);
         } catch (error: any) {
-            console.error('Error open caixa:', error);
-            (window as any).notify?.('Erro ao abrir caixa', 'error');
+            console.error('Erro ao abrir caixa:', error);
+            const msg = error.message || 'Erro desconhecido';
+            (window as any).notify?.(`Erro ao abrir caixa: ${msg}`, 'error');
         }
     };
 
