@@ -120,7 +120,8 @@ export default function POSCaixa() {
             if (error) {
                 console.error('Erro RLS Detalhado ao abrir caixa:', error);
                 if (error.message.includes('row-level security')) {
-                    (window as any).notify?.('Erro de Segurança (RLS): A base de dados não autorizou esta empresa. Verifica o teu perfil.', 'error');
+                    const msg = `Erro de Segurança (RLS). Enivando Empresa ID: ${tenantId.substring(0, 8)}. O DB esperava o ID do teu Perfil: ${profile.tenant_id.substring(0, 8)}. Verifica se os IDs coincidem.`;
+                    (window as any).notify?.(msg, 'error');
                 } else {
                     (window as any).notify?.(`Erro ao abrir caixa: ${error.message}`, 'error');
                 }
