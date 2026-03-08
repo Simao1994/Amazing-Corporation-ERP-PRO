@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/lib/supabase';
 import { UserPlus, Trash2, RefreshCw, ShieldCheck, User, Search, Eye, EyeOff, Edit2, Key, Info } from 'lucide-react';
 import { useSaaS } from '../src/contexts/SaaSContext';
-import { formatAOA } from '../src/utils/subscription';
+import { formatAOA } from '../constants';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -21,6 +21,7 @@ const roleOptions = [
     { value: 'director_finance', label: 'Director Finanças' },
     { value: 'bibliotecario', label: 'Bibliotecário Institucional' },
     { value: 'operario', label: 'Operário (Acesso Restrito)' },
+    { value: 'vendedor', label: 'Vendedor (Acesso Vendas/POS)' },
 ];
 
 const getRoleLabel = (role: string) => roleOptions.find(r => r.value === role)?.label || role;
@@ -39,6 +40,7 @@ const roleColors: Record<string, string> = {
     director_finance: 'bg-cyan-100 text-cyan-800 border-cyan-300',
     bibliotecario: 'bg-zinc-100 text-zinc-800 border-zinc-300',
     operario: 'bg-blue-100 text-blue-800 border-blue-300',
+    vendedor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
 };
 
 interface Profile {

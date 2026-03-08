@@ -25,7 +25,7 @@ export default function POSVendas() {
             // We fetch from pos_faturas where status is pago usually
             const { data, error } = await supabase
                 .from('pos_faturas')
-                .select(`*, pos_caixa (id, operador_id)`)
+                .select(`*, pos_caixa (id, usuario_id)`)
                 .eq('empresa_id', user.tenant_id)
                 .order('created_at', { ascending: false });
 
@@ -42,7 +42,7 @@ export default function POSVendas() {
         try {
             setLoadingItens(true);
             const { data, error } = await supabase
-                .from('pos_faturas_itens')
+                .from('pos_fatura_itens')
                 .select('*, pos_produtos(nome_produto, codigo_produto)')
                 .eq('fatura_id', faturaId);
 
@@ -134,8 +134,8 @@ export default function POSVendas() {
                                         </td>
                                         <td className="p-4 text-center">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${venda.status === 'pago' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                                                    : venda.status === 'anulado' ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                                                        : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                                                : venda.status === 'anulado' ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                                                    : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
                                                 }`}>
                                                 {venda.status}
                                             </span>

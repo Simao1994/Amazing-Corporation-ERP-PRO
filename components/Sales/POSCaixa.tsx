@@ -74,10 +74,9 @@ export default function POSCaixa() {
                 .from('pos_caixa')
                 .insert([{
                     empresa_id: user.tenant_id,
-                    operador_id: user.id || null, // garantir fallback genérico
-                    saldo_inicial: valorAbertura,
-                    saldo_atual: valorAbertura,
-                    status: 'aberto'
+                    usuario_id: user.id || null,
+                    valor_inicial: valorAbertura,
+                    status: 'ABERTO'
                 }])
                 .select()
                 .single();
@@ -99,13 +98,13 @@ export default function POSCaixa() {
         e.preventDefault();
         if (!caixaAtivo) return;
 
-        const diferenca = valorFechamento - caixaAtivo.saldo_atual;
+        const diferenca = valorFechamento - (caixaAtivo.valor_inicial || 0);
 
         try {
             const fechoPayload = {
                 caixa_id: caixaAtivo.id,
                 valor_informado: valorFechamento,
-                valor_sistema: caixaAtivo.saldo_atual,
+                valor_sistema: caixaAtivo.valor_inicial || 0,
                 diferenca: diferenca,
                 observacoes: observacoes
             };
@@ -174,7 +173,7 @@ export default function POSCaixa() {
 
                         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl relative z-10">
                             <h3 className="text-zinc-500 text-sm font-bold uppercase tracking-widest mb-2">Saldo Inicial</h3>
-                            <p className="text-3xl font-black text-white font-mono">{formatAOA(caixaAtivo.saldo_inicial)}</p>
+                            <p className="text-3xl font-black text-white font-mono">{formatAOA(caixaAtivo.valor_inicial)}</p>
                         </div>
 
                         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl relative z-10">
@@ -186,7 +185,7 @@ export default function POSCaixa() {
 
                         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl relative z-10 shadow-lg border-b-2 border-b-yellow-500">
                             <h3 className="text-yellow-500 text-sm font-bold uppercase tracking-widest mb-2">Saldo Atual</h3>
-                            <p className="text-4xl font-black text-white tracking-tighter font-mono">{formatAOA(caixaAtivo.saldo_atual)}</p>
+                            <p className="text-4xl font-black text-white tracking-tighter font-mono">{formatAOA(caixaAtivo.valor_inicial)}</p>
                         </div>
                     </div>
 
@@ -282,7 +281,7 @@ export default function POSCaixa() {
 
                         <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-6 text-center">
                             <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-1">Saldo Registado no Sistema</p>
-                            <p className="text-2xl font-black text-white font-mono">{formatAOA(caixaAtivo?.saldo_atual || 0)}</p>
+                            <p className="text-2xl font-black text-white font-mono">{formatAOA(caixaAtivo?.valor_inicial || 0)}</p>
                         </div>
 
                         <form onSubmit={handleFecharCaixa} className="space-y-4">
@@ -299,11 +298,11 @@ export default function POSCaixa() {
                                 />
                             </div>
 
-                            {valorFechamento - (caixaAtivo?.saldo_atual || 0) !== 0 && (
-                                <div className={`p-3 rounded-xl text-sm font-bold flex items-center gap-2 ${valorFechamento > (caixaAtivo?.saldo_atual || 0) ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                            {valorFechamento - (caixaAtivo?.valor_inicial || 0) !== 0 && (
+                                <div className={`p-3 rounded-xl text-sm font-bold flex items-center gap-2 ${valorFechamento > (caixaAtivo?.valor_inicial || 0) ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
                                     }`}>
                                     <FileText size={16} />
-                                    Diferença: {formatAOA(valorFechamento - (caixaAtivo?.saldo_atual || 0))}
+                                    Diferença: {formatAOA(valorFechamento - (caixaAtivo?.valor_inicial || 0))}
                                 </div>
                             )}
 
@@ -312,8 +311,8 @@ export default function POSCaixa() {
                                 <textarea
                                     value={observacoes}
                                     onChange={e => setObservacoes(e.target.value)}
-                                    required={(valorFechamento - (caixaAtivo?.saldo_atual || 0)) !== 0}
-                                    placeholder={(valorFechamento - (caixaAtivo?.saldo_atual || 0)) !== 0 ? "Obrigatório justificar quebra ou sobra" : "Opcional"}
+                                    required={(valorFechamento - (caixaAtivo?.valor_inicial || 0)) !== 0}
+                                    placeholder={(valorFechamento - (caixaAtivo?.valor_inicial || 0)) !== 0 ? "Obrigatório justificar quebra ou sobra" : "Opcional"}
                                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 min-h-[80px]"
                                 />
                             </div>

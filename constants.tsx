@@ -103,6 +103,9 @@ export const ROLE_ACCESS: Record<UserRole, string[]> = {
   // Operário - Acesso limitado a Galeria, Biblioteca, Home e Dashboard
   operario: ['home', 'dashboard', 'galeria_corp', 'biblioteca'],
 
+  // Vendedor - Apenas Vendas & POS + Dashboard
+  vendedor: ['home', 'dashboard', 'vendas'],
+
   // Master Admin (SaaS)
   saas_admin: ['all', 'master', 'vendas'],
 };

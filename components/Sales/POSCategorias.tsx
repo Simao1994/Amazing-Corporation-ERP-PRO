@@ -41,28 +41,37 @@ export default function POSCategorias() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user?.tenant_id) return;
+        if (!user?.tenant_id) {
+            console.error('Submit falhou: tenant_id ausente', user);
+            (window as any).notify?.('Erro: Sessão inválida', 'error');
+            return;
+        }
 
         try {
             const payload = {
-                ...formData,
+                nome_categoria: formData.nome_categoria,
+                descricao: formData.descricao,
                 empresa_id: user.tenant_id
             };
 
+            console.log('A guardar categoria:', { editingId, payload });
+
             if (editingId) {
-                await supabase.from('pos_categorias').update(payload).eq('id', editingId);
+                const { error } = await supabase.from('pos_categorias').update(payload).eq('id', editingId);
+                if (error) throw error;
                 (window as any).notify?.('Categoria atualizada com sucesso', 'success');
             } else {
-                await supabase.from('pos_categorias').insert([payload]);
+                const { error } = await supabase.from('pos_categorias').insert([payload]);
+                if (error) throw error;
                 (window as any).notify?.('Categoria criada com sucesso', 'success');
             }
 
             setShowModal(false);
             resetForm();
             fetchCategorias();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving category:', error);
-            (window as any).notify?.('Erro ao salvar categoria', 'error');
+            (window as any).notify?.('Erro ao salvar categoria: ' + (error.message || 'Erro desconhecido'), 'error');
         }
     };
 

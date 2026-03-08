@@ -18,6 +18,7 @@ export type UserRole =
   | 'director_finance'
   | 'bibliotecario'
   | 'operario'
+  | 'vendedor'
   | 'saas_admin';
 
 export interface Tenant {
