@@ -81,10 +81,13 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
         setError('');
 
         const timeoutId = setTimeout(() => {
-            if (loading) {
-                console.warn('fetchUsers: Timeout de 10s atingido. Forçando interrupção do loading.');
-                setLoading(false);
-            }
+            setLoading(prev => {
+                if (prev) {
+                    console.warn('fetchUsers: Timeout de 10s atingido. Forçando interrupção do loading.');
+                    return false;
+                }
+                return prev;
+            });
         }, 10000);
 
         try {

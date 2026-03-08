@@ -285,6 +285,17 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       lastFetchRef.current = now;
       setLoading(true);
 
+      // Fail-safe: Forçar desativação do loading após 15s se a rede estiver lenta
+      const failSafe = setTimeout(() => {
+         setLoading(prev => {
+            if (prev) {
+               console.warn("HR: Sincronização demorou demais, liberando UI...");
+               return false;
+            }
+            return prev;
+         });
+      }, 15000);
+
       try {
          console.log("HR: Iniciando sincronização de dados...");
          // 1. Fetch everything in PARALLEL to avoid waterfalls
@@ -346,6 +357,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       } catch (err) {
          console.error("HR: Erro crítico na sincronização:", err);
       } finally {
+         clearTimeout(failSafe);
          setLoading(false);
          console.log("HR: Sincronização concluída.");
       }
@@ -450,7 +462,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          prazo: fd.get('prazo') as string,
          status: 'Em curso',
          tenant_id: user.tenant_id
-       };
+      };
 
       try {
          const { error } = await supabase.from('hr_metas').insert([nova]);
@@ -520,7 +532,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                entrada: agora,
                status: status,
                tenant_id: user.tenant_id
-             }]);
+            }]);
 
             if (error) throw error;
             await fetchHRData();

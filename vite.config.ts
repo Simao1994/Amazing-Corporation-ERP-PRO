@@ -22,8 +22,12 @@ export default defineConfig(({ mode }) => {
               // Garantir que o Host está correto para evitar rejeição do Supabase
               const targetURL = new URL(env.VITE_SUPABASE_URL || 'https://jgktemwegesmmomlftgt.supabase.co');
               proxyReq.setHeader('Host', targetURL.host);
-              // Forçar fechamento de conexão se o proxy estiver segurando sockets mortos
-              proxyReq.setHeader('Connection', 'keep-alive');
+
+              // Não forçar keep-alive em Upgrades (WebSockets) para não quebrar o handshake
+              if (req.headers.upgrade !== 'websocket') {
+                proxyReq.setHeader('Connection', 'keep-alive');
+              }
+
               console.log(`[Proxy Request]: ${req.method} ${req.url}`);
             });
             proxy.on('proxyRes', (proxyRes, req, _res) => {

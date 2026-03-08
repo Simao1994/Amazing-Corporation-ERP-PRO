@@ -35,6 +35,17 @@ const InventoryPage: React.FC = () => {
 
   const fetchInventoryData = async () => {
     setLoading(true);
+
+    const failSafe = setTimeout(() => {
+      setLoading(prev => {
+        if (prev) {
+          console.warn('Inventory: Timeout de 15s atingido. Forçando interrupção do loading.');
+          return false;
+        }
+        return prev;
+      });
+    }, 15000);
+
     try {
       const { data: invData, error: invError } = await supabase
         .from('inventario')
@@ -89,6 +100,7 @@ const InventoryPage: React.FC = () => {
       console.error('Error fetching inventory:', error);
       alert('Erro ao carregar inventário. Verifique sua conexão.');
     } finally {
+      clearTimeout(failSafe);
       setLoading(false);
     }
   };

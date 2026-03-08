@@ -17,7 +17,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
 }
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 2; // Reduzido para falhar mais rápido se a rede estiver morta
 
 const customFetch: typeof fetch = async (url, options) => {
     let lastError: any;
@@ -25,7 +25,7 @@ const customFetch: typeof fetch = async (url, options) => {
         try {
             return await new Promise<Response>((resolve, reject) => {
                 let isSettled = false;
-                const timeoutMs = 60000; // 60s timeout (Máxima resiliência para introspeção)
+                const timeoutMs = 15000; // 15s timeout (Equilíbrio entre resiliência e UX)
 
                 // Forçar no-cache para evitar esquemas corrompidos por proxy
                 const headers = {
