@@ -19,9 +19,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const [session, setSession] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    const isRefreshing = useRef(false);
     const isInitialLoad = useRef(true);
 
     const refreshProfile = async (currentSession?: any) => {
+        if (isRefreshing.current) return;
+
         const activeSession = currentSession || session;
         if (!activeSession?.user) {
             setUser(null);
@@ -38,9 +41,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         try {
+            isRefreshing.current = true;
             console.log('AuthContext: Buscando perfil de', userEmail);
 
-            // Proteção de timeout para a busca de perfil (3 segundos)
+            // Proteção de timeout para a busca de perfil (15 segundos)
             const profilePromise = supabase
                 .from('profiles')
                 .select('*')
@@ -48,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
 
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
             );
 
             const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -68,6 +72,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (err) {
             console.warn('AuthContext: Timeout ou erro no refreshProfile (usando fallback):', err);
             setUser(fallbackUser);
+        } finally {
+            isRefreshing.current = false;
         }
     };
 

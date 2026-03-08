@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
         '/sbapi': {
           target: env.VITE_SUPABASE_URL || 'https://jgktemwegesmmomlftgt.supabase.co',
           changeOrigin: true,
+          ws: true, // Habilitar suporte a WebSocket para Supabase Realtime
           rewrite: (path) => path.replace(/^\/sbapi/, ''),
         },
       },

@@ -17,7 +17,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o ficheiro .env.local');
 }
 
-const MAX_RETRIES = 1;
+const MAX_RETRIES = 3;
 
 const customFetch: typeof fetch = async (url, options) => {
     let lastError: any;
@@ -25,15 +25,22 @@ const customFetch: typeof fetch = async (url, options) => {
         try {
             return await new Promise<Response>((resolve, reject) => {
                 let isSettled = false;
-                const timeoutMs = 15000; // 15s timeout (Equilíbrio de performance)
+                const timeoutMs = 60000; // 60s timeout (Máxima resiliência para introspeção)
+
+                // Forçar no-cache para evitar esquemas corrompidos por proxy
+                const headers = {
+                    ...(options?.headers || {}),
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                };
 
                 const timeoutId = setTimeout(() => {
                     if (isSettled) return;
                     isSettled = true;
-                    reject(new Error(`A ligação excedeu o tempo (20s). Tentativa ${i + 1}/${MAX_RETRIES + 1}.`));
+                    reject(new Error(`A ligação ao Supabase excedeu o tempo (60s). Tentativa ${i + 1}/${MAX_RETRIES + 1}.`));
                 }, timeoutMs);
 
-                fetch(url, options)
+                fetch(url, { ...options, headers })
                     .then(response => {
                         if (isSettled) return;
                         isSettled = true;
@@ -49,12 +56,14 @@ const customFetch: typeof fetch = async (url, options) => {
             });
         } catch (err: any) {
             lastError = err;
-            console.warn(`Supabase Fetch Falhou (Tentativa ${i + 1}):`, err.message);
+            console.warn(`[Supabase Fetch] Falhou (Tentativa ${i + 1}/${MAX_RETRIES + 1}):`, err.message);
             if (i < MAX_RETRIES) {
-                await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+                const waitTime = 1000 * Math.pow(2, i);
+                await new Promise(r => setTimeout(r, waitTime));
             }
         }
     }
+    console.error('[Supabase Fetch] Esgotadas todas as tentativas:', lastError);
     throw lastError;
 };
 
