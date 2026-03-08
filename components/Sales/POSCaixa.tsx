@@ -69,20 +69,21 @@ export default function POSCaixa() {
         e.preventDefault();
         console.log('Iniciando abertura de caixa...', { user, valorAbertura });
 
-        if (!user?.tenant_id) {
-            (window as any).notify?.('Erro: Empresa não identificada', 'error');
+        if (!user) {
+            (window as any).notify?.('Erro: Usuário não identificado', 'error');
             return;
         }
 
         try {
+            // Nota: empresa_id será preenchido automaticamente pelo DEFAULT na DB (get_auth_tenant)
+            // Isso garante que o RLS não seja violado por inconsistência no frontend.
             const payload = {
-                empresa_id: user.tenant_id,
                 usuario_id: user.id,
                 valor_inicial: valorAbertura,
                 status: 'ABERTO'
             };
 
-            console.log('Payload de abertura:', payload);
+            console.log('Payload de abertura (sem empresa_id, DB usará default):', payload);
 
             const { data, error } = await supabase
                 .from('pos_caixa')

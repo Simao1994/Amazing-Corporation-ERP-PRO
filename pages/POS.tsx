@@ -125,12 +125,12 @@ export default function POS() {
         setIsProcessing(true);
         try {
             const ncf = `NCF${Date.now()}`;
+            console.log('Gerando fatura:', ncf);
 
-            // 1. Criar Fatura
+            // 1. Criar Fatura (empresa_id automático)
             const { data: fatura, error: faturaError } = await supabase
                 .from('pos_faturas')
                 .insert([{
-                    empresa_id: user.tenant_id,
                     numero_fatura: ncf,
                     usuario_id: user.id,
                     caixa_id: caixaAtivo.id,
@@ -145,7 +145,12 @@ export default function POS() {
                 .select()
                 .single();
 
-            if (faturaError) throw faturaError;
+            if (faturaError) {
+                console.error('Erro ao criar fatura:', faturaError);
+                throw new Error(`Erro ao criar fatura: ${faturaError.message}`);
+            }
+
+            console.log('Fatura criada com ID:', fatura.id);
 
             // 2. Inserir Itens e Atualizar Stock
             for (const item of cart) {
@@ -168,9 +173,8 @@ export default function POS() {
                     throw new Error(`Erro no item ${item.nome_produto}: ${itemError.message}`);
                 }
 
-                // Movimento de Stock
+                // Movimento de Stock (empresa_id automático)
                 const { error: stockMovError } = await supabase.from('pos_movimento_stock').insert([{
-                    empresa_id: user.tenant_id,
                     produto_id: item.id,
                     tipo_movimento: 'VENDA',
                     quantidade: item.qnt,
@@ -180,7 +184,10 @@ export default function POS() {
 
                 if (stockMovError) console.error('Aviso: Erro ao registrar movimento de stock:', stockMovError);
 
-                // Atualizar Quantidade Atual
+                // Atualizar Quantidade Atual (empresa_id necessário para o match do UPDATE se RLS permitir apenas via WHERE)
+                // Mas o update usa .eq('empresa_id', user.tenant_id). 
+                // Se o RLS já filtra por get_auth_tenant(), podemos tentar omiti-lo no eq() se o DB permitir.
+                // No entanto, para updates, é mais seguro manter o filtro se o tenant_id estiver correto no user.
                 const currentStock = item.pos_estoque?.[0]?.quantidade_atual || 0;
                 const { error: stockUpdateError } = await supabase.from('pos_estoque')
                     .update({ quantidade_atual: currentStock - item.qnt })
@@ -190,10 +197,9 @@ export default function POS() {
                 if (stockUpdateError) console.error('Aviso: Erro ao atualizar stock:', stockUpdateError);
             }
 
-            // 3. Registrar Movimento de Caixa
+            // 3. Registrar Movimento de Caixa (empresa_id automático)
             console.log('Registrando movimento de caixa...');
             const { error: caixaMovError } = await supabase.from('pos_movimentos_caixa').insert([{
-                empresa_id: user.tenant_id,
                 caixa_id: caixaAtivo.id,
                 tipo: 'VENDA',
                 valor: total,
