@@ -103,8 +103,7 @@ const App: React.FC = () => {
   const handleLogin = async (userData: any) => {
     showToast("A verificar credenciais...", "info");
 
-    // Await profile refresh as it contains critical tenant_id and role info. Force fetch since login initiated it.
-    const profileResult = await refreshProfile(undefined, true);
+    const profileResult = await refreshProfile(userData.session, true);
 
     if (profileResult && !profileResult.success) {
       showToast(`Login recusado: ${profileResult.message}`, "error");

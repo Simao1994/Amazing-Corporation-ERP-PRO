@@ -86,6 +86,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
           email: data.user.email,
           role: data.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
           nome: data.user.user_metadata?.nome || email.split('@')[0],
+          session: data.session
         });
       }
     } catch (error: any) {
