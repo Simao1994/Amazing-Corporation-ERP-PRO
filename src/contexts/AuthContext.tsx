@@ -5,7 +5,7 @@ interface AuthContextType {
     user: any | null;
     session: any | null;
     loading: boolean;
-    refreshProfile: (session?: any) => Promise<{ success: boolean; message: string }>;
+    refreshProfile: (session?: any, force?: boolean) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,8 +23,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isRefreshing = useRef(false);
     const isInitialLoad = useRef(true);
 
-    const refreshProfile = async (currentSession?: any) => {
-        if (isRefreshing.current) return { success: false, message: 'Already refreshing' };
+    const refreshProfile = async (currentSession?: any, force = false) => {
+        if (isRefreshing.current && !force) return { success: false, message: 'Already refreshing' };
         isRefreshing.current = true;
 
         const activeSession = currentSession || session;
