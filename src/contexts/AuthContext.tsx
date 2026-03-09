@@ -44,12 +44,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
             console.log('AuthContext: Buscando perfil de', userEmail);
-            // Requisição de perfil (Sustentada pelo limite nativo da API Supabase)
-            const { data: profile, error } = await supabase
+            const profilePromise = supabase
                 .from('profiles')
                 .select('*, tenant_id')
                 .eq('id', activeSession.user.id)
                 .single();
+
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('A operação de perfis excedeu tempo limite de 15s. A sua rede local pode estar a estrangular o tráfego da API REST.')), 15000)
+            );
+
+            const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
             if (error) {
                 console.warn('AuthContext: Erro ao buscar perfil. A sessão pode estar inválida ou inacessível:', error);
@@ -86,15 +91,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const failSafeTimer = setTimeout(() => {
-            setLoading(current => {
-                if (current) {
-                    console.error('AuthContext: FAIL-SAFE disparado! Limpando sessão pendente.');
-                    setUser(null);
-                    localStorage.removeItem('auth_user_cache');
-                    return false;
-                }
-                return current;
-            });
+            console.error('AuthContext: FAIL-SAFE disparado! Abortando espera da sessão pendente.');
+            setUser(null);
+            localStorage.removeItem('auth_user_cache');
+            setLoading(false);
         }, 8000);
 
         const initAuth = async (retryCount = 0) => {

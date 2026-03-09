@@ -5,6 +5,18 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Função para obter o URL base (com suporte opcional a bypass de proxy via URL query)
 const getBaseURL = () => {
+    if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('direct') === 'true') {
+            return supabaseUrl || '';
+        }
+
+        // Ativar proxy inteligente apenas quando rodando localmente (Vite Bypass)
+        // O uso relativo `/sbapi` delega o redirecionamento ao Vite, fintando os blocos restritos
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return '/sbapi';
+        }
+    }
     return supabaseUrl || '';
 };
 
