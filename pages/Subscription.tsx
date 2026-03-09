@@ -12,7 +12,8 @@ import {
     ShieldCheck,
     RefreshCcw,
     Layers,
-    X
+    X,
+    XCircle
 } from 'lucide-react';
 import { formatAOA } from '../constants';
 import Button from '../components/ui/Button';
@@ -195,7 +196,7 @@ const SubscriptionPage: React.FC = () => {
         <div className="max-w-6xl mx-auto space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-5xl font-black text-zinc-900 tracking-tighter uppercase leading-none">
+                    <h1 className="text-5xl font-black text-zinc-900 tracking-tighter uppercase leading-none pointer-events-none select-none">
                         Licenciamento <span className="text-yellow-500">&</span> SaaS
                     </h1>
                     <p className="text-zinc-500 font-bold mt-4 max-w-lg">
@@ -206,7 +207,7 @@ const SubscriptionPage: React.FC = () => {
                 {saasSub && (
                     <div className="flex items-center gap-3 p-1.5 bg-zinc-100 rounded-2xl border border-zinc-200">
                         <div className={`w-3 h-3 rounded-full animate-pulse ${saasSub.status === 'ativo' ? 'bg-green-500' :
-                                saasSub.status === 'expirado' ? 'bg-red-500' : 'bg-orange-500'
+                            saasSub.status === 'expirado' ? 'bg-red-500' : 'bg-orange-500'
                             }`} />
                         <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 pr-3">
                             Status: {saasSub.status === 'ativo' ? 'Protegido' : 'Acção Necessária'}
@@ -357,7 +358,7 @@ const SubscriptionPage: React.FC = () => {
                                 )}
                             </div>
                         </section>
-                        
+
                         {/* Billing History */}
                         <div className="bg-white rounded-[3rem] border border-zinc-100 overflow-hidden shadow-sm">
                             <div className="px-10 py-6 border-b border-zinc-50 bg-zinc-50/50 flex items-center justify-between">
@@ -381,11 +382,10 @@ const SubscriptionPage: React.FC = () => {
                                                 <td className="px-8 py-4 text-[11px] font-black text-zinc-800 uppercase tracking-tighter">{item.saas_plans?.nome}</td>
                                                 <td className="px-8 py-4 text-[11px] font-bold text-zinc-700">{formatAOA(item.valor_pago || 0)}</td>
                                                 <td className="px-8 py-4">
-                                                    <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                                                        item.status === 'ativo' ? 'bg-green-100 text-green-700' :
+                                                    <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${item.status === 'ativo' ? 'bg-green-100 text-green-700' :
                                                         item.status === 'pendente' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-red-100 text-red-700'
-                                                    }`}>
+                                                            'bg-red-100 text-red-700'
+                                                        }`}>
                                                         {item.status}
                                                     </span>
                                                 </td>
@@ -435,33 +435,32 @@ const SubscriptionPage: React.FC = () => {
                                     <div className="space-y-8">
                                         <div className="space-y-4">
                                             <p className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em] px-2">Dados de Transferência</p>
-                                <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 space-y-6">
-                                    <div>
-                                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">Beneficiário</p>
-                                        <p className="text-sm font-bold tracking-tight">{bancoInfo?.beneficiario || 'Carregando...'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-2">IBAN {bancoInfo?.banco || ''}</p>
-                                        <button
-                                            onClick={() => handleCopyIban(bancoInfo?.iban || '')}
-                                            disabled={!bancoInfo}
-                                            className={`text-sm font-mono font-bold select-all transition-all flex items-center gap-2 px-3 py-2 rounded-xl border ${
-                                                ibanCopied
-                                                    ? 'text-green-400 border-green-500/30 bg-green-500/10'
-                                                    : 'text-yellow-500 border-white/10 hover:border-yellow-500/30 hover:bg-white/5'
-                                            }`}
-                                        >
-                                            {ibanCopied ? <CheckCircle2 size={14} /> : <FileText size={14} />}
-                                            {ibanCopied ? 'Copiado!' : (bancoInfo?.iban || 'Carregando...')}
-                                        </button>
-                                        <p className="text-[9px] text-zinc-600 mt-2 font-bold uppercase tracking-widest">Clique para copiar</p>
-                                    </div>
-                                    <div className="pt-2 border-t border-white/5">
-                                        <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">Valor a Pagar</p>
-                                        <p className="text-2xl font-black text-yellow-500">{formatAOA(saasSub.valor_pago || 0)}</p>
-                                        <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1">Referente ao plano {saasSub.saas_plans?.nome}</p>
-                                    </div>
-                                </div>
+                                            <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 space-y-6">
+                                                <div>
+                                                    <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">Beneficiário</p>
+                                                    <p className="text-sm font-bold tracking-tight">{bancoInfo?.beneficiario || 'Carregando...'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[9px] text-zinc-500 uppercase font-black mb-2">IBAN {bancoInfo?.banco || ''}</p>
+                                                    <button
+                                                        onClick={() => handleCopyIban(bancoInfo?.iban || '')}
+                                                        disabled={!bancoInfo}
+                                                        className={`text-sm font-mono font-bold select-all transition-all flex items-center gap-2 px-3 py-2 rounded-xl border ${ibanCopied
+                                                            ? 'text-green-400 border-green-500/30 bg-green-500/10'
+                                                            : 'text-yellow-500 border-white/10 hover:border-yellow-500/30 hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        {ibanCopied ? <CheckCircle2 size={14} /> : <FileText size={14} />}
+                                                        {ibanCopied ? 'Copiado!' : (bancoInfo?.iban || 'Carregando...')}
+                                                    </button>
+                                                    <p className="text-[9px] text-zinc-600 mt-2 font-bold uppercase tracking-widest">Clique para copiar</p>
+                                                </div>
+                                                <div className="pt-2 border-t border-white/5">
+                                                    <p className="text-[9px] text-zinc-500 uppercase font-black mb-1">Valor a Pagar</p>
+                                                    <p className="text-2xl font-black text-yellow-500">{formatAOA(saasSub.valor_pago || 0)}</p>
+                                                    <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1">Referente ao plano {saasSub.saas_plans?.nome}</p>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="space-y-4">

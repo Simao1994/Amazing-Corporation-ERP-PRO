@@ -14,7 +14,10 @@ const getBaseURL = () => {
     return supabaseUrl || '';
 };
 
-const finalUrl = getBaseURL();
+// Use local proxy if running on localhost to bypass network blocks
+const finalUrl = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+    ? '/sbapi'
+    : getBaseURL();
 
 if (!finalUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas!');

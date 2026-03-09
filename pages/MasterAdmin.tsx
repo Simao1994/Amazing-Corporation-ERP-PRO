@@ -106,11 +106,9 @@ const MasterAdmin: React.FC = () => {
 
         // Timeout de segurança (15s)
         timeoutIdRef.current = setTimeout(() => {
-            if (isMounted.current) {
-                console.error("MasterAdmin: Timeout de 15s atingido.");
-                setError('Tempo limite de carregamento excedido. Por favor, tente recarregar a página ou contacte o suporte se o erro persistir.');
-                setLoading(false);
-            }
+            console.error("MasterAdmin: Timeout de 15s atingido.");
+            setError('Tempo limite de carregamento excedido. Por favor, recarregue a página.');
+            setLoading(false);
         }, 15000);
 
         try {
@@ -141,14 +139,14 @@ const MasterAdmin: React.FC = () => {
             console.error('MasterAdmin: Erro ao carregar dados:', err);
 
             // Erros de Lock do Supabase (LockManager ou "Lock broken by another request with the 'steal' option")
-            const isLockError = err.message?.includes('LockManager') || 
-                              err.message?.includes('Lock broken') || 
-                              err.message?.includes('steal');
+            const isLockError = err.message?.includes('LockManager') ||
+                err.message?.includes('Lock broken') ||
+                err.message?.includes('steal');
 
             if (isLockError && retryCount < 3 && isMounted.current) {
                 const delay = 1000 * (retryCount + 1);
                 console.warn(`MasterAdmin: Detectado erro de Lock, a tentar novamente (tentativa ${retryCount + 1}) em ${delay}ms...`);
-                
+
                 // Se falhou em paralelo, a próxima tentativa será sequencial para ser mais seguro
                 setTimeout(() => {
                     if (retryCount >= 1) {
@@ -173,16 +171,16 @@ const MasterAdmin: React.FC = () => {
     const fetchDataSequential = async (retryCount = 0) => {
         if (!isMounted.current) return;
         setLoading(true);
-        
+
         try {
             console.log("MasterAdmin: Iniciando carregamento SEQUENCIAL...");
-            
+
             const tenantsRes = await supabase.from('saas_tenants').select('*, saas_subscriptions(*)');
             if (tenantsRes.error) throw tenantsRes.error;
-            
+
             const plansRes = await supabase.from('saas_plans').select('*').order('valor', { ascending: true });
             if (plansRes.error) throw plansRes.error;
-            
+
             const subsRes = await supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false });
             if (subsRes.error) throw subsRes.error;
 
@@ -290,7 +288,7 @@ const MasterAdmin: React.FC = () => {
             setIsLicenseModalOpen(false);
             setLicenseModalTenant(null);
             setEditingSubscription(null);
-            
+
             // DEFER: Fetch data in background
             setTimeout(() => {
                 fetchData();
@@ -369,7 +367,7 @@ const MasterAdmin: React.FC = () => {
             });
             if (error) throw error;
             if (data && !data.success) throw new Error(data.message);
-            
+
             setIsConfigModalOpen(false);
             setTimeout(() => {
                 fetchData();
@@ -390,7 +388,7 @@ const MasterAdmin: React.FC = () => {
                 .eq('id', id);
 
             if (error) throw error;
-            
+
             // DEFER: Fetch data in background
             setTimeout(() => {
                 fetchData();
@@ -403,7 +401,7 @@ const MasterAdmin: React.FC = () => {
 
     const handleSavePlan = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!planForm.nome || !planForm.valor) {
             (window as any).notify?.('Preencha o nome e o valor do plano.', 'error');
             return;
@@ -427,7 +425,7 @@ const MasterAdmin: React.FC = () => {
 
             if (error) throw error;
             if (data && !data.success) throw new Error(data.message);
-            
+
             setIsPlanModalOpen(false);
             setEditingPlan(null);
             fetchData();
@@ -465,7 +463,7 @@ const MasterAdmin: React.FC = () => {
         try {
             const { error } = await supabase
                 .from('saas_subscriptions')
-                .update({ 
+                .update({
                     status: 'ativo',
                     rejection_reason: null,
                     data_pagamento: new Date().toISOString()
@@ -487,9 +485,9 @@ const MasterAdmin: React.FC = () => {
         try {
             const { error } = await supabase
                 .from('saas_subscriptions')
-                .update({ 
+                .update({
                     status: 'expirado', // Move to expired if rejected
-                    rejection_reason: rejectionReason 
+                    rejection_reason: rejectionReason
                 })
                 .eq('id', rejectionModalId);
             if (error) throw error;
@@ -903,7 +901,7 @@ const MasterAdmin: React.FC = () => {
                                 </div>
                                 <h3 className="text-xl font-black uppercase tracking-tight mb-2">Rejeitar Pagamento</h3>
                                 <p className="text-slate-400 text-xs font-medium mb-6">Explique ao cliente o motivo da rejeição para que ele possa corrigir.</p>
-                                
+
                                 <textarea
                                     className="w-full bg-[#1e293b] border border-white/5 rounded-2xl p-4 text-xs font-bold outline-none focus:ring-2 focus:ring-red-500/50 min-h-[120px] mb-6"
                                     placeholder="Ex: Valor incorrecto, comprovativo ilegível ou banco não correspondente."
@@ -1129,7 +1127,7 @@ const MasterAdmin: React.FC = () => {
                         <div className="absolute top-0 right-0 p-8">
                             <button onClick={() => { setIsPlanModalOpen(false); setEditingPlan(null); }} className="text-slate-500 hover:text-white transition-colors"><X size={24} /></button>
                         </div>
-                        
+
                         <div className="flex items-center gap-4 mb-8">
                             <div className="bg-purple-600 p-3 rounded-2xl shadow-lg shadow-purple-900/20">
                                 <Layers size={24} className="text-white" />
@@ -1194,11 +1192,11 @@ const MasterAdmin: React.FC = () => {
                                         <span className="bg-purple-600/20 text-purple-400 border border-purple-500/20 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">
                                             {planForm.modules.split(',').map((m: string) => m.trim()).filter(Boolean).length} activos
                                         </span>
-                                        <button type="button" onClick={() => setPlanForm({...planForm, modules: MODULE_PRESETS.join(', ')})}
+                                        <button type="button" onClick={() => setPlanForm({ ...planForm, modules: MODULE_PRESETS.join(', ') })}
                                             className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-purple-400 transition-colors">
                                             Todos
                                         </button>
-                                        <button type="button" onClick={() => setPlanForm({...planForm, modules: ''})}
+                                        <button type="button" onClick={() => setPlanForm({ ...planForm, modules: '' })}
                                             className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-red-400 transition-colors">
                                             Limpar
                                         </button>
@@ -1229,13 +1227,12 @@ const MasterAdmin: React.FC = () => {
                                                 onClick={() => {
                                                     const currentMods = planForm.modules.split(',').map((m: string) => m.trim().toUpperCase()).filter(Boolean);
                                                     const newMods = active ? currentMods.filter((m: string) => m !== mod.id) : [...currentMods, mod.id];
-                                                    setPlanForm({...planForm, modules: newMods.join(', ')});
+                                                    setPlanForm({ ...planForm, modules: newMods.join(', ') });
                                                 }}
-                                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all hover:scale-105 active:scale-95 ${
-                                                    active
-                                                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/30'
-                                                    : 'bg-white/5 border-white/5 text-slate-500 hover:border-purple-500/30 hover:text-slate-300'
-                                                }`}
+                                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all hover:scale-105 active:scale-95 ${active
+                                                        ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/30'
+                                                        : 'bg-white/5 border-white/5 text-slate-500 hover:border-purple-500/30 hover:text-slate-300'
+                                                    }`}
                                             >
                                                 <span>{mod.icon}</span> {mod.label}
                                             </button>
@@ -1254,18 +1251,18 @@ const MasterAdmin: React.FC = () => {
                                 />
                             </div>
 
-                                    <button
-                                        type="submit"
-                                        disabled={planFormSaving}
-                                        className="md:col-span-2 py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl shadow-purple-900/20 hover:scale-[1.02] transition-all disabled:opacity-50"
-                                    >
-                                        {planFormSaving && <RefreshCcw size={14} className="animate-spin" />}
-                                        Guardar Alterações do Plano
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
+                            <button
+                                type="submit"
+                                disabled={planFormSaving}
+                                className="md:col-span-2 py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl shadow-purple-900/20 hover:scale-[1.02] transition-all disabled:opacity-50"
+                            >
+                                {planFormSaving && <RefreshCcw size={14} className="animate-spin" />}
+                                Guardar Alterações do Plano
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
             {/* Tenant Registration Modal */}
             {isTenantModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
