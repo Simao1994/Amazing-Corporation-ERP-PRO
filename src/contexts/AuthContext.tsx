@@ -59,9 +59,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
             if (error) {
-                console.warn('AuthContext: Erro ao buscar perfil (usando fallback):', error);
-                setUser(fallbackUser);
-                localStorage.setItem('auth_user_cache', JSON.stringify(fallbackUser));
+                console.warn('AuthContext: Erro ao buscar perfil. A sessão pode estar inválida ou inacessível:', error);
+                setUser(null);
+                localStorage.removeItem('auth_user_cache');
             } else if (profile) {
                 const tenantId = profile.tenant_id || profile.empresa_id || activeSession.user.user_metadata?.tenant_id;
                 const fullUser = {
@@ -74,23 +74,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 localStorage.setItem('auth_user_cache', JSON.stringify(fullUser));
             }
             else {
-                setUser(fallbackUser);
-                localStorage.setItem('auth_user_cache', JSON.stringify(fallbackUser));
+                console.warn('AuthContext: Perfil não encontrado.');
+                setUser(null);
+                localStorage.removeItem('auth_user_cache');
             }
         } catch (err) {
-            console.warn('AuthContext: Timeout ou erro no refreshProfile (usando fallback):', err);
-            setUser(fallbackUser);
+            console.warn('AuthContext: Timeout ou erro no refreshProfile:', err);
+            setUser(null);
+            localStorage.removeItem('auth_user_cache');
         } finally {
             isRefreshing.current = false;
         }
     };
 
     useEffect(() => {
-        // FAIL-SAFE GLOBAL: Independente de tudo, parar o loading em 8 segundos
         const failSafeTimer = setTimeout(() => {
             setLoading(current => {
                 if (current) {
-                    console.error('AuthContext: FAIL-SAFE disparado!');
+                    console.error('AuthContext: FAIL-SAFE disparado! Limpando sessão pendente.');
+                    setUser(null);
+                    localStorage.removeItem('auth_user_cache');
                     return false;
                 }
                 return current;
