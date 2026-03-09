@@ -44,9 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
             console.log('AuthContext: Buscando perfil de', userEmail);
+            // Proteção de timeout para a busca de perfil
             const profilePromise = supabase
                 .from('profiles')
-                .select('*, tenant_id, empresa_id')
+                .select('*, tenant_id')
                 .eq('id', activeSession.user.id)
                 .single();
 
@@ -63,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const errMsg = error.code === 'PGRST116' ? 'Perfil não encontrado na Base de Dados. É necessário correr o script de reparação.' : error.message;
                 return { success: false, message: errMsg };
             } else if (profile) {
-                const tenantId = profile.tenant_id || profile.empresa_id || activeSession.user.user_metadata?.tenant_id;
+                const tenantId = profile.tenant_id || activeSession.user.user_metadata?.tenant_id;
                 const fullUser = {
                     ...activeSession.user,
                     ...profile,
