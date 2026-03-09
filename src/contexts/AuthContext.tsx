@@ -44,18 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
             console.log('AuthContext: Buscando perfil de', userEmail);
-            // Proteção de timeout para a busca de perfil
-            const profilePromise = supabase
+            // Requisição de perfil (Sustentada pelo limite nativo da API Supabase)
+            const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('*, tenant_id')
                 .eq('id', activeSession.user.id)
                 .single();
-
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Timeout de 8 segundos esgotado ao tentar ler perfil da Base de Dados. A sua rede empresarial pode estar a bloquear o serviço.')), 8000)
-            );
-
-            const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
             if (error) {
                 console.warn('AuthContext: Erro ao buscar perfil. A sessão pode estar inválida ou inacessível:', error);

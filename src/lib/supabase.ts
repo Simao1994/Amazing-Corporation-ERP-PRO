@@ -14,8 +14,9 @@ const getBaseURL = () => {
         // Ativar proxy inteligente apenas quando rodando localmente (Vite Bypass)
         // Isso impede bloqueios cruéis de Antivírus no Windows Desktop
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('Ambiente local detectado. Usando proxy /sbapi para prevenir bloqueios de rede.');
-            return '/sbapi';
+            console.log('Ambiente local detectado. Construindo proxy path absoluto /sbapi para prevenir bloqueios de rede e bugs CORS no Supabase JS.');
+            // O Supabase JS EXIGE URLs absolutos, não podemos passar apenas "/sbapi" ou ele buga os caminhos internos.
+            return `${window.location.protocol}//${window.location.host}/sbapi`;
         }
     }
     return supabaseUrl || '';

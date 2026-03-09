@@ -80,8 +80,8 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
           localStorage.removeItem('amazing_remember_email');
         }
 
-        // NO-WAIT: call onLogin immediately with fallback data.
-        onLogin({
+        // WAIT for onLogin so we hold the spinner until App.tsx finishes validating the profile and syncing.
+        await onLogin({
           id: data.user.id,
           email: data.user.email,
           role: data.user.email === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
