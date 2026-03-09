@@ -39,6 +39,7 @@ DROP POLICY IF EXISTS "Admin Access Subs" ON public.saas_subscriptions;
 -- Usamos FOR ALL para garantir que SELECT, INSERT, UPDATE e DELETE funcionem num único comando.
 
 -- Saas Tenants
+DROP POLICY IF EXISTS "Master Admin Tenants Access" ON public.saas_tenants;
 CREATE POLICY "Master Admin Tenants Access" 
 ON public.saas_tenants 
 FOR ALL 
@@ -47,6 +48,7 @@ USING (is_master_admin())
 WITH CHECK (is_master_admin());
 
 -- Saas Plans
+DROP POLICY IF EXISTS "Master Admin Plans Access" ON public.saas_plans;
 CREATE POLICY "Master Admin Plans Access" 
 ON public.saas_plans 
 FOR ALL 
@@ -55,6 +57,7 @@ USING (is_master_admin())
 WITH CHECK (is_master_admin());
 
 -- Saas Subscriptions
+DROP POLICY IF EXISTS "Master Admin Subs Access" ON public.saas_subscriptions;
 CREATE POLICY "Master Admin Subs Access" 
 ON public.saas_subscriptions 
 FOR ALL 
