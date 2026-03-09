@@ -5,7 +5,7 @@ interface AuthContextType {
     user: any | null;
     session: any | null;
     loading: boolean;
-    refreshProfile: () => Promise<void>;
+    refreshProfile: (session?: any) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,28 +24,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isInitialLoad = useRef(true);
 
     const refreshProfile = async (currentSession?: any) => {
-        if (isRefreshing.current) return;
+        if (isRefreshing.current) return { success: false, message: 'Already refreshing' };
+        isRefreshing.current = true;
 
         const activeSession = currentSession || session;
         if (!activeSession?.user) {
-            setUser(null);
-            localStorage.removeItem('auth_user_cache');
-            return;
+            isRefreshing.current = false;
+            return { success: false, message: 'No active session' };
         }
 
         const userEmail = activeSession.user.email || '';
-        const fallbackUser = {
-            ...activeSession.user,
-            role: userEmail === 'simaopambo94@gmail.com' ? 'saas_admin' : 'operario',
+        const defaultProfile = {
+            id: activeSession.user.id,
+            email: userEmail,
+            role: activeSession.user.user_metadata?.role || (userEmail === 'simaopambo94@gmail.com' ? 'saas_admin' : 'funcionario'),
             nome: activeSession.user.user_metadata?.nome || userEmail.split('@')[0] || 'Utilizador',
             tenant_id: activeSession.user.user_metadata?.tenant_id
         };
 
         try {
-            isRefreshing.current = true;
             console.log('AuthContext: Buscando perfil de', userEmail);
-
-            // Proteção de timeout para a busca de perfil (15 segundos)
             const profilePromise = supabase
                 .from('profiles')
                 .select('*, tenant_id, empresa_id')
@@ -53,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
 
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
+                setTimeout(() => reject(new Error('Timeout de 8 segundos esgotado ao tentar ler perfil da Base de Dados. A sua rede empresarial pode estar a bloquear o serviço.')), 8000)
             );
 
             const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -62,6 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.warn('AuthContext: Erro ao buscar perfil. A sessão pode estar inválida ou inacessível:', error);
                 setUser(null);
                 localStorage.removeItem('auth_user_cache');
+                const errMsg = error.code === 'PGRST116' ? 'Perfil não encontrado na Base de Dados. É necessário correr o script de reparação.' : error.message;
+                return { success: false, message: errMsg };
             } else if (profile) {
                 const tenantId = profile.tenant_id || profile.empresa_id || activeSession.user.user_metadata?.tenant_id;
                 const fullUser = {
@@ -72,16 +72,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.log('AuthContext DEBUG: User loaded with tenant_id:', tenantId);
                 setUser(fullUser);
                 localStorage.setItem('auth_user_cache', JSON.stringify(fullUser));
+                return { success: true, message: 'Perfil carregado com sucesso' };
             }
             else {
                 console.warn('AuthContext: Perfil não encontrado.');
                 setUser(null);
-                localStorage.removeItem('auth_user_cache');
+                return { success: false, message: 'Perfil retornou vazio na Base de Dados' };
             }
-        } catch (err) {
-            console.warn('AuthContext: Timeout ou erro no refreshProfile:', err);
+        } catch (err: any) {
+            console.warn('AuthContext: Timeout ou erro crítico no refreshProfile:', err);
             setUser(null);
             localStorage.removeItem('auth_user_cache');
+            return { success: false, message: err?.message || 'Erro crítico ao sincronizar o perfil' };
         } finally {
             isRefreshing.current = false;
         }
@@ -102,19 +104,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const initAuth = async (retryCount = 0) => {
             try {
-                // Obter sessão inicial com retry para erros de Lock
-                const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+                // Obter sessão inicial com proteção pesada contra deadlocks do LockManager (Supabase JS bug)
+                const sessionPromise = supabase.auth.getSession();
+                const sessionTimeout = new Promise<any>((resolve) =>
+                    setTimeout(() => resolve({ data: { session: null }, error: new Error('getSession timeout - Lock detectado') }), 3000)
+                );
+
+                const { data: { session: initialSession }, error } = await Promise.race([sessionPromise, sessionTimeout]);
 
                 if (error) {
                     console.error('AuthContext: Erro ao buscar sessão:', error.message);
-                    const isLockError = error.message?.includes('Lock broken') || error.message?.includes('steal');
-                    if (isLockError && retryCount < 1) { // Reduzido de 2 para 1 retry para agilizar
+                    const isLockError = error.message?.includes('Lock') || error.message?.includes('timeout');
+                    if (isLockError && retryCount < 1) {
                         const delay = 1000 * (retryCount + 1);
-                        console.warn(`AuthContext: Lock detectado, tentando novamente em ${delay}ms...`);
-                        setTimeout(() => initAuth(retryCount + 1), delay);
-                        return;
+                        console.warn(`AuthContext: Lock detectado, bypassando falha local para evitar bloqueio eterno...`);
+                        // Try forcing session reconstruction instead of hanging
+                        localStorage.removeItem('supabase.auth.token'); // Attempt to clear the lock
                     }
-                    // Em caso de erro não crítico de lock, continuamos para não travar o ecrã
                 }
 
                 setSession(initialSession);
