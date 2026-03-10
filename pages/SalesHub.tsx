@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     ShoppingCart, Package, Tags, CreditCard,
-    BarChart, QrCode, TrendingUp, Settings2
+    BarChart, QrCode, TrendingUp, Settings2, User as UserIcon
 } from 'lucide-react';
 import { useAuth } from '../src/contexts/AuthContext';
 import { formatAOA } from '../constants';
@@ -22,7 +22,7 @@ export default function SalesHub() {
         { id: 'vendas', label: 'Histórico de Vendas', icon: <ShoppingCart size={20} /> },
         { id: 'produtos', label: 'Produtos', icon: <Package size={20} /> },
         { id: 'categorias', label: 'Categorias', icon: <Tags size={20} /> },
-        { id: 'clientes', label: 'Clientes', icon: <User size={20} /> },
+        { id: 'clientes', label: 'Clientes', icon: <UserIcon size={20} /> },
         { id: 'estoque', label: 'Controle de Estoque', icon: <BarChart size={20} /> },
         { id: 'caixa', label: 'Gestão de Caixa', icon: <CreditCard size={20} /> },
         { id: 'pos', label: 'Abrir POS', icon: <QrCode size={20} /> },

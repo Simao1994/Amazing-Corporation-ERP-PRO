@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { checkSubscription, SubscriptionStatus } from '../utils/subscription';
+import { checkSubscription } from '../utils/subscription';
+import { SubscriptionStatus, SaasConfig } from '../../types';
 import { useAuth } from './AuthContext';
 
 interface SaaSContextType {
@@ -15,6 +16,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { user, loading: authLoading } = useAuth();
     const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
     const [loading, setLoading] = useState(true);
+    const [saasConfig, setSaasConfig] = useState<any>(null);
 
     const refreshSubscription = async () => {
         if (!user) {
@@ -32,16 +34,16 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // saas_admin has special properties (active by default, access to all)
             if (effectiveRole === 'saas_admin') {
                 console.log('SaaSContext: Activating simulated plan for saas_admin');
-                const adminPlan: SubscriptionStatus = {
-                    id: 'saas-admin-unlimited',
-                    tenant_id: effectiveTenantId || 'saas-admin-tenant',
+                const adminSub: SubscriptionStatus = {
+                    id: 'master-admin',
+                    tenant_id: 'master-tenant',
                     active: true,
                     plan_id: 'master-plan-id',
                     daysLeft: 999,
                     status: 'ativo',
                     modules: ['ALL', 'RH', 'PONTO', 'FINANCEIRO', 'CONTABILIDADE', 'LOGISTICA', 'INVENTARIO', 'IMOBILIARIO', 'CRM', 'VAGAS', 'ARENA', 'AGRO', 'BLOG', 'EMPRESAS'],
                     features: ['Acesso Total Vitalício', 'Suporte Prioritário', 'Utilizadores Ilimitados'],
-                    maxUsers: 999, // Changed from max_users to maxUsers to match SubscriptionStatus
+                    maxUsers: 999,
                     valor_pago: 0,
                     data_inicio: new Date().toISOString(),
                     data_expiracao: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),

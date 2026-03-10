@@ -10,7 +10,7 @@ import Input from '../components/ui/Input';
 import { useTenant } from '../src/components/TenantProvider';
 
 // Local Modal Component
-const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }) => {
+const Modal: React.FC<{ isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }> = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
@@ -271,7 +271,11 @@ const LiveStreaming: React.FC = () => {
             )}
 
             {/* Modal de Criação / Edição */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingLive ? "Configurar Transmissão" : "Nova Transmissão"}>
+            <Modal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                title={editingLive ? "Configurar Transmissão" : "Nova Transmissão"}
+            >
                 <form onSubmit={handleSave} className="space-y-6">
                     <div className="bg-sky-50 p-4 rounded-xl border border-sky-100 flex items-start gap-3">
                         <AlertCircle className="text-sky-500 shrink-0 mt-0.5" size={20} />

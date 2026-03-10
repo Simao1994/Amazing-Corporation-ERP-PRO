@@ -1,36 +1,5 @@
 import { supabase } from '../lib/supabase';
-
-export interface SubscriptionStatus {
-    // Core status fields
-    active: boolean;
-    status: 'ativo' | 'suspenso' | 'expirado' | 'pendente';
-    daysLeft: number;
-    message?: string;
-    modules: string[];
-    maxUsers: number;
-    // Full DB record fields
-    id?: string;
-    tenant_id?: string;
-    plan_id?: string;
-    valor_pago?: number;
-    data_inicio?: string;
-    data_expiracao?: string;
-    data_pagamento?: string; // New field
-    auto_renew?: boolean;
-    comprovativo_url?: string;
-    rejection_reason?: string; // New field
-    created_at?: string;
-    // Joined relation
-    saas_plans?: {
-        id: string;
-        nome: string;
-        valor: number;
-        duracao_meses: number;
-        max_users: number; // Standardized
-        modules: string[]; // Standardized to array
-        features: string[]; // Standardized to array
-    };
-}
+import { SubscriptionStatus } from '../../types';
 
 export const checkSubscription = async (tenantId: string): Promise<SubscriptionStatus> => {
     try {

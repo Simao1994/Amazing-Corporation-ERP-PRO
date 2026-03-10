@@ -380,6 +380,7 @@ export interface LancamentoContabil {
   ano_referencia?: number;
   descricao: string;
   empresa_id: string;
+  tenant_id?: string;
   usuario_id: string;
   usuario_nome?: string;
   status: 'Postado' | 'Pendente' | 'Anulado';
@@ -800,5 +801,42 @@ export interface RhCandidaturaPublica {
   expectativa_5_anos?: string;
   sobre_mim?: string;
   pretensao_salarial?: string;
+}
+
+export interface SubscriptionStatus {
+    active: boolean;
+    status: 'ativo' | 'suspenso' | 'expirado' | 'pendente';
+    daysLeft: number;
+    message?: string;
+    modules: string[];
+    maxUsers: number;
+    features?: string[];
+    id?: string;
+    tenant_id?: string;
+    plan_id?: string;
+    valor_pago?: number;
+    data_inicio?: string;
+    data_expiracao?: string;
+    data_pagamento?: string;
+    auto_renew?: boolean;
+    comprovativo_url?: string;
+    rejection_reason?: string;
+    created_at?: string;
+    saas_plans?: {
+        id: string;
+        nome: string;
+        valor: number;
+        duracao_meses: number;
+        max_users: number;
+        modules: string[];
+        features: string[];
+    };
+}
+
+export interface SaasConfig {
+  id: number;
+  maintenance_mode: boolean;
+  registration_open: boolean;
+  [key: string]: any;
 }
 

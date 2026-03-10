@@ -27,6 +27,8 @@ export default function POS() {
     const [showFormNovoCliente, setShowFormNovoCliente] = useState(false);
     const [novoCliente, setNovoCliente] = useState({ nome: '', nif: '', telefone: '' });
     const [tenantInfo, setTenantInfo] = useState<any>(null);
+    const [valorAbertura, setValorAbertura] = useState<number>(0);
+    const [showModalClientes, setShowModalClientes] = useState(false);
 
     const subtotal = cart.reduce((acc, item) => acc + (item.preco_venda * item.qnt), 0);
     const iva = subtotal * 0.14; // IVA Padrão a 14%
