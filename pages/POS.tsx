@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useDeferredValue } from 'react';
 import {
     Search, ShoppingCart, User, Plus, Minus, Trash2,
-    CreditCard, Banknote, Printer, ChevronLeft, LogOut, Unlock
+    CreditCard, Banknote, Printer, ChevronLeft, LogOut, Unlock,
+    X, Check
 } from 'lucide-react';
 import { useAuth } from '../src/contexts/AuthContext';
 import { supabase } from '../src/lib/supabase';
@@ -25,18 +26,24 @@ export default function POS() {
     const [clientes, setClientes] = useState<any[]>([]);
     const [selectedClient, setSelectedClient] = useState<any>(null);
     const [searchClientTerm, setSearchClientTerm] = useState('');
+    const [tenantInfo, setTenantInfo] = useState<any>(null);
 
     const subtotal = cart.reduce((acc, item) => acc + (item.preco_venda * item.qnt), 0);
     const iva = subtotal * 0.14; // IVA Padrão a 14%
     const total = subtotal + iva;
 
-    useEffect(() => {
         if (user?.tenant_id) {
             fetchProducts();
             fetchCaixaAtivo();
             fetchClientes();
+            fetchTenant();
         }
     }, [user]);
+
+    const fetchTenant = async () => {
+        const { data } = await supabase.from('saas_tenants').select('*').eq('id', user.tenant_id).single();
+        if (data) setTenantInfo(data);
+    };
 
     const fetchClientes = async () => {
         try {
@@ -228,6 +235,7 @@ export default function POS() {
                 console.log('Processando item:', item.nome_produto);
 
                 // Item da Fatura
+                const ivaItem = item.preco_venda * 0.14;
                 const { error: itemError } = await supabase.from('pos_fatura_itens').insert([{
                     tenant_id: user.tenant_id,
                     fatura_id: fatura.id,
@@ -235,9 +243,9 @@ export default function POS() {
                     quantidade: item.qnt,
                     preco_compra: item.preco_compra || 0,
                     preco_venda: item.preco_venda,
-                    iva: item.preco_venda * 0.14,
+                    iva: ivaItem * item.qnt,
                     lucro: (item.preco_venda - (item.preco_compra || 0)) * item.qnt,
-                    total: (item.preco_venda * 1.14) * item.qnt
+                    total: (item.preco_venda + ivaItem) * item.qnt
                 }]);
 
                 if (itemError) {
@@ -319,6 +327,24 @@ export default function POS() {
                             </h1>
                             <p className="text-xs text-zinc-500 font-mono tracking-widest uppercase">Operador: {user?.nome || 'Sistema'}</p>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {caixaAtivo && (
+                            <button
+                                onClick={() => navigate('/vendas')}
+                                className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 transition-colors flex items-center gap-2 text-xs font-bold uppercase"
+                                title="Fechar Turno (Ir para Gestão)"
+                            >
+                                <LogOut size={16} /> Fechar Turno
+                            </button>
+                        )}
+                        <button
+                            onClick={() => navigate('/')}
+                            className="p-2 hover:bg-red-500/10 rounded-lg text-red-500 transition-colors flex items-center gap-2 text-xs font-bold uppercase"
+                            title="Sair do PDV"
+                        >
+                            <LogOut size={16} /> Sair
+                        </button>
                     </div>
                     {caixaAtivo ? (
                         <div className="bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
@@ -605,6 +631,66 @@ export default function POS() {
                     </div>
                 </div>
             )}
+            {/* Template de Impressão (Invisível na UI) */}
+            <div id="thermal-receipt" className="hidden print:block bg-white text-black p-4 font-mono text-[12px] w-[80mm]">
+                <div className="text-center border-b border-black pb-2 mb-2">
+                    <h2 className="text-lg font-bold uppercase">{tenantInfo?.nome || 'AMAZING ERP'}</h2>
+                    <p>NIF: {tenantInfo?.nif || '999999999'}</p>
+                    <p>{new Date().toLocaleString()}</p>
+                </div>
+                
+                <div className="border-b border-black mb-2">
+                    <p className="font-bold">Cliente: {selectedClient?.nome || 'Consumidor Final'}</p>
+                    {selectedClient?.nif && <p>NIF: {selectedClient.nif}</p>}
+                </div>
+
+                <div className="border-b border-black mb-2">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-black">
+                                <th className="text-left">Artigo</th>
+                                <th className="text-right">Qtd</th>
+                                <th className="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {cart.map(item => (
+                                <tr key={item.id}>
+                                    <td>{item.nome_produto}</td>
+                                    <td className="text-right">{item.qnt}</td>
+                                    <td className="text-right">{formatAOA(item.preco_venda * item.qnt)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="text-right space-y-1">
+                    <p>Subtotal: {formatAOA(subtotal)}</p>
+                    <p>IVA (14%): {formatAOA(iva)}</p>
+                    <p className="text-lg font-bold">TOTAL: {formatAOA(total)}</p>
+                </div>
+
+                <div className="text-center mt-6 pt-4 border-t border-black">
+                    <p className="uppercase font-bold italic">Obrigado pela preferência!</p>
+                    <p className="text-[10px] mt-2">Processado por Amazing ERP</p>
+                </div>
+            </div>
+
+            {/* Estilo para Impressão */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                    body * { visibility: hidden; }
+                    #thermal-receipt, #thermal-receipt * { visibility: visible; }
+                    #thermal-receipt {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 80mm;
+                    }
+                    @page { size: 80mm auto; margin: 0; }
+                }
+            ` }} />
         </div>
     );
 }
