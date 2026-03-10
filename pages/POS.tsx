@@ -65,6 +65,7 @@ export default function POS() {
     };
 
     const fetchProducts = async () => {
+        if (!user?.tenant_id) return;
         try {
             const { data, error } = await supabase
                 .from('pos_produtos')
@@ -83,6 +84,7 @@ export default function POS() {
     };
 
     const fetchCaixaAtivo = async () => {
+        if (!user?.tenant_id) return;
         try {
             const { data, error } = await supabase
                 .from('pos_caixa')
