@@ -345,7 +345,6 @@ const FinancialHubPage: React.FC = () => {
          usuario_id: currentUser?.id || 'sys',
           usuario_nome: currentUser?.nome || 'Sistema',
           tenant_id: selectedEmpresaId,
-          tenant_id: user?.tenant_id,
           data_criacao: new Date().toISOString(),
           historico_alteracoes: [{ data: new Date().toISOString(), usuario: currentUser?.nome || 'Sistema', acao: 'Registo inicial' }]
        };

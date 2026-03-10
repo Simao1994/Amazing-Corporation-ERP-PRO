@@ -79,6 +79,9 @@ export default function POSCategorias() {
         }
     };
 
+    const handleDelete = async (id: string) => {
+        if (!confirm('Tem a certeza que deseja eliminar esta categoria? Produtos associados ficarão sem categoria.')) return;
+
         try {
             if (!user?.tenant_id) return;
             await supabase.from('pos_categorias')

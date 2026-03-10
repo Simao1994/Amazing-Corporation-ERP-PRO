@@ -104,6 +104,9 @@ export default function POSProdutos() {
         }
     };
 
+    const handleDelete = async (id: string) => {
+        if (!confirm('Tem a certeza que deseja eliminar este produto? O histórico de vendas será afetado.')) return;
+
         try {
             if (!user?.tenant_id) return;
             await supabase.from('pos_produtos')

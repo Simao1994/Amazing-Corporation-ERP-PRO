@@ -141,6 +141,7 @@ const InventoryPage: React.FC = () => {
 
 
   // --- HANDLERS ---
+  const handleDeleteItem = async (id: string, nome: string) => {
     if (confirm(`Remover permanentemente o item "${nome}" do inventário?`)) {
       try {
         const { error } = await supabase.from('inventario')
