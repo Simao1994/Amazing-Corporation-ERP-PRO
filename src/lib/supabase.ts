@@ -26,13 +26,35 @@ if (!finalUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas!');
 }
 
+// Sistema de Lock em memória para contornar o bug do Navigator LockManager no gotrue-js
+let memoryLock: Promise<any> = Promise.resolve();
+
+const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+    return new Promise<R>((resolve, reject) => {
+        memoryLock = memoryLock.then(async () => {
+            try {
+                return resolve(await fn());
+            } catch (e) {
+                return reject(e);
+            }
+        }).catch(async () => {
+            try {
+                return resolve(await fn());
+            } catch (e) {
+                return reject(e);
+            }
+        });
+    });
+};
+
 export const supabase = createClient(finalUrl, supabaseAnonKey, {
     auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storage: localStorage,
-        storageKey: 'sb-amazing-erp-pro-auth-token'
+        storageKey: 'sb-amazing-erp-pro-auth-token',
+        lock: memoryLockFunc
     }
 });
 
