@@ -16,6 +16,7 @@ export default function POSProdutos() {
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         nome_produto: '',
@@ -65,9 +66,10 @@ export default function POSProdutos() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user?.tenant_id) return;
+        if (!user?.tenant_id || isSubmitting) return;
 
         try {
+            setIsSubmitting(true);
             const qr_code = await generateQRCode(formData.codigo_produto);
             const payload = {
                 ...formData,
@@ -76,10 +78,18 @@ export default function POSProdutos() {
             };
 
             if (editingId) {
-                await supabase.from('pos_produtos').update(payload).eq('id', editingId);
+                const { error } = await supabase
+                    .from('pos_produtos')
+                    .update(payload)
+                    .eq('id', editingId)
+                    .eq('tenant_id', user.tenant_id);
+                if (error) throw error;
                 (window as any).notify?.('Produto atualizado com sucesso', 'success');
             } else {
-                await supabase.from('pos_produtos').insert([payload]);
+                const { error } = await supabase
+                    .from('pos_produtos')
+                    .insert([payload]);
+                if (error) throw error;
                 (window as any).notify?.('Produto criado com sucesso', 'success');
             }
 
@@ -88,7 +98,9 @@ export default function POSProdutos() {
             fetchData();
         } catch (error: any) {
             console.error('Error saving product:', error);
-            (window as any).notify?.('Erro ao salvar produto: ' + error.message, 'error');
+            (window as any).notify?.('Erro ao salvar: ' + (error.message || 'Verifique sua conexão'), 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -361,10 +373,11 @@ export default function POSProdutos() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 bg-yellow-500 text-zinc-900 px-4 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-yellow-500 text-zinc-900 px-4 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    <Save size={20} />
-                                    Salvar
+                                    <Save size={20} className={isSubmitting ? "animate-pulse" : ""} />
+                                    {isSubmitting ? 'A salvar...' : 'Salvar'}
                                 </button>
                             </div>
                         </form>

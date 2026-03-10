@@ -19,6 +19,7 @@ export default function POSStock() {
         quantidade: 1,
         motivo: '',
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -58,20 +59,20 @@ export default function POSStock() {
 
     const handleAdjustment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user?.tenant_id) return;
+        if (!user?.tenant_id || isSubmitting) return;
+
         try {
-            // In a real app, this should ideally call an RPC to wrap in a transaction:
-            // 1. Insert into pos_movimento_stock
-            // 2. Update pos_estoque
-
-            // For this UI mockup MVP without the backend RPC available yet, 
-            // we'll update pos_estoque directly first if entry exists (or handle creation if not).
-
-            const { data: existingStock } = await supabase
+            setIsSubmitting(true);
+            
+            // 1. Verificar se o registo de stock existe
+            const { data: existingStock, error: fetchError } = await supabase
                 .from('pos_estoque')
                 .select('*')
                 .eq('produto_id', formData.produto_id)
+                .eq('tenant_id', user.tenant_id)
                 .single();
+
+            if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
             let newAmount = formData.quantidade;
 
@@ -80,52 +81,63 @@ export default function POSStock() {
                     newAmount = existingStock.quantidade_atual - formData.quantidade;
                     if (newAmount < 0) {
                         (window as any).notify?.('Estoque insuficiente para esta saída', 'error');
+                        setIsSubmitting(false);
                         return;
                     }
                 } else {
                     newAmount = existingStock.quantidade_atual + formData.quantidade;
                 }
 
-                await supabase
+                const { error: updateError } = await supabase
                     .from('pos_estoque')
                     .update({
                         quantidade_atual: newAmount,
                         data_ultima_entrada: formData.tipo === 'entrada' ? new Date().toISOString() : existingStock.data_ultima_entrada
                     })
-                    .eq('id', existingStock.id);
+                    .eq('id', existingStock.id)
+                    .eq('tenant_id', user.tenant_id);
+                
+                if (updateError) throw updateError;
             } else {
                 if (formData.tipo === 'saida') {
                     (window as any).notify?.('Produto sem estoque inicial.', 'error');
+                    setIsSubmitting(false);
                     return;
                 }
-                await supabase
+                const { error: insertError } = await supabase
                     .from('pos_estoque')
                     .insert([{
                         tenant_id: user.tenant_id,
                         produto_id: formData.produto_id,
                         quantidade_atual: formData.quantidade
                     }]);
+                
+                if (insertError) throw insertError;
             }
 
-            // Log movement
-            await supabase
+            // 2. Registar o movimento (Log)
+            const { error: movError } = await supabase
                 .from('pos_movimento_stock')
                 .insert([{
                     tenant_id: user.tenant_id,
                     produto_id: formData.produto_id,
-                    usuario_id: user.id || null, // Ensure ID exists
-                    tipo: formData.tipo,
+                    usuario_id: user.id || null,
+                    tipo_movimento: formData.tipo === 'entrada' ? 'ENTRADA' : 'AJUSTE',
                     quantidade: formData.quantidade,
-                    motivo: formData.motivo || 'Ajuste manual'
+                    referencia: formData.motivo || 'Ajuste manual'
                 }]);
 
-            (window as any).notify?.('Movimento de stock registado', 'success');
+            if (movError) console.error('Aviso: Movimento não logado corretamente:', movError);
+
+            (window as any).notify?.('Movimento de stock registado com sucesso', 'success');
             setShowModal(false);
             setFormData({ produto_id: '', tipo: 'entrada', quantidade: 1, motivo: '' });
             fetchData();
         } catch (error: any) {
             console.error('Adjustment error:', error);
-            (window as any).notify?.('Falha ao registar movimento', 'error');
+            (window as any).notify?.('Falha ao registar movimento: ' + (error.message || 'Erro de conexão'), 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -323,9 +335,10 @@ export default function POSStock() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 bg-yellow-500 text-zinc-900 px-4 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-yellow-500 text-zinc-900 px-4 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    Registar
+                                    {isSubmitting ? 'A registar...' : 'Registar'}
                                 </button>
                             </div>
                         </form>

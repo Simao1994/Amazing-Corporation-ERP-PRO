@@ -11,6 +11,7 @@ export default function POSCategorias() {
 
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         nome_categoria: '',
@@ -41,27 +42,28 @@ export default function POSCategorias() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user?.tenant_id) {
-            console.error('Submit falhou: tenant_id ausente', user);
-            (window as any).notify?.('Erro: Sessão inválida', 'error');
-            return;
-        }
+        if (!user?.tenant_id || isSubmitting) return;
 
         try {
+            setIsSubmitting(true);
             const payload = {
-                nome_categoria: formData.nome_categoria,
-                descricao: formData.descricao,
+                nome_categoria: formData.nome_categoria.trim(),
+                descricao: formData.descricao.trim(),
                 tenant_id: user.tenant_id
             };
 
-            console.log('A guardar categoria (explicit tenant_id):', { editingId, payload });
-
             if (editingId) {
-                const { error } = await supabase.from('pos_categorias').update(payload).eq('id', editingId);
+                const { error } = await supabase
+                    .from('pos_categorias')
+                    .update(payload)
+                    .eq('id', editingId)
+                    .eq('tenant_id', user.tenant_id);
                 if (error) throw error;
                 (window as any).notify?.('Categoria atualizada com sucesso', 'success');
             } else {
-                const { error } = await supabase.from('pos_categorias').insert([payload]);
+                const { error } = await supabase
+                    .from('pos_categorias')
+                    .insert([payload]);
                 if (error) throw error;
                 (window as any).notify?.('Categoria criada com sucesso', 'success');
             }
@@ -71,7 +73,9 @@ export default function POSCategorias() {
             fetchCategorias();
         } catch (error: any) {
             console.error('Error saving category:', error);
-            (window as any).notify?.('Erro ao salvar categoria: ' + (error.message || 'Erro desconhecido'), 'error');
+            (window as any).notify?.('Erro ao salvar: ' + (error.message || 'Verifique sua conexão'), 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -204,10 +208,11 @@ export default function POSCategorias() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 bg-yellow-500 text-zinc-900 px-4 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-yellow-500 text-zinc-900 px-4 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    <Save size={20} />
-                                    Salvar
+                                    <Save size={20} className={isSubmitting ? "animate-pulse" : ""} />
+                                    {isSubmitting ? 'A salvar...' : 'Salvar'}
                                 </button>
                             </div>
                         </form>
