@@ -20,7 +20,11 @@ export default function POS() {
     const [caixaAtivo, setCaixaAtivo] = useState<any>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showModalAbrir, setShowModalAbrir] = useState(false);
+    const [showModalClientes, setShowModalClientes] = useState(false);
     const [valorAbertura, setValorAbertura] = useState(0);
+    const [clientes, setClientes] = useState<any[]>([]);
+    const [selectedClient, setSelectedClient] = useState<any>(null);
+    const [searchClientTerm, setSearchClientTerm] = useState('');
 
     const subtotal = cart.reduce((acc, item) => acc + (item.preco_venda * item.qnt), 0);
     const iva = subtotal * 0.14; // IVA Padrão a 14%
@@ -30,8 +34,26 @@ export default function POS() {
         if (user?.tenant_id) {
             fetchProducts();
             fetchCaixaAtivo();
+            fetchClientes();
         }
     }, [user]);
+
+    const fetchClientes = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('pos_clientes')
+                .select('*')
+                .eq('tenant_id', user.tenant_id)
+                .order('nome');
+            if (error) throw error;
+            setClientes(data || []);
+            // Selecionar Consumidor Final como padrão
+            const defaultClient = data?.find(c => c.nome.includes('Consumidor Final')) || data?.[0];
+            setSelectedClient(defaultClient || null);
+        } catch (error) {
+            console.error('Error fetching clients:', error);
+        }
+    };
 
     const fetchProducts = async () => {
         try {
@@ -74,6 +96,11 @@ export default function POS() {
     const filteredProducts = products.filter(p =>
         p.nome_produto.toLowerCase().includes(deferredSearchTerm.toLowerCase()) ||
         p.codigo_produto.includes(deferredSearchTerm)
+    );
+
+    const filteredClientes = clientes.filter(c => 
+        c.nome.toLowerCase().includes(searchClientTerm.toLowerCase()) ||
+        (c.nif && c.nif.includes(searchClientTerm))
     );
 
     const addToCart = (product: any) => {
@@ -124,7 +151,9 @@ export default function POS() {
         if (!user) return;
 
         try {
-            setLoading(true);
+            setIsProcessing(true);
+            console.log('Tentando abrir caixa...', { tenant_id: user.tenant_id, valor_inicial: valorAbertura });
+            
             const { data, error } = await supabase
                 .from('pos_caixa')
                 .insert([{
@@ -136,17 +165,21 @@ export default function POS() {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erro Supabase ao abrir caixa:', error);
+                throw error;
+            }
 
+            console.log('Caixa aberto:', data);
             (window as any).notify?.('Caixa aberto com sucesso', 'success');
             setCaixaAtivo(data);
             setShowModalAbrir(false);
             setValorAbertura(0);
         } catch (error: any) {
-            console.error('Error opening caixa:', error);
-            (window as any).notify?.('Erro ao abrir caixa: ' + error.message, 'error');
+            console.error('Error opening caixa details:', error);
+            (window as any).notify?.('Erro ao abrir caixa: ' + (error.message || 'Erro de conexão'), 'error');
         } finally {
-            setLoading(false);
+            setIsProcessing(false);
         }
     };
 
@@ -170,6 +203,7 @@ export default function POS() {
                     tenant_id: user.tenant_id,
                     numero_fatura: ncf,
                     usuario_id: user.id,
+                    cliente_id: selectedClient?.id || null,
                     caixa_id: caixaAtivo.id,
                     subtotal: subtotal,
                     iva_total: iva,
@@ -361,14 +395,17 @@ export default function POS() {
                         </span>
                     </div>
 
-                    <button className="w-full flex items-center justify-between bg-zinc-800/50 hover:bg-zinc-800 p-3 rounded-xl border border-zinc-700/50 transition-colors group">
+                    <button 
+                        onClick={() => setShowModalClientes(true)}
+                        className="w-full flex items-center justify-between bg-zinc-800/50 hover:bg-zinc-800 p-3 rounded-xl border border-zinc-700/50 transition-colors group"
+                    >
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-zinc-400 group-hover:text-white transition-colors">
+                            <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 group-hover:bg-yellow-500 group-hover:text-zinc-950 transition-colors">
                                 <User size={16} />
                             </div>
                             <div className="text-left">
-                                <p className="text-sm font-bold text-zinc-300">Cliente Standard</p>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Consumidor Final</p>
+                                <p className="text-sm font-bold text-zinc-300">{selectedClient?.nome || 'Selecionar Cliente'}</p>
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">{selectedClient?.nif ? `NIF: ${selectedClient.nif}` : 'Consumidor Final'}</p>
                             </div>
                         </div>
                         <Plus size={16} className="text-zinc-500 group-hover:text-white" />
@@ -471,6 +508,9 @@ export default function POS() {
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                 <Unlock className="text-emerald-500" /> Abertura de Caixa
                             </h3>
+                            <button onClick={() => setShowModalAbrir(false)} className="text-zinc-500 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
                         </div>
                         <form onSubmit={handleAbrirCaixa} className="space-y-4">
                             <div>
@@ -487,9 +527,81 @@ export default function POS() {
                             </div>
                             <div className="pt-4 flex gap-3">
                                 <button type="button" onClick={() => setShowModalAbrir(false)} className="flex-1 bg-zinc-900 text-white px-4 py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors">Cancelar</button>
-                                <button type="submit" className="flex-1 bg-emerald-500 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors">Confirmar Abertura</button>
+                                <button type="submit" disabled={isProcessing} className="flex-1 bg-emerald-500 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors disabled:opacity-50">
+                                    {isProcessing ? 'Processando...' : 'Confirmar Abertura'}
+                                </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Seleção de Clientes */}
+            {showModalClientes && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+                    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 w-full max-w-lg animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <User className="text-yellow-500" /> Selecionar Cliente
+                            </h3>
+                            <button onClick={() => setShowModalClientes(false)} className="text-zinc-500 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="relative mb-4">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Pesquisar por nome ou NIF..."
+                                value={searchClientTerm}
+                                onChange={(e) => setSearchClientTerm(e.target.value)}
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-yellow-500/50 transition-all"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                            {filteredClientes.length === 0 ? (
+                                <p className="text-center text-zinc-500 py-8 italic">Nenhum cliente encontrado.</p>
+                            ) : (
+                                filteredClientes.map(cliente => (
+                                    <button
+                                        key={cliente.id}
+                                        onClick={() => {
+                                            setSelectedClient(cliente);
+                                            setShowModalClientes(false);
+                                        }}
+                                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group ${
+                                            selectedClient?.id === cliente.id 
+                                            ? 'bg-yellow-500/10 border-yellow-500/50' 
+                                            : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                                        }`}
+                                    >
+                                        <div>
+                                            <p className={`font-bold ${selectedClient?.id === cliente.id ? 'text-yellow-500' : 'text-white'}`}>
+                                                {cliente.nome}
+                                            </p>
+                                            <p className="text-xs text-zinc-500">{cliente.nif || 'Sem NIF'}</p>
+                                        </div>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                                            selectedClient?.id === cliente.id ? 'bg-yellow-500 text-zinc-950' : 'bg-zinc-800 text-zinc-500 group-hover:text-white'
+                                        }`}>
+                                            <Check size={16} />
+                                        </div>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="mt-6">
+                            <button 
+                                onClick={() => setShowModalClientes(false)}
+                                className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
+                            >
+                                Fechar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
