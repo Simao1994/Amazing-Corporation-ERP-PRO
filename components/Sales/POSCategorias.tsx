@@ -52,28 +52,28 @@ export default function POSCategorias() {
                 tenant_id: user.tenant_id
             };
 
-            if (editingId) {
-                const { error } = await supabase
-                    .from('pos_categorias')
-                    .update(payload)
-                    .eq('id', editingId)
-                    .eq('tenant_id', user.tenant_id);
-                if (error) throw error;
-                (window as any).notify?.('Categoria atualizada com sucesso', 'success');
-            } else {
-                const { error } = await supabase
-                    .from('pos_categorias')
-                    .insert([payload]);
-                if (error) throw error;
-                (window as any).notify?.('Categoria criada com sucesso', 'success');
-            }
+            console.log('[POSCategorias] Iniciando gravação...', payload);
 
+            // Timeout de 15 segundos para a operação
+            const operationPromise = editingId 
+                ? supabase.from('pos_categorias').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id)
+                : supabase.from('pos_categorias').insert([payload]);
+
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Tempo limite excedido na comunicação com o servidor. Verifique sua conexão.')), 15000)
+            );
+
+            const { error } = await Promise.race([operationPromise, timeoutPromise]) as any;
+
+            if (error) throw error;
+            
+            (window as any).notify?.(editingId ? 'Categoria atualizada' : 'Categoria criada', 'success');
             setShowModal(false);
             resetForm();
             fetchCategorias();
         } catch (error: any) {
             console.error('Error saving category:', error);
-            (window as any).notify?.('Erro ao salvar: ' + (error.message || 'Verifique sua conexão'), 'error');
+            (window as any).notify?.('Erro ao salvar: ' + (error.message || 'Erro desconhecido'), 'error');
         } finally {
             setIsSubmitting(false);
         }

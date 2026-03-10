@@ -77,28 +77,28 @@ export default function POSProdutos() {
                 qr_code
             };
 
-            if (editingId) {
-                const { error } = await supabase
-                    .from('pos_produtos')
-                    .update(payload)
-                    .eq('id', editingId)
-                    .eq('tenant_id', user.tenant_id);
-                if (error) throw error;
-                (window as any).notify?.('Produto atualizado com sucesso', 'success');
-            } else {
-                const { error } = await supabase
-                    .from('pos_produtos')
-                    .insert([payload]);
-                if (error) throw error;
-                (window as any).notify?.('Produto criado com sucesso', 'success');
-            }
+            console.log('[POSProdutos] Iniciando gravação...', payload);
 
+            // Timeout de 15 segundos
+            const operationPromise = editingId
+                ? supabase.from('pos_produtos').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id)
+                : supabase.from('pos_produtos').insert([payload]);
+
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Tempo limite excedido ao salvar produto. Verifique sua conexão.')), 15000)
+            );
+
+            const { error } = await Promise.race([operationPromise, timeoutPromise]) as any;
+
+            if (error) throw error;
+            
+            (window as any).notify?.(editingId ? 'Produto atualizado' : 'Produto criado', 'success');
             setShowModal(false);
             resetForm();
             fetchData();
         } catch (error: any) {
             console.error('Error saving product:', error);
-            (window as any).notify?.('Erro ao salvar: ' + (error.message || 'Verifique sua conexão'), 'error');
+            (window as any).notify?.('Erro ao salvar: ' + (error.message || 'Erro desconhecido'), 'error');
         } finally {
             setIsSubmitting(false);
         }

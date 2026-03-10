@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Obter sessão inicial com proteção pesada contra deadlocks do LockManager (Supabase JS bug)
                 const sessionPromise = supabase.auth.getSession();
                 const sessionTimeout = new Promise<any>((resolve) =>
-                    setTimeout(() => resolve({ data: { session: null }, error: new Error('getSession timeout - Lock detectado') }), 3000)
+                    setTimeout(() => resolve({ data: { session: null }, error: new Error('getSession timeout (500ms) - Bypass imediato') }), 500)
                 );
 
                 const { data: { session: initialSession }, error } = await Promise.race([sessionPromise, sessionTimeout]);
@@ -135,11 +135,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('AuthContext: Erro crítico na inicialização:', err);
             } finally {
                 // EXTREME FAIL-SAFE: Garantir que o loading morre sempre aqui se não houver retry pendente
-                if (retryCount >= 0) {
-                    setLoading(false);
-                    isInitialLoad.current = false;
-                    clearTimeout(failSafeTimer);
-                }
+                setLoading(false);
+                isInitialLoad.current = false;
+                clearTimeout(failSafeTimer);
+                // Fallback de segurança absoluto
+                setTimeout(() => setLoading(false), 2000);
             }
         };
 

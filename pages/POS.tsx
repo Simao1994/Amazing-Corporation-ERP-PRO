@@ -25,7 +25,7 @@ export default function POS() {
     const [selectedClient, setSelectedClient] = useState<any>(null);
     const [searchClientTerm, setSearchClientTerm] = useState('');
     const [showFormNovoCliente, setShowFormNovoCliente] = useState(false);
-    const [novoCliente, setNovoCliente] = useState({ nome: '', nif: '', telefone: '' });
+    const [novoCliente, setNovoCliente] = useState({ nome: '', nif: '', telefone: '', email: '', morada: '' });
     const [tenantInfo, setTenantInfo] = useState<any>(null);
     const [valorAbertura, setValorAbertura] = useState<number>(0);
     const [showModalClientes, setShowModalClientes] = useState(false);
@@ -90,7 +90,7 @@ export default function POS() {
             setClientes(prev => [...prev, data]);
             setSelectedClient(data);
             setShowFormNovoCliente(false);
-            setNovoCliente({ nome: '', nif: '', telefone: '' });
+            setNovoCliente({ nome: '', nif: '', telefone: '', email: '', morada: '' });
         } catch (error: any) {
             console.error('Error creating client:', error);
             (window as any).notify?.('Erro ao cadastrar cliente: ' + error.message, 'error');
@@ -702,6 +702,28 @@ export default function POS() {
                                             onChange={e => setNovoCliente({...novoCliente, telefone: e.target.value})}
                                             className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
                                             placeholder="Telefone"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-1">Email</label>
+                                        <input 
+                                            type="email" 
+                                            value={novoCliente.email}
+                                            onChange={e => setNovoCliente({...novoCliente, email: e.target.value})}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
+                                            placeholder="exemplo@email.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-1">Morada / Endereço</label>
+                                        <input 
+                                            type="text" 
+                                            value={novoCliente.morada}
+                                            onChange={e => setNovoCliente({...novoCliente, morada: e.target.value})}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
+                                            placeholder="Endereço físico"
                                         />
                                     </div>
                                 </div>

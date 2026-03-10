@@ -18,7 +18,7 @@ export default function POSClientes() {
         nif: '',
         email: '',
         telefone: '',
-        endereco: ''
+        morada: ''
     });
 
     useEffect(() => {
@@ -106,14 +106,14 @@ export default function POSClientes() {
             nif: cliente.nif || '',
             email: cliente.email || '',
             telefone: cliente.telefone || '',
-            endereco: cliente.endereco || ''
+            morada: cliente.morada || ''
         });
         setEditingId(cliente.id);
         setShowModal(true);
     };
 
     const resetForm = () => {
-        setFormData({ nome: '', nif: '', email: '', telefone: '', endereco: '' });
+        setFormData({ nome: '', nif: '', email: '', telefone: '', morada: '' });
         setEditingId(null);
     };
 
@@ -171,7 +171,8 @@ export default function POSClientes() {
                                         </td>
                                         <td className="p-4 text-sm text-zinc-400 font-mono">{c.nif || 'N/D'}</td>
                                         <td className="p-4 text-sm text-zinc-400">{c.telefone || 'N/D'}</td>
-                                        <td className="p-4">
+                                        <td className="p-4 text-sm text-zinc-400 truncate max-w-[150px]">{c.morada || 'N/D'}</td>
+                                        <td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button onClick={() => handleEdit(c)} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors">
                                                     <Edit size={16} />
@@ -245,10 +246,10 @@ export default function POSClientes() {
                                     />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Endereço</label>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Morada / Endereço</label>
                                     <textarea
-                                        value={formData.endereco}
-                                        onChange={e => setFormData({ ...formData, endereco: e.target.value })}
+                                        value={formData.morada}
+                                        onChange={e => setFormData({ ...formData, morada: e.target.value })}
                                         className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 min-h-[80px]"
                                     />
                                 </div>

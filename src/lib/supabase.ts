@@ -30,18 +30,31 @@ if (!finalUrl || !supabaseAnonKey) {
 let memoryLock: Promise<any> = Promise.resolve();
 
 const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+    const timeoutThreshold = acquireTimeout || 8000;
+
     return new Promise<R>((resolve, reject) => {
+        const safetyTimeout = setTimeout(() => {
+            console.warn(`[Supabase Lock] Alerta: O lock para '${name}' excedeu ${timeoutThreshold}ms. Forçando libertação para evitar hang.`);
+            reject(new Error(`Auth Lock Timeout: ${name}`));
+        }, timeoutThreshold);
+
         memoryLock = memoryLock.then(async () => {
             try {
-                return resolve(await fn());
+                const result = await fn();
+                clearTimeout(safetyTimeout);
+                resolve(result);
             } catch (e) {
-                return reject(e);
+                clearTimeout(safetyTimeout);
+                reject(e);
             }
         }).catch(async () => {
             try {
-                return resolve(await fn());
+                const result = await fn();
+                clearTimeout(safetyTimeout);
+                resolve(result);
             } catch (e) {
-                return reject(e);
+                clearTimeout(safetyTimeout);
+                reject(e);
             }
         });
     });
