@@ -66,7 +66,10 @@ const App: React.FC = () => {
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    if ((window as any).toastTimeout) {
+      clearTimeout((window as any).toastTimeout);
+    }
+    (window as any).toastTimeout = setTimeout(() => setToast(null), 4000);
   };
 
   const [showForceLoad, setShowForceLoad] = useState(false);

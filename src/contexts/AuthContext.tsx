@@ -58,6 +58,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) {
                 console.warn('AuthContext: Erro ao buscar perfil. A sessão pode estar inválida ou inacessível:', error);
+                const isTimeout = error.message && error.message.includes('tempo limite');
+                if (error.code === 'PGRST116' || isTimeout) {
+                    console.log('AuthContext: Usando perfil padrão devido a erro ou timeout.');
+                    const tenantId = activeSession.user.user_metadata?.tenant_id || defaultProfile.tenant_id;
+                    const fullUser = {
+                        ...activeSession.user,
+                        ...defaultProfile,
+                        tenant_id: tenantId
+                    };
+                    setUser(fullUser);
+                    localStorage.setItem('auth_user_cache', JSON.stringify(fullUser));
+                    return { success: true, message: 'Perfil carregado via fallback' };
+                }
                 setUser(null);
                 localStorage.removeItem('auth_user_cache');
                 const errMsg = error.code === 'PGRST116' ? 'Perfil não encontrado na Base de Dados. É necessário correr o script de reparação.' : error.message;
@@ -81,6 +94,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         } catch (err: any) {
             console.warn('AuthContext: Timeout ou erro crítico no refreshProfile:', err);
+            const isTimeout = err?.message && err.message.includes('tempo limite');
+            if (isTimeout) {
+                console.log('AuthContext: Usando perfil padrão após timeout crítico.');
+                const tenantId = activeSession.user.user_metadata?.tenant_id || defaultProfile.tenant_id;
+                const fullUser = {
+                    ...activeSession.user,
+                    ...defaultProfile,
+                    tenant_id: tenantId
+                };
+                setUser(fullUser);
+                localStorage.setItem('auth_user_cache', JSON.stringify(fullUser));
+                return { success: true, message: 'Perfil carregado via fallback (timeout)' };
+            }
             setUser(null);
             localStorage.removeItem('auth_user_cache');
             return { success: false, message: err?.message || 'Erro crítico ao sincronizar o perfil' };
