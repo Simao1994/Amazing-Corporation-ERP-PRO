@@ -21,11 +21,11 @@ export default function POS() {
     const [caixaAtivo, setCaixaAtivo] = useState<any>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showModalAbrir, setShowModalAbrir] = useState(false);
-    const [showModalClientes, setShowModalClientes] = useState(false);
-    const [valorAbertura, setValorAbertura] = useState(0);
     const [clientes, setClientes] = useState<any[]>([]);
     const [selectedClient, setSelectedClient] = useState<any>(null);
     const [searchClientTerm, setSearchClientTerm] = useState('');
+    const [showFormNovoCliente, setShowFormNovoCliente] = useState(false);
+    const [novoCliente, setNovoCliente] = useState({ nome: '', nif: '', telefone: '' });
     const [tenantInfo, setTenantInfo] = useState<any>(null);
 
     const subtotal = cart.reduce((acc, item) => acc + (item.preco_venda * item.qnt), 0);
@@ -56,11 +56,44 @@ export default function POS() {
                 .order('nome');
             if (error) throw error;
             setClientes(data || []);
-            // Selecionar Consumidor Final como padrão com segurança
-            const defaultClient = data?.find(c => c.nome && c.nome.includes('Consumidor Final')) || data?.[0];
-            setSelectedClient(defaultClient || null);
+            
+            // Se não houver cliente selecionado, tenta selecionar o Consumidor Final
+            if (!selectedClient) {
+                const defaultClient = data?.find(c => c.nome && c.nome.includes('Consumidor Final')) || data?.[0];
+                setSelectedClient(defaultClient || null);
+            }
         } catch (error) {
             console.error('Error fetching clients:', error);
+        }
+    };
+
+    const handleQuickCreateCliente = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user?.tenant_id || !novoCliente.nome) return;
+
+        try {
+            setIsProcessing(true);
+            const { data, error } = await supabase
+                .from('pos_clientes')
+                .insert([{
+                    ...novoCliente,
+                    tenant_id: user.tenant_id
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            (window as any).notify?.('Cliente cadastrado com sucesso!', 'success');
+            setClientes(prev => [...prev, data]);
+            setSelectedClient(data);
+            setShowFormNovoCliente(false);
+            setNovoCliente({ nome: '', nif: '', telefone: '' });
+        } catch (error: any) {
+            console.error('Error creating client:', error);
+            (window as any).notify?.('Erro ao cadastrar cliente: ' + error.message, 'error');
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -572,65 +605,132 @@ export default function POS() {
                     <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 w-full max-w-lg animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                <User className="text-yellow-500" /> Selecionar Cliente
+                                <User className="text-yellow-500" /> {showFormNovoCliente ? 'Novo Cliente' : 'Selecionar Cliente'}
                             </h3>
-                            <button onClick={() => setShowModalClientes(false)} className="text-zinc-500 hover:text-white transition-colors">
+                            <button onClick={() => { setShowModalClientes(false); setShowFormNovoCliente(false); }} className="text-zinc-500 hover:text-white transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
 
-                        <div className="relative mb-4">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Pesquisar por nome ou NIF..."
-                                value={searchClientTerm}
-                                onChange={(e) => setSearchClientTerm(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-yellow-500/50 transition-all"
-                                autoFocus
-                            />
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
-                            {filteredClientes.length === 0 ? (
-                                <p className="text-center text-zinc-500 py-8 italic">Nenhum cliente encontrado.</p>
-                            ) : (
-                                filteredClientes.map(cliente => (
-                                    <button
-                                        key={cliente.id}
-                                        onClick={() => {
-                                            setSelectedClient(cliente);
-                                            setShowModalClientes(false);
-                                        }}
-                                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group ${
-                                            selectedClient?.id === cliente.id 
-                                            ? 'bg-yellow-500/10 border-yellow-500/50' 
-                                            : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
-                                        }`}
+                        {!showFormNovoCliente ? (
+                            <>
+                                <div className="flex gap-2 mb-4">
+                                    <div className="relative flex-1">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                        <input
+                                            type="text"
+                                            placeholder="Pesquisar por nome ou NIF..."
+                                            value={searchClientTerm}
+                                            onChange={(e) => setSearchClientTerm(e.target.value)}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-yellow-500/50 transition-all font-sans"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowFormNovoCliente(true)}
+                                        className="bg-yellow-500 text-zinc-900 px-4 rounded-xl font-bold hover:bg-yellow-400 transition-colors flex items-center gap-2"
+                                        title="Novo Cliente"
                                     >
-                                        <div>
-                                            <p className={`font-bold ${selectedClient?.id === cliente.id ? 'text-yellow-500' : 'text-white'}`}>
-                                                {cliente.nome}
-                                            </p>
-                                            <p className="text-xs text-zinc-500">{cliente.nif || 'Sem NIF'}</p>
-                                        </div>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                                            selectedClient?.id === cliente.id ? 'bg-yellow-500 text-zinc-950' : 'bg-zinc-800 text-zinc-500 group-hover:text-white'
-                                        }`}>
-                                            <Check size={16} />
-                                        </div>
+                                        <Plus size={20} />
                                     </button>
-                                ))
-                            )}
-                        </div>
+                                </div>
 
-                        <div className="mt-6">
-                            <button 
-                                onClick={() => setShowModalClientes(false)}
-                                className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
-                            >
-                                Fechar
-                            </button>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                                    {filteredClientes.length === 0 ? (
+                                        <p className="text-center text-zinc-500 py-8 italic">Nenhum cliente encontrado.</p>
+                                    ) : (
+                                        filteredClientes.map(cliente => (
+                                            <button
+                                                key={cliente.id}
+                                                onClick={() => {
+                                                    setSelectedClient(cliente);
+                                                    setShowModalClientes(false);
+                                                }}
+                                                className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group ${
+                                                    selectedClient?.id === cliente.id 
+                                                    ? 'bg-yellow-500/10 border-yellow-500/50' 
+                                                    : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                                                }`}
+                                            >
+                                                <div>
+                                                    <p className={`font-bold ${selectedClient?.id === cliente.id ? 'text-yellow-500' : 'text-white'}`}>
+                                                        {cliente.nome}
+                                                    </p>
+                                                    <p className="text-xs text-zinc-500">{cliente.nif || 'Sem NIF'}</p>
+                                                </div>
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                                                    selectedClient?.id === cliente.id ? 'bg-yellow-500 text-zinc-950' : 'bg-zinc-800 text-zinc-500 group-hover:text-white'
+                                                }`}>
+                                                    <Check size={16} />
+                                                </div>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <form onSubmit={handleQuickCreateCliente} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-1">Nome *</label>
+                                    <input 
+                                        type="text" 
+                                        required 
+                                        value={novoCliente.nome}
+                                        onChange={e => setNovoCliente({...novoCliente, nome: e.target.value})}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
+                                        placeholder="Nome do cliente"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-1">NIF</label>
+                                        <input 
+                                            type="text" 
+                                            value={novoCliente.nif}
+                                            onChange={e => setNovoCliente({...novoCliente, nif: e.target.value})}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
+                                            placeholder="NIF"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-1">Telefone</label>
+                                        <input 
+                                            type="text" 
+                                            value={novoCliente.telefone}
+                                            onChange={e => setNovoCliente({...novoCliente, telefone: e.target.value})}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
+                                            placeholder="Telefone"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="pt-4 flex gap-3">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowFormNovoCliente(false)} 
+                                        className="flex-1 bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
+                                    >
+                                        Voltar
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        disabled={isProcessing}
+                                        className="flex-1 bg-yellow-500 text-zinc-900 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors disabled:opacity-50"
+                                    >
+                                        {isProcessing ? 'Gravando...' : 'Gravar Cliente'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        <div className="mt-6 border-t border-zinc-800 pt-4">
+                            {!showFormNovoCliente && (
+                                <button 
+                                    onClick={() => setShowModalClientes(false)}
+                                    className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
+                                >
+                                    Fechar
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

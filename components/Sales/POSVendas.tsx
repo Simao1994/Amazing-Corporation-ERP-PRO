@@ -14,6 +14,7 @@ export default function POSVendas() {
     const [vendaSelecionada, setVendaSelecionada] = useState<any>(null);
     const [itensVenda, setItensVenda] = useState<any[]>([]);
     const [loadingItens, setLoadingItens] = useState(false);
+    const [isPrinting, setIsPrinting] = useState(false);
 
     useEffect(() => {
         fetchVendas();
@@ -62,9 +63,13 @@ export default function POSVendas() {
         setShowModalInfo(true);
     };
 
-    const handleImprimirRecibo = (venda: any) => {
-        // In a real app this might trigger a thermal printer endpoint or open a new window
-        (window as any).notify?.('Impressão de 2ª via enviada para impressora térmica.', 'success');
+    const handleImprimirRecibo = async (venda: any) => {
+        setIsPrinting(true);
+        // Simulação de delay de impressão
+        setTimeout(() => {
+            (window as any).notify?.('Impressão de 2ª via enviada para impressora térmica.', 'success');
+            setIsPrinting(false);
+        }, 1000);
     };
 
     const filteredVendas = vendas.filter(v =>
@@ -253,9 +258,10 @@ export default function POSVendas() {
                             <div className="pt-6 flex justify-end gap-3">
                                 <button
                                     onClick={() => handleImprimirRecibo(vendaSelecionada)}
-                                    className="bg-zinc-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                                    disabled={isPrinting}
+                                    className="bg-zinc-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-zinc-700 transition-colors flex items-center gap-2 disabled:opacity-50"
                                 >
-                                    <Printer size={20} /> Imprimir 2ª Via
+                                    <Printer size={20} /> {isPrinting ? 'A imprimir...' : 'Imprimir 2ª Via'}
                                 </button>
                                 <button
                                     onClick={() => setShowModalInfo(false)}
