@@ -16,6 +16,7 @@ export default function POSCaixa() {
     const [valorAbertura, setValorAbertura] = useState(0);
     const [valorFechamento, setValorFechamento] = useState(0);
     const [observacoes, setObservacoes] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         fetchCaixaAtivo();
@@ -78,41 +79,28 @@ export default function POSCaixa() {
 
     const handleAbrirCaixa = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Iniciando abertura de caixa...', { user, valorAbertura });
-
-        if (!user) {
-            (window as any).notify?.('Erro: Usuário não identificado', 'error');
-            return;
-        }
+        if (!user || isSubmitting) return;
 
         try {
-            setLoading(true);
+            setIsSubmitting(true);
 
-            // 1. Verificação Preemptiva do Perfil (Auto-diagnóstico)
+            // 1. Verificação Preemptiva do Perfil
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('tenant_id, role')
+                .select('tenant_id')
                 .eq('id', user.id)
                 .single();
 
             if (profileError || !profile?.tenant_id) {
-                console.error('DIAGNÓSTICO RLS: O teu perfil na base de dados está incompleto ou inacessível!', profileError);
-                (window as any).notify?.('Erro: A tua conta não está associada a nenhuma empresa na base de dados. Contacta o administrador ou corre o script de reparo.', 'error');
-                setLoading(false);
-                return;
+                throw new Error('A tua conta não está associada a nenhuma empresa. Contacta o administrador.');
             }
 
-            // Tenta obter o tenant_id do user (frontend vs backend sync check)
-            const tenantId = user?.tenant_id || user?.user_metadata?.tenant_id || profile.tenant_id;
-
             const payload = {
-                tenant_id: tenantId,
+                tenant_id: user.tenant_id || profile.tenant_id,
                 usuario_id: user.id,
                 valor_inicial: valorAbertura,
                 status: 'ABERTO'
             };
-
-            console.log('POSCaixa DEBUG: Iniciando insert no DB com payload:', payload);
 
             const { data, error } = await supabase
                 .from('pos_caixa')
@@ -120,21 +108,7 @@ export default function POSCaixa() {
                 .select()
                 .single();
 
-            console.log('POSCaixa DEBUG: Resposta do DB:', { data, error });
-
-            if (error) {
-                console.error('POSCaixa DEBUG: Erro no Insert:', error);
-                if (error.message.includes('row-level security')) {
-                    const msg = `Erro de Segurança (RLS). Enivando Empresa ID: ${tenantId.substring(0, 8)}. O DB esperava o ID do teu Perfil: ${profile.tenant_id.substring(0, 8)}. Verifica se os IDs coincidem.`;
-                    (window as any).notify?.(msg, 'error');
-                } else {
-                    (window as any).notify?.(`Erro ao abrir caixa: ${error.message}`, 'error');
-                }
-                setLoading(false);
-                return;
-            }
-
-
+            if (error) throw error;
 
             (window as any).notify?.('Caixa aberto com sucesso', 'success');
             setShowModalAbrir(false);
@@ -143,19 +117,22 @@ export default function POSCaixa() {
             fetchMovimentos(data.id);
         } catch (error: any) {
             console.error('Erro ao abrir caixa:', error);
-            const msg = error.message || 'Erro desconhecido';
-            (window as any).notify?.(`Erro ao abrir caixa: ${msg}`, 'error');
+            (window as any).notify?.(`Erro: ${error.message || 'Falha na conexão'}`, 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const handleFecharCaixa = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!caixaAtivo) return;
+        if (!caixaAtivo || isSubmitting) return;
 
         const diferenca = valorFechamento - (caixaAtivo.valor_inicial || 0);
 
         try {
+            setIsSubmitting(true);
             const fechoPayload = {
+                tenant_id: user?.tenant_id,
                 caixa_id: caixaAtivo.id,
                 valor_informado: valorFechamento,
                 valor_sistema: caixaAtivo.valor_inicial || 0,
@@ -163,12 +140,16 @@ export default function POSCaixa() {
                 observacoes: observacoes
             };
 
-            await supabase.from('pos_fechamento_caixa').insert([fechoPayload]);
+            const { error: fechoError } = await supabase.from('pos_fechamento_caixa').insert([fechoPayload]);
+            if (fechoError) throw fechoError;
 
-            await supabase
+            const { error: updateError } = await supabase
                 .from('pos_caixa')
-                .update({ status: 'fechado', data_fechamento: new Date().toISOString() })
-                .eq('id', caixaAtivo.id);
+                .update({ status: 'FECHADO', data_fechamento: new Date().toISOString() })
+                .eq('id', caixaAtivo.id)
+                .eq('tenant_id', user?.tenant_id);
+            
+            if (updateError) throw updateError;
 
             (window as any).notify?.('Caixa fechado com sucesso', 'success');
             setShowModalFechar(false);
@@ -177,7 +158,9 @@ export default function POSCaixa() {
             fetchCaixaAtivo();
         } catch (error: any) {
             console.error('Error closing caixa:', error);
-            (window as any).notify?.('Erro ao fechar caixa', 'error');
+            (window as any).notify?.('Erro ao fechar caixa: ' + (error.message || 'Erro de conexão'), 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -316,7 +299,9 @@ export default function POSCaixa() {
                             </div>
                             <div className="pt-4 flex gap-3">
                                 <button type="button" onClick={() => setShowModalAbrir(false)} className="flex-1 bg-zinc-900 text-white px-4 py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors">Cancelar</button>
-                                <button type="submit" className="flex-1 bg-emerald-500 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors">Confirmar Abertura</button>
+                                <button type="submit" disabled={isSubmitting} className="flex-1 bg-emerald-500 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors disabled:opacity-50">
+                                    {isSubmitting ? 'A processar...' : 'Confirmar Abertura'}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -373,7 +358,9 @@ export default function POSCaixa() {
 
                             <div className="pt-4 flex gap-3">
                                 <button type="button" onClick={() => setShowModalFechar(false)} className="flex-1 bg-zinc-900 text-white px-4 py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors">Cancelar</button>
-                                <button type="submit" className="flex-1 bg-red-500 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Confirmar Fechamento</button>
+                                <button type="submit" disabled={isSubmitting} className="flex-1 bg-red-500 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors disabled:opacity-50">
+                                    {isSubmitting ? 'A fechar...' : 'Confirmar Fechamento'}
+                                </button>
                             </div>
                         </form>
                     </div>

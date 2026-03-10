@@ -11,6 +11,7 @@ import POSCategorias from '../components/Sales/POSCategorias';
 import POSStock from '../components/Sales/POSStock';
 import POSCaixa from '../components/Sales/POSCaixa';
 import POSVendas from '../components/Sales/POSVendas';
+import POSClientes from '../components/Sales/POSClientes';
 
 export default function SalesHub() {
     const { user } = useAuth();
@@ -21,6 +22,7 @@ export default function SalesHub() {
         { id: 'vendas', label: 'Histórico de Vendas', icon: <ShoppingCart size={20} /> },
         { id: 'produtos', label: 'Produtos', icon: <Package size={20} /> },
         { id: 'categorias', label: 'Categorias', icon: <Tags size={20} /> },
+        { id: 'clientes', label: 'Clientes', icon: <User size={20} /> },
         { id: 'estoque', label: 'Controle de Estoque', icon: <BarChart size={20} /> },
         { id: 'caixa', label: 'Gestão de Caixa', icon: <CreditCard size={20} /> },
         { id: 'pos', label: 'Abrir POS', icon: <QrCode size={20} /> },
@@ -81,6 +83,7 @@ export default function SalesHub() {
 
                 {activeTab === 'produtos' && <POSProdutos />}
                 {activeTab === 'categorias' && <POSCategorias />}
+                {activeTab === 'clientes' && <POSClientes />}
                 {activeTab === 'estoque' && <POSStock />}
                 {activeTab === 'caixa' && <POSCaixa />}
                 {activeTab === 'vendas' && <POSVendas />}
