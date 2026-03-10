@@ -128,10 +128,15 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       if (authLoading || !authUser) return;
 
       try {
+        if (!user?.tenant_id) {
+          console.warn('Layout: Tenant ID não encontrado, ignorando busca de cargos.');
+          return;
+        }
         console.log('Layout: Auth pronto, a carregar cargos dinâmicos...');
         const { data, error } = await supabase
-          .from('app_roles')
-          .select('role_key, allowed_modules');
+          .from('papeis_dinamicos')
+          .select('*')
+          .eq('tenant_id', user.tenant_id);
 
         if (error) throw error;
 

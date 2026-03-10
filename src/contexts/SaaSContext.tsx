@@ -32,21 +32,23 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // saas_admin has special properties (active by default, access to all)
             if (effectiveRole === 'saas_admin') {
                 console.log('SaaSContext: Activating simulated plan for saas_admin');
-                const adminSub: SubscriptionStatus = {
+                const adminPlan: SubscriptionStatus = {
                     id: 'saas-admin-unlimited',
                     tenant_id: effectiveTenantId || 'saas-admin-tenant',
                     active: true,
+                    plan_id: 'master-plan-id',
+                    daysLeft: 999,
                     status: 'ativo',
-                    daysLeft: 9999,
-                    modules: ['ALL'],
-                    maxUsers: 9999,
+                    modules: ['ALL', 'RH', 'PONTO', 'FINANCEIRO', 'CONTABILIDADE', 'LOGISTICA', 'INVENTARIO', 'IMOBILIARIO', 'CRM', 'VAGAS', 'ARENA', 'AGRO', 'BLOG', 'EMPRESAS'],
+                    features: ['Acesso Total Vitalício', 'Suporte Prioritário', 'Utilizadores Ilimitados'],
+                    maxUsers: 999, // Changed from max_users to maxUsers to match SubscriptionStatus
                     valor_pago: 0,
                     data_inicio: new Date().toISOString(),
                     data_expiracao: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),
                     auto_renew: true,
                     saas_plans: {
-                        id: 'plan-master-admin',
-                        nome: 'Master Admin Plan',
+                        id: 'master-plan-id',
+                        nome: 'Master Administrator',
                         valor: 0,
                         duracao_meses: 120,
                         max_users: 9999,
@@ -73,13 +75,51 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 console.log('SaaSContext: Subscription status:', status);
                 setSubscription(prev => JSON.stringify(prev) === JSON.stringify(status) ? prev : status);
+
+                // Buscar configurações globais
+                const { data: config, error: configError } = await supabase.from('saas_config').select('*').eq('id', 1).single();
+                if (configError) {
+                    console.error('SaaSContext: Error fetching saas_config:', configError);
+                } else if (config) {
+                    setSaasConfig(config as SaasConfig);
+                }
+
             } else {
                 console.warn('SaaSContext: No tenant_id found for user. Subscription set to null.');
                 setSubscription(null);
             }
-        } catch (err: any) {
-            console.error('SaaS Context Error:', err);
-            // Even on error, we must allow the app to load (error handling will happen in components)
+        } catch (error: any) {
+            console.error('Erro ao verificar subscrição:', error);
+            // Em caso de erro crítico, não bloqueamos o admin se ele já tiver o role
+            if (user?.role === 'saas_admin') {
+                setSubscription({
+                    id: 'saas-admin-fallback',
+                    tenant_id: user.tenant_id || 'saas-admin-fallback-tenant',
+                    active: true,
+                    plan_id: 'master-plan-id',
+                    daysLeft: 999,
+                    status: 'ativo',
+                    modules: ['ALL'],
+                    features: ['Emergency Fallback Access'],
+                    maxUsers: 999,
+                    valor_pago: 0,
+                    data_inicio: new Date().toISOString(),
+                    data_expiracao: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),
+                    auto_renew: true,
+                    saas_plans: {
+                        id: 'master-plan-id',
+                        nome: 'Master Administrator Fallback',
+                        valor: 0,
+                        duracao_meses: 120,
+                        max_users: 9999,
+                        modules: ['ALL'],
+                        features: ['Acesso Total', 'Gestão de Infraestrutura']
+                    }
+                });
+            } else {
+                // For non-admins, set subscription to null on error
+                setSubscription(null);
+            }
         } finally {
             setLoading(false);
         }

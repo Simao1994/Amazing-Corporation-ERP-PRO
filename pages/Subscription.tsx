@@ -180,17 +180,20 @@ const SubscriptionPage: React.FC = () => {
         'Enterprise': ShieldCheck
     };
 
-    const planName = saasSub?.saas_plans?.nome || '';
+    const planName = saasSub?.saas_plans?.nome || 'Utilizador Base';
     const PlanIcon = plans_icons[planName] || Zap;
 
-    // Determine modules list from the plan
-    const planModules: string[] = (() => {
-        const mods = saasSub?.saas_plans?.modules;
-        if (!mods) return [];
-        if (Array.isArray(mods)) return mods;
-        // If it's an object { RH: true, FIN: false }, convert to array
-        return Object.entries(mods as Record<string, boolean>).map(([key, active]) => ({ key, active })) as any;
-    })();
+    const parsePlanData = (data: any) => {
+        if (!data) return [];
+        if (Array.isArray(data)) return data;
+        if (typeof data === 'string') {
+            try { return JSON.parse(data); } catch { return data.split(',').map(s => s.trim()); }
+        }
+        if (typeof data === 'object') {
+            return Object.entries(data).filter(([_, v]) => v === true).map(([k]) => k);
+        }
+        return [];
+    };
 
     return (
         <div className="max-w-6xl mx-auto space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -309,7 +312,7 @@ const SubscriptionPage: React.FC = () => {
                         </section>
 
                         {/* Modules section */}
-                        {saasSub.modules.length > 0 && (
+                        {saasSub.modules && saasSub.modules.length > 0 && (
                             <section className="bg-zinc-50 p-10 rounded-[3.5rem] border border-zinc-200">
                                 <div className="flex items-center justify-between mb-8 px-4">
                                     <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.3em]">Módulos Activos no Plano</h3>
@@ -341,7 +344,7 @@ const SubscriptionPage: React.FC = () => {
                                         <p className="text-sm font-black text-zinc-900 uppercase mb-1">{plan.nome}</p>
                                         <p className="text-xl font-black text-zinc-800 mb-2">{formatAOA(plan.valor)}</p>
                                         <p className="text-[9px] text-zinc-500 font-bold uppercase mb-4 leading-relaxed">
-                                            {Array.isArray(plan.features) ? plan.features[0] : 'Vantagens exclusivas'}
+                                            {parsePlanData(plan.features)[0] || 'Vantagens exclusivas'}
                                         </p>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setUpgradeModalPlan(plan); }}
@@ -528,10 +531,10 @@ const SubscriptionPage: React.FC = () => {
                                     <p className="text-lg font-black text-zinc-700">{upgradeModalPlan.duracao_meses} meses</p>
                                 </div>
                             </div>
-                            {Array.isArray(upgradeModalPlan.features) && upgradeModalPlan.features.length > 0 && (
+                            {parsePlanData(upgradeModalPlan.features).length > 0 && (
                                 <div className="space-y-2">
                                     <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Incluído neste plano</p>
-                                    {upgradeModalPlan.features.map((f: string) => (
+                                    {parsePlanData(upgradeModalPlan.features).map((f: string) => (
                                         <div key={f} className="flex items-center gap-2 text-xs text-zinc-700 font-medium">
                                             <CheckCircle2 size={14} className="text-yellow-500" /> {f}
                                         </div>

@@ -104,11 +104,12 @@ export default function POSProdutos() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Tem a certeza que deseja eliminar este produto? O histórico de vendas será afetado.')) return;
-
         try {
-            await supabase.from('pos_produtos').delete().eq('id', id);
+            if (!user?.tenant_id) return;
+            await supabase.from('pos_produtos')
+                .delete()
+                .eq('id', id)
+                .eq('tenant_id', user.tenant_id);
             (window as any).notify?.('Produto eliminado', 'success');
             fetchData();
         } catch (error) {

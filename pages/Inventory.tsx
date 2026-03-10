@@ -141,10 +141,12 @@ const InventoryPage: React.FC = () => {
 
 
   // --- HANDLERS ---
-  const handleDeleteItem = async (id: string, nome: string) => {
     if (confirm(`Remover permanentemente o item "${nome}" do inventário?`)) {
       try {
-        const { error } = await supabase.from('inventario').delete().eq('id', id);
+        const { error } = await supabase.from('inventario')
+          .delete()
+          .eq('id', id)
+          .eq('tenant_id', user?.tenant_id);
         if (error) throw error;
         fetchInventoryData();
         AmazingStorage.logAction('Remoção', 'Inventário', `Item ${nome} excluído`, 'warning');

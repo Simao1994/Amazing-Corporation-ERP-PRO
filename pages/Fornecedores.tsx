@@ -130,7 +130,8 @@ const FornecedoresPage: React.FC = () => {
         const { error } = await supabase
           .from('sys_fornecedores')
           .delete()
-          .eq('id', id);
+          .eq('id', id)
+          .eq('tenant_id', user?.tenant_id);
         if (error) throw error;
         setFornecedores(fornecedores.filter(f => f.id !== id));
         AmazingStorage.logAction('Remoção', 'Fornecedores', `Fornecedor ${nome} excluído`, 'warning');

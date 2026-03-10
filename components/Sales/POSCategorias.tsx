@@ -79,11 +79,12 @@ export default function POSCategorias() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Tem a certeza que deseja eliminar esta categoria? Produtos associados ficarão sem categoria.')) return;
-
         try {
-            await supabase.from('pos_categorias').delete().eq('id', id);
+            if (!user?.tenant_id) return;
+            await supabase.from('pos_categorias')
+                .delete()
+                .eq('id', id)
+                .eq('tenant_id', user.tenant_id);
             (window as any).notify?.('Categoria eliminada', 'success');
             fetchCategorias();
         } catch (error) {

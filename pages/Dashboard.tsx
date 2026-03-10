@@ -98,23 +98,36 @@ const Dashboard: React.FC = () => {
 
   const fetchAds = async () => {
     try {
+      // Usamos um bloco isolado para não travar o dashboard se a tabela não existir
       const { data, error } = await supabase
         .from('sys_ads')
         .select('*')
         .eq('active', true)
         .eq('tenant_id', user?.tenant_id);
-      if (error) throw error;
+
+      if (error) {
+        console.warn('Dashboard: Tabela sys_ads não encontrada ou inacessível. Ignore se o script SQL ainda não foi aplicado.', error);
+        return;
+      }
+
       if (data) {
         setAds(data.map(ad => ({
-          ...ad,
-          imageUrl: ad.imageurl, // Handle field case sensitivity from SQL
-          startDate: ad.startdate,
-          endDate: ad.enddate,
-          targetRoles: ad.targetroles
+          id: ad.id,
+          title: ad.title,
+          description: ad.description,
+          imageUrl: ad.imageurl || ad.imageUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=800',
+          link: ad.link,
+          startDate: ad.startdate || ad.startDate || new Date().toISOString().split('T')[0],
+          endDate: ad.enddate || ad.endDate || new Date().toISOString().split('T')[0],
+          targetRoles: ad.targetroles || ad.targetRoles || 'all',
+          active: ad.active,
+          views: ad.views || 0,
+          clicks: ad.clicks || 0,
+          createdBy: ad.createdby || ad.createdBy
         })));
       }
     } catch (err) {
-      console.error('Error fetching ads:', err);
+      console.warn('Dashboard: Falha ao carregar anúncios (sys_ads). O sistema continuará sem anúncios.', err);
     }
   };
 
@@ -158,36 +171,65 @@ const Dashboard: React.FC = () => {
     };
   }, []);
 
-  const handleSaveAd = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveAd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!user?.tenant_id) return;
+
     const fd = new FormData(e.currentTarget);
-    const newAd: InternalAd = {
-      id: editingAd ? editingAd.id : Math.random().toString(36).substr(2, 9),
+    const adData: any = {
       title: fd.get('title') as string,
       description: fd.get('description') as string,
-      imageUrl: fd.get('image') as string || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=800',
+      imageurl: fd.get('image') as string || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=800',
       link: fd.get('link') as string,
-      startDate: fd.get('start') as string,
-      endDate: fd.get('end') as string,
-      targetRoles: 'all',
+      startdate: fd.get('start') as string,
+      enddate: fd.get('end') as string,
+      targetroles: 'all',
       active: true,
-      views: editingAd ? editingAd.views : 0,
-      clicks: editingAd ? editingAd.clicks : 0,
-      createdBy: currentUser.nome
+      tenant_id: user.tenant_id,
+      createdby: currentUser.nome
     };
 
-    if (editingAd) {
-      setAds(ads.map(a => a.id === newAd.id ? newAd : a));
-    } else {
-      setAds([...ads, newAd]);
+    try {
+      if (editingAd) {
+        const { error } = await supabase
+          .from('sys_ads')
+          .update(adData)
+          .eq('id', editingAd.id)
+          .eq('tenant_id', user.tenant_id);
+        if (error) throw error;
+        (window as any).notify?.('Anúncio atualizado', 'success');
+      } else {
+        const { error } = await supabase
+          .from('sys_ads')
+          .insert([adData]);
+        if (error) throw error;
+        (window as any).notify?.('Anúncio criado', 'success');
+      }
+      fetchAds();
+      setShowAdModal(false);
+      setEditingAd(null);
+    } catch (err) {
+      console.error('Error saving ad:', err);
+      (window as any).notify?.('Erro ao salvar anúncio', 'error');
     }
-    setShowAdModal(false);
-    setEditingAd(null);
   };
 
-  const handleDeleteAd = (id: string) => {
-    if (confirm('Eliminar anúncio?')) {
-      setAds(ads.filter(a => a.id !== id));
+  const handleDeleteAd = async (id: string) => {
+    if (!confirm('Eliminar anúncio?')) return;
+    if (!user?.tenant_id) return;
+
+    try {
+      const { error } = await supabase
+        .from('sys_ads')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', user.tenant_id);
+      if (error) throw error;
+      (window as any).notify?.('Anúncio eliminado', 'success');
+      fetchAds();
+    } catch (err) {
+      console.error('Error deleting ad:', err);
+      (window as any).notify?.('Erro ao eliminar anúncio', 'error');
     }
   };
 
