@@ -32,6 +32,7 @@ export default function POS() {
     const iva = subtotal * 0.14; // IVA Padrão a 14%
     const total = subtotal + iva;
 
+    useEffect(() => {
         if (user?.tenant_id) {
             fetchProducts();
             fetchCaixaAtivo();
@@ -46,6 +47,7 @@ export default function POS() {
     };
 
     const fetchClientes = async () => {
+        if (!user?.tenant_id) return;
         try {
             const { data, error } = await supabase
                 .from('pos_clientes')
@@ -54,8 +56,8 @@ export default function POS() {
                 .order('nome');
             if (error) throw error;
             setClientes(data || []);
-            // Selecionar Consumidor Final como padrão
-            const defaultClient = data?.find(c => c.nome.includes('Consumidor Final')) || data?.[0];
+            // Selecionar Consumidor Final como padrão com segurança
+            const defaultClient = data?.find(c => c.nome && c.nome.includes('Consumidor Final')) || data?.[0];
             setSelectedClient(defaultClient || null);
         } catch (error) {
             console.error('Error fetching clients:', error);
@@ -106,7 +108,7 @@ export default function POS() {
     );
 
     const filteredClientes = clientes.filter(c => 
-        c.nome.toLowerCase().includes(searchClientTerm.toLowerCase()) ||
+        (c.nome && c.nome.toLowerCase().includes((searchClientTerm || '').toLowerCase())) ||
         (c.nif && c.nif.includes(searchClientTerm))
     );
 
