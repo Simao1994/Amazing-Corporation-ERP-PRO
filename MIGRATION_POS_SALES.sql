@@ -1,12 +1,13 @@
 -- ==============================================================================
 -- MÓDULO DE VENDAS E PONTO DE VENDA (POS)
 -- Criado para suportar facturação, controlo de stock e terminais de venda.
+-- Padronizado para usar tenant_id em vez de empresa_id.
 -- ==============================================================================
 
 -- 1. CATEGORIAS DE PRODUTOS
 CREATE TABLE IF NOT EXISTS public.pos_categorias (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    empresa_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
     nome_categoria text NOT NULL,
     descricao text,
     created_at timestamptz DEFAULT now() NOT NULL
@@ -15,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.pos_categorias (
 -- 2. PRODUTOS
 CREATE TABLE IF NOT EXISTS public.pos_produtos (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    empresa_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
     codigo_produto text NOT NULL,
     nome_produto text NOT NULL,
     categoria_id uuid REFERENCES public.pos_categorias(id) ON DELETE SET NULL,
@@ -32,17 +33,17 @@ CREATE TABLE IF NOT EXISTS public.pos_produtos (
 -- 3. ESTOQUE
 CREATE TABLE IF NOT EXISTS public.pos_estoque (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    empresa_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
     produto_id uuid REFERENCES public.pos_produtos(id) ON DELETE CASCADE NOT NULL,
     quantidade_atual numeric(15,2) DEFAULT 0 NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL,
-    UNIQUE(empresa_id, produto_id)
+    UNIQUE(tenant_id, produto_id)
 );
 
 -- 4. MOVIMENTO DE STOCK
 CREATE TABLE IF NOT EXISTS public.pos_movimento_stock (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    empresa_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
     produto_id uuid REFERENCES public.pos_produtos(id) ON DELETE CASCADE NOT NULL,
     tipo_movimento text NOT NULL CHECK (tipo_movimento IN ('ENTRADA', 'VENDA', 'AJUSTE', 'DEVOLUCAO')),
     quantidade numeric(15,2) NOT NULL,
@@ -56,7 +57,7 @@ CREATE TABLE IF NOT EXISTS public.pos_movimento_stock (
 -- 5. CAIXA DIÁRIO
 CREATE TABLE IF NOT EXISTS public.pos_caixa (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    empresa_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
     usuario_id uuid NOT NULL,
     data_abertura date DEFAULT CURRENT_DATE NOT NULL,
     hora_abertura time DEFAULT CURRENT_TIME NOT NULL,
@@ -68,7 +69,7 @@ CREATE TABLE IF NOT EXISTS public.pos_caixa (
 -- 6. FATURAS / VENDAS
 CREATE TABLE IF NOT EXISTS public.pos_faturas (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    empresa_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
     numero_fatura text NOT NULL,
     cliente_id uuid,
     usuario_id uuid NOT NULL,
@@ -88,6 +89,7 @@ CREATE TABLE IF NOT EXISTS public.pos_faturas (
 -- 7. ITENS DA FATURA
 CREATE TABLE IF NOT EXISTS public.pos_fatura_itens (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL, -- Adicionado para facilitar RLS
     fatura_id uuid REFERENCES public.pos_faturas(id) ON DELETE CASCADE NOT NULL,
     produto_id uuid REFERENCES public.pos_produtos(id) ON DELETE SET NULL,
     quantidade numeric(15,2) NOT NULL,
@@ -101,7 +103,7 @@ CREATE TABLE IF NOT EXISTS public.pos_fatura_itens (
 -- 8. MOVIMENTOS DE CAIXA
 CREATE TABLE IF NOT EXISTS public.pos_movimentos_caixa (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    empresa_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
     caixa_id uuid REFERENCES public.pos_caixa(id) ON DELETE CASCADE NOT NULL,
     tipo text NOT NULL CHECK (tipo IN ('VENDA', 'ENTRADA', 'SAIDA', 'TROCO')),
     valor numeric(15,2) NOT NULL,
@@ -115,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.pos_movimentos_caixa (
 -- 9. FECHAMENTO DE CAIXA
 CREATE TABLE IF NOT EXISTS public.pos_fechamento_caixa (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    empresa_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
+    tenant_id uuid DEFAULT public.get_auth_tenant() NOT NULL,
     caixa_id uuid REFERENCES public.pos_caixa(id) ON DELETE CASCADE NOT NULL,
     valor_esperado numeric(15,2) NOT NULL,
     valor_contado numeric(15,2) NOT NULL,
@@ -142,7 +144,7 @@ ALTER TABLE public.pos_fatura_itens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pos_movimentos_caixa ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pos_fechamento_caixa ENABLE ROW LEVEL SECURITY;
 
--- Aplicar políticas de segurança para multiempresa
+-- Aplicar políticas de segurança para multi-tenancy
 DO $$ 
 DECLARE
     t_name text;
@@ -155,26 +157,23 @@ BEGIN
             'pos_movimento_stock', 
             'pos_caixa', 
             'pos_faturas', 
+            'pos_fatura_itens',
             'pos_movimentos_caixa', 
             'pos_fechamento_caixa'
         ])
     LOOP
+        -- Remover qualquer política anterior para evitar erro de duplicidade
+        EXECUTE format('DROP POLICY IF EXISTS "RLS_POS_TENANT_POLICY" ON public.%I', t_name);
+        EXECUTE format('DROP POLICY IF EXISTS "Isolamento por empresa_id para %I" ON public.%I', t_name, t_name);
+        
+        -- Criar nova política padronizada
         EXECUTE format('
-            CREATE POLICY "Isolamento por empresa_id para %I" ON public.%I
+            CREATE POLICY "RLS_POS_TENANT_POLICY" ON public.%I
                 FOR ALL 
-                USING (empresa_id = public.get_auth_tenant());
-        ', t_name, t_name);
+                USING (tenant_id = public.get_auth_tenant() OR public.is_master_admin());
+        ', t_name);
     END LOOP;
 END $$;
-
--- Política especial para fatura_itens que herda o empresa_id da fatura pai
-CREATE POLICY "Isolamento via fatura pai para pos_fatura_itens" ON public.pos_fatura_itens
-    FOR ALL
-    USING (
-        fatura_id IN (
-            SELECT id FROM public.pos_faturas WHERE empresa_id = public.get_auth_tenant()
-        )
-    );
 
 -- ==========================================
 -- TRIGGERS E FUNÇÕES AUTOMÁTICAS
@@ -189,6 +188,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_estoque ON public.pos_estoque;
 CREATE TRIGGER trigger_update_estoque
 BEFORE UPDATE ON public.pos_estoque
 FOR EACH ROW EXECUTE FUNCTION update_estoque_updated_at();
@@ -197,13 +197,14 @@ FOR EACH ROW EXECUTE FUNCTION update_estoque_updated_at();
 CREATE OR REPLACE FUNCTION ensure_estoque_produto()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.pos_estoque (empresa_id, produto_id, quantidade_atual)
-    VALUES (NEW.empresa_id, NEW.id, 0)
-    ON CONFLICT (empresa_id, produto_id) DO NOTHING;
+    INSERT INTO public.pos_estoque (tenant_id, produto_id, quantidade_atual)
+    VALUES (NEW.tenant_id, NEW.id, 0)
+    ON CONFLICT (tenant_id, produto_id) DO NOTHING;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_ensure_estoque ON public.pos_produtos;
 CREATE TRIGGER trigger_ensure_estoque
 AFTER INSERT ON public.pos_produtos
 FOR EACH ROW EXECUTE FUNCTION ensure_estoque_produto();
