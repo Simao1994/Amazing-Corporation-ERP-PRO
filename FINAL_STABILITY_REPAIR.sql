@@ -95,14 +95,15 @@ BEGIN
     LOOP
         EXECUTE format('ALTER TABLE public.%I DISABLE ROW LEVEL SECURITY', tbl.table_name);
         
-        -- Remover políticas de isolamento antigas
+        -- Remover políticas de isolamento antigas (incluindo as que vamos criar)
         EXECUTE format('DROP POLICY IF EXISTS "Tenant isolation" ON public.%I', tbl.table_name);
         EXECUTE format('DROP POLICY IF EXISTS "Tenant isolation policy" ON public.%I', tbl.table_name);
-        EXECUTE format('DROP POLICY IF EXISTS "admin_all_%s" ON public.%I', tbl.table_name, tbl.table_name);
+        EXECUTE format('DROP POLICY IF EXISTS "admin_all_%I" ON public.%I', tbl.table_name, tbl.table_name);
+        EXECUTE format('DROP POLICY IF EXISTS "tenant_isolation_%I" ON public.%I', tbl.table_name, tbl.table_name);
         
         -- Criar novas políticas rápidas
-        EXECUTE format('CREATE POLICY "admin_all_%s" ON public.%I FOR ALL TO authenticated USING (public.is_saas_admin())', tbl.table_name, tbl.table_name);
-        EXECUTE format('CREATE POLICY "tenant_isolation_%s" ON public.%I FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant())', tbl.table_name, tbl.table_name);
+        EXECUTE format('CREATE POLICY "admin_all_%I" ON public.%I FOR ALL TO authenticated USING (public.is_saas_admin())', tbl.table_name, tbl.table_name);
+        EXECUTE format('CREATE POLICY "tenant_isolation_%I" ON public.%I FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant())', tbl.table_name, tbl.table_name);
         
         EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', tbl.table_name);
     END LOOP;
