@@ -30,19 +30,34 @@ if (!finalUrl || !supabaseAnonKey) {
 // Garante que só UMA operação de auth corre por vez, sem fila infinita.
 let activeLock: Promise<any> | null = null;
 
-const memoryLockFunc = async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
-    // Aguardar que qualquer operação activa termine antes de começar
+const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+    const start = Date.now();
+
+    // Aguardar que qualquer operação ativa termine, respeitando o timeout
     while (activeLock !== null) {
-        try { await activeLock; } catch { /* ignorar erros da operação anterior */ }
+        if (Date.now() - start > acquireTimeout) {
+            console.warn(`[Auth Lock] Timeout ao aguardar lock: ${name}`);
+            throw new Error(`Lock timeout for ${name}`);
+        }
+        try {
+            await activeLock;
+        } catch {
+            /* ignorar erros da operação anterior para não travar a próxima */
+        }
     }
 
-    // Iniciar a nossa operação e registar como activa
-    const operation = fn().finally(() => {
-        // Limpar o lock quando esta operação terminar
-        if (activeLock === operation) activeLock = null;
-    });
+    // Iniciar a nossa operação e registar como ativa
+    const operation = fn();
     activeLock = operation;
-    return operation;
+
+    try {
+        return await operation;
+    } finally {
+        // Limpar o lock apenas se formos nós os donos (evita corrida se outro lock 'roubar')
+        if (activeLock === operation) {
+            activeLock = null;
+        }
+    }
 };
 
 export const supabase = createClient(finalUrl, supabaseAnonKey, {
