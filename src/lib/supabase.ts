@@ -27,37 +27,35 @@ if (!finalUrl || !supabaseAnonKey) {
 }
 
 // Sistema de Lock em memória para contornar o bug do Navigator LockManager no gotrue-js
-let memoryLock: Promise<any> = Promise.resolve();
+// Implementação robusta: não forma fila infinita — cada operação corre de forma independente
+// e o lock é reiniciado automaticamente após qualquer falha.
+let memoryLockQueue: Promise<any> = Promise.resolve();
 
 const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
-    const timeoutThreshold = acquireTimeout || 8000;
+    // Timeout generoso: operações de auth como refresh podem demorar em redes lentas
+    const timeoutMs = Math.max(acquireTimeout || 0, 30000);
 
-    return new Promise<R>((resolve, reject) => {
-        const safetyTimeout = setTimeout(() => {
-            console.warn(`[Supabase Lock] Alerta: O lock para '${name}' excedeu ${timeoutThreshold}ms. Forçando libertação para evitar hang.`);
-            reject(new Error(`Auth Lock Timeout: ${name}`));
-        }, timeoutThreshold);
+    const runWithTimeout = (): Promise<R> => {
+        return new Promise<R>((resolve, reject) => {
+            const timer = setTimeout(() => {
+                console.warn(`[MemoryLock] Timeout após ${timeoutMs}ms para '${name}'. Reiniciando lock.`);
+                // Resetar a fila para evitar que operações futuras fiquem presas
+                memoryLockQueue = Promise.resolve();
+                reject(new Error(`Auth Lock Timeout: ${name}`));
+            }, timeoutMs);
 
-        memoryLock = memoryLock.then(async () => {
-            try {
-                const result = await fn();
-                clearTimeout(safetyTimeout);
-                resolve(result);
-            } catch (e) {
-                clearTimeout(safetyTimeout);
-                reject(e);
-            }
-        }).catch(async () => {
-            try {
-                const result = await fn();
-                clearTimeout(safetyTimeout);
-                resolve(result);
-            } catch (e) {
-                clearTimeout(safetyTimeout);
-                reject(e);
-            }
+            fn().then(
+                (result) => { clearTimeout(timer); resolve(result); },
+                (err) => { clearTimeout(timer); reject(err); }
+            );
         });
-    });
+    };
+
+    // Encadear na fila, mas garantir que erros anteriores não bloqueiam novas operações
+    const current = memoryLockQueue.then(runWithTimeout, runWithTimeout);
+    // Fila avança mesmo que esta operação falhe
+    memoryLockQueue = current.catch(() => { });
+    return current;
 };
 
 export const supabase = createClient(finalUrl, supabaseAnonKey, {

@@ -53,27 +53,45 @@ export default function POSCategorias() {
             };
 
             console.log('[POSCategorias] Iniciando gravação...', payload);
+            console.log('[POSCategorias] user.tenant_id =', user.tenant_id);
 
-            // Timeout de 15 segundos para a operação
-            const operationPromise = editingId 
-                ? supabase.from('pos_categorias').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id)
-                : supabase.from('pos_categorias').insert([payload]);
+            let result;
+            if (editingId) {
+                result = await supabase
+                    .from('pos_categorias')
+                    .update(payload)
+                    .eq('id', editingId)
+                    .eq('tenant_id', user.tenant_id);
+            } else {
+                result = await supabase
+                    .from('pos_categorias')
+                    .insert([payload])
+                    .select();
+            }
 
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Tempo limite excedido na comunicação com o servidor. Verifique sua conexão.')), 15000)
-            );
+            const { data, error } = result;
 
-            const { error } = await Promise.race([operationPromise, timeoutPromise]) as any;
+            if (error) {
+                // Log detalhado para diagnóstico RLS
+                console.error('[POSCategorias] Supabase error detalhado:', {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint
+                });
+                throw error;
+            }
 
-            if (error) throw error;
-            
+            console.log('[POSCategorias] Gravação bem-sucedida:', data);
             (window as any).notify?.(editingId ? 'Categoria atualizada' : 'Categoria criada', 'success');
             setShowModal(false);
             resetForm();
             fetchCategorias();
         } catch (error: any) {
-            console.error('Error saving category:', error);
-            (window as any).notify?.('Erro ao salvar: ' + (error.message || 'Erro desconhecido'), 'error');
+            console.error('[POSCategorias] Erro ao salvar categoria:', error);
+            const msg = error?.message || error?.details || 'Erro desconhecido';
+            const hint = error?.hint ? ` (${error.hint})` : '';
+            (window as any).notify?.(`Erro ao salvar: ${msg}${hint}`, 'error');
         } finally {
             setIsSubmitting(false);
         }
