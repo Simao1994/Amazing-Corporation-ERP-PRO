@@ -97,30 +97,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         const failSafeTimer = setTimeout(() => {
             console.error('AuthContext: FAIL-SAFE disparado! Abortando espera da sessão pendente.');
-            setUser(null);
-            localStorage.removeItem('auth_user_cache');
             setLoading(false);
-        }, 8000);
+        }, 20000);
 
-        const initAuth = async (retryCount = 0) => {
+        const initAuth = async () => {
             try {
-                // Obter sessão inicial com proteção pesada contra deadlocks do LockManager (Supabase JS bug)
-                const sessionPromise = supabase.auth.getSession();
-                const sessionTimeout = new Promise<any>((resolve) =>
-                    setTimeout(() => resolve({ data: { session: null }, error: new Error('getSession timeout (500ms) - Bypass imediato') }), 500)
-                );
-
-                const { data: { session: initialSession }, error } = await Promise.race([sessionPromise, sessionTimeout]);
+                // Obter sessão — sem timeout agressivo para não cortar o lock de auth
+                console.log('[Auth] Obtendo sessão inicial...');
+                const { data: { session: initialSession }, error } = await supabase.auth.getSession();
 
                 if (error) {
                     console.error('AuthContext: Erro ao buscar sessão:', error.message);
-                    const isLockError = error.message?.includes('Lock') || error.message?.includes('timeout');
-                    if (isLockError && retryCount < 1) {
-                        const delay = 1000 * (retryCount + 1);
-                        console.warn(`AuthContext: Lock detectado, bypassando falha local para evitar bloqueio eterno...`);
-                        // Try forcing session reconstruction instead of hanging
-                        localStorage.removeItem('supabase.auth.token'); // Attempt to clear the lock
-                    }
                 }
 
                 setSession(initialSession);
