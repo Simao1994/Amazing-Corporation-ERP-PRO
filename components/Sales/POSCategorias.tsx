@@ -6,7 +6,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 export default function POSCategorias() {
     const { user } = useAuth();
     const [categorias, setCategorias] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
     const [showModal, setShowModal] = useState(false);
@@ -19,22 +19,28 @@ export default function POSCategorias() {
     });
 
     useEffect(() => {
-        fetchCategorias();
-    }, [user]);
+        if (user?.tenant_id) {
+            fetchCategorias();
+        }
+    }, [user?.tenant_id]);
 
     const fetchCategorias = async () => {
+        if (!user?.tenant_id) return;
+        setLoading(true);
         try {
-            if (!user?.tenant_id) return;
             const { data, error } = await supabase
                 .from('pos_categorias')
                 .select('*')
                 .eq('tenant_id', user.tenant_id)
                 .order('nome_categoria', { ascending: true });
 
-            if (error) throw error;
+            if (error) {
+                console.error('[POSCategorias] Erro ao carregar:', error);
+                throw error;
+            }
             setCategorias(data || []);
         } catch (error) {
-            console.error('Error fetching categories:', error);
+            console.error('[POSCategorias] fetchCategorias falhou:', error);
         } finally {
             setLoading(false);
         }
