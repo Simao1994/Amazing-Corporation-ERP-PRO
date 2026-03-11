@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit, Save, X, Search } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useRealtimeSync } from '../../src/hooks/useRealtimeSync';
 
 export default function POSCategorias() {
     const { user } = useAuth();
@@ -45,6 +46,9 @@ export default function POSCategorias() {
             setLoading(false);
         }
     };
+
+    // Sincronização em tempo real
+    useRealtimeSync('pos_categorias', user?.tenant_id, fetchCategorias);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -8,6 +8,7 @@ import { useAuth } from '../src/contexts/AuthContext';
 import { supabase } from '../src/lib/supabase';
 import { formatAOA } from '../constants';
 import { Link, useNavigate } from 'react-router-dom';
+import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
 
 export default function POS() {
     const { user } = useAuth();
@@ -58,7 +59,7 @@ export default function POS() {
                 .order('nome');
             if (error) throw error;
             setClientes(data || []);
-            
+
             // Se não houver cliente selecionado, tenta selecionar o Consumidor Final
             if (!selectedClient) {
                 const defaultClient = data?.find(c => c.nome && c.nome.includes('Consumidor Final')) || data?.[0];
@@ -144,7 +145,7 @@ export default function POS() {
         p.codigo_produto.includes(deferredSearchTerm)
     );
 
-    const filteredClientes = clientes.filter(c => 
+    const filteredClientes = clientes.filter(c =>
         (c.nome && c.nome.toLowerCase().includes((searchClientTerm || '').toLowerCase())) ||
         (c.nif && c.nif.includes(searchClientTerm))
     );
@@ -199,7 +200,7 @@ export default function POS() {
         try {
             setIsProcessing(true);
             console.log('Tentando abrir caixa...', { tenant_id: user.tenant_id, valor_inicial: valorAbertura });
-            
+
             const { data, error } = await supabase
                 .from('pos_caixa')
                 .insert([{
@@ -349,6 +350,11 @@ export default function POS() {
         }
     };
 
+    // Sincronização em Tempo Real
+    useRealtimeSync('pos_produtos', user?.tenant_id, fetchProducts);
+    useRealtimeSync('pos_clientes', user?.tenant_id, fetchClientes);
+    useRealtimeSync('pos_caixa', user?.tenant_id, fetchCaixaAtivo);
+
     return (
         <div className="min-h-screen bg-zinc-950 flex flex-col md:flex-row overflow-hidden font-sans">
 
@@ -460,7 +466,7 @@ export default function POS() {
                         </span>
                     </div>
 
-                    <button 
+                    <button
                         onClick={() => setShowModalClientes(true)}
                         className="w-full flex items-center justify-between bg-zinc-800/50 hover:bg-zinc-800 p-3 rounded-xl border border-zinc-700/50 transition-colors group"
                     >
@@ -628,7 +634,7 @@ export default function POS() {
                                             autoFocus
                                         />
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => setShowFormNovoCliente(true)}
                                         className="bg-yellow-500 text-zinc-900 px-4 rounded-xl font-bold hover:bg-yellow-400 transition-colors flex items-center gap-2"
                                         title="Novo Cliente"
@@ -648,11 +654,10 @@ export default function POS() {
                                                     setSelectedClient(cliente);
                                                     setShowModalClientes(false);
                                                 }}
-                                                className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group ${
-                                                    selectedClient?.id === cliente.id 
-                                                    ? 'bg-yellow-500/10 border-yellow-500/50' 
-                                                    : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
-                                                }`}
+                                                className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group ${selectedClient?.id === cliente.id
+                                                        ? 'bg-yellow-500/10 border-yellow-500/50'
+                                                        : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                                                    }`}
                                             >
                                                 <div>
                                                     <p className={`font-bold ${selectedClient?.id === cliente.id ? 'text-yellow-500' : 'text-white'}`}>
@@ -660,9 +665,8 @@ export default function POS() {
                                                     </p>
                                                     <p className="text-xs text-zinc-500">{cliente.nif || 'Sem NIF'}</p>
                                                 </div>
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                                                    selectedClient?.id === cliente.id ? 'bg-yellow-500 text-zinc-950' : 'bg-zinc-800 text-zinc-500 group-hover:text-white'
-                                                }`}>
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${selectedClient?.id === cliente.id ? 'bg-yellow-500 text-zinc-950' : 'bg-zinc-800 text-zinc-500 group-hover:text-white'
+                                                    }`}>
                                                     <Check size={16} />
                                                 </div>
                                             </button>
@@ -674,11 +678,11 @@ export default function POS() {
                             <form onSubmit={handleQuickCreateCliente} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-400 mb-1">Nome *</label>
-                                    <input 
-                                        type="text" 
-                                        required 
+                                    <input
+                                        type="text"
+                                        required
                                         value={novoCliente.nome}
-                                        onChange={e => setNovoCliente({...novoCliente, nome: e.target.value})}
+                                        onChange={e => setNovoCliente({ ...novoCliente, nome: e.target.value })}
                                         className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
                                         placeholder="Nome do cliente"
                                     />
@@ -686,20 +690,20 @@ export default function POS() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-400 mb-1">NIF</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             value={novoCliente.nif}
-                                            onChange={e => setNovoCliente({...novoCliente, nif: e.target.value})}
+                                            onChange={e => setNovoCliente({ ...novoCliente, nif: e.target.value })}
                                             className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
                                             placeholder="NIF"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-400 mb-1">Telefone</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             value={novoCliente.telefone}
-                                            onChange={e => setNovoCliente({...novoCliente, telefone: e.target.value})}
+                                            onChange={e => setNovoCliente({ ...novoCliente, telefone: e.target.value })}
                                             className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
                                             placeholder="Telefone"
                                         />
@@ -708,35 +712,35 @@ export default function POS() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-400 mb-1">Email</label>
-                                        <input 
-                                            type="email" 
+                                        <input
+                                            type="email"
                                             value={novoCliente.email}
-                                            onChange={e => setNovoCliente({...novoCliente, email: e.target.value})}
+                                            onChange={e => setNovoCliente({ ...novoCliente, email: e.target.value })}
                                             className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
                                             placeholder="exemplo@email.com"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-400 mb-1">Morada / Endereço</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             value={novoCliente.morada}
-                                            onChange={e => setNovoCliente({...novoCliente, morada: e.target.value})}
+                                            onChange={e => setNovoCliente({ ...novoCliente, morada: e.target.value })}
                                             className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
                                             placeholder="Endereço físico"
                                         />
                                     </div>
                                 </div>
                                 <div className="pt-4 flex gap-3">
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setShowFormNovoCliente(false)} 
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowFormNovoCliente(false)}
                                         className="flex-1 bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
                                     >
                                         Voltar
                                     </button>
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         disabled={isProcessing}
                                         className="flex-1 bg-yellow-500 text-zinc-900 py-3 rounded-xl font-bold hover:bg-yellow-400 transition-colors disabled:opacity-50"
                                     >
@@ -748,7 +752,7 @@ export default function POS() {
 
                         <div className="mt-6 border-t border-zinc-800 pt-4">
                             {!showFormNovoCliente && (
-                                <button 
+                                <button
                                     onClick={() => setShowModalClientes(false)}
                                     className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
                                 >
@@ -766,7 +770,7 @@ export default function POS() {
                     <p>NIF: {tenantInfo?.nif || '999999999'}</p>
                     <p>{new Date().toLocaleString()}</p>
                 </div>
-                
+
                 <div className="border-b border-black mb-2">
                     <p className="font-bold">Cliente: {selectedClient?.nome || 'Consumidor Final'}</p>
                     {selectedClient?.nif && <p>NIF: {selectedClient.nif}</p>}
@@ -806,7 +810,8 @@ export default function POS() {
             </div>
 
             {/* Estilo para Impressão */}
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media print {
                     body * { visibility: hidden; }
                     #thermal-receipt, #thermal-receipt * { visibility: visible; }

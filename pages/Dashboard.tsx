@@ -25,6 +25,7 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { supabase } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
+import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
 
 const weeklyData = [
   { name: 'Seg', viagens: 45, receita: 125000 },
@@ -170,6 +171,12 @@ const Dashboard: React.FC = () => {
       clearTimeout(transitionTimer);
     };
   }, []);
+
+  // Sincronização em Tempo Real
+  useRealtimeSync('sys_ads', user?.tenant_id, fetchAds);
+  useRealtimeSync('fin_notas', user?.tenant_id, fetchMetrics);
+  useRealtimeSync('expr_fleet', user?.tenant_id, fetchMetrics);
+  useRealtimeSync('real_imoveis', user?.tenant_id, fetchMetrics);
 
   const handleSaveAd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

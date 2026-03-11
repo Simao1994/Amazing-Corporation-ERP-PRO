@@ -16,6 +16,7 @@ import { InventarioItem, MovimentacaoEstoque } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
+import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
 import Logo from '../components/Logo';
 
 const InventoryPage: React.FC = () => {
@@ -108,7 +109,11 @@ const InventoryPage: React.FC = () => {
 
   useEffect(() => {
     fetchInventoryData();
-  }, []);
+  }, [user?.tenant_id]);
+
+  // Sincronização em Tempo Real
+  useRealtimeSync('inventario', user?.tenant_id, fetchInventoryData);
+  useRealtimeSync('stock_movimentos', user?.tenant_id, fetchInventoryData);
 
   // Form States
   const [itemForm, setItemForm] = useState({

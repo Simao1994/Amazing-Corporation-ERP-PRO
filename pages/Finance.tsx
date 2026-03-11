@@ -8,6 +8,8 @@ import Select from '../components/ui/Select';
 import { formatAOA } from '../constants';
 import { NotaFiscal } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
+import { useAuth } from '../src/contexts/AuthContext';
+import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
 
 const CATEGORIAS_FINANCEIRAS = [
   { value: 'Combustível', label: 'Combustível', color: 'bg-orange-100 text-orange-700' },
@@ -20,6 +22,7 @@ const CATEGORIAS_FINANCEIRAS = [
 ];
 
 const FinancePage: React.FC = () => {
+  const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<NotaFiscal | null>(null);
   const [valorInput, setValorInput] = useState(0);
@@ -76,7 +79,10 @@ const FinancePage: React.FC = () => {
 
     // 2. Fetch from cloud in background
     fetchNotas();
-  }, []);
+  }, [user?.tenant_id]);
+
+  // Sincronização em Tempo Real
+  useRealtimeSync('fin_notas', user?.tenant_id, fetchNotas);
 
 
   const filteredNotas = useMemo(() => {
