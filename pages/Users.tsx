@@ -111,8 +111,18 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
                 setProfiles(data);
             }
         } catch (err: any) {
-            console.error('Error fetching users:', err);
-            setError(`Falha ao carregar utilizadores: ${err.message || 'Erro desconhecido'}`);
+            console.error('Error fetching users (profiles):', err);
+
+            let userFriendlyMessage = err.message || 'Erro desconhecido';
+
+            // Helpful diagnostics for the user
+            if (err.message?.includes('permission denied for table users')) {
+                userFriendlyMessage = 'Erro de Permissão: O sistema tentou aceder à tabela de utilizadores mas foi bloqueado. Por favor, certifique-se de que executou o script FIX_USERS_PERMISSION.sql no seu painel Supabase.';
+            } else if (err.code === '42501') {
+                userFriendlyMessage = 'Acesso negado (RLS Check): Não tem permissão para listar utilizadores.';
+            }
+
+            setError(`Falha ao carregar utilizadores: ${userFriendlyMessage}`);
         } finally {
             clearTimeout(timeoutId);
             setLoading(false);
