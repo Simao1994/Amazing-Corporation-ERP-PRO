@@ -31,32 +31,23 @@ if (!finalUrl || !supabaseAnonKey) {
 let activeLock: Promise<any> | null = null;
 
 const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
-    const start = Date.now();
+    // Se já houver um lock ativo, para evitar loops infinitos ou esperas que travam o UI,
+    // tentamos aguardar apenas por um curto período (2s) antes de forçar a execução.
+    // O Gotrue-js usa locks para seqüencializar refresh de tokens e persistência.
 
-    // Aguardar que qualquer operação ativa termine, respeitando o timeout
-    while (activeLock !== null) {
-        if (Date.now() - start > acquireTimeout) {
-            console.warn(`[Auth Lock] Timeout ao aguardar lock: ${name}`);
-            throw new Error(`Lock timeout for ${name}`);
-        }
-        try {
-            await activeLock;
-        } catch {
-            /* ignorar erros da operação anterior para não travar a próxima */
-        }
+    if (activeLock) {
+        console.warn(`[Auth Lock] Pedido concorrente detectado para: ${name}. Tentando aguardar...`);
+        const waitPromise = new Promise(resolve => setTimeout(resolve, Math.min(2000, acquireTimeout)));
+        await Promise.race([activeLock.catch(() => { }), waitPromise]);
     }
 
-    // Iniciar a nossa operação e registar como ativa
     const operation = fn();
     activeLock = operation;
 
     try {
         return await operation;
     } finally {
-        // Limpar o lock apenas se formos nós os donos (evita corrida se outro lock 'roubar')
-        if (activeLock === operation) {
-            activeLock = null;
-        }
+        if (activeLock === operation) activeLock = null;
     }
 };
 
