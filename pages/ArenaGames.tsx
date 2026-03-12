@@ -50,7 +50,7 @@ const formatPrize = (val: string | number) => {
 };
 
 const NUMERO_ARENA = '929 882 067';
-const SUPABASE_FUNCTIONS_URL = 'https://jgktemwegesmmomlftgt.supabase.co/functions/v1';
+const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 const ArenaGames: React.FC = () => {
    const [activeStep, setActiveStep] = useState<'catalog' | 'tournaments' | 'ranking'>('catalog');

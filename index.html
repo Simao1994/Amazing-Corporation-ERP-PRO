@@ -70,21 +70,46 @@
 </head>
   <body class="bg-[#e0f2fe] text-zinc-900">
     <div id="root"></div>
-  <script>
-    // Bypass agressivo para o Bug do Navigator LockManager no Supabase Auth
-    // O Supabase tenta sincronizar abas através deste API, mas frequentemente causa deadlocks
-    // Ao forçar undefined, o Supabase ignora a sincronização problemática.
-    try {
-      if (typeof window !== 'undefined' && window.navigator && window.navigator.locks) {
-        Object.defineProperty(window.navigator, 'locks', {
-          get: () => undefined,
-          configurable: true
-        });
+    <style id="vercel-killer">
+      /* Esconder o símbolo da Vercel no canto e os popups de INP */
+      #vercel-toolbar, 
+      [id^="vercel-toolbar"], 
+      .vercel-toolbar,
+      [data-vercel-toolbar],
+      #___vercel-toolbar,
+      iframe[src*="vercel.com"] { 
+        display: none !important; 
+        visibility: hidden !important; 
+        opacity: 0 !important; 
+        pointer-events: none !important;
       }
-    } catch (e) {
-      console.warn("Falha ao injetar bypass do LockManager", e);
-    }
-  </script>
+    </style>
+    <script>
+      // Bypass agressivo para o Bug do Navigator LockManager no Supabase Auth
+      try {
+        if (typeof window !== 'undefined' && window.navigator && window.navigator.locks) {
+          Object.defineProperty(window.navigator, 'locks', {
+            get: () => undefined,
+            configurable: true
+          });
+        }
+      } catch (e) {}
+
+      // DESATIVAR VERCEL TOOLBAR (Killer Script)
+      try {
+        // 1. Definir flag de desativação no localStorage (Muitos scripts da Vercel checam isso)
+        localStorage.setItem('vercel_toolbar_disabled', 'true');
+        
+        // 2. Definir cookie de desativação
+        document.cookie = "vercel_toolbar_disabled=1; path=/; max-age=31536000";
+
+        // 3. Bloquear a montagem do script injetado se possível
+        window.vercelToolbar = {
+          mount: () => { console.log("Vercel Toolbar Bloqueada"); },
+          unmount: () => {}
+        };
+      } catch (e) {}
+    </script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>

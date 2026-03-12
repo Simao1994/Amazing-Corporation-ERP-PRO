@@ -8,12 +8,20 @@ const getBaseURL = () => {
     if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('direct') === 'true') {
+            console.log('[Supabase] Forçando conexão direta via URL param');
             return supabaseUrl || '';
         }
 
-        // Ativar proxy inteligente apenas quando rodando localmente (Vite Bypass)
-        // O uso relativo `/sbapi` delega o redirecionamento ao Vite, fintando os blocos restritos
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const hostname = window.location.hostname;
+        // Ativar proxy inteligente para localhost, 127.0.0.1 ou IPs locais (192.168.x.x, 10.x.x.x, 172.x.x.x)
+        const isLocal = hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname.startsWith('192.168.') ||
+            hostname.startsWith('10.') ||
+            /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+
+        if (isLocal) {
+            console.log(`[Supabase] Ambiente local detectado (${hostname}). Usando Proxy /sbapi`);
             return '/sbapi';
         }
     }
@@ -21,6 +29,13 @@ const getBaseURL = () => {
 };
 
 const finalUrl = getBaseURL();
+
+console.log('[Supabase] Initializing client...', {
+    envUrl: supabaseUrl,
+    finalUrl,
+    hasAnonKey: !!supabaseAnonKey,
+    origin: typeof window !== 'undefined' ? window.location.origin : 'SSR'
+});
 
 if (!finalUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas!');

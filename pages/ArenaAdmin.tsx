@@ -42,7 +42,7 @@ interface ArenaDespesa {
    data: string;
 }
 
-const FUNCTIONS_URL = 'https://jgktemwegesmmomlftgt.supabase.co/functions/v1';
+const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const ADMIN_KEY = 'amazing-arena-admin-2026';
 import { supabase } from '../src/lib/supabase';
 import { formatAOA } from '../constants';

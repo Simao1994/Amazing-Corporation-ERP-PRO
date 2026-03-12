@@ -178,49 +178,57 @@ const MaintenancePage: React.FC = () => {
     return { total, count, pendentes };
   }, [records]);
 
+  const [isPending, startTransition] = React.useTransition();
+
   const handleOpenModal = (item?: Manutencao) => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({
-        matricula: item.matricula,
-        responsavel: item.responsavel_id,
-        supervisor: item.supervisor_id,
-        condutor: item.condutor_nome || '',
-        municipio: item.municipio || '',
-        grupo: item.grupo || '',
-        responsavelGrupo: item.responsavel_grupo || '',
-        observacoesGerais: item.observacoes_gerais || '',
-        status: item.status,
-        categoria: item.categoria,
-        quilometragem: item.quilometragem || '',
-        proximaRevisao: item.proxima_revisao_km || '',
-        nivelCombustivel: item.nivel_combustivel || '1/2',
-        estadoPneus: item.estado_pneus || 'Bom',
-        tipoVeiculo: item.tipo_veiculo || 'Mota'
-      });
-      initializeTable(item.itens);
-    } else {
-      setEditingItem(null);
-      setFormData({
-        matricula: frota.length > 0 ? frota[0].matricula : '',
-        responsavel: '',
-        supervisor: '',
-        condutor: '',
-        municipio: '',
-        grupo: '',
-        responsavelGrupo: '',
-        observacoesGerais: '',
-        status: 'Pendente',
-        categoria: 'Correctiva',
-        quilometragem: '',
-        proximaRevisao: '',
-        nivelCombustivel: '1/2',
-        estadoPneus: 'Bom',
-        tipoVeiculo: 'Mota'
-      });
-      initializeTable();
-    }
+    // 1. Prioridade Máxima: Mostrar o modal IMEDIATAMENTE (vazio ou carregando)
     setShowModal(true);
+
+    // 2. Transição: Carregar o conteúdo pesado (objetos da tabela e dados do form)
+    // Isso evita o bloqueio de 288ms do Thread Principal (INP)
+    startTransition(() => {
+      if (item) {
+        setEditingItem(item);
+        setFormData({
+          matricula: item.matricula,
+          responsavel: item.responsavel_id,
+          supervisor: item.supervisor_id,
+          condutor: item.condutor_nome || '',
+          municipio: item.municipio || '',
+          grupo: item.grupo || '',
+          responsavelGrupo: item.responsavel_grupo || '',
+          observacoesGerais: item.observacoes_gerais || '',
+          status: item.status,
+          categoria: item.categoria,
+          quilometragem: item.quilometragem || '',
+          proximaRevisao: item.proxima_revisao_km || '',
+          nivelCombustivel: item.nivel_combustivel || '1/2',
+          estadoPneus: item.estado_pneus || 'Bom',
+          tipoVeiculo: item.tipo_veiculo || 'Mota'
+        });
+        initializeTable(item.itens);
+      } else {
+        setEditingItem(null);
+        setFormData({
+          matricula: frota.length > 0 ? frota[0].matricula : '',
+          responsavel: '',
+          supervisor: '',
+          condutor: '',
+          municipio: '',
+          grupo: '',
+          responsavelGrupo: '',
+          observacoesGerais: '',
+          status: 'Pendente',
+          categoria: 'Correctiva',
+          quilometragem: '',
+          proximaRevisao: '',
+          nivelCombustivel: '1/2',
+          estadoPneus: 'Bom',
+          tipoVeiculo: 'Mota'
+        });
+        initializeTable();
+      }
+    });
   };
 
   const handlePrint = (item: Manutencao) => {

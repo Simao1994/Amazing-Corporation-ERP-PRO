@@ -246,53 +246,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-24">
 
-      {/* --- BANNER DE PUBLICIDADE INTERNA --- */}
-      {activeAds.length > 0 && (
-        <div className="relative w-full h-64 rounded-[3rem] overflow-hidden shadow-xl group">
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-all duration-700 transform hover:scale-105"
-            style={{ backgroundImage: `url(${activeAds[currentAdIndex].imageUrl})` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/40 to-transparent"></div>
-          </div>
-
-          <div className="relative z-10 p-10 h-full flex flex-col justify-center max-w-2xl text-white">
-            <span className="bg-yellow-500 text-zinc-900 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg w-fit mb-4">
-              Comunicado Interno
-            </span>
-            <h2 className="text-3xl font-black mb-2 leading-tight">{activeAds[currentAdIndex].title}</h2>
-            <p className="text-zinc-200 text-sm font-medium leading-relaxed">{activeAds[currentAdIndex].description}</p>
-
-            {activeAds[currentAdIndex].link && (
-              <a
-                href={activeAds[currentAdIndex].link}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-yellow-500 transition-colors"
-              >
-                Saber Mais <ExternalLink size={14} />
-              </a>
-            )}
-          </div>
-
-          {activeAds.length > 1 && (
-            <div className="absolute bottom-6 right-8 flex gap-2 z-20">
-              <button onClick={prevAd} className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all"><ChevronLeft size={20} /></button>
-              <button onClick={nextAd} className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all"><ChevronRight size={20} /></button>
-            </div>
-          )}
-
-          {(currentUser.role === 'admin' || currentUser.role === 'saas_admin') && (
-            <button
-              onClick={() => setShowAdModal(true)}
-              className="absolute top-6 right-8 bg-zinc-900/80 hover:bg-zinc-900 text-white p-3 rounded-2xl backdrop-blur-md transition-all shadow-lg border border-white/10 z-30"
-              title="Gerir Publicidade"
-            >
-              <Megaphone size={18} />
-            </button>
-          )}
-        </div>
-      )}
+      {/* REMOVED: Internal Ads Banner as per user request to retire "anuncios" */}
 
       {/* --- HEADER --- */}
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">

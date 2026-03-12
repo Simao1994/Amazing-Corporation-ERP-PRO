@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       proxy: {
         '/sbapi': {
-          target: env.VITE_SUPABASE_URL || 'https://jgktemwegesmmomlftgt.supabase.co',
+          target: env.VITE_SUPABASE_URL,
           changeOrigin: true,
           ws: true, // Habilitar suporte a WebSocket para Supabase Realtime
           rewrite: (path) => path.replace(/^\/sbapi/, ''),
@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
             });
             proxy.on('proxyReq', (proxyReq, req, _res) => {
               // Garantir que o Host está correto para evitar rejeição do Supabase
-              const targetURL = new URL(env.VITE_SUPABASE_URL || 'https://jgktemwegesmmomlftgt.supabase.co');
+              const targetURL = new URL(env.VITE_SUPABASE_URL);
               proxyReq.setHeader('Host', targetURL.host);
 
               // Não forçar keep-alive em Upgrades (WebSockets) para não quebrar o handshake

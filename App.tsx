@@ -86,10 +86,10 @@ const App: React.FC = () => {
   useEffect(() => {
     (window as any).notify = showToast;
 
-    // Após 1s mostrar os botões de emergência (Reduzido drasticamente para evitar frustração)
+    // Após 20s mostrar os botões de emergência (Aumentado para evitar popups intrusivos)
     const timer = setTimeout(() => {
       setShowForceLoad(true);
-    }, 1000);
+    }, 20000);
 
     // BYPASS AUTOMÁTICO: após 12s forçar saída do loading (Reduzido de 25s)
     const autoBypass = setTimeout(() => {
