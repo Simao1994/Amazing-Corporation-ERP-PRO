@@ -129,6 +129,7 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
         galeria_urls: galeriaArray,
         tipo: tipo,
         is_publico: formData.get('is_publico') === 'on',
+        tenant_id: appUser?.tenant_id,
         updated_at: new Date().toISOString()
       };
 

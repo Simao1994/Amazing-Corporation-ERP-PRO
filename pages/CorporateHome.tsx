@@ -70,9 +70,8 @@ const PublicNewsGrid: React.FC = () => {
     const fetchPublicPosts = async () => {
       try {
         const { data, error } = await supabase
-          .from('blog_posts')
+          .from('v_public_posts')
           .select('*')
-          .eq('is_publico', true)
           .order('data_publicacao', { ascending: false })
           .limit(6);
 
@@ -154,14 +153,24 @@ const PublicNewsGrid: React.FC = () => {
                   {post.video_url ? <Play size={24} fill="currentColor" /> : <Eye size={24} />}
                 </div>
               </div>
-              <div className="absolute top-6 left-6 flex gap-2">
-                <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
-                  {post.categoria}
-                </span>
-                {post.video_url && (
-                  <span className="px-3 py-1 bg-zinc-900/60 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg flex items-center gap-1">
-                    <Play size={8} fill="currentColor" /> Vídeo
+              <div className="absolute top-6 left-6 flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <span className="px-3 py-1 bg-yellow-500 text-zinc-900 text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                    {post.categoria}
                   </span>
+                  {post.video_url && (
+                    <span className="px-3 py-1 bg-zinc-900/60 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg flex items-center gap-1">
+                      <Play size={8} fill="currentColor" /> Vídeo
+                    </span>
+                  )}
+                </div>
+                {post.tenant_nome && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl">
+                    {post.tenant_logo_url && (
+                      <img src={post.tenant_logo_url} className="w-5 h-5 rounded-md object-contain" alt={post.tenant_nome} />
+                    )}
+                    <span className="text-[8px] font-black text-white uppercase tracking-tighter line-clamp-1">{post.tenant_nome}</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -704,7 +713,7 @@ const CorporateHome: React.FC = () => {
     const user = AmazingStorage.get<User | null>(STORAGE_KEYS.USER, null);
     setCurrentUser(user);
     setLoading(false); // Unblock UI immediately
-    
+
     // Website tracking logic
     const trackVisit = async () => {
       try {
@@ -752,11 +761,11 @@ const CorporateHome: React.FC = () => {
           .order('status', { ascending: false })
           .limit(1)
           .maybeSingle();
-        
+
         if (!error && data) {
           setActiveLive({
-             ...data,
-             slug: data.saas_tenants?.slug || 'amazing'
+            ...data,
+            slug: data.saas_tenants?.slug || 'amazing'
           });
         }
       } catch (err) {
@@ -943,35 +952,34 @@ const CorporateHome: React.FC = () => {
 
           {/* Banner de Live Streaming Activo */}
           {activeLive && (
-             <div className="mt-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-               <Link 
-                  to={`/empresa/${activeLive.slug}/live`} 
-                  className={`inline-flex items-center gap-4 px-8 py-4 backdrop-blur-xl rounded-full border shadow-2xl transition-all hover:scale-105 ${
-                    activeLive.status === 'ao_vivo' 
-                      ? 'bg-red-600/20 border-red-500 text-white hover:bg-red-600/30 shadow-red-500/20'
-                      : 'bg-zinc-900/50 border-zinc-600 text-white hover:bg-zinc-800'
+            <div className="mt-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+              <Link
+                to={`/empresa/${activeLive.slug}/live`}
+                className={`inline-flex items-center gap-4 px-8 py-4 backdrop-blur-xl rounded-full border shadow-2xl transition-all hover:scale-105 ${activeLive.status === 'ao_vivo'
+                    ? 'bg-red-600/20 border-red-500 text-white hover:bg-red-600/30 shadow-red-500/20'
+                    : 'bg-zinc-900/50 border-zinc-600 text-white hover:bg-zinc-800'
                   }`}
-               >
-                 {activeLive.status === 'ao_vivo' ? (
-                   <div className="flex items-center justify-center w-10 h-10 bg-red-600 rounded-full shrink-0">
-                     <Video className="animate-pulse" size={20} />
-                   </div>
-                 ) : (
-                   <div className="flex items-center justify-center w-10 h-10 bg-zinc-800 rounded-full shrink-0 border border-zinc-600">
-                     <Calendar size={20} className="text-zinc-300" />
-                   </div>
-                 )}
-                 <div>
-                   <p className="text-[10px] font-black uppercase tracking-widest mb-0.5 text-zinc-300 flex items-center gap-2">
-                     {activeLive.status === 'ao_vivo' ? (
-                       <><span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> ESTAMOS AO VIVO</>
-                     ) : 'EVENTO AGENDADO'}
-                   </p>
-                   <p className="font-bold text-sm truncate max-w-[250px] sm:max-w-md">{activeLive.titulo}</p>
-                 </div>
-                 <ChevronRight size={20} className="text-zinc-400 ml-2" />
-               </Link>
-             </div>
+              >
+                {activeLive.status === 'ao_vivo' ? (
+                  <div className="flex items-center justify-center w-10 h-10 bg-red-600 rounded-full shrink-0">
+                    <Video className="animate-pulse" size={20} />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center w-10 h-10 bg-zinc-800 rounded-full shrink-0 border border-zinc-600">
+                    <Calendar size={20} className="text-zinc-300" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest mb-0.5 text-zinc-300 flex items-center gap-2">
+                    {activeLive.status === 'ao_vivo' ? (
+                      <><span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> ESTAMOS AO VIVO</>
+                    ) : 'EVENTO AGENDADO'}
+                  </p>
+                  <p className="font-bold text-sm truncate max-w-[250px] sm:max-w-md">{activeLive.titulo}</p>
+                </div>
+                <ChevronRight size={20} className="text-zinc-400 ml-2" />
+              </Link>
+            </div>
           )}
         </div>
 

@@ -526,6 +526,10 @@ export interface BlogPost {
   tipo: 'artigo' | 'video' | 'galeria' | 'momento';
   is_publico: boolean;
   visualizacoes: number;
+  tenant_id?: string;
+  tenant_nome?: string;
+  tenant_logo_url?: string;
+  tenant_slug?: string;
 }
 
 export interface Solicitacao {
@@ -804,33 +808,33 @@ export interface RhCandidaturaPublica {
 }
 
 export interface SubscriptionStatus {
-    active: boolean;
-    status: 'ativo' | 'suspenso' | 'expirado' | 'pendente';
-    daysLeft: number;
-    message?: string;
+  active: boolean;
+  status: 'ativo' | 'suspenso' | 'expirado' | 'pendente';
+  daysLeft: number;
+  message?: string;
+  modules: string[];
+  maxUsers: number;
+  features?: string[];
+  id?: string;
+  tenant_id?: string;
+  plan_id?: string;
+  valor_pago?: number;
+  data_inicio?: string;
+  data_expiracao?: string;
+  data_pagamento?: string;
+  auto_renew?: boolean;
+  comprovativo_url?: string;
+  rejection_reason?: string;
+  created_at?: string;
+  saas_plans?: {
+    id: string;
+    nome: string;
+    valor: number;
+    duracao_meses: number;
+    max_users: number;
     modules: string[];
-    maxUsers: number;
-    features?: string[];
-    id?: string;
-    tenant_id?: string;
-    plan_id?: string;
-    valor_pago?: number;
-    data_inicio?: string;
-    data_expiracao?: string;
-    data_pagamento?: string;
-    auto_renew?: boolean;
-    comprovativo_url?: string;
-    rejection_reason?: string;
-    created_at?: string;
-    saas_plans?: {
-        id: string;
-        nome: string;
-        valor: number;
-        duracao_meses: number;
-        max_users: number;
-        modules: string[];
-        features: string[];
-    };
+    features: string[];
+  };
 }
 
 export interface SaasConfig {
