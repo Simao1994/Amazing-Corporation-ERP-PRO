@@ -46,19 +46,31 @@ if (!finalUrl || !supabaseAnonKey) {
     console.log(`[Supabase CONFIG] URL: ${finalUrl}, Proxy: ${finalUrl === '/sbapi'}`);
 }
 
-// Sistema de Lock em memória — substitui o Navigator LockManager do gotrue-js
+// Sistema de Lock Robusto — Coordenado por LockManager (se disponível) ou Memória (Fallback)
 let activeLock: Promise<any> | null = null;
-
+ 
 const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
-    if (activeLock) {
-        console.warn(`[Auth Lock] Pedido concorrente detectado para: ${name}. Tentando aguardar...`);
-        const waitPromise = new Promise(resolve => setTimeout(resolve, Math.min(2000, acquireTimeout)));
-        await Promise.race([activeLock.catch(() => { }), waitPromise]);
+    // 1. Tentar LockManager nativo para consistência multi-aba (Supabase default)
+    if (typeof navigator !== 'undefined' && navigator.locks) {
+        try {
+            return await navigator.locks.request(name, { steal: false, ifAvailable: false }, async () => {
+                return await fn();
+            });
+        } catch (err) {
+            console.warn('[Auth Lock] LockManager falhou, usando fallback em memória:', err);
+        }
     }
-
+ 
+    // 2. Fallback: Lock Sequencial em Memória
+    if (activeLock) {
+        try {
+            await activeLock;
+        } catch (e) { }
+    }
+ 
     const operation = fn();
     activeLock = operation;
-
+ 
     try {
         return await operation;
     } finally {

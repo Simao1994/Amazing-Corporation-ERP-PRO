@@ -22,7 +22,9 @@ const AutoLogout: React.FC<AutoLogoutProps> = ({ user, onLogout }) => {
   const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetTimer = () => {
-    lastActivityRef.current = Date.now();
+    const now = Date.now();
+    lastActivityRef.current = now;
+    localStorage.setItem('last_activity_timestamp', now.toString());
     if (showWarning) {
       setShowWarning(false);
       setTimeLeft(30);
@@ -58,6 +60,14 @@ const AutoLogout: React.FC<AutoLogoutProps> = ({ user, onLogout }) => {
     // Loop de verificação de inatividade
     timerRef.current = setInterval(() => {
       const now = Date.now();
+      const globalLastActivity = parseInt(localStorage.getItem('last_activity_timestamp') || '0');
+      
+      // Sincronizar com outras abas
+      if (globalLastActivity > lastActivityRef.current) {
+        lastActivityRef.current = globalLastActivity;
+        if (showWarning) setShowWarning(false);
+      }
+
       const diff = now - lastActivityRef.current;
 
       if (diff >= INACTIVITY_LIMIT - WARNING_THRESHOLD && !showWarning) {
