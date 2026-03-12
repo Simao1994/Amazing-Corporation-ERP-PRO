@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit, Save, X, Search, QrCode } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { formatAOA } from '../../constants';
+import { useRealtimeSync } from '../../src/hooks/useRealtimeSync';
 // @ts-ignore
 import QRCode from 'qrcode';
 
@@ -30,29 +31,45 @@ export default function POSProdutos() {
     });
 
     useEffect(() => {
-        fetchData();
-    }, [user]);
+        if (user?.tenant_id) {
+            fetchData();
+        }
+    }, [user?.tenant_id]);
 
     const fetchData = async () => {
+        if (!user?.tenant_id) return;
+        setLoading(true);
         try {
-            if (!user?.tenant_id) return;
+            console.log('[POSProdutos] Procurando dados para o tenant:', user.tenant_id);
 
             const [prodRes, catRes] = await Promise.all([
-                supabase.from('pos_produtos').select('*, pos_categorias(nome_categoria)').eq('tenant_id', user.tenant_id).order('nome_produto'),
-                supabase.from('pos_categorias').select('id, nome_categoria').eq('tenant_id', user.tenant_id)
+                supabase.from('pos_produtos')
+                    .select('*, pos_categorias(nome_categoria)')
+                    .eq('tenant_id', user.tenant_id)
+                    .order('nome_produto'),
+                supabase.from('pos_categorias')
+                    .select('id, nome_categoria')
+                    .eq('tenant_id', user.tenant_id)
+                    .order('nome_categoria')
             ]);
 
             if (prodRes.error) throw prodRes.error;
             if (catRes.error) throw catRes.error;
 
+            console.log(`[POSProdutos] Sucesso: ${prodRes.data?.length || 0} produtos e ${catRes.data?.length || 0} categorias.`);
+
             setProdutos(prodRes.data || []);
             setCategorias(catRes.data || []);
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('[POSProdutos] Erro ao carregar dados:', error);
         } finally {
             setLoading(false);
         }
     };
+
+    // Sincronização em tempo real para manter a combobox e a lista atualizadas
+    useRealtimeSync('pos_produtos', user?.tenant_id, fetchData);
+    useRealtimeSync('pos_categorias', user?.tenant_id, fetchData);
 
     const generateQRCode = async (text: string) => {
         try {
@@ -84,14 +101,14 @@ export default function POSProdutos() {
                 ? supabase.from('pos_produtos').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id)
                 : supabase.from('pos_produtos').insert([payload]);
 
-            const timeoutPromise = new Promise((_, reject) => 
+            const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('Tempo limite excedido ao salvar produto. Verifique sua conexão.')), 15000)
             );
 
             const { error } = await Promise.race([operationPromise, timeoutPromise]) as any;
 
             if (error) throw error;
-            
+
             (window as any).notify?.(editingId ? 'Produto atualizado' : 'Produto criado', 'success');
             setShowModal(false);
             resetForm();
