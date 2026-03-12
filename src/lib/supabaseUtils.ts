@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabaseClient';
 
 /**
@@ -9,12 +10,13 @@ interface SafeQueryOptions<T> {
     cacheKey?: string;
     cacheTTL?: number; // em ms
     fallbackData?: T | null;
+    forceRefresh?: boolean;
 }
 
 /**
  * Cache simples em memória
  */
-const queryCache = new Map<string, { data: any; expiry: number }>();
+const queryCache = new Map<string, { data: any; count?: number | null; expiry: number }>();
 
 /**
  * Controle de concorrência: rastreia consultas em andamento
@@ -25,51 +27,53 @@ const pendingQueries = new Map<string, Promise<any>>();
  * Sistema de Retentativa e Re-conexão (Helper)
  */
 export async function safeQuery<T>(
-    queryFn: () => PromiseLike<{ data: T | null; error: any }>,
+    queryFn: () => PromiseLike<{ data: T | null; error: any; count?: number | null }>,
     options: SafeQueryOptions<T> = {}
-): Promise<{ data: T | null; error: any }> {
+): Promise<{ data: T | null; error: any; count?: number | null }> {
     const {
         retries = 3,
         delay = 1000,
         cacheKey,
         cacheTTL = 30000, // 30 segundos por padrão
-        fallbackData = null
+        fallbackData = null,
+        forceRefresh = false
     } = options;
 
     // 1. Verificar Cache (apenas se tiver cacheKey e for uma leitura)
-    if (cacheKey) {
+    if (cacheKey && !forceRefresh) {
         const cached = queryCache.get(cacheKey);
         if (cached && cached.expiry > Date.now()) {
             console.log(`[Cache Hit] ${cacheKey}`);
-            return { data: cached.data as T, error: null };
+            return { data: cached.data as T, error: null, count: cached.count };
         }
     }
 
     // 2. Controle de Concorrência (Deduplicação de chamadas simultâneas)
     const concurrencyKey = cacheKey || queryFn.toString().substring(0, 100);
-    if (pendingQueries.has(concurrencyKey)) {
+    if (!forceRefresh && pendingQueries.has(concurrencyKey)) {
         console.log(`[Concurrency] Aguardando consulta duplicada: ${concurrencyKey}`);
         return pendingQueries.get(concurrencyKey);
     }
 
-    const executeQuery = async (): Promise<{ data: T | null; error: any }> => {
+    const executeQuery = async (): Promise<{ data: T | null; error: any; count?: number | null }> => {
         let currentDelay = delay;
         let lastError: any;
 
         for (let i = 0; i < retries; i++) {
             try {
                 // @ts-ignore
-                const { data, error } = await queryFn();
+                const { data, error, count } = await queryFn();
 
                 if (!error) {
                     // Gravar no cache se necessário
                     if (cacheKey) {
                         queryCache.set(cacheKey, {
                             data,
+                            count,
                             expiry: Date.now() + cacheTTL
                         });
                     }
-                    return { data, error: null };
+                    return { data, error: null, count };
                 }
 
                 lastError = error;
@@ -117,6 +121,92 @@ export async function safeQuery<T>(
     } finally {
         pendingQueries.delete(concurrencyKey);
     }
+}
+
+/**
+ * Utilitário de Paginação
+ */
+export async function paginate<T>(
+    table: string,
+    page: number,
+    pageSize: number,
+    filters: (query: any) => any = (q) => q,
+    order: { column: string; ascending?: boolean } = { column: 'created_at', ascending: false }
+): Promise<{ data: T[] | null; count: number; error: any }> {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, count, error } = await safeQuery<any>(
+        () => filters(
+            supabase
+                .from(table)
+                .select('*', { count: 'exact' })
+                .order(order.column, { ascending: order.ascending })
+                .range(from, to)
+        ),
+        { cacheKey: `pag-${table}-${page}-${pageSize}-${JSON.stringify(order)}`, cacheTTL: 60000 }
+    );
+
+    return { data, count: count || 0, error };
+}
+
+/**
+ * Hook para Carregamento Infinito (Lazy Loading)
+ */
+export function useInfiniteQuery<T>(
+    table: string,
+    pageSize: number = 10,
+    filters: (query: any) => any = (q) => q,
+    order: { column: string; ascending?: boolean } = { column: 'created_at', ascending: false }
+) {
+    const [data, setData] = useState<T[]>([]);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<any>(null);
+
+    const loadMore = useCallback(async (isInitial = false) => {
+        if (loading || (!hasMore && !isInitial)) return;
+
+        setLoading(true);
+        const currentPage = isInitial ? 1 : page;
+
+        try {
+            const { data: newData, count, error: queryError } = await paginate<T>(
+                table,
+                currentPage,
+                pageSize,
+                filters,
+                order
+            );
+
+            if (queryError) throw queryError;
+
+            if (newData) {
+                setData(prev => isInitial ? newData : [...prev, ...newData]);
+                setHasMore(data.length + newData.length < count);
+                setPage(currentPage + 1);
+            }
+        } catch (err) {
+            setError(err);
+            console.error(`[InfiniteQuery] Erro ao carregar ${table}:`, err);
+        } finally {
+            setLoading(false);
+        }
+    }, [table, page, hasMore, loading, pageSize, filters, order]);
+
+    const reset = () => {
+        setData([]);
+        setPage(1);
+        setHasMore(true);
+        loadMore(true);
+    };
+
+    useEffect(() => {
+        loadMore(true);
+    }, [table]);
+
+    return { data, loading, hasMore, error, loadMore, reset };
 }
 
 /**
