@@ -12,7 +12,7 @@ import {
    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
    PieChart, Pie, Cell, Legend, AreaChart, Area, CartesianGrid
 } from 'recharts';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
 import { Motoqueiro } from '../types';
 import { formatAOA } from '../constants';
@@ -50,13 +50,17 @@ const TransportPage: React.FC = () => {
    const [motoqueiros, setMotoqueiros] = useState<Motoqueiro[]>([]);
 
    const fetchFleetData = async () => {
+      if (!user?.tenant_id) return;
       setLoading(true);
       try {
-         const { data, error } = await supabase
-            .from('expr_fleet')
-            .select('*')
-            .eq('tenant_id', user?.tenant_id)
-            .order('created_at', { ascending: false });
+         const { data, error } = await safeQuery(() =>
+            supabase
+               .from('expr_fleet')
+               .select('*')
+               .eq('tenant_id', user.tenant_id)
+               .order('created_at', { ascending: false }),
+            { cacheKey: `fleet-${user.tenant_id}`, cacheTTL: 60000 }
+         );
          if (error) throw error;
          if (data) setMotoqueiros(data as unknown as Motoqueiro[]);
       } catch (error) {
@@ -352,7 +356,9 @@ const TransportPage: React.FC = () => {
       } as any;
 
       try {
-         const { error } = await supabase.from('expr_fleet').upsert([data]);
+         const { error } = await safeQuery(() =>
+            supabase.from('expr_fleet').upsert([data])
+         );
          if (error) throw error;
          fetchFleetData();
          setShowModal(false);
@@ -428,9 +434,12 @@ const TransportPage: React.FC = () => {
    };
 
    const handleDelete = async (id: string, nome: string) => {
+      if (!user?.tenant_id) return;
       if (confirm(`Tem a certeza que deseja remover ${nome}?`)) {
          try {
-            const { error } = await supabase.from('expr_fleet').delete().eq('id', id);
+            const { error } = await safeQuery(() =>
+               supabase.from('expr_fleet').delete().eq('id', id).eq('tenant_id', user.tenant_id)
+            );
             if (error) throw error;
             fetchFleetData();
          } catch (error) {

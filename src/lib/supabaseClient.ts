@@ -80,7 +80,14 @@ export const supabase = createClient(finalUrl, supabaseAnonKey, {
         lock: memoryLockFunc
     },
     global: {
-        headers: { 'x-application-name': 'amazing-erp-pro' }
+        headers: { 'x-application-name': 'amazing-erp-pro' },
+        fetch: (url, options) => {
+            return fetch(url, {
+                ...options,
+                // @ts-ignore - Some environments support signal or timeout directly in fetch options
+                timeout: 30000
+            });
+        }
     },
     db: {
         schema: 'public'

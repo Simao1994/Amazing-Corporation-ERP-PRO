@@ -60,11 +60,19 @@ export async function safeQuery<T>(
         let lastError: any;
 
         for (let i = 0; i < retries; i++) {
+            const startTime = Date.now();
             try {
                 // @ts-ignore
-                const { data, error, count } = await queryFn();
+                const { data, error, count } = await Promise.race([
+                    queryFn(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_EXCEEDED')), 30000))
+                ]);
+
+                const duration = Date.now() - startTime;
 
                 if (!error) {
+                    if (duration > 1000) console.warn(`[Supabase Slow Query] ${concurrencyKey} levou ${duration}ms`);
+
                     // Gravar no cache se necessário
                     if (cacheKey) {
                         queryCache.set(cacheKey, {
@@ -83,31 +91,32 @@ export async function safeQuery<T>(
                 const errorCode = error?.code;
                 const errorStatus = error?.status;
 
-                console.error(`[Supabase ERROR] Tentativa ${i + 1} falhou:`, {
+                console.error(`[Supabase ERROR] Tentativa ${i + 1}/${retries} falhou (${duration}ms):`, {
                     message: error.message,
                     code: errorCode,
                     status: errorStatus,
-                    key: concurrencyKey,
-                    hint: error?.hint
+                    key: concurrencyKey
                 });
 
-                // Erros de rede ou timeout (PGRST301 = JWT, 504 = Gateway, 502 = Bad Gateway)
-                const isNetworkError = errorMsg.includes('fetch') ||
+                // Erros de rede ou timeout (PGRST301 = JWT, 504 = Gateway, 502 = Bad Gateway, 408 = Timeout)
+                const isRetryable = errorMsg.includes('fetch') ||
                     errorMsg.includes('network') ||
-                    errorMsg.includes('failed to fetch') ||
+                    errorMsg.includes('timeout') ||
                     errorCode === 'PGRST301' ||
-                    errorStatus === 504 ||
-                    errorStatus === 502;
+                    [408, 502, 503, 504].includes(errorStatus);
 
-                if (!isNetworkError) break; // Erros lógicos (403 RLS, 404, 400) não devem ter retry
+                if (!isRetryable) break;
 
-                console.warn(`[Supabase SafeQuery] Tentativa ${i + 1}/${retries} falhou: ${error.message}.`);
                 await new Promise(resolve => setTimeout(resolve, currentDelay));
                 currentDelay *= 2; // Exponential backoff
             } catch (err: any) {
                 lastError = err;
+                const duration = Date.now() - startTime;
                 const errLower = err?.message?.toLowerCase() || '';
-                if (errLower.includes('fetch') || errLower.includes('network')) {
+
+                console.warn(`[Supabase EXCEPTION] Tentativa ${i + 1}/${retries} (${duration}ms): ${err.message}`);
+
+                if (errLower.includes('fetch') || errLower.includes('network') || err.message === 'TIMEOUT_EXCEEDED') {
                     await new Promise(resolve => setTimeout(resolve, currentDelay));
                     currentDelay *= 2;
                     continue;
@@ -242,7 +251,20 @@ export async function getUserProfile(userId: string) {
             .select('*')
             .eq('id', userId)
             .single(),
-        { cacheKey: `profile-${userId}`, cacheTTL: 60000 }
+        { cacheKey: `profile-${userId}`, cacheTTL: 300000 } // 5 minutos
+    );
+}
+
+/**
+ * Obter lista de tenants com cache
+ */
+export async function getTenants() {
+    return safeQuery(() =>
+        supabase
+            .from('saas_tenants')
+            .select('*')
+            .eq('status', 'ativo'),
+        { cacheKey: 'global-tenants', cacheTTL: 600000 } // 10 minutos
     );
 }
 

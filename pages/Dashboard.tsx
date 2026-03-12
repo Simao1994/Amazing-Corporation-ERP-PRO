@@ -69,13 +69,17 @@ const Dashboard: React.FC = () => {
     );
   }, [ads, currentUser]);
 
-  const fetchMetrics = async () => {
+  const fetchMetrics = async (force = false) => {
     if (!user?.tenant_id) return;
 
     try {
-      // Ponto 7: Otimização de consultas simultâneas usando um único RPC
       const { data, error } = await safeQuery(() =>
-        supabase.rpc('get_dashboard_metrics', { p_tenant_id: user.tenant_id })
+        supabase.rpc('get_dashboard_metrics', { p_tenant_id: user.tenant_id }),
+        {
+          cacheKey: `dash-metrics-${user.tenant_id}`,
+          cacheTTL: 300000, // 5 minutos de cache
+          forceRefresh: force
+        }
       );
 
       if (error) {
@@ -107,7 +111,8 @@ const Dashboard: React.FC = () => {
           .from('sys_ads')
           .select('*')
           .eq('active', true)
-          .eq('tenant_id', user?.tenant_id)
+          .eq('tenant_id', user?.tenant_id),
+        { cacheKey: `ads-${user?.tenant_id}`, cacheTTL: 600000 } // 10 min cache
       ) as { data: any[] | null, error: any };
 
       if (error) {
@@ -149,38 +154,29 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    // FAIL-SAFE: força o loading a parar após 8 segundos
-    const failSafe = setTimeout(() => {
-      setIsLoading(false);
-    }, 8000);
+    if (!user) return;
 
+    setIsLoading(true);
     const init = async () => {
       try {
-        await Promise.all([fetchMetrics(), fetchAds(), loadProfile()]);
+        // Chamadas sequenciais ou controladas para evitar picos de conexão
+        await fetchAds();
+        await fetchMetrics();
       } catch (err) {
         console.error('Dashboard init error:', err);
       } finally {
-        clearTimeout(failSafe);
         setIsLoading(false);
       }
     };
 
-    // Defer coordination of heavy metrics loading to improve INP (Interaction to Next Paint)
-    const transitionTimer = setTimeout(() => {
-      init();
-    }, 100);
+    init();
+  }, [user?.id]);
 
-    return () => {
-      clearTimeout(failSafe);
-      clearTimeout(transitionTimer);
-    };
-  }, []);
-
-  // Sincronização em Tempo Real
-  useRealtimeSync('sys_ads', user?.tenant_id, fetchAds);
-  useRealtimeSync('fin_notas', user?.tenant_id, fetchMetrics);
-  useRealtimeSync('expr_fleet', user?.tenant_id, fetchMetrics);
-  useRealtimeSync('real_imoveis', user?.tenant_id, fetchMetrics);
+  // Sincronização em Tempo Real - Força refresh ignorando cache
+  useRealtimeSync('sys_ads', user?.tenant_id, () => fetchAds());
+  useRealtimeSync('fin_notas', user?.tenant_id, () => fetchMetrics(true));
+  useRealtimeSync('expr_fleet', user?.tenant_id, () => fetchMetrics(true));
+  useRealtimeSync('real_imoveis', user?.tenant_id, () => fetchMetrics(true));
 
   const handleSaveAd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

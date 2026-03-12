@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { realtimeManager } from '../lib/realtimeManager';
 
 /**
  * Hook para sincronizar dados em tempo real com o Supabase.
@@ -18,34 +18,14 @@ export function useRealtimeSync(
     useEffect(() => {
         if (!tenantId || !table) return;
 
-        console.log(`[Realtime] Subscrevendo a alterações na tabela: ${table} (Tenant: ${tenantId})`);
+        console.log(`[Realtime] Solicitando sincronização para: ${table} (Tenant: ${tenantId})`);
 
-        const channel = supabase
-            .channel(`realtime:${table}:${tenantId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*', // Ouvir INSERT, UPDATE e DELETE
-                    schema: 'public',
-                    table: table,
-                    filter: `tenant_id=eq.${tenantId}`
-                },
-                (payload) => {
-                    console.log(`[Realtime] Alteração detectada em ${table}:`, payload.eventType);
-                    callbackRef.current();
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log(`[Realtime] Subscrito com sucesso a ${table}`);
-                } else if (status === 'CHANNEL_ERROR') {
-                    console.error(`[Realtime] Erro ao subscrever a ${table}`);
-                }
-            });
+        const unsubscribe = realtimeManager.subscribe(table, tenantId, () => {
+            callbackRef.current();
+        });
 
         return () => {
-            console.log(`[Realtime] Cancelando subscrição de ${table}`);
-            supabase.removeChannel(channel);
+            unsubscribe();
         };
     }, [table, tenantId]);
 }

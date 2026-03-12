@@ -13,7 +13,8 @@ import {
    ComposedChart, Line, ScatterChart, Scatter, ZAxis
 } from 'recharts';
 import { GoogleGenAI } from "@google/genai";
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -22,6 +23,7 @@ import { Imovel, ContratoImobiliario, ObraReabilitacao, ImovelStatus, ImovelTipo
 
 // --- COMPONENTE PRINCIPAL ---
 const RealEstatePage: React.FC = () => {
+   const { user } = useAuth();
    const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'imoveis' | 'contratos' | 'obras' | 'consultoria'>('dashboard');
 
    // Modals
@@ -48,6 +50,7 @@ const RealEstatePage: React.FC = () => {
    const [searchTerm, setSearchTerm] = useState('');
 
    const fetchRealEstateData = async () => {
+      if (!user?.tenant_id) return;
       setLoading(true);
       try {
          const [
@@ -55,9 +58,9 @@ const RealEstatePage: React.FC = () => {
             { data: cnt },
             { data: obr }
          ] = await Promise.all([
-            supabase.from('real_imoveis').select('*').order('created_at', { ascending: false }),
-            supabase.from('real_contratos').select('*').order('created_at', { ascending: false }),
-            supabase.from('real_obras').select('*').order('created_at', { ascending: false })
+            safeQuery(() => supabase.from('real_imoveis').select('*').eq('tenant_id', user.tenant_id).order('created_at', { ascending: false }), { cacheKey: `imoveis-${user.tenant_id}`, cacheTTL: 60000 }),
+            safeQuery(() => supabase.from('real_contratos').select('*').eq('tenant_id', user.tenant_id).order('created_at', { ascending: false }), { cacheKey: `contratos-${user.tenant_id}`, cacheTTL: 30000 }),
+            safeQuery(() => supabase.from('real_obras').select('*').eq('tenant_id', user.tenant_id).order('created_at', { ascending: false }), { cacheKey: `obras-${user.tenant_id}`, cacheTTL: 60000 })
          ]);
 
          if (imv) setImoveis(imv as unknown as Imovel[]);
@@ -72,7 +75,7 @@ const RealEstatePage: React.FC = () => {
 
    useEffect(() => {
       fetchRealEstateData();
-   }, []);
+   }, [user?.tenant_id]); // Added user.tenant_id to dependencies
 
    // Limpar pesquisa ao trocar de aba para evitar confusão
    useEffect(() => {
@@ -214,7 +217,9 @@ const RealEstatePage: React.FC = () => {
       };
 
       try {
-         const { error } = await supabase.from('real_imoveis').upsert([data]);
+         const { error } = await safeQuery(() =>
+            supabase.from('real_imoveis').upsert([{ ...data, tenant_id: user?.tenant_id }])
+         );
          if (error) throw error;
          fetchRealEstateData();
          setShowImovelModal(false);
@@ -242,13 +247,19 @@ const RealEstatePage: React.FC = () => {
 
       try {
          if (editingContrato) {
-            const { error } = await supabase.from('real_contratos').update(data).eq('id', data.id);
+            const { error } = await safeQuery(() =>
+               supabase.from('real_contratos').update({ ...data, tenant_id: user?.tenant_id }).eq('id', data.id).eq('tenant_id', user?.tenant_id)
+            );
             if (error) throw error;
          } else {
-            const { error: cError } = await supabase.from('real_contratos').insert([data]);
+            const { error: cError } = await safeQuery(() =>
+               supabase.from('real_contratos').insert([{ ...data, tenant_id: user?.tenant_id }])
+            );
             if (cError) throw cError;
             // Atualizar status do imóvel
-            const { error: iError } = await supabase.from('real_imoveis').update({ status: 'Ocupado' }).eq('id', data.imovel_id);
+            const { error: iError } = await safeQuery(() =>
+               supabase.from('real_imoveis').update({ status: 'Ocupado' }).eq('id', data.imovel_id).eq('tenant_id', user?.tenant_id)
+            );
             if (iError) throw iError;
          }
          fetchRealEstateData();
@@ -276,13 +287,19 @@ const RealEstatePage: React.FC = () => {
 
       try {
          if (editingObra) {
-            const { error } = await supabase.from('real_obras').update(data).eq('id', data.id);
+            const { error } = await safeQuery(() =>
+               supabase.from('real_obras').update({ ...data, tenant_id: user?.tenant_id }).eq('id', data.id).eq('tenant_id', user?.tenant_id)
+            );
             if (error) throw error;
          } else {
-            const { error: oError } = await supabase.from('real_obras').insert([data]);
+            const { error: oError } = await safeQuery(() =>
+               supabase.from('real_obras').insert([{ ...data, tenant_id: user?.tenant_id }])
+            );
             if (oError) throw oError;
             // Atualizar status do imóvel para 'Manutenção'
-            const { error: iError } = await supabase.from('real_imoveis').update({ status: 'Manutenção' }).eq('id', data.imovel_id);
+            const { error: iError } = await safeQuery(() =>
+               supabase.from('real_imoveis').update({ status: 'Manutenção' }).eq('id', data.imovel_id).eq('tenant_id', user?.tenant_id)
+            );
             if (iError) throw iError;
          }
          fetchRealEstateData();
@@ -296,7 +313,9 @@ const RealEstatePage: React.FC = () => {
    const handleDeleteImovel = async (id: string, titulo: string) => {
       if (confirm(`Remover imóvel: ${titulo}?`)) {
          try {
-            const { error } = await supabase.from('real_imoveis').delete().eq('id', id);
+            const { error } = await safeQuery(() =>
+               supabase.from('real_imoveis').delete().eq('id', id).eq('tenant_id', user?.tenant_id)
+            );
             if (error) throw error;
             fetchRealEstateData();
          } catch (error) {
@@ -308,7 +327,9 @@ const RealEstatePage: React.FC = () => {
    const handleDeleteContrato = async (id: string) => {
       if (confirm('Remover contrato?')) {
          try {
-            const { error } = await supabase.from('real_contratos').delete().eq('id', id);
+            const { error } = await safeQuery(() =>
+               supabase.from('real_contratos').delete().eq('id', id).eq('tenant_id', user?.tenant_id)
+            );
             if (error) throw error;
             fetchRealEstateData();
          } catch (error) {
