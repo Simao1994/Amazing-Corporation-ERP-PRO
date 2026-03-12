@@ -942,20 +942,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    const COLORS_PIE = ['#eab308', '#22c55e', '#3b82f6', '#ef4444', '#a855f7'];
 
-   if (loading && funcionarios.length === 0) {
-      return (
-         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 animate-in fade-in duration-500">
-            <div className="relative">
-               <div className="w-24 h-24 border-4 border-sky-100 rounded-full animate-pulse"></div>
-               <div className="absolute inset-0 border-t-4 border-yellow-500 rounded-full animate-spin"></div>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-               <h3 className="text-zinc-900 font-black uppercase text-[12px] tracking-[0.3em]">Sincronizando Talentos</h3>
-               <p className="text-zinc-400 text-[10px] font-bold animate-pulse">A carregar informaes da nuvem Amazing...</p>
-            </div>
-         </div>
-      );
-   }
+   // O carregamento agora é não-bloqueante
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -1031,24 +1018,33 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
                   {/* KPI Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                     <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
-                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Colaboradores</p>
-                        <p className="text-4xl font-black text-zinc-900">{analyticsData.total}</p>
-                        <div className="mt-2 flex items-center gap-2 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit"><CheckCircle2 size={12} /> {analyticsData.ativos} Activos</div>
-                     </div>
-                     <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
-                        <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Custo Mensal (Est)</p>
-                        <p className="text-3xl font-black">{formatAOA(analyticsData.payrollCost)}</p>
-                        <div className="absolute -right-4 -bottom-4 opacity-10"><DollarSign size={80} /></div>
-                     </div>
-                     <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
-                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Metas Activas</p>
-                        <p className="text-4xl font-black text-zinc-900">{analyticsData.metasTotal}</p>
-                     </div>
-                     <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
-                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Departamentos</p>
-                        <p className="text-4xl font-black text-zinc-900">{analyticsData.pieData.length}</p>
-                     </div>
+                     {loading && funcionarios.length === 0 ? (
+                        <div className="col-span-4 py-12 text-center bg-white rounded-[2.5rem] border border-sky-100 shadow-sm animate-pulse flex flex-col items-center justify-center gap-4">
+                           <RefreshCw className="w-10 h-10 text-yellow-500 animate-spin" />
+                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Sincronizando Talentos...</p>
+                        </div>
+                     ) : (
+                        <>
+                           <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
+                              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Colaboradores</p>
+                              <p className="text-4xl font-black text-zinc-900">{analyticsData.total}</p>
+                              <div className="mt-2 flex items-center gap-2 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit"><CheckCircle2 size={12} /> {analyticsData.ativos} Activos</div>
+                           </div>
+                           <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
+                              <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Custo Mensal (Est)</p>
+                              <p className="text-3xl font-black">{formatAOA(analyticsData.payrollCost)}</p>
+                              <div className="absolute -right-4 -bottom-4 opacity-10"><DollarSign size={80} /></div>
+                           </div>
+                           <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
+                              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Metas Activas</p>
+                              <p className="text-4xl font-black text-zinc-900">{analyticsData.metasTotal}</p>
+                           </div>
+                           <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-between">
+                              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Departamentos</p>
+                              <p className="text-4xl font-black text-zinc-900">{analyticsData.pieData.length}</p>
+                           </div>
+                        </>
+                     )}
                   </div>
 
                   {/* Grficos */}

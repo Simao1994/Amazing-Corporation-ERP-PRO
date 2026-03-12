@@ -241,14 +241,7 @@ const GaleriaPage: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-yellow-500 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // O carregamento agora é não-bloqueante
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -367,7 +360,12 @@ const GaleriaPage: React.FC = () => {
       {activeTab === 'empresas' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <input type="file" ref={companyFileInputRef} className="hidden" accept="image/*" onChange={handleCompanyPhotoChange} />
-          {empresas.map(emp => (
+          {loading && empresas.length === 0 ? (
+            <div className="col-span-full py-20 text-center space-y-4">
+              <RefreshCw className="mx-auto w-10 h-10 text-yellow-500 animate-spin" />
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A carregar o portfólio...</p>
+            </div>
+          ) : empresas.map(emp => (
             <div key={emp.id} className="bg-white rounded-[2.5rem] overflow-hidden border border-sky-100 shadow-sm group hover:shadow-2xl transition-all cursor-pointer" onClick={() => handleCompanyPhotoClick(emp.id)}>
               <div className="h-56 relative overflow-hidden">
                 <img src={emp.foto_url || ''} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
@@ -409,7 +407,12 @@ const GaleriaPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {galeriaItems.map(item => (
+            {loading && galeriaItems.length === 0 ? (
+              <div className="col-span-full py-20 text-center space-y-4">
+                <RefreshCw className="mx-auto w-10 h-10 text-yellow-500 animate-spin" />
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A expandir a galeria comercial...</p>
+              </div>
+            ) : galeriaItems.map(item => (
               <div key={item.id} className="bg-white rounded-3xl overflow-hidden border border-zinc-100 group shadow-sm hover:shadow-xl transition-all relative">
                 <div className="aspect-video relative overflow-hidden bg-zinc-100">
                   {item.tipo === 'video' ? (

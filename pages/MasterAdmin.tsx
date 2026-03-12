@@ -3,7 +3,7 @@ import { supabase } from '../src/lib/supabase';
 import {
     Building2, Users, CreditCard, CheckCircle2, XCircle, Clock,
     AlertTriangle, TrendingUp, Search, X, Plus, Edit3, Shield, Globe, Layers, BarChart3,
-    Calendar, RefreshCcw, ChevronDown, Link as LinkIcon, Eye
+    Calendar, RefreshCw, ChevronDown, Link as LinkIcon, Eye
 } from 'lucide-react';
 import { formatAOA } from '../constants';
 import { useAuth } from '../src/contexts/AuthContext';
@@ -508,11 +508,7 @@ const MasterAdmin: React.FC = () => {
         t.nif?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-[#020617]">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-        </div>
-    );
+    // Carregamento não-bloqueante
 
     if (error) return (
         <div className="min-h-screen flex items-center justify-center bg-[#020617] p-8">
@@ -566,46 +562,55 @@ const MasterAdmin: React.FC = () => {
             {activeTab === 'overview' && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-purple-500/30 transition-all group">
-                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-purple-400 transition-colors">
-                                <Building2 size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Empresas Ativas</span>
+                        {loading && tenants.length === 0 ? (
+                            <div className="col-span-full py-12 text-center animate-pulse">
+                                <RefreshCw className="mx-auto w-8 h-8 text-purple-500 animate-spin mb-3" />
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sincronizando infraestrutura...</p>
                             </div>
-                            <p className="text-3xl font-black">{tenants.filter(t => t.status === 'ativo').length}</p>
-                        </div>
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-blue-500/30 transition-all group">
-                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-blue-400 transition-colors">
-                                <Users size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Total Empresas</span>
-                            </div>
-                            <p className="text-3xl font-black">{tenants.length}</p>
-                        </div>
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-cyan-500/30 transition-all group">
-                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-cyan-400 transition-colors">
-                                <Users size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Visitantes APP</span>
-                            </div>
-                            <p className="text-3xl font-black">{saasConfig?.visitors_count || 0}</p>
-                        </div>
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all group">
-                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-indigo-400 transition-colors">
-                                <Eye size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Visualizações</span>
-                            </div>
-                            <p className="text-3xl font-black">{saasConfig?.views_count || 0}</p>
-                        </div>
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-green-500/30 transition-all group relative overflow-hidden">
-                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-green-400 transition-colors relative z-10">
-                                <TrendingUp size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">MRR Est.</span>
-                            </div>
-                            <p className="text-xl md:text-2xl font-black text-green-400 relative z-10">
-                                {formatAOA(subscriptions.filter(s => s.status === 'ativo').reduce((acc, s) => acc + (Number(s.valor_pago) || 0), 0))}
-                            </p>
-                        </div>
-                        <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-orange-500/30 transition-all group">
-                            <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-orange-400 transition-colors">
-                                <AlertTriangle size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Pendentes</span>
-                            </div>
-                            <p className="text-3xl font-black text-orange-400">
-                                {subscriptions.filter(s => s.status === 'pendente').length}
-                            </p>
-                        </div>
+                        ) : (
+                            <>
+                                <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-purple-500/30 transition-all group">
+                                    <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-purple-400 transition-colors">
+                                        <Building2 size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Empresas Ativas</span>
+                                    </div>
+                                    <p className="text-3xl font-black">{tenants.filter(t => t.status === 'ativo').length}</p>
+                                </div>
+                                <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-blue-500/30 transition-all group">
+                                    <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-blue-400 transition-colors">
+                                        <Users size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Total Empresas</span>
+                                    </div>
+                                    <p className="text-3xl font-black">{tenants.length}</p>
+                                </div>
+                                <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-cyan-500/30 transition-all group">
+                                    <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-cyan-400 transition-colors">
+                                        <Users size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Visitantes APP</span>
+                                    </div>
+                                    <p className="text-3xl font-black">{saasConfig?.visitors_count || 0}</p>
+                                </div>
+                                <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all group">
+                                    <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-indigo-400 transition-colors">
+                                        <Eye size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Visualizações</span>
+                                    </div>
+                                    <p className="text-3xl font-black">{saasConfig?.views_count || 0}</p>
+                                </div>
+                                <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-green-500/30 transition-all group relative overflow-hidden">
+                                    <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-green-400 transition-colors relative z-10">
+                                        <TrendingUp size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">MRR Est.</span>
+                                    </div>
+                                    <p className="text-xl md:text-2xl font-black text-green-400 relative z-10">
+                                        {formatAOA(subscriptions.filter(s => s.status === 'ativo').reduce((acc, s) => acc + (Number(s.valor_pago) || 0), 0))}
+                                    </p>
+                                </div>
+                                <div className="bg-[#0f172a]/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 hover:border-orange-500/30 transition-all group">
+                                    <div className="flex items-center gap-3 mb-3 text-slate-500 group-hover:text-orange-400 transition-colors">
+                                        <AlertTriangle size={20} /> <span className="text-[9px] font-black uppercase tracking-[0.2em] line-clamp-1">Pendentes</span>
+                                    </div>
+                                    <p className="text-3xl font-black text-orange-400">
+                                        {subscriptions.filter(s => s.status === 'pendente').length}
+                                    </p>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -700,7 +705,20 @@ const MasterAdmin: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {filteredTenants.map(tenant => {
+                                {loading && tenants.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-8 py-20 text-center">
+                                            <RefreshCw className="mx-auto w-10 h-10 text-purple-500 animate-spin mb-4" />
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Auditando bases de dados corporativas...</p>
+                                        </td>
+                                    </tr>
+                                ) : filteredTenants.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="text-center py-16 text-slate-500 font-bold text-sm">
+                                            Nenhuma empresa encontrada.
+                                        </td>
+                                    </tr>
+                                ) : filteredTenants.map(tenant => {
                                     const activeSub = subscriptions.find(s => s.tenant_id === tenant.id && s.status === 'ativo');
                                     return (
                                         <tr key={tenant.id} className="hover:bg-white/2 transition-colors">
@@ -1086,7 +1104,7 @@ const MasterAdmin: React.FC = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2 flex items-center gap-2">
-                                        <RefreshCcw size={12} /> Renovação Automática
+                                        <RefreshCw size={12} /> Renovação Automática
                                     </label>
                                     <div className="flex items-center gap-4 h-[46px] px-4 bg-[#1e293b] border border-white/5 rounded-2xl">
                                         <button
@@ -1112,7 +1130,7 @@ const MasterAdmin: React.FC = () => {
                                 disabled={licenseFormSaving}
                                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-purple-900/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
                             >
-                                {licenseFormSaving && <RefreshCcw size={14} className="animate-spin" />}
+                                {licenseFormSaving && <RefreshCw size={14} className="animate-spin" />}
                                 {editingSubscription ? 'Actualizar Licença' : 'Criar Licença'}
                             </button>
                         </div>
@@ -1230,8 +1248,8 @@ const MasterAdmin: React.FC = () => {
                                                     setPlanForm({ ...planForm, modules: newMods.join(', ') });
                                                 }}
                                                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all hover:scale-105 active:scale-95 ${active
-                                                        ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/30'
-                                                        : 'bg-white/5 border-white/5 text-slate-500 hover:border-purple-500/30 hover:text-slate-300'
+                                                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/30'
+                                                    : 'bg-white/5 border-white/5 text-slate-500 hover:border-purple-500/30 hover:text-slate-300'
                                                     }`}
                                             >
                                                 <span>{mod.icon}</span> {mod.label}
@@ -1256,7 +1274,7 @@ const MasterAdmin: React.FC = () => {
                                 disabled={planFormSaving}
                                 className="md:col-span-2 py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl shadow-purple-900/20 hover:scale-[1.02] transition-all disabled:opacity-50"
                             >
-                                {planFormSaving && <RefreshCcw size={14} className="animate-spin" />}
+                                {planFormSaving && <RefreshCw size={14} className="animate-spin" />}
                                 Guardar Alterações do Plano
                             </button>
                         </form>
@@ -1317,7 +1335,7 @@ const MasterAdmin: React.FC = () => {
                                 disabled={tenantFormSaving}
                                 className="w-full py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black rounded-2xl uppercase text-xs tracking-[0.2em] shadow-xl shadow-purple-900/40 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                             >
-                                {tenantFormSaving ? <RefreshCcw className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
+                                {tenantFormSaving ? <RefreshCw className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
                                 {tenantFormSaving ? 'A REGISTAR...' : 'EFECTIVAR REGISTO'}
                             </button>
                         </form>
@@ -1371,7 +1389,7 @@ const MasterAdmin: React.FC = () => {
                                 disabled={configFormSaving}
                                 className="w-full py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black rounded-2xl uppercase text-xs tracking-[0.2em] shadow-xl shadow-purple-900/40 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                             >
-                                {configFormSaving ? <RefreshCcw className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
+                                {configFormSaving ? <RefreshCw className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
                                 {configFormSaving ? 'A GUARDAR...' : 'GUARDAR CONFIGURAÇÕES'}
                             </button>
                         </form>

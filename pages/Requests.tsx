@@ -112,14 +112,7 @@ const RequestsPage: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-sky-600 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // Carregamento não-bloqueante
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -146,7 +139,12 @@ const RequestsPage: React.FC = () => {
 
       {activeTab === 'solicitacoes' ? (
         <div className="grid grid-cols-1 gap-4">
-          {solicitacoes.length > 0 ? [...solicitacoes].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).map(s => (
+          {loading && solicitacoes.length === 0 ? (
+            <div className="col-span-full py-20 text-center space-y-4">
+              <RefreshCw className="mx-auto w-10 h-10 text-sky-500 animate-spin" />
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A recuperar tickets de suporte...</p>
+            </div>
+          ) : solicitacoes.length > 0 ? [...solicitacoes].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).map(s => (
             <div key={s.id} className={`bg-white p-8 rounded-[2rem] border border-sky-100 shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-xl transition-all ${s.status === 'resolvido' ? 'opacity-60 grayscale' : ''}`}>
               <div className="space-y-4 max-w-2xl">
                 <div className="flex items-center gap-3">
@@ -189,7 +187,12 @@ const RequestsPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {testemunhos.length > 0 ? testemunhos.map(t => (
+          {loading && testemunhos.length === 0 ? (
+            <div className="col-span-full py-20 text-center space-y-4">
+              <RefreshCw className="mx-auto w-10 h-10 text-sky-500 animate-spin" />
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A processar depoimentos...</p>
+            </div>
+          ) : testemunhos.length > 0 ? testemunhos.map(t => (
             <div key={t.id} className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col group relative overflow-hidden">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-3">

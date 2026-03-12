@@ -135,14 +135,7 @@ const ParceirosPage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // Carregamento não-bloqueante
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -174,7 +167,12 @@ const ParceirosPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.length > 0 ? filtered.map(p => (
+        {isLoading && parceiros.length === 0 ? (
+          <div className="col-span-full py-20 text-center space-y-4">
+            <RefreshCw className="mx-auto w-10 h-10 text-yellow-500 animate-spin" />
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A carregar Alianças Estratégicas...</p>
+          </div>
+        ) : filtered.length > 0 ? filtered.map(p => (
           <div key={p.id} className="bg-white rounded-[2.5rem] p-8 border border-sky-100 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform">
               <Handshake size={120} />

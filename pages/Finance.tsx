@@ -197,14 +197,7 @@ const FinancePage: React.FC = () => {
     return CATEGORIAS_FINANCEIRAS.find(c => c.value === catName)?.color || 'bg-zinc-100 text-zinc-700';
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // O carregamento agora é não-bloqueante
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -325,32 +318,43 @@ const FinancePage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-50">
-              {filteredNotas.length > 0 ? filteredNotas.map((n) => (
-                <tr key={n.id} className="hover:bg-zinc-50/30 transition-all group">
-                  <td className="px-8 py-5">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-zinc-900">{n.numero}</span>
-                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{n.fornecedor}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5">
-                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit ${getCategoryColor(n.categoria)}`}>
-                      <Tag size={12} />
-                      {n.categoria}
-                    </span>
-                  </td>
-                  <td className="px-8 py-5 text-sm font-bold text-zinc-600 text-center">{n.data_emissao}</td>
-                  <td className="px-8 py-5 text-sm font-black text-zinc-900 text-right">{formatAOA(n.valor_total)}</td>
-                  <td className="px-8 py-5 text-right flex justify-end gap-2 print:hidden">
-                    <button onClick={() => handleOpenModal(n)} className="p-3 text-zinc-300 hover:text-yellow-600 hover:bg-yellow-50 rounded-xl transition-all"><Edit size={16} /></button>
-                    <button onClick={() => handleDelete(n.id, n.numero)} className="p-3 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+              {loading && notas.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-8 py-20 text-center space-y-4">
+                    <RefreshCw className="mx-auto w-10 h-10 text-yellow-500 animate-spin" />
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A sintonizar tesouraria...</p>
                   </td>
                 </tr>
-              )) : (
-                <tr><td colSpan={5} className="px-8 py-20 text-center">
-                  <FileText size={48} className="mx-auto text-sky-100 mb-4" />
-                  <p className="text-zinc-400 font-bold italic">Nenhum lançamento fiscal encontrado nos filtros atuais.</p>
-                </td></tr>
+              ) : filteredNotas.length > 0 ? (
+                filteredNotas.map((n) => (
+                  <tr key={n.id} className="hover:bg-zinc-50/30 transition-all group">
+                    <td className="px-8 py-5">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-zinc-900">{n.numero}</span>
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{n.fornecedor}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit ${getCategoryColor(n.categoria)}`}>
+                        <Tag size={12} />
+                        {n.categoria}
+                      </span>
+                    </td>
+                    <td className="px-8 py-5 text-sm font-bold text-zinc-600 text-center">{n.data_emissao}</td>
+                    <td className="px-8 py-5 text-sm font-black text-zinc-900 text-right">{formatAOA(n.valor_total)}</td>
+                    <td className="px-8 py-5 text-right flex justify-end gap-2 print:hidden">
+                      <button onClick={() => handleOpenModal(n)} className="p-3 text-zinc-300 hover:text-yellow-600 hover:bg-yellow-50 rounded-xl transition-all"><Edit size={16} /></button>
+                      <button onClick={() => handleDelete(n.id, n.numero)} className="p-3 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-8 py-20 text-center">
+                    <FileText size={48} className="mx-auto text-sky-100 mb-4" />
+                    <p className="text-zinc-400 font-bold italic">Nenhum lançamento fiscal encontrado nos filtros atuais.</p>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

@@ -448,28 +448,30 @@ const UsersPage: React.FC<UsersPageProps> = ({ user: appUser }) => {
             </div>
 
             {/* Users List */}
-            {loading ? (
-                <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
-                    <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
-                    <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
+            {profiles.length === 0 ? (
+                <div className="bg-white border border-zinc-100 rounded-3xl p-12 text-center shadow-sm">
+                    <User size={48} className="mx-auto text-zinc-300 mb-4" />
+                    <p className="text-slate-500 font-semibold">Nenhum utilizador registado ainda.</p>
+                    <button
+                        onClick={() => setShowForm(true)}
+                        className="mt-4 bg-yellow-500 text-white font-black px-6 py-2.5 rounded-xl text-sm uppercase tracking-wider hover:bg-yellow-600 transition-colors"
+                    >
+                        Criar primeiro utilizador
+                    </button>
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="bg-white border border-zinc-100 rounded-3xl p-12 text-center shadow-sm">
-                    <User size={48} className="mx-auto text-zinc-300 mb-4" />
-                    <p className="text-slate-500 font-semibold">
-                        {profiles.length === 0 ? 'Nenhum utilizador registado ainda.' : 'Nenhum resultado encontrado.'}
-                    </p>
-                    {profiles.length === 0 && (
-                        <button
-                            onClick={() => setShowForm(true)}
-                            className="mt-4 bg-yellow-500 text-white font-black px-6 py-2.5 rounded-xl text-sm uppercase tracking-wider hover:bg-yellow-600 transition-colors"
-                        >
-                            Criar primeiro utilizador
-                        </button>
-                    )}
+                    <Search size={48} className="mx-auto text-zinc-300 mb-4" />
+                    <p className="text-slate-500 font-semibold">Nenhum resultado encontrado.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {loading && filtered.length > 0 && (
+                        <div className="col-span-full py-4 text-center animate-pulse">
+                            <RefreshCw className="inline-block w-5 h-5 text-yellow-600 animate-spin mr-2" />
+                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Sincronizando usuários...</span>
+                        </div>
+                    )}
                     {filtered.map(profile => (
                         <div key={profile.id} className="bg-white border border-zinc-100 rounded-3xl p-6 shadow-sm hover:shadow-lg transition-all hover:-translate-y-0.5 group">
                             <div className="flex items-start gap-4">

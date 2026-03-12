@@ -331,14 +331,7 @@ const RealEstatePage: React.FC = () => {
 
    const COLORS_PIE = ['#ca8a04', '#22c55e', '#3b82f6', '#ef4444'];
 
-   if (loading) {
-      return (
-         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-            <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
-            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-         </div>
-      );
-   }
+   // O carregamento agora é não-bloqueante
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-24">
@@ -380,30 +373,39 @@ const RealEstatePage: React.FC = () => {
          {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4">
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Valor Patrimonial</p>
-                     <p className="text-2xl font-black text-zinc-900">{formatAOA(stats.valorPatrimonial)}</p>
-                     <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit">
-                        <ArrowUpRight size={12} /> +5% Valorização
+                  {loading && imoveis.length === 0 ? (
+                     <div className="col-span-4 py-12 text-center bg-white rounded-[2.5rem] border border-sky-100 shadow-sm animate-pulse flex flex-col items-center justify-center gap-4">
+                        <RefreshCw className="w-10 h-10 text-yellow-500 animate-spin" />
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest underline decoration-yellow-500">A sintonizar Portfólio Imobiliário...</p>
                      </div>
-                  </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Taxa de Ocupação</p>
-                     <p className="text-4xl font-black text-zinc-900">{stats.taxaOcupacao.toFixed(1)}%</p>
-                     <div className="w-full bg-zinc-100 h-1.5 rounded-full mt-4 overflow-hidden">
-                        <div className="h-full bg-yellow-500" style={{ width: `${stats.taxaOcupacao}% ` }}></div>
-                     </div>
-                  </div>
-                  <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
-                     <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-2">Receita (Rendas/Aluguer)</p>
-                     <p className="text-3xl font-black">{formatAOA(stats.receitaMensal)}</p>
-                     <p className="text-[9px] text-zinc-400 font-bold uppercase mt-2">Previsão Anual: {formatAOA(stats.receitaMensal * 12)}</p>
-                  </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-center items-center text-center">
-                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Obras em Curso</p>
-                     <p className="text-5xl font-black text-zinc-900">{stats.obrasEmCurso}</p>
-                     <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-1">Reabilitação Ativa</p>
-                  </div>
+                  ) : (
+                     <>
+                        <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm">
+                           <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Valor Patrimonial</p>
+                           <p className="text-2xl font-black text-zinc-900">{formatAOA(stats.valorPatrimonial)}</p>
+                           <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg w-fit">
+                              <ArrowUpRight size={12} /> +5% Valorização
+                           </div>
+                        </div>
+                        <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm">
+                           <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Taxa de Ocupação</p>
+                           <p className="text-4xl font-black text-zinc-900">{stats.taxaOcupacao.toFixed(1)}%</p>
+                           <div className="w-full bg-zinc-100 h-1.5 rounded-full mt-4 overflow-hidden">
+                              <div className="h-full bg-yellow-500" style={{ width: `${stats.taxaOcupacao}% ` }}></div>
+                           </div>
+                        </div>
+                        <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
+                           <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-2">Receita (Rendas/Aluguer)</p>
+                           <p className="text-3xl font-black">{formatAOA(stats.receitaMensal)}</p>
+                           <p className="text-[9px] text-zinc-400 font-bold uppercase mt-2">Previsão Anual: {formatAOA(stats.receitaMensal * 12)}</p>
+                        </div>
+                        <div className="bg-white p-8 rounded-[2.5rem] border border-sky-100 shadow-sm flex flex-col justify-center items-center text-center">
+                           <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-2">Obras em Curso</p>
+                           <p className="text-5xl font-black text-zinc-900">{stats.obrasEmCurso}</p>
+                           <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-1">Reabilitação Ativa</p>
+                        </div>
+                     </>
+                  )}
                </div>
 
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

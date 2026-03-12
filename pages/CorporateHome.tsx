@@ -391,20 +391,19 @@ const PublicMediaGallery: React.FC = () => {
     fetchMedia();
   }, []);
 
-  if (loading) return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-pulse">
-      {[1, 2, 4, 5, 6, 7, 8].map(i => (
-        <div key={i} className="aspect-square bg-zinc-100 rounded-3xl" />
-      ))}
-    </div>
-  );
+  // Carregamento não-bloqueante
 
   if (items.length === 0) return null;
 
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {items.map((item, idx) => (
+        {loading && items.length === 0 ? (
+          <div className="col-span-full py-20 text-center space-y-4 animate-pulse">
+            <RefreshCw className="mx-auto w-10 h-10 text-sky-500 animate-spin" />
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em]">A carregar memórias corporativas...</p>
+          </div>
+        ) : items.map((item, idx) => (
           <div
             key={item.id}
             onClick={() => setSelectedMedia(item)}
@@ -956,8 +955,8 @@ const CorporateHome: React.FC = () => {
               <Link
                 to={`/empresa/${activeLive.slug}/live`}
                 className={`inline-flex items-center gap-4 px-8 py-4 backdrop-blur-xl rounded-full border shadow-2xl transition-all hover:scale-105 ${activeLive.status === 'ao_vivo'
-                    ? 'bg-red-600/20 border-red-500 text-white hover:bg-red-600/30 shadow-red-500/20'
-                    : 'bg-zinc-900/50 border-zinc-600 text-white hover:bg-zinc-800'
+                  ? 'bg-red-600/20 border-red-500 text-white hover:bg-red-600/30 shadow-red-500/20'
+                  : 'bg-zinc-900/50 border-zinc-600 text-white hover:bg-zinc-800'
                   }`}
               >
                 {activeLive.status === 'ao_vivo' ? (

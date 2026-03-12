@@ -193,14 +193,7 @@ const EmpresasPage: React.FC = () => {
   };
 
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-yellow-500 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // O carregamento agora é não-bloqueante
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -232,7 +225,12 @@ const EmpresasPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {filtered.length === 0 ? (
+        {loading && empresas.length === 0 ? (
+          <div className="col-span-full py-20 text-center space-y-4">
+            <RefreshCw className="mx-auto w-10 h-10 text-yellow-500 animate-spin" />
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A sintonizar unidades...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-white/40 rounded-[3rem] border-2 border-dashed border-sky-100">
             <Building2 size={64} className="mx-auto text-sky-100 mb-4" />
             <p className="text-zinc-400 font-bold italic text-lg">{searchTerm ? 'Nenhuma unidade corresponde à pesquisa.' : 'O portfolio do grupo está vazio.'}</p>

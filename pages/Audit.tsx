@@ -47,14 +47,7 @@ const AuditPage: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // Carregamento não-bloqueante
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -115,7 +108,14 @@ const AuditPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-50">
-            {filteredLogs.length > 0 ? filteredLogs.map((log) => (
+            {loading && logs.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-8 py-20 text-center">
+                  <RefreshCw className="mx-auto w-10 h-10 text-yellow-600 animate-spin mb-4" />
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">Auditando operações críticas...</p>
+                </td>
+              </tr>
+            ) : filteredLogs.length > 0 ? filteredLogs.map((log) => (
               <tr key={log.id} className="hover:bg-zinc-50/50 transition-all">
                 <td className="px-8 py-5">
                   <div className="flex items-center gap-3">
@@ -133,7 +133,7 @@ const AuditPage: React.FC = () => {
                 </td>
                 <td className="px-8 py-5 font-black text-zinc-900 text-sm">
                   <span className={`px-2 py-1 rounded-md ${log.acao === 'DELETE' ? 'text-red-600 bg-red-50' :
-                      log.acao === 'INSERT' ? 'text-green-600 bg-green-50' : 'text-sky-600 bg-sky-50'
+                    log.acao === 'INSERT' ? 'text-green-600 bg-green-50' : 'text-sky-600 bg-sky-50'
                     }`}>
                     {log.acao}
                   </span>

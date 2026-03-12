@@ -28,11 +28,11 @@ const gerarReferencia = () => {
 // Helper: Calcula o Status do Torneio baseado nas Datas e Vencedor
 export const calculateTournamentStatus = (t: ArenaTournament): 'Inscrições' | 'A decorrer' | 'Finalizado' => {
    if (t.vencedor) return 'Finalizado';
-   
+
    const now = new Date();
    const inicio = new Date(t.data_inicio);
    const fim = new Date(t.data_fim);
-   
+
    now.setHours(0, 0, 0, 0);
    inicio.setHours(0, 0, 0, 0);
    fim.setHours(0, 0, 0, 0);
@@ -180,14 +180,7 @@ const ArenaGames: React.FC = () => {
       }
    };
 
-   if (loading) {
-      return (
-         <div className="min-h-screen bg-[#07080a] flex flex-col items-center justify-center space-y-4">
-            <RefreshCw className="w-12 h-12 text-indigo-600 animate-spin" />
-            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-         </div>
-      );
-   }
+   // Carregamento não-bloqueante
 
    return (
       <div className="min-h-screen bg-[#07080a] text-white font-sans selection:bg-indigo-500">
@@ -271,7 +264,12 @@ const ArenaGames: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-                     {filteredGames.map(game => (
+                     {loading && games.length === 0 ? (
+                        <div className="col-span-full py-40 text-center space-y-6">
+                           <RefreshCw className="mx-auto w-16 h-16 text-indigo-600 animate-spin" />
+                           <p className="text-[12px] font-black text-zinc-500 uppercase tracking-[0.5em] animate-pulse">A carregar Universo Gamer...</p>
+                        </div>
+                     ) : filteredGames.map(game => (
                         <div key={game.id} className="group bg-[#111216] rounded-[3.5rem] border border-white/5 hover:border-indigo-500/50 transition-all duration-700 overflow-hidden flex flex-col relative shadow-2xl">
                            <div className="h-80 relative overflow-hidden">
                               <img src={game.imagem_url} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000 opacity-80" />
@@ -340,7 +338,12 @@ const ArenaGames: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-                     {tournaments.map(t => {
+                     {loading && tournaments.length === 0 ? (
+                        <div className="col-span-full py-20 text-center space-y-6">
+                           <RefreshCw className="mx-auto w-12 h-12 text-indigo-600 animate-spin" />
+                           <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] animate-pulse">A preparar Chaves da Competição...</p>
+                        </div>
+                     ) : tournaments.map(t => {
                         const status = calculateTournamentStatus(t);
                         return (
                            <div key={t.id} className="bg-[#111216] p-10 rounded-[4rem] border border-white/5 flex flex-col md:flex-row gap-10 group hover:border-yellow-500/30 transition-all shadow-2xl relative overflow-hidden cursor-pointer" onClick={() => setViewingTournament(t)}>

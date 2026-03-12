@@ -177,14 +177,7 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
   };
 
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // O carregamento agora é não-bloqueante
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -216,7 +209,12 @@ const BlogPage: React.FC<BlogPageProps> = ({ user: appUser }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {filtered.length > 0 ? (
+        {loading ? (
+          <div className="col-span-full py-32 text-center space-y-4">
+            <RefreshCw className="mx-auto w-12 h-12 text-yellow-500 animate-spin" />
+            <p className="text-zinc-400 font-black uppercase tracking-[0.3em] text-xs animate-pulse">A carregar artigos...</p>
+          </div>
+        ) : filtered.length > 0 ? (
           filtered.map(post => (
             <div key={post.id} className="bg-white rounded-[3rem] overflow-hidden border border-sky-100 shadow-sm hover:shadow-2xl transition-all group flex flex-col md:flex-row">
               <div className="md:w-1/3 aspect-video md:aspect-auto overflow-hidden relative bg-zinc-900">

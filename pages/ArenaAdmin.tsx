@@ -438,14 +438,7 @@ const ArenaAdmin: React.FC = () => {
 
    const COLORS = ['#6366f1', '#eab308', '#22c55e', '#ef4444', '#a855f7'];
 
-   if (loading) {
-      return (
-         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-            <RefreshCw className="w-12 h-12 text-indigo-600 animate-spin" />
-            <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-         </div>
-      );
-   }
+   // Carregamento não-bloqueante
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-24">
@@ -567,7 +560,12 @@ const ArenaAdmin: React.FC = () => {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {games.filter(g => g.titulo.toLowerCase().includes(searchTerm.toLowerCase())).map(game => (
+                  {loading && games.length === 0 ? (
+                     <div className="col-span-full py-20 text-center space-y-4">
+                        <RefreshCw className="mx-auto w-10 h-10 text-indigo-500 animate-spin" />
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A inventariar catálogo...</p>
+                     </div>
+                  ) : games.filter(g => g.titulo.toLowerCase().includes(searchTerm.toLowerCase())).map(game => (
                      <div key={game.id} className="bg-white rounded-[3rem] border border-sky-100 shadow-sm overflow-hidden group hover:shadow-2xl transition-all">
                         <div className="h-48 relative overflow-hidden">
                            <img src={game.imagem_url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -657,7 +655,14 @@ const ArenaAdmin: React.FC = () => {
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50">
-                           {pagamentosFiltrados.length === 0 ? (
+                           {loading && payments.length === 0 ? (
+                              <tr>
+                                 <td colSpan={6} className="text-center py-20">
+                                    <RefreshCw className="mx-auto w-10 h-10 text-indigo-500 animate-spin mb-4" />
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A recuperar histórico de faturamento...</p>
+                                 </td>
+                              </tr>
+                           ) : pagamentosFiltrados.length === 0 ? (
                               <tr><td colSpan={6} className="text-center py-16 text-zinc-400 text-sm font-medium">Nenhum pagamento encontrado</td></tr>
                            ) : pagamentosFiltrados.map(p => {
                               const isPendente = p.status === 'Pendente';

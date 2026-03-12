@@ -119,14 +119,7 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ user }) => {
   };
 
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-purple-600 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // O carregamento agora é não-bloqueante
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -175,7 +168,12 @@ const DepartmentsPage: React.FC<DepartmentsPageProps> = ({ user }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredItems.map((dept) => (
+        {loading && departamentos.length === 0 ? (
+          <div className="col-span-full py-20 text-center space-y-4">
+            <RefreshCw className="mx-auto w-10 h-10 text-purple-500 animate-spin" />
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">A expandir estrutura organizacional...</p>
+          </div>
+        ) : filteredItems.map((dept) => (
           <div
             key={dept.id}
             className="group relative bg-white rounded-[2.5rem] p-10 border border-purple-50 shadow-sm hover:shadow-3xl hover:shadow-purple-500/15 transition-all duration-700 hover:-translate-y-2 flex flex-col h-full"

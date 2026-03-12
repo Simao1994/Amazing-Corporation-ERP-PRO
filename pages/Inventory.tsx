@@ -310,14 +310,7 @@ const InventoryPage: React.FC = () => {
   const totalValue = useMemo(() => items.reduce((acc, curr) => acc + curr.total, 0), [items]);
   const lowStockCount = useMemo(() => items.filter(i => i.qtd <= i.qtd_minima).length, [items]);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-12 h-12 text-yellow-600 animate-spin" />
-        <p className="text-zinc-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-      </div>
-    );
-  }
+  // O loading agora é não-bloqueante: renderizamos o layout e mostramos um spinner apenas nos dados
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
@@ -381,30 +374,60 @@ const InventoryPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-50">
-                  {filteredItems.map(item => (
-                    <tr key={item.id} className="hover:bg-zinc-50/50">
-                      <td className="px-8 py-4">
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <p className="font-black text-zinc-900 text-sm">{item.nome}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[9px] font-bold text-zinc-400 uppercase">{item.categoria}</span>
-                              {item.referencia && <span className="text-[8px] px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded font-black">REF: {item.referencia}</span>}
-                            </div>
-                          </div>
-                          {item.data_validade && (
-                            <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${new Date(item.data_validade) < new Date() ? 'bg-red-100 text-red-600' :
-                              new Date(item.data_validade) < new Date(new Date().setDate(new Date().getDate() + 30)) ? 'bg-orange-100 text-orange-600' :
-                                'bg-green-100 text-green-600'
-                              }`}>
-                              Limit: {new Date(item.data_validade).toLocaleDateString()}
-                            </div>
-                          )}
-                        </div>
-                        {item.compatibilidade && <p className="text-[8px] font-medium text-blue-500 mt-1 italic">Compatível: {item.compatibilidade}</p>}
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className="py-20 text-center">
+                        <RefreshCw className="mx-auto w-10 h-10 text-yellow-500 animate-spin" />
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse mt-4">A sincronizar inventário...</p>
                       </td>
                     </tr>
-                  ))}
+                  ) : filteredItems.length > 0 ? (
+                    filteredItems.map(item => (
+                      <tr key={item.id} className="hover:bg-zinc-50/50">
+                        <td className="px-8 py-4">
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <p className="font-black text-zinc-900 text-sm">{item.nome}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[9px] font-bold text-zinc-400 uppercase">{item.categoria}</span>
+                                {item.referencia && <span className="text-[8px] px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded font-black">REF: {item.referencia}</span>}
+                              </div>
+                            </div>
+                            {item.data_validade && (
+                              <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${new Date(item.data_validade) < new Date() ? 'bg-red-100 text-red-600' :
+                                new Date(item.data_validade) < new Date(new Date().setDate(new Date().getDate() + 30)) ? 'bg-orange-100 text-orange-600' :
+                                  'bg-green-100 text-green-600'
+                                }`}>
+                                Limit: {new Date(item.data_validade).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                          {item.compatibilidade && <p className="text-[8px] font-medium text-blue-500 mt-1 italic">Compatível: {item.compatibilidade}</p>}
+                        </td>
+                        <td className="px-8 py-4 text-center">
+                          <span className={`px-3 py-1 rounded-lg text-[10px] font-black ${item.qtd <= item.qtd_minima ? 'bg-red-50 text-red-600 animate-pulse' : 'bg-zinc-50 text-zinc-600'}`}>
+                            {item.qtd} UN
+                          </span>
+                        </td>
+                        <td className="px-8 py-4 text-right font-bold text-zinc-900 text-sm">{formatAOA(item.preco)}</td>
+                        <td className="px-8 py-4 text-right font-black text-zinc-900 text-sm">{formatAOA(item.total)}</td>
+                        <td className="px-8 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => { setSelectedItemForMovement(item); setShowMovementModal(true); }} className="p-2 text-zinc-400 hover:text-yellow-600 transition-colors"><ArrowRightLeft size={16} /></button>
+                            <button onClick={() => openItemModal(item)} className="p-2 text-zinc-400 hover:text-blue-600 transition-colors"><Edit size={16} /></button>
+                            <button onClick={() => handleDeleteItem(item.id, item.nome)} className="p-2 text-zinc-400 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-20 text-center">
+                        <Box size={40} className="mx-auto text-zinc-200 mb-4" />
+                        <p className="text-zinc-400 font-bold italic text-sm">Nenhum item encontrado no inventário.</p>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

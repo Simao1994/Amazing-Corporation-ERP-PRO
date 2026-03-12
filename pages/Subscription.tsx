@@ -10,7 +10,7 @@ import {
     Zap,
     Trophy,
     ShieldCheck,
-    RefreshCcw,
+    RefreshCw,
     Layers,
     X,
     XCircle
@@ -303,7 +303,7 @@ const SubscriptionPage: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2 px-2">
-                                            <RefreshCcw size={12} className="text-zinc-400" />
+                                            <RefreshCw size={12} className="text-zinc-400" />
                                             <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest italic">Facturado automaticamente 2 dias antes.</p>
                                         </div>
                                     </div>
@@ -429,7 +429,7 @@ const SubscriptionPage: React.FC = () => {
                                 {saasSub.status === 'pendente' ? (
                                     <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-center backdrop-blur-xl animate-pulse">
                                         <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <RefreshCcw className="text-yellow-500 animate-spin" size={32} />
+                                            <RefreshCw className="text-yellow-500 animate-spin" size={32} />
                                         </div>
                                         <p className="text-xl font-black uppercase tracking-tight mb-2 leading-none">A Validação em Curso</p>
                                         <p className="text-[10px] text-zinc-400 leading-relaxed font-bold uppercase tracking-widest mt-4">Verificamos o comprovativo em média em 2 horas.</p>
@@ -556,7 +556,7 @@ const SubscriptionPage: React.FC = () => {
                                     disabled={requestingUpgrade}
                                     className="flex-1 py-4 bg-zinc-900 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-yellow-500 hover:text-zinc-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
-                                    {requestingUpgrade ? <RefreshCcw size={14} className="animate-spin" /> : <Zap size={14} />}
+                                    {requestingUpgrade ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
                                     Confirmar Upgrade
                                 </button>
                             </div>

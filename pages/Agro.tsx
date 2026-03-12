@@ -309,14 +309,7 @@ const AgroPage: React.FC = () => {
 
    return (
       <div className="space-y-8 animate-in fade-in duration-700 pb-24 relative">
-         {loading && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl">
-               <div className="flex flex-col items-center">
-                  <RefreshCw size={40} className="text-green-600 animate-spin mb-4" />
-                  <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Sincronizando com a Nuvem...</p>
-               </div>
-            </div>
-         )}
+         {/* O carregamento agora é não-bloqueante */}
 
          {/* Header Temático */}
          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-green-200">
@@ -359,45 +352,54 @@ const AgroPage: React.FC = () => {
             <div className="space-y-8 animate-in slide-in-from-bottom-4">
                {/* ... Dashboard code ... */}
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-green-100 shadow-sm flex flex-col justify-between group hover:border-green-300 transition-all">
-                     <div className="flex justify-between items-start">
-                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Famílias Beneficiadas</p>
-                        <div className="p-2 bg-green-50 text-green-600 rounded-lg"><Users size={18} /></div>
+                  {loading && agricultores.length === 0 ? (
+                     <div className="col-span-4 py-12 text-center bg-white rounded-[2.5rem] border border-green-100 shadow-sm animate-pulse flex flex-col items-center justify-center gap-4">
+                        <RefreshCw className="w-10 h-10 text-green-600 animate-spin" />
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest underline decoration-green-600">A sintonizar sector Agro-Industrial...</p>
                      </div>
-                     <p className="text-4xl font-black text-zinc-900 mt-2">{agricultores.length}</p>
-                     <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-green-600">
-                        <ArrowUpRight size={12} /> +12% Este Mês
-                     </div>
-                  </div>
+                  ) : (
+                     <>
+                        <div className="bg-white p-8 rounded-[2.5rem] border border-green-100 shadow-sm flex flex-col justify-between group hover:border-green-300 transition-all">
+                           <div className="flex justify-between items-start">
+                              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Famílias Beneficiadas</p>
+                              <div className="p-2 bg-green-50 text-green-600 rounded-lg"><Users size={18} /></div>
+                           </div>
+                           <p className="text-4xl font-black text-zinc-900 mt-2">{agricultores.length}</p>
+                           <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-green-600">
+                              <ArrowUpRight size={12} /> +12% Este Mês
+                           </div>
+                        </div>
 
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-green-100 shadow-sm flex flex-col justify-between group hover:border-green-300 transition-all">
-                     <div className="flex justify-between items-start">
-                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Hectares Cultivados</p>
-                        <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg"><Map size={18} /></div>
-                     </div>
-                     <p className="text-4xl font-black text-zinc-900 mt-2">{stats.totalArea} <span className="text-sm text-zinc-400 font-bold">ha</span></p>
-                     <div className="mt-4 w-full bg-zinc-100 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-yellow-500 h-full w-[70%]"></div>
-                     </div>
-                  </div>
+                        <div className="bg-white p-8 rounded-[2.5rem] border border-green-100 shadow-sm flex flex-col justify-between group hover:border-green-300 transition-all">
+                           <div className="flex justify-between items-start">
+                              <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Hectares Cultivados</p>
+                              <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg"><Map size={18} /></div>
+                           </div>
+                           <p className="text-4xl font-black text-zinc-900 mt-2">{stats.totalArea} <span className="text-sm text-zinc-400 font-bold">ha</span></p>
+                           <div className="mt-4 w-full bg-zinc-100 h-1.5 rounded-full overflow-hidden">
+                              <div className="bg-yellow-500 h-full w-[70%]"></div>
+                           </div>
+                        </div>
 
-                  <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden group">
-                     <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform"><HandCoins size={80} /></div>
-                     <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-2">Micro-Crédito Atribuído</p>
-                     <p className="text-3xl font-black">{formatAOA(stats.totalInvestido)}</p>
-                     <div className="mt-4 flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase bg-white/10 px-2 py-1 rounded-lg">ROI Est: {stats.taxaRetorno.toFixed(0)}%</span>
-                     </div>
-                  </div>
+                        <div className="bg-zinc-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden group">
+                           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform"><HandCoins size={80} /></div>
+                           <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-2">Micro-Crédito Atribuído</p>
+                           <p className="text-3xl font-black">{formatAOA(stats.totalInvestido)}</p>
+                           <div className="mt-4 flex items-center gap-2">
+                              <span className="text-[10px] font-black uppercase bg-white/10 px-2 py-1 rounded-lg">ROI Est: {stats.taxaRetorno.toFixed(0)}%</span>
+                           </div>
+                        </div>
 
-                  <div className="bg-green-700 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden flex flex-col justify-between">
-                     <div className="absolute -bottom-4 -right-4 opacity-20"><Wheat size={100} /></div>
-                     <div>
-                        <p className="text-green-200 text-[10px] font-black uppercase tracking-widest mb-2">Produção Total</p>
-                        <p className="text-4xl font-black">{stats.totalColhido.toLocaleString()} <span className="text-lg">kg</span></p>
-                     </div>
-                     <p className="text-[10px] font-bold text-green-100 mt-4 flex items-center gap-1"><TrendingUp size={12} /> Safra Recorde</p>
-                  </div>
+                        <div className="bg-green-700 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden flex flex-col justify-between">
+                           <div className="absolute -bottom-4 -right-4 opacity-20"><Wheat size={100} /></div>
+                           <div>
+                              <p className="text-green-200 text-[10px] font-black uppercase tracking-widest mb-2">Produção Total</p>
+                              <p className="text-4xl font-black">{stats.totalColhido.toLocaleString()} <span className="text-lg">kg</span></p>
+                           </div>
+                           <p className="text-[10px] font-bold text-green-100 mt-4 flex items-center gap-1"><TrendingUp size={12} /> Safra Recorde</p>
+                        </div>
+                     </>
+                  )}
                </div>
 
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
