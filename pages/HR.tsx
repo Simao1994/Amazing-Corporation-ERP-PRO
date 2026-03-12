@@ -30,6 +30,7 @@ import Logo from '../components/Logo';
 import BankAccountsTab from '../components/hr/BankAccountsTab';
 import ContasBancariasPage from './ContasBancariasPage';
 import VagasAdminTab from '../components/hr/VagasAdminTab';
+import { formatError, withTimeout } from '../src/lib/utils';
 
 // --- CONFIGURA��O DE HORÁRIO E REGRAS ---
 const WORK_RULES = {
@@ -906,7 +907,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          fetchHRData();
          setShowModal(false);
       } catch (err) {
-         alert('Erro ao salvar colaborador');
+         alert(formatError(err));
       }
    };
 

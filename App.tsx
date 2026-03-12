@@ -56,6 +56,7 @@ import ResetPasswordPage from './pages/ResetPassword';
 import PublicCandidaturaEspontanea from './pages/PublicCandidaturaEspontanea';
 import AutoLogout from './components/AutoLogout';
 import SubscriptionPage from './pages/Subscription';
+import { formatError } from './src/lib/utils';
 
 const App: React.FC = () => {
   const { user, loading: authLoading, refreshProfile } = useAuth();
@@ -64,8 +65,9 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({ message, type });
+  const showToast = (message: any, type: 'success' | 'error' | 'info' = 'success') => {
+    const safeMessage = formatError(message);
+    setToast({ message: safeMessage, type });
     if ((window as any).toastTimeout) {
       clearTimeout((window as any).toastTimeout);
     }

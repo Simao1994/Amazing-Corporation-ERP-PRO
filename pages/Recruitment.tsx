@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { formatError, withTimeout } from '../src/lib/utils';
 import {
    UserPlus, Search, Plus, Edit, Trash2, X, Save,
    MapPin, Calendar, FileText, IdCard, Phone, Bookmark, Printer,
@@ -67,25 +68,30 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
 
    const [candidaturas, setCandidaturas] = useState<Candidatura[]>([]);
    const [loading, setLoading] = useState(true);
+   const [fileObjects, setFileObjects] = useState<{ [key: string]: File | null }>({});
 
    const fetchCandidaturas = async () => {
       setLoading(true);
       try {
-         const { data, error } = await supabase
-            .from('recr_candidaturas')
-            .select('*')
-            .order('data_candidatura', { ascending: false });
-         if (error) throw error;
-         if (data) {
-            // Map common field names if necessary (e.g. short_id -> id)
-            const mapped = data.map((c: any) => ({
-               ...c,
-               id: c.short_id // Use short_id as the primary id in the app
-            }));
-            setCandidaturas(mapped as unknown as Candidatura[]);
-         }
+         const fetchOp = async () => {
+            const { data, error } = await supabase
+               .from('recr_candidaturas')
+               .select('*')
+               .order('data_candidatura', { ascending: false });
+            if (error) throw error;
+            if (data) {
+               // Map common field names if necessary (e.g. short_id -> id)
+               const mapped = data.map((c: any) => ({
+                  ...c,
+                  id: c.short_id // Use short_id as the primary id in the app
+               }));
+               setCandidaturas(mapped as unknown as Candidatura[]);
+            }
+         };
+         await withTimeout(fetchOp(), 15000, 'Sincronizando candidaturas... A conexão está lenta.');
       } catch (error) {
-         console.error('Error fetching candidaturas:', error);
+         console.error('Erro ao procurar candidaturas:', error);
+         if ((window as any).notify) (window as any).notify(error, 'error');
       } finally {
          setLoading(false);
       }
@@ -171,6 +177,125 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
       });
    }, [candidaturas, searchTerm, filterStatus, filterProvincia]);
 
+   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'doc_bi' | 'doc_cv' | 'doc_certificados') => {
+      const file = e.target.files?.[0];
+      if (file) {
+         if (file.size > 10 * 1024 * 1024) {
+            alert("O ficheiro é demasiado grande. Máximo 10MB.");
+            return;
+         }
+         // Guardar o objeto do ficheiro para upload real posterior
+         setFileObjects(prev => ({ ...prev, [field]: file }));
+
+         // Manter preview/indicador visual no formData
+         setFormData(prev => ({ ...prev, [field]: file.name }));
+      }
+   };
+
+   const handleSaveCandidatura = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setIsSaving(true);
+      const fd = new FormData(e.currentTarget);
+      const email = fd.get('email') as string;
+      const generatedId = editingItem ? editingItem.id : Math.random().toString(36).substr(2, 6).toUpperCase();
+
+      try {
+         const operation = async () => {
+            // 1. Upload de ficheiros para Supabase Storage se existirem novos arquivos
+            const updatedDocs: any = {};
+            const docFields = ['doc_bi', 'doc_cv', 'doc_certificados'];
+
+            for (const field of docFields) {
+               const file = fileObjects[field];
+               if (file) {
+                  const fileExt = file.name.split('.').pop();
+                  const filePath = `recrutamento/${generatedId}/${field}_${Date.now()}.${fileExt}`;
+
+                  const { error: uploadError } = await supabase.storage
+                     .from('archive-files')
+                     .upload(filePath, file);
+
+                  if (uploadError) throw uploadError;
+
+                  const { data: urlData } = supabase.storage
+                     .from('archive-files')
+                     .getPublicUrl(filePath);
+
+                  updatedDocs[field] = urlData.publicUrl;
+               }
+            }
+
+            // Preparar dados para o Supabase
+            const dbData = {
+               short_id: generatedId,
+               nome: fd.get('nome') as string,
+               sobrenome: fd.get('sobrenome') as string,
+               data_nascimento: formData.data_nascimento,
+               idade: formData.idade,
+               bi_numero: fd.get('bi_numero') as string,
+               bi_emissao: formData.bi_emissao,
+               bi_validade: formData.bi_validade,
+               nacionalidade: fd.get('nacionalidade') as string,
+               naturalidade: fd.get('naturalidade') as string,
+               provincia: fd.get('provincia') as string,
+               morada: fd.get('morada') as string,
+               nome_pai: fd.get('nome_pai') as string,
+               nome_mae: fd.get('nome_mae') as string,
+               estado_civil: fd.get('estado_civil') as string,
+               telefone: fd.get('telefone') as string,
+               email: email,
+               genero: fd.get('genero') as string,
+               municipio: fd.get('municipio') as string,
+               disponibilidade: fd.get('disponibilidade') as string,
+               pretensao_salarial: Number(fd.get('pretensao_salarial')),
+               linkedin_url: fd.get('linkedin_url') as string,
+               deficiencia: formData.deficiencia,
+               aceita_termos: formData.aceita_termos,
+               carta_conducao: fd.get('carta') as string,
+               experiencia: fd.get('experiencia') as string,
+               escolaridade: fd.get('escolaridade') as any,
+               curso: fd.get('curso') as string,
+               certificacoes: fd.get('certificacoes') as string,
+               doc_bi: updatedDocs.doc_bi || formData.doc_bi || editingItem?.doc_bi,
+               doc_cv: updatedDocs.doc_cv || formData.doc_cv || editingItem?.doc_cv,
+               doc_certificados: updatedDocs.doc_certificados || formData.doc_certificados || editingItem?.doc_certificados,
+               status: editingItem?.status || 'pendente',
+               data_candidatura: editingItem?.data_candidatura || new Date().toISOString(),
+               notas_internas: (fd.get('notas_internas') as string) || editingItem?.notas_internas
+            };
+
+            const { error } = await supabase.from('recr_candidaturas').upsert([dbData], { onConflict: 'short_id' });
+            if (error) throw error;
+
+            if (formData.notificar_email) {
+               setIsSendingEmail(true);
+               // Simular envio de e-mail (2 segundos)
+               await new Promise(resolve => setTimeout(resolve, 2000));
+               setProtocolCode(`AMZ-2026-${generatedId}`);
+               setIsSendingEmail(false);
+            }
+
+            fetchCandidaturas();
+            setShowModal(false);
+            setEditingItem(null);
+            setFileObjects({}); // Limpar ficheiros temporários
+            setSubmissionSuccess(true);
+            setSubmittedEmail(email);
+            setProtocolCode(`AMZ-2026-${generatedId}`);
+
+            AmazingStorage.logAction('Candidatura', 'Recrutamento', `Registo de ${dbData.nome} submetido.`);
+         };
+
+         await withTimeout(operation(), 60000, 'A submeter candidatura... O upload pode demorar um pouco.');
+      } catch (err) {
+         console.error('Erro ao salvar candidatura:', err);
+         if ((window as any).notify) (window as any).notify(err, 'error');
+         else alert(formatError(err));
+      } finally {
+         setIsSaving(false);
+      }
+   };
+
    const handleConsulta = async (e: React.FormEvent) => {
       e.preventDefault();
       setIsSearchingProcess(true);
@@ -195,96 +320,6 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
          setResultadoConsulta('not_found');
       } finally {
          setIsSearchingProcess(false);
-      }
-   };
-
-   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'doc_bi' | 'doc_cv' | 'doc_certificados') => {
-      const file = e.target.files?.[0];
-      if (file) {
-         if (file.size > 10 * 1024 * 1024) {
-            alert("O ficheiro é demasiado grande. Máximo 10MB.");
-            return;
-         }
-         const reader = new FileReader();
-         reader.onload = (event) => {
-            setFormData(prev => ({ ...prev, [field]: event.target?.result as string }));
-         };
-         reader.readAsDataURL(file);
-      }
-   };
-
-   const handleSaveCandidatura = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      setIsSaving(true);
-      const fd = new FormData(e.currentTarget);
-      const email = fd.get('email') as string;
-      const generatedId = editingItem ? editingItem.id : Math.random().toString(36).substr(2, 6).toUpperCase();
-
-      // Preparar dados para o Supabase
-      const dbData = {
-         short_id: generatedId,
-         nome: fd.get('nome') as string,
-         sobrenome: fd.get('sobrenome') as string,
-         data_nascimento: formData.data_nascimento,
-         idade: formData.idade,
-         bi_numero: fd.get('bi_numero') as string,
-         bi_emissao: formData.bi_emissao,
-         bi_validade: formData.bi_validade,
-         nacionalidade: fd.get('nacionalidade') as string,
-         naturalidade: fd.get('naturalidade') as string,
-         provincia: fd.get('provincia') as string,
-         morada: fd.get('morada') as string,
-         nome_pai: fd.get('nome_pai') as string,
-         nome_mae: fd.get('nome_mae') as string,
-         estado_civil: fd.get('estado_civil') as string,
-         telefone: fd.get('telefone') as string,
-         email: email,
-         genero: fd.get('genero') as string,
-         municipio: fd.get('municipio') as string,
-         disponibilidade: fd.get('disponibilidade') as string,
-         pretensao_salarial: Number(fd.get('pretensao_salarial')),
-         linkedin_url: fd.get('linkedin_url') as string,
-         deficiencia: formData.deficiencia,
-         aceita_termos: formData.aceita_termos,
-         carta_conducao: fd.get('carta') as string,
-         experiencia: fd.get('experiencia') as string,
-         escolaridade: fd.get('escolaridade') as any,
-         curso: fd.get('curso') as string,
-         certificacoes: fd.get('certificacoes') as string,
-         doc_bi: formData.doc_bi || editingItem?.doc_bi,
-         doc_cv: formData.doc_cv || editingItem?.doc_cv,
-         doc_certificados: formData.doc_certificados || editingItem?.doc_certificados,
-         status: editingItem?.status || 'pendente',
-         data_candidatura: editingItem?.data_candidatura || new Date().toISOString(),
-         notas_internas: (fd.get('notas_internas') as string) || editingItem?.notas_internas
-      };
-
-      try {
-         const { error } = await supabase.from('recr_candidaturas').upsert([dbData], { onConflict: 'short_id' });
-         if (error) throw error;
-
-         if (formData.notificar_email) {
-            setIsSendingEmail(true);
-            // Simular envio de e-mail (2 segundos)
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            setSubmittedEmail(email);
-            setProtocolCode(`AMZ-2026-${generatedId}`);
-            setIsSendingEmail(false);
-         }
-
-         fetchCandidaturas();
-         setShowModal(false);
-         setEditingItem(null);
-         setSubmissionSuccess(true);
-         setSubmittedEmail(email);
-         setProtocolCode(`AMZ-2026-${generatedId}`);
-
-         AmazingStorage.logAction('Candidatura', 'Recrutamento', `Registo de ${dbData.nome} ${dbData.sobrenome} submetido.`);
-      } catch (error) {
-         alert('Erro ao salvar candidatura');
-         console.error(error);
-      } finally {
-         setIsSaving(false);
       }
    };
 

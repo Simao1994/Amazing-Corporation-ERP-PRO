@@ -10,6 +10,7 @@ import Select from '../components/ui/Select';
 import { EmpresaAfiliada, MarcoHistorico } from '../types';
 import { supabase } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
+import { formatError, withTimeout } from '../src/lib/utils';
 
 const EmpresasPage: React.FC = () => {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ const EmpresasPage: React.FC = () => {
   const [historicoLocal, setHistoricoLocal] = useState<MarcoHistorico[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fileObject, setFileObject] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [empresas, setEmpresas] = useState<EmpresaAfiliada[]>([]);
@@ -90,6 +92,11 @@ const EmpresasPage: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("O logótipo é demasiado grande. Máximo 5MB.");
+        return;
+      }
+      setFileObject(file);
       const reader = new FileReader();
       reader.onloadend = () => setPhotoPreview(reader.result as string);
       reader.readAsDataURL(file);
@@ -102,43 +109,68 @@ const EmpresasPage: React.FC = () => {
     const formData = new FormData(e.currentTarget);
     const isEditing = !!editingItem;
 
-    const dataPayload = {
-      nome: formData.get('nome') as string,
-      nif: formData.get('nif') as string,
-      setor: formData.get('setor') as string,
-      localizacao: formData.get('localizacao') as string,
-      responsavel: formData.get('responsavel') as string,
-      website: formData.get('website') as string,
-      tipo_parceria: formData.get('tipo_parceria') as any || 'Operacional',
-      foto_url: photoPreview || editingItem?.foto_url,
-      historico: historicoLocal,
-      regime_agt: formData.get('regime_agt') as any,
-      taxa_iva: Number(formData.get('taxa_iva')) || 0,
-      taxa_ii: Number(formData.get('taxa_ii')) || 0,
-      retencao_fonte: formData.get('retencao_fonte') === 'Sim',
-      tenant_id: user?.tenant_id,
-      updated_at: new Date().toISOString()
-    };
-
     try {
-      if (isEditing) {
-        const { error } = await supabase
-          .from('empresas')
-          .update(dataPayload)
-          .eq('id', editingItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('empresas')
-          .insert([dataPayload]);
-        if (error) throw error;
-      }
+      const operation = async () => {
+        let finalPhotoUrl = photoPreview || editingItem?.foto_url;
 
-      await fetchEmpresas();
-      setShowModal(false);
+        // Upload Real se houver novo arquivo
+        if (fileObject) {
+          const fileExt = fileObject.name.split('.').pop();
+          const filePath = `empresas/${Date.now()}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('archive-files')
+            .upload(filePath, fileObject);
+
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage
+            .from('archive-files')
+            .getPublicUrl(filePath);
+
+          finalPhotoUrl = urlData.publicUrl;
+        }
+
+        const dataPayload = {
+          nome: formData.get('nome') as string,
+          nif: formData.get('nif') as string,
+          setor: formData.get('setor') as string,
+          localizacao: formData.get('localizacao') as string,
+          responsavel: formData.get('responsavel') as string,
+          website: formData.get('website') as string,
+          tipo_parceria: formData.get('tipo_parceria') as any || 'Operacional',
+          foto_url: finalPhotoUrl,
+          historico: historicoLocal,
+          regime_agt: formData.get('regime_agt') as any,
+          taxa_iva: Number(formData.get('taxa_iva')) || 0,
+          taxa_ii: Number(formData.get('taxa_ii')) || 0,
+          retencao_fonte: formData.get('retencao_fonte') === 'Sim',
+          tenant_id: user?.tenant_id,
+          updated_at: new Date().toISOString()
+        };
+
+        if (isEditing) {
+          const { error } = await supabase
+            .from('empresas')
+            .update(dataPayload)
+            .eq('id', editingItem.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('empresas')
+            .insert([dataPayload]);
+          if (error) throw error;
+        }
+
+        await fetchEmpresas();
+        setShowModal(false);
+        setFileObject(null);
+      };
+
+      await withTimeout(operation(), 30000, 'A guardar dados da empresa... O upload do logótipo pode demorar.');
     } catch (err) {
       console.error('Erro ao salvar empresa:', err);
-      alert('Falha ao guardar dados da unidade.');
+      alert(formatError(err));
     } finally {
       setSaving(false);
     }

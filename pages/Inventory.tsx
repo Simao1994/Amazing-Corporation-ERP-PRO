@@ -16,6 +16,7 @@ import { InventarioItem, MovimentacaoEstoque } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
+import { formatError, withTimeout } from '../src/lib/utils';
 import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
 import Logo from '../components/Logo';
 
@@ -233,7 +234,7 @@ const InventoryPage: React.FC = () => {
       setShowItemModal(false);
       AmazingStorage.logAction(editingItem ? 'Edição' : 'Cadastro', 'Inventário', `Item ${dbData.nome} ${editingItem ? 'actualizado' : 'registado'}`);
     } catch (error) {
-      alert('Erro ao salvar item no inventário');
+      alert(formatError(error));
     }
   };
 

@@ -6,6 +6,7 @@ import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
 import { supabase } from '../src/lib/supabase';
 import { CorporateSettings, EmpresaAfiliada } from '../types';
+import { formatError, withTimeout } from '../src/lib/utils';
 
 const GaleriaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ceo' | 'empresas' | 'multimedia'>('ceo');
@@ -33,36 +34,42 @@ const GaleriaPage: React.FC = () => {
   const fetchGaleriaData = async () => {
     setLoading(true);
     try {
-      // Fetch Corporate Info from config_sistema (key-value store)
-      const { data: corpData, error: corpError } = await supabase.from('config_sistema').select('*');
-      if (corpError) throw corpError;
+      const fetchOperation = async () => {
+        // Fetch Corporate Info from config_sistema (key-value store)
+        const { data: corpData, error: corpError } = await supabase.from('config_sistema').select('*');
+        if (corpError) throw corpError;
 
-      if (corpData && corpData.length > 0) {
-        const info: any = { ...corpInfo };
-        const relevantKeys = ['ceo_nome', 'ceo_mensagem', 'ceo_foto_url', 'fundacao_ano', 'sede_principal'];
-        corpData.forEach((item: any) => {
-          if (relevantKeys.includes(item.chave)) {
-            info[item.chave] = item.valor;
-          }
-        });
-        setCorpInfo(info);
-      }
+        if (corpData && corpData.length > 0) {
+          const info: any = { ...corpInfo };
+          const relevantKeys = ['ceo_nome', 'ceo_mensagem', 'ceo_foto_url', 'fundacao_ano', 'sede_principal'];
+          corpData.forEach((item: any) => {
+            if (relevantKeys.includes(item.chave)) {
+              info[item.chave] = item.valor;
+            }
+          });
+          setCorpInfo(info);
+        }
 
-      // Fetch Empresas
-      const { data: empData, error: empError } = await supabase.from('empresas').select('*').order('nome');
-      if (empError) throw empError;
-      setEmpresas(empData || []);
+        // Fetch Empresas
+        const { data: empData, error: empError } = await supabase.from('empresas').select('*').order('nome');
+        if (empError) throw empError;
+        setEmpresas(empData || []);
 
-      // Fetch Galeria Multimédia
-      const { data: galData, error: galError } = await supabase
-        .from('galeria')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (galError) throw galError;
-      setGaleriaItems(galData || []);
+        // Fetch Galeria Multimédia
+        const { data: galData, error: galError } = await supabase
+          .from('galeria')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (galError) throw galError;
+        setGaleriaItems(galData || []);
+      };
 
+      await withTimeout(fetchOperation(), 15000, 'A carregar dados da galeria... A conexão parece lenta.');
     } catch (error) {
       console.error('Error fetching gallery data:', error);
+      if ((window as any).notify) {
+        (window as any).notify(error, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -138,7 +145,7 @@ const GaleriaPage: React.FC = () => {
       setGaleriaItems(prev => prev.filter(item => item.id !== id));
       AmazingStorage.logAction('Delete Media', 'Galeria', `Item removido da galeria.`);
     } catch (err) {
-      alert('Erro ao eliminar item');
+      alert(formatError(err));
     }
   };
 
@@ -229,7 +236,7 @@ const GaleriaPage: React.FC = () => {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
-      alert('Erro ao guardar alterações corporativas');
+      alert(formatError(err));
       setIsSaving(false);
     }
   };
