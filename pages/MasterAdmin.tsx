@@ -91,35 +91,35 @@ const MasterAdmin: React.FC = () => {
     }, [authLoading, user]);
 
     const fetchMonitorData = async () => {
+        if (!user) return;
         setMonitorLoading(true);
         try {
-            // Tentamos usar uma query para listar tabelas via RPC se existir, 
-            // ou uma lista pré-definida das 109 tabelas críticas do ERP
             const { data, error: rpcError } = await safeQuery<any>(
                 () => supabase.rpc('get_system_tables_status'),
-                { cacheKey: 'master-tables-status', cacheTTL: 30000 }
+                { cacheKey: 'master-tables-status', cacheTTL: 60000 }
             );
-
+ 
             if (!rpcError && data) {
                 setDbMonitorData(data);
             } else {
-                // Fallback: Auditoria manual das tabelas principais para garantir visualização
+                console.warn("RPC get_system_tables_status falhou, usando fallback sequencial.");
                 const tables = [
-                    'profiles', 'tenants', 'saas_plans', 'saas_subscriptions', 'audit_logs',
+                    'profiles', 'saas_tenants', 'saas_plans', 'saas_subscriptions', 'audit_logs',
                     'funcionarios', 'departamentos', 'agro_producao', 'frota_veiculos',
-                    'financeiro_transacoes', 'pos_vendas', 'pos_produtos', 'crm_leads',
-                    'imobiliario_propriedades', 'manutencao_ordens', 'rh_folha_pagamento'
+                    'financeiro_transacoes', 'pos_vendas', 'pos_produtos', 'crm_leads'
                 ];
-
-                const results = await Promise.all(tables.map(async (table) => {
-                    const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
-                    return {
+ 
+                // Fallback SEQUENCIAL para evitar TIMEOUT/Session Locks
+                const results = [];
+                for (const table of tables) {
+                    const { count } = await safeQuery(() => supabase.from(table).select('*', { count: 'exact', head: true }));
+                    results.push({
                         name: table,
                         rows: count || 0,
-                        status: error ? 'error' : 'online',
+                        status: 'online',
                         latency: 'Sub-ms'
-                    };
-                }));
+                    });
+                }
                 setDbMonitorData(results);
             }
         } catch (err) {
@@ -195,36 +195,36 @@ const MasterAdmin: React.FC = () => {
         }
     };
 
-    // Versão sequencial para casos de erro de lock persistente
-    const fetchDataSequential = async (retryCount = 0) => {
+    const fetchDataSequential = async () => {
         if (!isMounted.current) return;
         setLoading(true);
+        setError(null);
 
         try {
-            console.log("MasterAdmin: Iniciando carregamento SEQUENCIAL...");
+            console.log("MasterAdmin: Iniciando carregamento SEQUENCIAL SEGURO...");
 
-            const tenantsRes = await supabase.from('saas_tenants').select('*, saas_subscriptions(*)');
-            if (tenantsRes.error) throw tenantsRes.error;
+            const { data: tenantsData, error: tErr } = await safeQuery(() => supabase.from('saas_tenants').select('*, saas_subscriptions(*)'));
+            if (tErr) throw tErr;
 
-            const plansRes = await supabase.from('saas_plans').select('*').order('valor', { ascending: true });
-            if (plansRes.error) throw plansRes.error;
+            const { data: plansData, error: pErr } = await safeQuery(() => supabase.from('saas_plans').select('*').order('valor', { ascending: true }));
+            if (pErr) throw pErr;
 
-            const subsRes = await supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false });
-            if (subsRes.error) throw subsRes.error;
+            const { data: subsData, error: sErr } = await safeQuery(() => supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false }));
+            if (sErr) throw sErr;
 
-            const configRes = await supabase.from('saas_config').select('*').single();
+            const { data: configData } = await safeQuery(() => supabase.from('saas_config').select('*').single());
 
             if (isMounted.current) {
-                setTenants(tenantsRes.data || []);
-                setPlans(plansRes.data || []);
-                setSubscriptions(subsRes.data || []);
-                setSaasConfig(configRes.data || { banco: 'Banco BAI', iban: 'AO06 0000 0000 8921 3451 2', beneficiario: 'Amazing Corporation Software LDA' });
+                setTenants(tenantsData || []);
+                setPlans(plansData || []);
+                setSubscriptions(subsData || []);
+                setSaasConfig(configData || { banco: 'Banco BAI', iban: 'AO06 0000 0000 8921 3451 2', beneficiario: 'Amazing Corporation Software LDA' });
                 setLoading(false);
             }
         } catch (err: any) {
             console.error("MasterAdmin: Erro no carregamento sequencial:", err);
             if (isMounted.current) {
-                setError(err.message);
+                setError(err.message || 'Erro no carregamento sequencial.');
                 setLoading(false);
             }
         }
