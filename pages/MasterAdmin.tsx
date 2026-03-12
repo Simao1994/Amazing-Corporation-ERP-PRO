@@ -81,7 +81,7 @@ const MasterAdmin: React.FC = () => {
         // Só iniciar se a autenticação estiver resolvida e o utilizador logado
         if (!authLoading && user) {
             console.log("MasterAdmin: Auth resolvido, iniciando fetchData...");
-            fetchData();
+            fetchDataSequential();
         }
 
         return () => {
@@ -319,7 +319,7 @@ const MasterAdmin: React.FC = () => {
 
             // DEFER: Fetch data in background
             setTimeout(() => {
-                fetchData();
+                fetchDataSequential();
                 (window as any).notify?.(editingSubscription ? 'Licença actualizada com sucesso!' : 'Licença criada com sucesso!', 'success');
             }, 100);
         } catch (err: any) {
@@ -334,7 +334,7 @@ const MasterAdmin: React.FC = () => {
         try {
             const { error } = await supabase.from('saas_subscriptions').delete().eq('id', subId);
             if (error) throw error;
-            setTimeout(() => { fetchData(); (window as any).notify?.('Licença eliminada.', 'info'); }, 100);
+            setTimeout(() => { fetchDataSequential(); (window as any).notify?.('Licença eliminada.', 'info'); }, 100);
         } catch (err: any) {
             (window as any).notify?.(err.message, 'error');
         }
@@ -374,7 +374,7 @@ const MasterAdmin: React.FC = () => {
 
             setIsTenantModalOpen(false);
             setTimeout(() => {
-                fetchData();
+                fetchDataSequential();
                 (window as any).notify?.('Empresa criada com sucesso!', 'success');
             }, 100);
         } catch (err: any) {
@@ -398,7 +398,7 @@ const MasterAdmin: React.FC = () => {
 
             setIsConfigModalOpen(false);
             setTimeout(() => {
-                fetchData();
+                fetchDataSequential();
                 (window as any).notify?.('Configurações guardadas com sucesso!', 'success');
             }, 100);
         } catch (err: any) {
@@ -419,7 +419,7 @@ const MasterAdmin: React.FC = () => {
 
             // DEFER: Fetch data in background
             setTimeout(() => {
-                fetchData();
+                fetchDataSequential();
                 (window as any).notify?.('Estado da empresa actualizado!', 'success');
             }, 100);
         } catch (err: any) {
@@ -456,7 +456,7 @@ const MasterAdmin: React.FC = () => {
 
             setIsPlanModalOpen(false);
             setEditingPlan(null);
-            fetchData();
+            fetchDataSequential();
             (window as any).notify?.('Plano guardado com sucesso!', 'success');
         } catch (err: any) {
             console.error("Erro ao guardar plano:", err);
@@ -500,7 +500,7 @@ const MasterAdmin: React.FC = () => {
             if (error) throw error;
 
             setTimeout(() => {
-                fetchData();
+                fetchDataSequential();
                 (window as any).notify?.('Pagamento aprovado! Licença activada.', 'success');
             }, 100);
         } catch (err: any) {
@@ -523,7 +523,7 @@ const MasterAdmin: React.FC = () => {
             setRejectionModalId(null);
             setRejectionReason('');
             setTimeout(() => {
-                fetchData();
+                fetchDataSequential();
                 (window as any).notify?.('Pagamento rejeitado e empresa notificada.', 'info');
             }, 100);
         } catch (err: any) {
@@ -544,7 +544,7 @@ const MasterAdmin: React.FC = () => {
                 <AlertTriangle size={48} className="text-red-400 mx-auto mb-4" />
                 <h2 className="text-xl font-black text-white mb-2">Erro de Acesso</h2>
                 <p className="text-red-300 text-sm font-medium mb-6">{error}</p>
-                <button onClick={fetchData} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest">
+                <button onClick={fetchDataSequential} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest">
                     Tentar Novamente
                 </button>
             </div>
