@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useTransition } from 'react';
-import { supabase } from '../src/lib/supabase';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
 import {
     Building2, Users, CreditCard, CheckCircle2, XCircle, Clock,
     AlertTriangle, TrendingUp, Search, X, Plus, Edit3, Shield, Globe, Layers, BarChart3,
@@ -94,7 +95,10 @@ const MasterAdmin: React.FC = () => {
         try {
             // Tentamos usar uma query para listar tabelas via RPC se existir, 
             // ou uma lista pré-definida das 109 tabelas críticas do ERP
-            const { data, error: rpcError } = await supabase.rpc('get_system_tables_status');
+            const { data, error: rpcError } = await safeQuery<any>(
+                () => supabase.rpc('get_system_tables_status'),
+                { cacheKey: 'master-tables-status', cacheTTL: 30000 }
+            );
 
             if (!rpcError && data) {
                 setDbMonitorData(data);
@@ -141,34 +145,35 @@ const MasterAdmin: React.FC = () => {
 
         if (!isMounted.current) return;
 
-        console.log(`MasterAdmin: A iniciar carregamento de dados SaaS (Tentativa ${retryCount + 1})...`);
+        console.log(`MasterAdmin: A iniciar carregamento de dados SaaS (com cache e safeQuery)...`);
         setLoading(true);
         setError(null);
 
         // Limpar timeout anterior se existir
         if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
 
-        // Timeout de segurança (15s)
+        // Timeout de segurança estendido (30s) para acomodar retentativas em redes lentas
         timeoutIdRef.current = setTimeout(() => {
-            console.error("MasterAdmin: Timeout de 15s atingido.");
-            setError('Tempo limite de carregamento excedido. Por favor, recarregue a página.');
-            setLoading(false);
-        }, 15000);
+            if (isMounted.current && loading) {
+                console.error("MasterAdmin: Timeout de 30s atingido.");
+                setError('A infraestrutura está a demorar mais do que o esperado. Por favor, verifique a sua ligação ou recarregue.');
+                setLoading(false);
+            }
+        }, 30000);
 
         try {
-            console.log("MasterAdmin: Iniciando chamadas paralelas ao Supabase...");
+            console.log("MasterAdmin: Iniciando chamadas optimizadas ao Supabase...");
 
-            // Chamadas paralelas para melhor performance
+            // Chamadas paralelas usando safeQuery com cache de 1 minuto
             const [tenantsRes, plansRes, subsRes, configRes] = await Promise.all([
-                supabase.from('saas_tenants').select('*, saas_subscriptions(*)'),
-                supabase.from('saas_plans').select('*').order('valor', { ascending: true }),
-                supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false }),
-                supabase.from('saas_config').select('*').single()
+                safeQuery(() => supabase.from('saas_tenants').select('*, saas_subscriptions(*)'), { cacheKey: 'master-tenants', cacheTTL: 60000 }),
+                safeQuery(() => supabase.from('saas_plans').select('*').order('valor', { ascending: true }), { cacheKey: 'master-plans', cacheTTL: 300000 }), // 5 min
+                safeQuery(() => supabase.from('saas_subscriptions').select('*, saas_tenants(nome), saas_plans(nome, valor)').order('created_at', { ascending: false }), { cacheKey: 'master-subscriptions', cacheTTL: 60000 }),
+                safeQuery(() => supabase.from('saas_config').select('*').single(), { cacheKey: 'master-config', cacheTTL: 300000 })
             ]);
 
-            if (tenantsRes.error) throw tenantsRes.error;
-            if (plansRes.error) throw plansRes.error;
-            if (subsRes.error) throw subsRes.error;
+            const anyError = tenantsRes.error || plansRes.error || subsRes.error;
+            if (anyError) throw anyError;
 
             if (isMounted.current) {
                 console.log("MasterAdmin: Todos os dados carregados com sucesso.");
@@ -180,28 +185,7 @@ const MasterAdmin: React.FC = () => {
                 if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
             }
         } catch (err: any) {
-            console.error('MasterAdmin: Erro ao carregar dados:', err);
-
-            // Erros de Lock do Supabase (LockManager ou "Lock broken by another request with the 'steal' option")
-            const isLockError = err.message?.includes('LockManager') ||
-                err.message?.includes('Lock broken') ||
-                err.message?.includes('steal');
-
-            if (isLockError && retryCount < 3 && isMounted.current) {
-                const delay = 1000 * (retryCount + 1);
-                console.warn(`MasterAdmin: Detectado erro de Lock, a tentar novamente (tentativa ${retryCount + 1}) em ${delay}ms...`);
-
-                // Se falhou em paralelo, a próxima tentativa será sequencial para ser mais seguro
-                setTimeout(() => {
-                    if (retryCount >= 1) {
-                        console.log("MasterAdmin: Mudando para carregamento sequencial por segurança...");
-                        fetchDataSequential(retryCount + 1);
-                    } else {
-                        fetchData(retryCount + 1);
-                    }
-                }, delay);
-                return;
-            }
+            console.error('MasterAdmin: Erro crítico ao carregar dados:', err);
 
             if (isMounted.current) {
                 setError(err.message || 'Erro ao carregar dados do dashboard master.');
@@ -1530,8 +1514,8 @@ const MasterAdmin: React.FC = () => {
                                             </td>
                                             <td className="px-8 py-5">
                                                 <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${table.status === 'online'
-                                                        ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                                                        : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
                                                     }`}>
                                                     {table.status}
                                                 </span>
