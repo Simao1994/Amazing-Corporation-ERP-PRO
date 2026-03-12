@@ -7,10 +7,12 @@ import Select from '../components/ui/Select';
 import { formatAOA } from '../constants';
 import { Manutencao, Motoqueiro, ManutencaoItem } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 import Logo from '../components/Logo';
 
 const MaintenancePage: React.FC = () => {
+  const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingItem, setEditingItem] = useState<Manutencao | null>(null);
@@ -25,7 +27,13 @@ const MaintenancePage: React.FC = () => {
     setIsLoading(true);
     try {
       // Fetch Records
-      const { data: mainData, error: mainError } = await supabase.from('manutencao').select('*').order('created_at', { ascending: false });
+      const { data: mainData, error: mainError } = await safeQuery(() =>
+        supabase
+          .from('manutencao')
+          .select('*')
+          .eq('tenant_id', user?.tenant_id)
+          .order('created_at', { ascending: false })
+      );
       if (mainError) throw mainError;
       if (mainData) {
         setRecords(mainData.map((m: any) => ({
@@ -54,13 +62,18 @@ const MaintenancePage: React.FC = () => {
       }
 
       // Fetch Fleet
-      const { data: fleetData, error: fleetError } = await supabase.from('veiculos').select('*');
+      const { data: fleetData, error: fleetError } = await safeQuery(() =>
+        supabase
+          .from('veiculos')
+          .select('*')
+          .eq('tenant_id', user?.tenant_id)
+      );
       if (fleetError) throw fleetError;
       setFrota(fleetData || []);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching maintenance data:', error);
-      alert('Erro ao carregar dados de manutenção. Verifique a sua ligação.');
+      alert('Erro ao carregar dados de manutenção: ' + (error.message || 'Verifique sua conexão.'));
     } finally {
       setIsLoading(false);
     }
@@ -278,10 +291,20 @@ const MaintenancePage: React.FC = () => {
 
     try {
       if (editingItem) {
-        const { error } = await supabase.from('manutencao').update(dbData).eq('id', editingItem.id);
+        const { error } = await safeQuery(() =>
+          supabase
+            .from('manutencao')
+            .update(dbData)
+            .eq('id', editingItem.id)
+            .eq('tenant_id', user?.tenant_id)
+        );
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('manutencao').insert([{ ...dbData, created_at: new Date().toISOString() }]);
+        const { error } = await safeQuery(() =>
+          supabase
+            .from('manutencao')
+            .insert([{ ...dbData, created_at: new Date().toISOString() }])
+        );
         if (error) throw error;
       }
 

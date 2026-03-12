@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit, Save, X, Search, QrCode } from 'lucide-react';
-import { supabase } from '../../src/lib/supabase';
+import { supabase, safeQuery } from '../../src/lib/supabase';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { formatAOA } from '../../constants';
 import { useRealtimeSync } from '../../src/hooks/useRealtimeSync';
@@ -43,14 +43,18 @@ export default function POSProdutos() {
             console.log('[POSProdutos] Procurando dados para o tenant:', user.tenant_id);
 
             const [prodRes, catRes] = await Promise.all([
-                supabase.from('pos_produtos')
-                    .select('*, pos_categorias(nome_categoria)')
-                    .eq('tenant_id', user.tenant_id)
-                    .order('nome_produto'),
-                supabase.from('pos_categorias')
-                    .select('id, nome_categoria')
-                    .eq('tenant_id', user.tenant_id)
-                    .order('nome_categoria')
+                safeQuery(() =>
+                    supabase.from('pos_produtos')
+                        .select('*, pos_categorias(nome_categoria)')
+                        .eq('tenant_id', user.tenant_id)
+                        .order('nome_produto')
+                ),
+                safeQuery(() =>
+                    supabase.from('pos_categorias')
+                        .select('id, nome_categoria')
+                        .eq('tenant_id', user.tenant_id)
+                        .order('nome_categoria')
+                )
             ]);
 
             if (prodRes.error) throw prodRes.error;
@@ -94,18 +98,11 @@ export default function POSProdutos() {
                 qr_code
             };
 
-            console.log('[POSProdutos] Iniciando gravação...', payload);
-
-            // Timeout de 15 segundos
-            const operationPromise = editingId
-                ? supabase.from('pos_produtos').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id)
-                : supabase.from('pos_produtos').insert([payload]);
-
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Tempo limite excedido ao salvar produto. Verifique sua conexão.')), 15000)
+            const { error } = await safeQuery(() =>
+                editingId
+                    ? supabase.from('pos_produtos').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id)
+                    : supabase.from('pos_produtos').insert([payload])
             );
-
-            const { error } = await Promise.race([operationPromise, timeoutPromise]) as any;
 
             if (error) throw error;
 
@@ -126,10 +123,13 @@ export default function POSProdutos() {
 
         try {
             if (!user?.tenant_id) return;
-            await supabase.from('pos_produtos')
-                .delete()
-                .eq('id', id)
-                .eq('tenant_id', user.tenant_id);
+            const { error } = await safeQuery(() =>
+                supabase.from('pos_produtos')
+                    .delete()
+                    .eq('id', id)
+                    .eq('tenant_id', user.tenant_id)
+            );
+            if (error) throw error;
             (window as any).notify?.('Produto eliminado', 'success');
             fetchData();
         } catch (error) {

@@ -5,7 +5,7 @@ import {
     X, Check
 } from 'lucide-react';
 import { useAuth } from '../src/contexts/AuthContext';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
 import { formatAOA } from '../constants';
 import { Link, useNavigate } from 'react-router-dom';
 import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
@@ -45,22 +45,26 @@ export default function POS() {
     }, [user]);
 
     const fetchTenant = async () => {
-        const { data } = await supabase.from('saas_tenants').select('*').eq('id', user.tenant_id).single();
+        if (!user?.tenant_id) return;
+        const { data } = await safeQuery(() =>
+            supabase.from('saas_tenants').select('*').eq('id', user.tenant_id).single()
+        );
         if (data) setTenantInfo(data);
     };
 
     const fetchClientes = async () => {
         if (!user?.tenant_id) return;
         try {
-            const { data, error } = await supabase
-                .from('pos_clientes')
-                .select('*')
-                .eq('tenant_id', user.tenant_id)
-                .order('nome');
+            const { data, error } = await safeQuery(() =>
+                supabase
+                    .from('pos_clientes')
+                    .select('*')
+                    .eq('tenant_id', user.tenant_id)
+                    .order('nome')
+            );
             if (error) throw error;
             setClientes(data || []);
 
-            // Se não houver cliente selecionado, tenta selecionar o Consumidor Final
             if (!selectedClient) {
                 const defaultClient = data?.find(c => c.nome && c.nome.includes('Consumidor Final')) || data?.[0];
                 setSelectedClient(defaultClient || null);
@@ -76,14 +80,16 @@ export default function POS() {
 
         try {
             setIsProcessing(true);
-            const { data, error } = await supabase
-                .from('pos_clientes')
-                .insert([{
-                    ...novoCliente,
-                    tenant_id: user.tenant_id
-                }])
-                .select()
-                .single();
+            const { data, error } = await safeQuery(() =>
+                supabase
+                    .from('pos_clientes')
+                    .insert([{
+                        ...novoCliente,
+                        tenant_id: user.tenant_id
+                    }])
+                    .select()
+                    .single()
+            );
 
             if (error) throw error;
 
@@ -103,12 +109,14 @@ export default function POS() {
     const fetchProducts = async () => {
         if (!user?.tenant_id) return;
         try {
-            const { data, error } = await supabase
-                .from('pos_produtos')
-                .select('*, pos_estoque(quantidade_atual)')
-                .eq('tenant_id', user.tenant_id)
-                .eq('ativo', true)
-                .order('nome_produto');
+            const { data, error } = await safeQuery(() =>
+                supabase
+                    .from('pos_produtos')
+                    .select('*, pos_estoque(quantidade_atual)')
+                    .eq('tenant_id', user.tenant_id)
+                    .eq('ativo', true)
+                    .order('nome_produto')
+            );
 
             if (error) throw error;
             setProducts(data || []);
@@ -122,14 +130,16 @@ export default function POS() {
     const fetchCaixaAtivo = async () => {
         if (!user?.tenant_id) return;
         try {
-            const { data, error } = await supabase
-                .from('pos_caixa')
-                .select('*')
-                .eq('tenant_id', user.tenant_id)
-                .eq('status', 'ABERTO')
-                .order('data_abertura', { ascending: false })
-                .limit(1)
-                .single();
+            const { data, error } = await safeQuery(() =>
+                supabase
+                    .from('pos_caixa')
+                    .select('*')
+                    .eq('tenant_id', user.tenant_id)
+                    .eq('status', 'ABERTO')
+                    .order('data_abertura', { ascending: false })
+                    .limit(1)
+                    .single()
+            );
 
             if (error && error.code !== 'PGRST116') throw error;
             setCaixaAtivo(data || null);
@@ -201,16 +211,18 @@ export default function POS() {
             setIsProcessing(true);
             console.log('Tentando abrir caixa...', { tenant_id: user.tenant_id, valor_inicial: valorAbertura });
 
-            const { data, error } = await supabase
-                .from('pos_caixa')
-                .insert([{
-                    tenant_id: user.tenant_id,
-                    usuario_id: user.id,
-                    valor_inicial: valorAbertura,
-                    status: 'ABERTO'
-                }])
-                .select()
-                .single();
+            const { data, error } = await safeQuery(() =>
+                supabase
+                    .from('pos_caixa')
+                    .insert([{
+                        tenant_id: user.tenant_id,
+                        usuario_id: user.id,
+                        valor_inicial: valorAbertura,
+                        status: 'ABERTO'
+                    }])
+                    .select()
+                    .single()
+            );
 
             if (error) {
                 console.error('Erro Supabase ao abrir caixa:', error);
@@ -243,25 +255,27 @@ export default function POS() {
             const ncf = `NCF${Date.now()}`;
             console.log('Gerando fatura:', ncf);
 
-            // 1. Criar Fatura (tenant_id automático)
-            const { data: fatura, error: faturaError } = await supabase
-                .from('pos_faturas')
-                .insert([{
-                    tenant_id: user.tenant_id,
-                    numero_fatura: ncf,
-                    usuario_id: user.id,
-                    cliente_id: selectedClient?.id || null,
-                    caixa_id: caixaAtivo.id,
-                    subtotal: subtotal,
-                    iva_total: iva,
-                    total: total,
-                    valor_recebido: total,
-                    troco: 0,
-                    metodo_pagamento: metodo,
-                    status: 'PAGA'
-                }])
-                .select()
-                .single();
+            // 1. Criar Fatura
+            const { data: fatura, error: faturaError } = await safeQuery(() =>
+                supabase
+                    .from('pos_faturas')
+                    .insert([{
+                        tenant_id: user.tenant_id,
+                        numero_fatura: ncf,
+                        usuario_id: user.id,
+                        cliente_id: selectedClient?.id || null,
+                        caixa_id: caixaAtivo.id,
+                        subtotal: subtotal,
+                        iva_total: iva,
+                        total: total,
+                        valor_recebido: total,
+                        troco: 0,
+                        metodo_pagamento: metodo,
+                        status: 'PAGA'
+                    }])
+                    .select()
+                    .single()
+            );
 
             if (faturaError) {
                 console.error('Erro ao criar fatura:', faturaError);
@@ -276,55 +290,63 @@ export default function POS() {
 
                 // Item da Fatura
                 const ivaItem = item.preco_venda * 0.14;
-                const { error: itemError } = await supabase.from('pos_fatura_itens').insert([{
-                    tenant_id: user.tenant_id,
-                    fatura_id: fatura.id,
-                    produto_id: item.id,
-                    quantidade: item.qnt,
-                    preco_compra: item.preco_compra || 0,
-                    preco_venda: item.preco_venda,
-                    iva: ivaItem * item.qnt,
-                    lucro: (item.preco_venda - (item.preco_compra || 0)) * item.qnt,
-                    total: (item.preco_venda + ivaItem) * item.qnt
-                }]);
+                const { error: itemError } = await safeQuery(() =>
+                    supabase.from('pos_fatura_itens').insert([{
+                        tenant_id: user.tenant_id,
+                        fatura_id: fatura.id,
+                        produto_id: item.id,
+                        quantidade: item.qnt,
+                        preco_compra: item.preco_compra || 0,
+                        preco_venda: item.preco_venda,
+                        iva: ivaItem * item.qnt,
+                        lucro: (item.preco_venda - (item.preco_compra || 0)) * item.qnt,
+                        total: (item.preco_venda + ivaItem) * item.qnt
+                    }])
+                );
 
                 if (itemError) {
                     console.error('Erro ao inserir item:', itemError);
                     throw new Error(`Erro no item ${item.nome_produto}: ${itemError.message}`);
                 }
 
-                // Movimento de Stock (tenant_id automático)
-                const { error: stockMovError } = await supabase.from('pos_movimento_stock').insert([{
-                    tenant_id: user.tenant_id,
-                    produto_id: item.id,
-                    tipo_movimento: 'VENDA',
-                    quantidade: item.qnt,
-                    referencia: ncf,
-                    usuario_id: user.id
-                }]);
+                // Movimento de Stock
+                const { error: stockMovError } = await safeQuery(() =>
+                    supabase.from('pos_movimento_stock').insert([{
+                        tenant_id: user.tenant_id,
+                        produto_id: item.id,
+                        tipo_movimento: 'VENDA',
+                        quantidade: item.qnt,
+                        referencia: ncf,
+                        usuario_id: user.id
+                    }])
+                );
 
                 if (stockMovError) console.error('Aviso: Erro ao registrar movimento de stock:', stockMovError);
 
                 // Atualizar Quantidade Atual
                 const currentStock = item.pos_estoque?.[0]?.quantidade_atual || 0;
-                const { error: stockUpdateError } = await supabase.from('pos_estoque')
-                    .update({ quantidade_atual: currentStock - item.qnt })
-                    .eq('produto_id', item.id)
-                    .eq('tenant_id', user.tenant_id);
+                const { error: stockUpdateError } = await safeQuery(() =>
+                    supabase.from('pos_estoque')
+                        .update({ quantidade_atual: currentStock - item.qnt })
+                        .eq('produto_id', item.id)
+                        .eq('tenant_id', user.tenant_id)
+                );
 
                 if (stockUpdateError) console.error('Aviso: Erro ao atualizar stock:', stockUpdateError);
             }
 
-            // 3. Registrar Movimento de Caixa (tenant_id automático)
+            // 3. Registrar Movimento de Caixa
             console.log('Registrando movimento de caixa...');
-            const { error: caixaMovError } = await supabase.from('pos_movimentos_caixa').insert([{
-                tenant_id: user.tenant_id,
-                caixa_id: caixaAtivo.id,
-                tipo: 'VENDA',
-                valor: total,
-                descricao: `Venda ${ncf}`,
-                usuario_id: user.id
-            }]);
+            const { error: caixaMovError } = await safeQuery(() =>
+                supabase.from('pos_movimentos_caixa').insert([{
+                    tenant_id: user.tenant_id,
+                    caixa_id: caixaAtivo.id,
+                    tipo: 'VENDA',
+                    valor: total,
+                    descricao: `Venda ${ncf}`,
+                    usuario_id: user.id
+                }])
+            );
 
             if (caixaMovError) {
                 console.error('Erro ao registrar movimento de caixa:', caixaMovError);
@@ -655,8 +677,8 @@ export default function POS() {
                                                     setShowModalClientes(false);
                                                 }}
                                                 className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group ${selectedClient?.id === cliente.id
-                                                        ? 'bg-yellow-500/10 border-yellow-500/50'
-                                                        : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                                                    ? 'bg-yellow-500/10 border-yellow-500/50'
+                                                    : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
                                                     }`}
                                             >
                                                 <div>

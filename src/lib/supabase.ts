@@ -66,6 +66,7 @@ const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () =>
     }
 };
 
+// Singleton: Cliente Supabase
 export const supabase = createClient(finalUrl, supabaseAnonKey, {
     auth: {
         persistSession: true,
@@ -74,8 +75,82 @@ export const supabase = createClient(finalUrl, supabaseAnonKey, {
         storage: localStorage,
         storageKey: 'sb-amazing-erp-pro-auth-token',
         lock: memoryLockFunc
+    },
+    global: {
+        headers: { 'x-application-name': 'amazing-erp-pro' }
+    },
+    db: {
+        schema: 'public'
     }
 });
+
+// --- SISTEMA DE LOGS E MONITORIZAÇÃO DE CONEXÃO ---
+if (typeof window !== 'undefined') {
+    console.log('[Supabase Connectivity] Monitorização iniciada.');
+
+    supabase.auth.onAuthStateChange((event, session) => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`[Supabase Auth][${timestamp}] Evento: ${event}`, {
+            hasSession: !!session,
+            userId: session?.user?.id
+        });
+
+        if (event === 'SIGNED_OUT') {
+            console.warn('[Supabase Auth] Sessão encerrada. Verifique se isto foi esperado.');
+        }
+    });
+
+    // Monitorizar estado da rede
+    window.addEventListener('online', () => console.log('[Network] Conexão restaurada (Online).'));
+    window.addEventListener('offline', () => console.error('[Network] Conexão perdida (Offline)! El sistema entrará em modo de espera.'));
+}
+
+// --- HELPER PARA CONSULTAS SEGURAS (RECONEXÃO E TRATAMENTO) ---
+export async function safeQuery<T>(
+    queryFn: () => PromiseLike<{ data: T | null; error: any }>,
+    retries = 3,
+    delay = 1000
+): Promise<{ data: T | null; error: any }> {
+    let lastError: any;
+
+    for (let i = 0; i < retries; i++) {
+        try {
+            // @ts-ignore - Supabase return types match the structure but TS sometimes asks for more Promise methods
+            const { data, error } = await queryFn();
+
+            if (!error) return { data, error: null };
+
+            lastError = error;
+
+            // Se for erro de rede (fetch failed, network error, timeout de gateway)
+            const errorMsg = error?.message?.toLowerCase() || '';
+            const isNetworkError = errorMsg.includes('fetch') ||
+                errorMsg.includes('network') ||
+                errorMsg.includes('failed to fetch') ||
+                error?.code === 'PGRST301' || // JWT expirado
+                error?.status === 504 || // Gateway Timeout
+                error?.status === 502;   // Bad Gateway
+
+            if (!isNetworkError) break; // Erros lógicos (403 RLS, 404, 400) não devem ter retry
+
+            console.warn(`[Supabase SafeQuery] Tentativa ${i + 1}/${retries} falhou. Re-tentando em ${delay}ms...`, error.message);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+        } catch (err: any) {
+            lastError = err;
+            const errLower = err?.message?.toLowerCase() || '';
+            if (errLower.includes('fetch') || errLower.includes('network')) {
+                console.warn(`[Supabase SafeQuery] Erro de rede na tentativa ${i + 1}/${retries}:`, err.message);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+                continue;
+            }
+            break;
+        }
+    }
+
+    return { data: null, error: lastError };
+}
 
 export async function getUserProfile(userId: string) {
     const { data, error } = await supabase

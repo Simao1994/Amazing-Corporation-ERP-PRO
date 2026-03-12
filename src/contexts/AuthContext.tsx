@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, safeQuery } from '../lib/supabase';
 
 interface AuthContextType {
     user: any | null;
@@ -9,6 +9,14 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+interface Profile {
+    id: string;
+    email: string;
+    tenant_id?: string;
+    role?: string;
+    nome?: string;
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // 1. Iniciar imediatamente com dados do cache se disponíveis para evitar tela branca
@@ -34,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const userEmail = activeSession.user.email || '';
-        const defaultProfile = {
+        const defaultProfile: Profile = {
             id: activeSession.user.id,
             email: userEmail,
             role: activeSession.user.user_metadata?.role || (userEmail === 'simaopambo94@gmail.com' ? 'saas_admin' : 'funcionario'),
@@ -44,20 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
             console.log('AuthContext: Buscando perfil de', userEmail);
-            const profilePromise = supabase
-                .from('profiles')
-                .select('*, tenant_id')
-                .eq('id', activeSession.user.id)
-                .single();
 
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('A operação de perfis excedeu tempo limite de 15s. A sua rede local pode estar a estrangular o tráfego da API REST.')), 15000)
+            const { data: profile, error } = await safeQuery<Profile>(() =>
+                supabase
+                    .from('profiles')
+                    .select('*, tenant_id')
+                    .eq('id', activeSession.user.id)
+                    .single()
             );
 
-            const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
-
             if (error) {
-                console.warn('AuthContext: Erro ao buscar perfil. Usando fallback:', error);
+                console.warn('AuthContext: Erro ao buscar perfil após retries. Usando fallback:', error.message);
                 const tenantId = activeSession.user.user_metadata?.tenant_id || defaultProfile.tenant_id;
                 const fullUser = {
                     ...activeSession.user,

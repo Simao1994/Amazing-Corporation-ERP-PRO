@@ -14,7 +14,7 @@ import Select from '../components/ui/Select';
 import { formatAOA } from '../constants';
 import { InventarioItem, MovimentacaoEstoque } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
 import { formatError, withTimeout } from '../src/lib/utils';
 import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
@@ -50,12 +50,15 @@ const InventoryPage: React.FC = () => {
     }, 15000);
 
     try {
-      const { data: invData, error: invError } = await supabase
-        .from('inventario')
-        .select('*')
-        .eq('tenant_id', user?.tenant_id)
-        .order('nome');
+      const { data: invData, error: invError } = await safeQuery(() =>
+        supabase
+          .from('inventario')
+          .select('*')
+          .eq('tenant_id', user?.tenant_id)
+          .order('nome')
+      );
       if (invError) throw invError;
+
       let finalItems: InventarioItem[] = [];
       if (invData) {
         finalItems = invData.map((i: any) => ({
@@ -77,11 +80,13 @@ const InventoryPage: React.FC = () => {
         setItems(finalItems);
       }
 
-      const { data: movData, error: movError } = await supabase
-        .from('stock_movimentos')
-        .select('*')
-        .eq('tenant_id', user?.tenant_id)
-        .order('created_at', { ascending: false });
+      const { data: movData, error: movError } = await safeQuery(() =>
+        supabase
+          .from('stock_movimentos')
+          .select('*')
+          .eq('tenant_id', user?.tenant_id)
+          .order('created_at', { ascending: false })
+      );
       if (movError) throw movError;
       if (movData) {
         setMovimentacoes(movData.map((m: any) => {
@@ -92,7 +97,7 @@ const InventoryPage: React.FC = () => {
             item_nome: item?.nome || 'Item Desconhecido',
             tipo: m.tipo as any,
             quantidade: Number(m.quantidade),
-            data: m.created_at,
+            data: m.data || m.created_at,
             entidade: m.referencia,
             observacao: m.motivo,
             usuario: 'Admin'

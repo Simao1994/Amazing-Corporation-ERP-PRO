@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 import { GoogleGenAI } from "@google/genai";
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
 import { TransacaoFinanceira, TransacaoTipo, TransacaoStatus, User } from '../types';
 import { formatAOA } from '../constants';
@@ -37,8 +37,8 @@ const CATEGORIAS_TESOURARIA = [
 ];
 
 const FinancialHubPage: React.FC = () => {
-    const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'comparativo' | 'historico' | 'novo' | 'simulador' | 'conciliacao'>('dashboard');
+   const { user } = useAuth();
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'comparativo' | 'historico' | 'novo' | 'simulador' | 'conciliacao'>('dashboard');
    const [searchTerm, setSearchTerm] = useState('');
    const [filterType, setFilterType] = useState<string>('Todas');
    const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -59,17 +59,13 @@ const FinancialHubPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-         let query = supabase.from('fin_transacoes').select('*').eq('tenant_id', user?.tenant_id);
-         if (selectedEmpresaId) {
-            query = query.eq('tenant_id', selectedEmpresaId);
-         }
-
-         const fetchPromise = query.order('data', { ascending: false });
-         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout ao carregar transações')), 12000)
-         );
-
-         const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+         const { data, error } = await safeQuery(() => {
+            let query = supabase.from('fin_transacoes').select('*').eq('tenant_id', user?.tenant_id);
+            if (selectedEmpresaId) {
+               query = query.eq('tenant_id', selectedEmpresaId);
+            }
+            return query.order('data', { ascending: false });
+         });
 
          if (error) throw error;
          if (data) {
@@ -87,13 +83,13 @@ const FinancialHubPage: React.FC = () => {
       }
    };
 
-     const fetchEmpresas = async () => {
-       try {
-          const { data, error } = await supabase
-             .from('acc_empresas')
-             .select('*')
-             .eq('tenant_id', user?.tenant_id);
-          if (error) throw error;
+   const fetchEmpresas = async () => {
+      try {
+         const { data, error } = await supabase
+            .from('acc_empresas')
+            .select('*')
+            .eq('tenant_id', user?.tenant_id);
+         if (error) throw error;
          setEmpresas(data || []);
          if (data && data.length > 0) {
             if (!selectedEmpresaId) setSelectedEmpresaId(data[0].id);
@@ -343,14 +339,16 @@ const FinancialHubPage: React.FC = () => {
          centro_custo: formData.get('centro_custo') as string,
          status: (tipo === 'Reembolso' || tipo === 'Orçamento') ? 'Pendente' : 'Aprovado',
          usuario_id: currentUser?.id || 'sys',
-          usuario_nome: currentUser?.nome || 'Sistema',
-          tenant_id: selectedEmpresaId,
-          data_criacao: new Date().toISOString(),
-          historico_alteracoes: [{ data: new Date().toISOString(), usuario: currentUser?.nome || 'Sistema', acao: 'Registo inicial' }]
-       };
+         usuario_nome: currentUser?.nome || 'Sistema',
+         tenant_id: selectedEmpresaId,
+         data_criacao: new Date().toISOString(),
+         historico_alteracoes: [{ data: new Date().toISOString(), usuario: currentUser?.nome || 'Sistema', acao: 'Registo inicial' }]
+      };
 
       try {
-         const { error } = await supabase.from('fin_transacoes').insert([dbData]);
+         const { error } = await safeQuery(() =>
+            supabase.from('fin_transacoes').insert([dbData])
+         );
          if (error) throw error;
 
          fetchTransactions();

@@ -23,7 +23,7 @@ import { Funcionario, Motoqueiro, NotaFiscal, User, InternalAd, Imovel, Agricult
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
 import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
 
@@ -70,44 +70,48 @@ const Dashboard: React.FC = () => {
   }, [ads, currentUser]);
 
   const fetchMetrics = async () => {
+    if (!user?.tenant_id) return;
+
     try {
-      const results = await Promise.allSettled([
-        supabase.from('expr_fleet').select('*', { count: 'exact', head: true }).eq('tenant_id', user?.tenant_id),
-        supabase.from('agro_agricultores').select('*', { count: 'exact', head: true }).eq('tenant_id', user?.tenant_id),
-        supabase.from('real_imoveis').select('preco_venda').eq('tenant_id', user?.tenant_id),
-        supabase.from('arena_tournaments').select('*', { count: 'exact', head: true }).eq('tenant_id', user?.tenant_id),
-        supabase.from('fin_notas').select('valor_total').eq('tenant_id', user?.tenant_id),
-        supabase.from('funcionarios').select('*', { count: 'exact', head: true }).eq('tenant_id', user?.tenant_id)
-      ]);
+      // Ponto 7: Otimização de consultas simultâneas usando um único RPC
+      const { data, error } = await safeQuery(() =>
+        supabase.rpc('get_dashboard_metrics', { p_tenant_id: user.tenant_id })
+      );
 
-      const getCount = (res: any) => (res.status === 'fulfilled' && res.value.count) ? res.value.count : 0;
-      const getData = (res: any) => (res.status === 'fulfilled' && res.value.data) ? res.value.data : [];
+      if (error) {
+        console.error('Error fetching consolidated dashboard metrics:', error);
+        return;
+      }
 
-      setMetrics({
-        fleetCount: getCount(results[0]),
-        agricultoresCount: getCount(results[1]),
-        imoveisCount: getData(results[2]).length,
-        imoveisValor: getData(results[2]).reduce((acc: number, i: any) => acc + (Number(i.preco_venda) || 0), 0),
-        torneiosCount: getCount(results[3]),
-        totalInvoiced: getData(results[4]).reduce((acc: number, n: any) => acc + (Number(n.valor_total) || 0), 0),
-        staffCount: getCount(results[5])
-      });
+      if (data) {
+        setMetrics({
+          fleetCount: data.fleet_count || 0,
+          agricultoresCount: data.agro_count || 0,
+          imoveisCount: data.imob_count || 0,
+          imoveisValor: data.imob_valor || 0,
+          torneiosCount: data.arena_count || 0,
+          totalInvoiced: data.finance_total || 0,
+          staffCount: data.staff_count || 0
+        });
+      }
     } catch (error) {
-      console.error('Error fetching dashboard metrics:', error);
+      console.error('Dashboard: Falha crítica ao carregar métricas:', error);
     }
   };
 
   const fetchAds = async () => {
     try {
-      // Usamos um bloco isolado para não travar o dashboard se a tabela não existir
-      const { data, error } = await supabase
-        .from('sys_ads')
-        .select('*')
-        .eq('active', true)
-        .eq('tenant_id', user?.tenant_id);
+      // Ponto 6: Tratamento de erros e safeQuery
+      const { data, error } = await safeQuery(() =>
+        supabase
+          .from('sys_ads')
+          .select('*')
+          .eq('active', true)
+          .eq('tenant_id', user?.tenant_id)
+      ) as { data: any[] | null, error: any };
 
       if (error) {
-        console.warn('Dashboard: Tabela sys_ads não encontrada ou inacessível. Ignore se o script SQL ainda não foi aplicado.', error);
+        console.warn('Dashboard: Erro ao carregar anúncios (sys_ads).', error.message);
         return;
       }
 

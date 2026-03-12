@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit, Save, X, Search } from 'lucide-react';
-import { supabase } from '../../src/lib/supabase';
+import { supabase, safeQuery } from '../../src/lib/supabase';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useRealtimeSync } from '../../src/hooks/useRealtimeSync';
 
@@ -29,11 +29,13 @@ export default function POSCategorias() {
         if (!user?.tenant_id) return;
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('pos_categorias')
-                .select('*')
-                .eq('tenant_id', user.tenant_id)
-                .order('nome_categoria', { ascending: true });
+            const { data, error } = await safeQuery(() =>
+                supabase
+                    .from('pos_categorias')
+                    .select('*')
+                    .eq('tenant_id', user.tenant_id)
+                    .order('nome_categoria', { ascending: true })
+            );
 
             if (error) {
                 console.error('[POSCategorias] Erro ao carregar:', error);
@@ -62,46 +64,21 @@ export default function POSCategorias() {
                 tenant_id: user.tenant_id
             };
 
-            console.log('[POSCategorias] Iniciando gravação...', payload);
-            console.log('[POSCategorias] user.tenant_id =', user.tenant_id);
+            const { data, error } = await safeQuery(() =>
+                editingId
+                    ? supabase.from('pos_categorias').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id)
+                    : supabase.from('pos_categorias').insert([payload]).select()
+            );
 
-            let result;
-            if (editingId) {
-                result = await supabase
-                    .from('pos_categorias')
-                    .update(payload)
-                    .eq('id', editingId)
-                    .eq('tenant_id', user.tenant_id);
-            } else {
-                result = await supabase
-                    .from('pos_categorias')
-                    .insert([payload])
-                    .select();
-            }
+            if (error) throw error;
 
-            const { data, error } = result;
-
-            if (error) {
-                // Log detalhado para diagnóstico RLS
-                console.error('[POSCategorias] Supabase error detalhado:', {
-                    code: error.code,
-                    message: error.message,
-                    details: error.details,
-                    hint: error.hint
-                });
-                throw error;
-            }
-
-            console.log('[POSCategorias] Gravação bem-sucedida:', data);
             (window as any).notify?.(editingId ? 'Categoria atualizada' : 'Categoria criada', 'success');
             setShowModal(false);
             resetForm();
             fetchCategorias();
         } catch (error: any) {
             console.error('[POSCategorias] Erro ao salvar categoria:', error);
-            const msg = error?.message || error?.details || 'Erro desconhecido';
-            const hint = error?.hint ? ` (${error.hint})` : '';
-            (window as any).notify?.(`Erro ao salvar: ${msg}${hint}`, 'error');
+            (window as any).notify?.(`Erro ao salvar: ${error.message}`, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -112,10 +89,13 @@ export default function POSCategorias() {
 
         try {
             if (!user?.tenant_id) return;
-            await supabase.from('pos_categorias')
-                .delete()
-                .eq('id', id)
-                .eq('tenant_id', user.tenant_id);
+            const { error } = await safeQuery(() =>
+                supabase.from('pos_categorias')
+                    .delete()
+                    .eq('id', id)
+                    .eq('tenant_id', user.tenant_id)
+            );
+            if (error) throw error;
             (window as any).notify?.('Categoria eliminada', 'success');
             fetchCategorias();
         } catch (error) {
