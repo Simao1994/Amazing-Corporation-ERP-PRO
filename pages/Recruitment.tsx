@@ -21,7 +21,8 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { Candidatura, CandidaturaStatus, EscolaridadeTipo } from '../types';
 import { AmazingStorage } from '../utils/storage';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 import Logo from '../components/Logo';
 
 const PROVINCIAS_ANGOLA = [
@@ -44,6 +45,7 @@ interface RecruitmentPageProps {
 }
 
 const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) => {
+   const { user } = useAuth();
    const [activeTab, setActiveTab] = useState<'admin' | 'candidatura' | 'publico' | 'analytics' | 'consulta'>(isPublic ? 'candidatura' : 'admin');
    const [showModal, setShowModal] = useState(false);
    const [searchTerm, setSearchTerm] = useState('');
@@ -71,13 +73,19 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
    const [fileObjects, setFileObjects] = useState<{ [key: string]: File | null }>({});
 
    const fetchCandidaturas = async () => {
+      if (!isPublic && !user?.tenant_id) return;
       setLoading(true);
       try {
          const fetchOp = async () => {
-            const { data, error } = await supabase
-               .from('recr_candidaturas')
-               .select('*')
-               .order('data_candidatura', { ascending: false });
+            let query = supabase.from('recr_candidaturas').select('*');
+
+            if (!isPublic && user?.tenant_id) {
+               query = query.eq('tenant_id', user.tenant_id);
+            }
+
+            const { data, error } = await safeQuery(() =>
+               query.order('data_candidatura', { ascending: false })
+            );
             if (error) throw error;
             if (data) {
                // Map common field names if necessary (e.g. short_id -> id)
@@ -98,8 +106,10 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
    };
 
    useEffect(() => {
-      fetchCandidaturas();
-   }, []);
+      if (isPublic || user?.tenant_id) {
+         fetchCandidaturas();
+      }
+   }, [user?.tenant_id, isPublic]);
 
    // Form State para Cálculos Automáticos e Uploads
    const [formData, setFormData] = useState({
@@ -264,7 +274,13 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                notas_internas: (fd.get('notas_internas') as string) || editingItem?.notas_internas
             };
 
-            const { error } = await supabase.from('recr_candidaturas').upsert([dbData], { onConflict: 'short_id' });
+            if (!isPublic && user?.tenant_id) {
+               (dbData as any).tenant_id = user.tenant_id;
+            }
+
+            const { error } = await safeQuery(() =>
+               supabase.from('recr_candidaturas').upsert([dbData], { onConflict: 'short_id' })
+            );
             if (error) throw error;
 
             if (formData.notificar_email) {
@@ -303,11 +319,15 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
 
       try {
          const cleanInput = consultaBI.trim().toUpperCase();
-         const { data, error } = await supabase
-            .from('recr_candidaturas')
-            .select('*')
-            .or(`bi_numero.eq.${cleanInput},short_id.eq.${cleanInput}`)
-            .maybeSingle();
+         let query = supabase.from('recr_candidaturas').select('*');
+
+         if (!isPublic && user?.tenant_id) {
+            query = query.eq('tenant_id', user.tenant_id);
+         }
+
+         const { data, error } = await safeQuery(() =>
+            query.or(`bi_numero.eq.${cleanInput},short_id.eq.${cleanInput}`).maybeSingle()
+         );
 
          if (error) throw error;
          if (data) {
@@ -324,12 +344,16 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
    };
 
    const updateStatus = async (id: string, newStatus: CandidaturaStatus) => {
+      if (!user?.tenant_id) return;
       setIsSaving(true);
       try {
-         const { error } = await supabase
-            .from('recr_candidaturas')
-            .update({ status: newStatus })
-            .eq('short_id', id);
+         const { error } = await safeQuery(() =>
+            supabase
+               .from('recr_candidaturas')
+               .update({ status: newStatus })
+               .eq('short_id', id)
+               .eq('tenant_id', user.tenant_id)
+         );
          if (error) throw error;
          fetchCandidaturas();
          AmazingStorage.logAction('Status Candidatura', 'Recrutamento', `Candidatura ${id} alterada para ${newStatus}`);
@@ -742,8 +766,11 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                                     <button onClick={() => { setEditingItem(c); setFormData({ ...formData, data_nascimento: c.data_nascimento, bi_emissao: c.bi_emissao }); setShowModal(true); }} className="p-2 text-zinc-300 hover:text-yellow-600"><Edit size={16} /></button>
                                     <button onClick={async () => {
                                        if (confirm(`Remover candidatura de ${c.nome}?`)) {
+                                          if (!user?.tenant_id) return;
                                           try {
-                                             const { error } = await supabase.from('recr_candidaturas').delete().eq('short_id', c.id);
+                                             const { error } = await safeQuery(() =>
+                                                supabase.from('recr_candidaturas').delete().eq('short_id', c.id).eq('tenant_id', user.tenant_id)
+                                             );
                                              if (error) throw error;
                                              fetchCandidaturas();
                                           } catch (error) {

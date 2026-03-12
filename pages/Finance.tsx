@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../src/lib/supabase';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
 import { Wallet, FileText, Plus, Search, TrendingUp, PieChart, Download, X, Trash2, Edit, Save, Tag, Filter, RefreshCw } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -34,21 +35,19 @@ const FinancePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchNotas = async () => {
+    if (!user?.tenant_id) return;
     // Only show loader if we have no data at all
     if (notas.length === 0) setLoading(true);
 
-    const timeoutId = setTimeout(() => {
-      if (loading) {
-        console.warn('fetchNotas: Timeout de 10s atingido. Forçando interrupção do loading.');
-        setLoading(false);
-      }
-    }, 10000);
-
     try {
-      const { data, error } = await supabase
-        .from('fin_notas')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await safeQuery<NotaFiscal[]>(() =>
+        supabase
+          .from('fin_notas')
+          .select('*')
+          .eq('tenant_id', user.tenant_id)
+          .order('created_at', { ascending: false }),
+        { cacheKey: `finance-notas-${user.tenant_id}`, cacheTTL: 30000 }
+      );
 
       if (error) throw error;
       if (data) {
@@ -63,7 +62,6 @@ const FinancePage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching invoices:', error);
     } finally {
-      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -143,7 +141,8 @@ const FinancePage: React.FC = () => {
       valor_total: valor,
       impostos: valor * 0.14,
       categoria: formData.get('categoria') as string,
-      status: 'Liquidada'
+      status: 'Liquidada',
+      tenant_id: user?.tenant_id
     };
 
     try {
@@ -153,7 +152,8 @@ const FinancePage: React.FC = () => {
         const { error } = await supabase
           .from('fin_notas')
           .update(dbData)
-          .eq('short_id', editingItem!.id);
+          .eq('short_id', editingItem!.id)
+          .eq('tenant_id', user?.tenant_id);
         saveError = error;
       } else {
         // Insert new record with a generated short_id
@@ -183,7 +183,7 @@ const FinancePage: React.FC = () => {
   const handleDelete = async (id: string, num: string) => {
     if (confirm(`Excluir a nota fiscal ${num} permanentemente?`)) {
       try {
-        const { error } = await supabase.from('fin_notas').delete().eq('short_id', id);
+        const { error } = await supabase.from('fin_notas').delete().eq('short_id', id).eq('tenant_id', user?.tenant_id);
         if (error) throw error;
         fetchNotas();
         AmazingStorage.logAction('Eliminação Fiscal', 'Contabilidade', `Nota ${num} removida`, 'warning');

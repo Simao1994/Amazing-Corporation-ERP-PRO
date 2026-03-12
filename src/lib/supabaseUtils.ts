@@ -78,14 +78,26 @@ export async function safeQuery<T>(
 
                 lastError = error;
 
-                // Erros de rede ou timeout (PGRST301 = JWT, 504 = Gateway, 502 = Bad Gateway)
+                // Log detalhado para diagnóstico
                 const errorMsg = error?.message?.toLowerCase() || '';
+                const errorCode = error?.code;
+                const errorStatus = error?.status;
+
+                console.error(`[Supabase ERROR] Tentativa ${i + 1} falhou:`, {
+                    message: error.message,
+                    code: errorCode,
+                    status: errorStatus,
+                    key: concurrencyKey,
+                    hint: error?.hint
+                });
+
+                // Erros de rede ou timeout (PGRST301 = JWT, 504 = Gateway, 502 = Bad Gateway)
                 const isNetworkError = errorMsg.includes('fetch') ||
                     errorMsg.includes('network') ||
                     errorMsg.includes('failed to fetch') ||
-                    error?.code === 'PGRST301' ||
-                    error?.status === 504 ||
-                    error?.status === 502;
+                    errorCode === 'PGRST301' ||
+                    errorStatus === 504 ||
+                    errorStatus === 502;
 
                 if (!isNetworkError) break; // Erros lógicos (403 RLS, 404, 400) não devem ter retry
 

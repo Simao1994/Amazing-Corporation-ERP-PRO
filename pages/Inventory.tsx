@@ -14,7 +14,8 @@ import Select from '../components/ui/Select';
 import { formatAOA } from '../constants';
 import { InventarioItem, MovimentacaoEstoque } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { supabase, safeQuery } from '../src/lib/supabase';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
 import { useAuth } from '../src/contexts/AuthContext';
 import { formatError, withTimeout } from '../src/lib/utils';
 import { useRealtimeSync } from '../src/hooks/useRealtimeSync';
@@ -228,7 +229,7 @@ const InventoryPage: React.FC = () => {
 
     try {
       if (editingItem) {
-        const { error } = await supabase.from('inventario').update(dbData).eq('id', editingItem.id);
+        const { error } = await supabase.from('inventario').update(dbData).eq('id', editingItem.id).eq('tenant_id', user?.tenant_id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from('inventario').insert([dbData]);
@@ -270,7 +271,7 @@ const InventoryPage: React.FC = () => {
       const { error: invError } = await supabase.from('inventario').update({
         quantidade_atual: novaQtd,
         updated_at: new Date().toISOString()
-      }).eq('id', selectedItemForMovement.id);
+      }).eq('id', selectedItemForMovement.id).eq('tenant_id', user?.tenant_id);
       if (invError) throw invError;
 
       fetchInventoryData();

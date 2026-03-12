@@ -11,7 +11,9 @@ import {
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
 import Input from '../components/ui/Input';
-import { supabase } from '../src/lib/supabase';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
+import { useAuth } from '../src/contexts/AuthContext';
 import { Game, ArenaTournament, ArenaRanking, PaymentMethod } from '../types';
 import { formatAOA } from '../constants';
 
@@ -53,6 +55,7 @@ const NUMERO_ARENA = '929 882 067';
 const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 const ArenaGames: React.FC = () => {
+   const { user } = useAuth();
    const [activeStep, setActiveStep] = useState<'catalog' | 'tournaments' | 'ranking'>('catalog');
    const [searchTerm, setSearchTerm] = useState('');
    const [selectedCategory, setSelectedCategory] = useState('Todos');
@@ -75,6 +78,7 @@ const ArenaGames: React.FC = () => {
    const [rankings, setRankings] = useState<ArenaRanking[]>([]);
 
    const fetchArenaData = async () => {
+      if (!user?.tenant_id) return;
       setLoading(true);
       try {
          const [
@@ -82,14 +86,23 @@ const ArenaGames: React.FC = () => {
             { data: trns },
             { data: rnks }
          ] = await Promise.all([
-            supabase.from('arena_games').select('*').eq('status', 'Ativo').order('popularidade', { ascending: false }),
-            supabase.from('arena_tournaments').select('*').order('data_inicio', { ascending: true }),
-            supabase.from('arena_ranking').select('*').order('rank', { ascending: true })
+            safeQuery<Game[]>(() =>
+               supabase.from('arena_games').select('*').eq('tenant_id', user.tenant_id).eq('status', 'Ativo').order('popularidade', { ascending: false }),
+               { cacheKey: `arena-games-pub-${user.tenant_id}`, cacheTTL: 60000 }
+            ),
+            safeQuery<ArenaTournament[]>(() =>
+               supabase.from('arena_tournaments').select('*').eq('tenant_id', user.tenant_id).order('data_inicio', { ascending: true }),
+               { cacheKey: `arena-trns-pub-${user.tenant_id}`, cacheTTL: 60000 }
+            ),
+            safeQuery<ArenaRanking[]>(() =>
+               supabase.from('arena_ranking').select('*').eq('tenant_id', user.tenant_id).order('rank', { ascending: true }),
+               { cacheKey: `arena-rnks-pub-${user.tenant_id}`, cacheTTL: 60000 }
+            )
          ]);
 
-         if (gms) setGames(gms as unknown as Game[]);
-         if (trns) setTournaments(trns as unknown as ArenaTournament[]);
-         if (rnks) setRankings(rnks as unknown as ArenaRanking[]);
+         if (gms) setGames(gms);
+         if (trns) setTournaments(trns);
+         if (rnks) setRankings(rnks);
       } catch (error) {
          console.error('Error fetching arena data:', error);
       } finally {
@@ -98,8 +111,10 @@ const ArenaGames: React.FC = () => {
    };
 
    useEffect(() => {
-      fetchArenaData();
-   }, []);
+      if (user?.tenant_id) {
+         fetchArenaData();
+      }
+   }, [user?.tenant_id]);
 
    const filteredGames = useMemo(() =>
       games.filter(g =>
@@ -156,7 +171,10 @@ const ArenaGames: React.FC = () => {
             criado_em: new Date().toISOString()
          };
 
-         const { error: pError } = await supabase.from('arena_pagamentos').insert([paymentPayload]);
+         const { error: pError } = await supabase.from('arena_pagamentos').insert([{
+            ...paymentPayload,
+            tenant_id: user?.tenant_id
+         }]);
          if (pError) throw pError;
 
          // Decrementar as vagas imediatamente para prevenir overbooking

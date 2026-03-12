@@ -17,7 +17,9 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { formatAOA } from '../constants';
 import { Agricultor, FinanciamentoAgro, VisitaTecnica, Colheita } from '../types';
-import { supabase } from '../src/lib/supabase';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const PROVINCIAS_ANGOLA = [
    'Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cuando Cubango',
@@ -48,7 +50,7 @@ const AgroPage: React.FC = () => {
    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
    const fileInputRef = useRef<HTMLInputElement>(null);
 
-   // Estados de Dados
+   const { user } = useAuth();
    const [agricultores, setAgricultores] = useState<Agricultor[]>([]);
    const [financiamentos, setFinanciamentos] = useState<FinanciamentoAgro[]>([]);
    const [visitas, setVisitas] = useState<VisitaTecnica[]>([]);
@@ -56,7 +58,9 @@ const AgroPage: React.FC = () => {
    const [cultivos, setCultivos] = useState<string[]>(['Batata', 'Feijão', 'Fruticultura', 'Hortícolas', 'Milho', 'Soja', 'Trigo']);
 
    const fetchData = async () => {
+      if (!user?.tenant_id) return;
       setLoading(true);
+
       try {
          const [
             { data: agri },
@@ -64,16 +68,28 @@ const AgroPage: React.FC = () => {
             { data: vis },
             { data: col }
          ] = await Promise.all([
-            supabase.from('agro_agricultores').select('*').order('nome'),
-            supabase.from('agro_financiamentos').select('*').order('created_at', { ascending: false }),
-            supabase.from('agro_visitas').select('*').order('data', { ascending: false }),
-            supabase.from('agro_producao').select('*').order('data', { ascending: false })
+            safeQuery<Agricultor[]>(() =>
+               supabase.from('agro_agricultores').select('*').eq('tenant_id', user.tenant_id).order('nome'),
+               { cacheKey: `agro-agri-${user.tenant_id}`, cacheTTL: 60000 }
+            ),
+            safeQuery<FinanciamentoAgro[]>(() =>
+               supabase.from('agro_financiamentos').select('*').eq('tenant_id', user.tenant_id).order('created_at', { ascending: false }),
+               { cacheKey: `agro-fin-${user.tenant_id}`, cacheTTL: 30000 }
+            ),
+            safeQuery<VisitaTecnica[]>(() =>
+               supabase.from('agro_visitas').select('*').eq('tenant_id', user.tenant_id).order('data', { ascending: false }),
+               { cacheKey: `agro-vis-${user.tenant_id}`, cacheTTL: 30000 }
+            ),
+            safeQuery<Colheita[]>(() =>
+               supabase.from('agro_producao').select('*').eq('tenant_id', user.tenant_id).order('data', { ascending: false }),
+               { cacheKey: `agro-col-${user.tenant_id}`, cacheTTL: 30000 }
+            )
          ]);
 
-         if (agri) setAgricultores(agri as unknown as Agricultor[]);
-         if (fin) setFinanciamentos(fin as unknown as FinanciamentoAgro[]);
-         if (vis) setVisitas(vis as unknown as VisitaTecnica[]);
-         if (col) setColheitas(col as unknown as Colheita[]);
+         if (agri) setAgricultores(agri);
+         if (fin) setFinanciamentos(fin);
+         if (vis) setVisitas(vis);
+         if (col) setColheitas(col);
       } catch (error) {
          console.error('Error fetching agro data:', error);
       } finally {
@@ -82,8 +98,10 @@ const AgroPage: React.FC = () => {
    };
 
    useEffect(() => {
-      fetchData();
-   }, []);
+      if (user?.tenant_id) {
+         fetchData();
+      }
+   }, [user?.tenant_id]);
 
    // Reset search term when tab changes
    useEffect(() => {
@@ -178,11 +196,12 @@ const AgroPage: React.FC = () => {
          foto_url: photoPreview || `https://ui-avatars.com/api/?name=${fd.get('nome')}&background=166534&color=fff`,
          status: (fd.get('status') as any) || 'ativo',
          nif: fd.get('nif') as string,
+         tenant_id: user?.tenant_id
       };
 
       try {
          if (isEditing) {
-            await supabase.from('agro_agricultores').update(payload).eq('id', editingAgricultor.id);
+            await supabase.from('agro_agricultores').update(payload).eq('id', editingAgricultor.id).eq('tenant_id', user?.tenant_id);
          } else {
             await supabase.from('agro_agricultores').insert([payload]);
          }
@@ -190,6 +209,7 @@ const AgroPage: React.FC = () => {
          setEditingAgricultor(null);
          fetchData();
       } catch (error) {
+         console.error('Erro ao salvar agricultor:', error);
          alert('Erro ao salvar agricultor');
       }
    };
@@ -208,11 +228,12 @@ const AgroPage: React.FC = () => {
          foto_evidencia: isEditing ? editingVisit?.foto_evidencia : undefined,
          estado_solo: fd.get('estado_solo') as string,
          pragas_detetadas: fd.get('pragas') as string,
+         tenant_id: user?.tenant_id
       };
 
       try {
          if (isEditing) {
-            await supabase.from('agro_visitas').update(payload).eq('id', editingVisit.id);
+            await supabase.from('agro_visitas').update(payload).eq('id', editingVisit.id).eq('tenant_id', user?.tenant_id);
          } else {
             await supabase.from('agro_visitas').insert([payload]);
          }
@@ -220,6 +241,7 @@ const AgroPage: React.FC = () => {
          setEditingVisit(null);
          fetchData();
       } catch (error) {
+         console.error('Erro ao salvar visita:', error);
          alert('Erro ao salvar visita');
       }
    };
@@ -234,12 +256,13 @@ const AgroPage: React.FC = () => {
          cultura: fd.get('cultura') as string,
          qtd_kg: Number(fd.get('qtd')),
          data: fd.get('data') as string,
-         destino: fd.get('destino') as any
+         destino: fd.get('destino') as any,
+         tenant_id: user?.tenant_id
       };
 
       try {
          if (isEditing) {
-            await supabase.from('agro_producao').update(payload).eq('id', editingProduction.id);
+            await supabase.from('agro_producao').update(payload).eq('id', editingProduction.id).eq('tenant_id', user?.tenant_id);
          } else {
             await supabase.from('agro_producao').insert([payload]);
          }
@@ -247,6 +270,7 @@ const AgroPage: React.FC = () => {
          setEditingProduction(null);
          fetchData();
       } catch (error) {
+         console.error('Erro ao salvar produção:', error);
          alert('Erro ao salvar produção');
       }
    };
@@ -263,12 +287,13 @@ const AgroPage: React.FC = () => {
          data_solicitacao: fd.get('data') as string,
          status: (fd.get('status') as any) || 'Pendente',
          prazo_pagamento: fd.get('prazo') as string,
-         observacoes: fd.get('obs') as string
+         observacoes: fd.get('obs') as string,
+         tenant_id: user?.tenant_id
       };
 
       try {
          if (isEditing) {
-            await supabase.from('agro_financiamentos').update(payload).eq('id', editingLoan.id);
+            await supabase.from('agro_financiamentos').update(payload).eq('id', editingLoan.id).eq('tenant_id', user?.tenant_id);
          } else {
             await supabase.from('agro_financiamentos').insert([payload]);
          }
@@ -277,6 +302,7 @@ const AgroPage: React.FC = () => {
          setPreSelectedAgricultorId('');
          fetchData();
       } catch (error) {
+         console.error('Erro ao salvar financiamento:', error);
          alert('Erro ao salvar financiamento');
       }
    };
@@ -298,9 +324,10 @@ const AgroPage: React.FC = () => {
       const nextStatus = statusMap[currentStatus] || 'Pendente';
 
       try {
-         await supabase.from('agro_financiamentos').update({ status: nextStatus }).eq('id', id);
+         await supabase.from('agro_financiamentos').update({ status: nextStatus }).eq('id', id).eq('tenant_id', user?.tenant_id);
          fetchData();
       } catch (error) {
+         console.error('Erro ao atualizar status:', error);
          alert('Erro ao atualizar status');
       }
    };

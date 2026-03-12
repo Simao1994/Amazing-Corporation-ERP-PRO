@@ -20,7 +20,8 @@ import {
    EmpresaAfiliada, Funcionario, DocumentoDigital, MovimentoBancario, PlanoConta, LancamentoItem,
    PeriodoContabil, User
 } from '../types';
-import { supabase } from '../src/lib/supabase';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
 import { formatAOA } from '../constants';
 import Select from '../components/ui/Select';
 import Logo from '../components/Logo';
@@ -339,7 +340,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
       try {
          const { error } = await supabase.from('contabil_faturas')
             .update({ status: 'Anulado' })
-            .eq('id', fatura.id);
+            .eq('id', fatura.id)
+            .eq('tenant_id', selectedEmpresaId);
 
          if (error) throw error;
 
@@ -349,14 +351,15 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                const { data: currentStock } = await supabase.from('inventario').select('quantidade_atual').eq('id', item.id).single();
                if (currentStock) {
                   const novaQtd = (Number(currentStock.quantidade_atual) || 0) + item.qtd;
-                  await supabase.from('inventario').update({ quantidade_atual: novaQtd }).eq('id', item.id);
+                  await supabase.from('inventario').update({ quantidade_atual: novaQtd }).eq('id', item.id).eq('tenant_id', selectedEmpresaId);
 
                   await supabase.from('stock_movimentos').insert({
                      produto_id: item.id,
                      tipo: 'entrada',
                      quantidade: item.qtd,
                      referencia: fatura.numero_fatura,
-                     motivo: `Restauro Automático (Anulação de ${fatura.tipo || 'Venda'})`
+                     motivo: `Restauro Automático (Anulação de ${fatura.tipo || 'Venda'})`,
+                     tenant_id: selectedEmpresaId
                   });
                }
             }
@@ -488,7 +491,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const handleClosePeriod = async (id: string) => {
       if (!confirm("Tem certeza que deseja fechar este período? Novos lançamentos serão bloqueados.")) return;
       try {
-         const { error } = await supabase.from('acc_periodos').update({ status: 'Fechado' }).eq('id', id);
+         const { error } = await supabase.from('acc_periodos').update({ status: 'Fechado' }).eq('id', id).eq('tenant_id', selectedEmpresaId);
          if (error) throw error;
          fetchAccountingData();
       } catch (error) {
@@ -684,15 +687,19 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    };
 
    const fetchLedgerEntries = async () => {
-      const { data } = await supabase
-         .from('acc_ledger_immutable')
-         .select('*')
-         .order('created_at', { ascending: false })
-         .limit(10);
-      setLedgerEntries(data || []);
-   };
+       if (!selectedEmpresaId) return;
+       const { data } = await supabase
+          .from('acc_ledger_immutable')
+          .select('*')
+          .eq('tenant_id', selectedEmpresaId)
+          .order('created_at', { ascending: false })
+          .limit(10);
+       setLedgerEntries(data || []);
+    };
 
    const fetchAccountingData = async () => {
+      if (!user?.tenant_id && !selectedEmpresaId) return;
+
       // Debounce/Throttling: Avoid sync if we just synced less than 15s ago
       const lastSync = (fetchAccountingData as any).lastSync || 0;
       if (Date.now() - lastSync < 15000) return;
@@ -700,42 +707,50 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
       setLoadingStatus('Sincronizando...');
       try {
-         const fetchQuery = async (query: any, label: string) => {
-            const { data, error } = await query;
-            if (error) {
-               console.error(`Error in ${label}: `, error);
-               return [];
-            }
-            return data || [];
-         };
-
          // 1. Carregar Dados Estruturais (Prioridade Alta)
-         const e1 = await fetchQuery(supabase.from('empresas').select('*').order('nome'), 'Entidades');
-         const emps = e1 || [];
-         setEmpresas(emps as any);
-         AmazingStorage.save(STORAGE_KEYS.ERP_EMPRESAS, emps);
+         const { data: emps, error: empsError } = await safeQuery<EmpresaAfiliada[]>(() =>
+            supabase.from('empresas').select('*').eq('tenant_id', user?.tenant_id || selectedEmpresaId).order('nome'),
+            { cacheKey: `acc-empresas-${user?.tenant_id || selectedEmpresaId}`, cacheTTL: 60000 }
+         );
 
-         const effEmpId = selectedEmpresaId || emps[0]?.id;
-
-         const [funcs, dataContas, dataPeriodos] = await Promise.all([
-            fetchQuery(supabase.from('funcionarios').select('*').eq('tenant_id', effEmpId).order('nome'), 'Equipa'),
-            fetchQuery(supabase.from('acc_contas').select('*').order('codigo'), 'Plano de Contas'),
-            fetchQuery(supabase.from('acc_periodos').select('*').order('ano', { ascending: false }).order('mes', { ascending: false }), 'Ciclos Fiscais')
-         ]);
-
-         setFuncionarios(funcs as any);
-         AmazingStorage.save(STORAGE_KEYS.FUNCIONARIOS, funcs);
-
-         if (dataContas && dataContas.length > 0) {
-            setPlanoContas(dataContas as any);
-            AmazingStorage.save(STORAGE_KEYS.ACC_CONTAS, dataContas);
+         if (emps) {
+            setEmpresas(emps);
+            AmazingStorage.save(STORAGE_KEYS.ERP_EMPRESAS, emps);
          }
 
-         if (dataPeriodos && dataPeriodos.length > 0) {
-            setPeriodos(dataPeriodos as any);
-            AmazingStorage.save(STORAGE_KEYS.ACC_PERIODOS, dataPeriodos);
+         const effEmpId = selectedEmpresaId || emps?.[0]?.id || user?.tenant_id;
+         if (!effEmpId) return;
+
+         const [funcsRes, dataContasRes, dataPeriodosRes] = await Promise.all([
+            safeQuery<Funcionario[]>(() =>
+               supabase.from('funcionarios').select('*').eq('tenant_id', effEmpId).order('nome'),
+               { cacheKey: `acc-funcs-${effEmpId}`, cacheTTL: 60000 }
+            ),
+            safeQuery<PlanoConta[]>(() =>
+               supabase.from('acc_contas').select('*').eq('tenant_id', effEmpId).order('codigo'),
+               { cacheKey: `acc-contas-${effEmpId}`, cacheTTL: 300000 }
+            ),
+            safeQuery<PeriodoContabil[]>(() =>
+               supabase.from('acc_periodos').select('*').eq('tenant_id', effEmpId).order('ano', { ascending: false }).order('mes', { ascending: false }),
+               { cacheKey: `acc-periodos-${effEmpId}`, cacheTTL: 60000 }
+            )
+         ]);
+
+         if (funcsRes.data) {
+            setFuncionarios(funcsRes.data);
+            AmazingStorage.save(STORAGE_KEYS.FUNCIONARIOS, funcsRes.data);
+         }
+
+         if (dataContasRes.data && dataContasRes.data.length > 0) {
+            setPlanoContas(dataContasRes.data);
+            AmazingStorage.save(STORAGE_KEYS.ACC_CONTAS, dataContasRes.data);
+         }
+
+         if (dataPeriodosRes.data && dataPeriodosRes.data.length > 0) {
+            setPeriodos(dataPeriodosRes.data);
+            AmazingStorage.save(STORAGE_KEYS.ACC_PERIODOS, dataPeriodosRes.data);
             if (!selectedPeriodoId) {
-               const initialPeriod = (dataPeriodos as any[]).find(p => p.tenant_id === effEmpId);
+               const initialPeriod = dataPeriodosRes.data.find(p => p.tenant_id === effEmpId);
                if (initialPeriod) setSelectedPeriodoId(initialPeriod.id);
             }
          }
@@ -745,81 +760,101 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
          }
 
          // 2. Carregar Dados Transacionais em PARALELO (Background)
-         // UNLOCK UI EARLY
          setLoading(false);
 
-         const [lnc, lncItens, flh, obl, centros, configs, sLogs, faturas, tesouraria, rhRecibos, inventarioItems, comprasData, contactosData, categoriasData] = await Promise.all([
-            fetchQuery(supabase.from('acc_lancamentos').select('*').order('data', { ascending: false }), 'Diário'),
-            fetchQuery(supabase.from('acc_lancamento_itens').select('*'), 'Itens'),
-            fetchQuery(supabase.from('acc_folhas').select('*').order('mes_referencia', { ascending: false }), 'Processamento'),
-            fetchQuery(supabase.from('acc_obrigacoes').select('*').order('data_limite'), 'Fiscal'),
-            fetchQuery(supabase.from('acc_centros_custo').select('*').order('nome'), 'Centros'),
-            fetchQuery(supabase.from('acc_config').select('*'), 'Config'),
-            fetchQuery(supabase.from('acc_system_logs').select('*').order('created_at', { ascending: false }).limit(50), 'Logs'),
-            fetchQuery(supabase.from('contabil_faturas').select('*').order('created_at', { ascending: false }), 'Facturas'),
-            fetchQuery(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }), 'Tesouraria'),
-            fetchQuery(supabase.from('rh_recibos').select('*').order('data_emissao', { ascending: false }), 'Recibos'),
-            fetchQuery(supabase.from('inventario').select('*').eq('tenant_id', effEmpId).order('nome'), 'Inventário'),
-            fetchQuery(supabase.from('compras').select('*').order('data_compra', { ascending: false }), 'Compras'),
-            fetchQuery(supabase.from('acc_contactos').select('*').order('nome'), 'Contactos'),
-            fetchQuery(supabase.from('acc_categorias').select('*').eq('tenant_id', effEmpId).order('nome'), 'Categorias')
+         const [
+            lncRes,
+            lncItensRes,
+            flhRes,
+            oblRes,
+            centrosRes,
+            configsRes,
+            sLogsRes,
+            faturasRes,
+            tesourariaRes,
+            rhRecibosRes,
+            invRes,
+            comprasRes,
+            contactosRes,
+            catsRes
+         ] = await Promise.all([
+            safeQuery<any[]>(() => supabase.from('acc_lancamentos').select('*').eq('tenant_id', effEmpId).order('data', { ascending: false }), { cacheKey: `acc-lnc-${effEmpId}`, cacheTTL: 30000 }),
+            safeQuery<any[]>(() => supabase.from('acc_lancamento_itens').select('*').eq('tenant_id', effEmpId), { cacheKey: `acc-lnc-items-${effEmpId}`, cacheTTL: 30000 }),
+            safeQuery<FolhaPagamento[]>(() => supabase.from('acc_folhas').select('*').eq('tenant_id', effEmpId).order('mes_referencia', { ascending: false }), { cacheKey: `acc-folhas-${effEmpId}`, cacheTTL: 60000 }),
+            safeQuery<ObrigacaoFiscal[]>(() => supabase.from('acc_obrigacoes').select('*').eq('tenant_id', effEmpId).order('data_limite'), { cacheKey: `acc-obl-${effEmpId}`, cacheTTL: 60000 }),
+            safeQuery<any[]>(() => supabase.from('acc_centros_custo').select('*').eq('tenant_id', effEmpId).order('nome'), { cacheKey: `acc-centros-${effEmpId}`, cacheTTL: 300000 }),
+            safeQuery<any[]>(() => supabase.from('acc_config').select('*').eq('tenant_id', effEmpId), { cacheKey: `acc-config-${effEmpId}`, cacheTTL: 300000 }),
+            safeQuery<any[]>(() => supabase.from('acc_system_logs').select('*').eq('tenant_id', effEmpId).order('created_at', { ascending: false }).limit(50)),
+            safeQuery<any[]>(() => supabase.from('contabil_faturas').select('*').eq('tenant_id', effEmpId).order('created_at', { ascending: false }), { cacheKey: `acc-faturas-${effEmpId}`, cacheTTL: 30000 }),
+            safeQuery<any[]>(() => supabase.from('fin_transacoes').select('*').eq('tenant_id', effEmpId).order('data', { ascending: false }), { cacheKey: `acc-tesouraria-${effEmpId}`, cacheTTL: 30000 }),
+            safeQuery<any[]>(() => supabase.from('rh_recibos').select('*').eq('tenant_id', effEmpId).order('data_emissao', { ascending: false }), { cacheKey: `acc-recibos-${effEmpId}`, cacheTTL: 30000 }),
+            safeQuery<any[]>(() => supabase.from('inventario').select('*').eq('tenant_id', effEmpId).order('nome'), { cacheKey: `acc-inv-${effEmpId}`, cacheTTL: 60000 }),
+            safeQuery<any[]>(() => supabase.from('compras').select('*').eq('tenant_id', effEmpId).order('data_compra', { ascending: false }), { cacheKey: `acc-compras-${effEmpId}`, cacheTTL: 60000 }),
+            safeQuery<any[]>(() => supabase.from('acc_contactos').select('*').eq('tenant_id', effEmpId).order('nome'), { cacheKey: `acc-contactos-${effEmpId}`, cacheTTL: 60000 }),
+            safeQuery<any[]>(() => supabase.from('acc_categorias').select('*').eq('tenant_id', effEmpId).order('nome'), { cacheKey: `acc-cats-${effEmpId}`, cacheTTL: 60000 })
          ]);
 
-         const mergedLnc = (lnc || []).map((l: any) => ({
+         const mergedLnc = (lncRes.data || []).map((l: any) => ({
             ...l,
-            itens: (lncItens || []).filter((it: any) => it.lancamento_id === l.id)
+            itens: (lncItensRes.data || []).filter((it: any) => it.lancamento_id === l.id)
          }));
 
-         // Multi-save to Cache
-         setLancamentos(mergedLnc as any);
+         setLancamentos(mergedLnc);
          AmazingStorage.save(STORAGE_KEYS.ACC_LANCAMENTOS, mergedLnc);
 
-         setFolhas(flh as any);
-         AmazingStorage.save(STORAGE_KEYS.ACC_FOLHAS, flh);
+         if (flhRes.data) {
+            setFolhas(flhRes.data);
+            AmazingStorage.save(STORAGE_KEYS.ACC_FOLHAS, flhRes.data);
+         }
 
-         setObligacoes(obl as any);
-         AmazingStorage.save(STORAGE_KEYS.ACC_OBRIGACOES, obl);
+         if (oblRes.data) {
+            setObligacoes(oblRes.data);
+            AmazingStorage.save(STORAGE_KEYS.ACC_OBRIGACOES, oblRes.data);
+         }
 
-         setCentrosCusto(centros || []);
-         AmazingStorage.save(STORAGE_KEYS.ACC_CENTROS, centros);
+         setCentrosCusto(centrosRes.data || []);
+         AmazingStorage.save(STORAGE_KEYS.ACC_CENTROS, centrosRes.data || []);
 
          const configMap: Record<string, string> = {};
-         (configs || []).forEach((c: any) => configMap[c.chave] = c.valor);
+         (configsRes.data || []).forEach((c: any) => configMap[c.chave] = c.valor);
          setAccountingConfig(configMap);
          AmazingStorage.save(STORAGE_KEYS.ACC_CONFIG, configMap);
 
-         setSystemLogs(sLogs || []);
-         setExtFaturas(faturas || []);
-         AmazingStorage.save('amazing_ext_faturas', faturas);
+         setSystemLogs(sLogsRes.data || []);
+         setExtFaturas(faturasRes.data || []);
+         AmazingStorage.save('amazing_ext_faturas', faturasRes.data);
 
-         setExtTesouraria(tesouraria || []);
-         AmazingStorage.save('amazing_ext_tesouraria', tesouraria);
+         setExtTesouraria(tesourariaRes.data || []);
+         AmazingStorage.save('amazing_ext_tesouraria', tesourariaRes.data);
 
-         setExtRhRecibos(rhRecibos || []);
-         AmazingStorage.save('amazing_ext_rh_recibos', rhRecibos);
+         setExtRhRecibos(rhRecibosRes.data || []);
+         AmazingStorage.save('amazing_ext_rh_recibos', rhRecibosRes.data);
 
-         setExtInventario(inventarioItems || []);
-         AmazingStorage.save(STORAGE_KEYS.INVENTARIO, inventarioItems);
+         if (invRes.data) {
+            setExtInventario(invRes.data);
+         }
 
-         setCompras(comprasData || []);
-         AmazingStorage.save('amazing_compras', comprasData);
+         if (comprasRes.data) {
+            setCompras(comprasRes.data);
+         }
 
-         setContactos(contactosData || []);
-         AmazingStorage.save(STORAGE_KEYS.ACC_CONTACTOS, contactosData);
+         if (contactosRes.data) {
+            setContactos(contactosRes.data);
+         }
 
-         setCategorias(categoriasData || []);
-         AmazingStorage.save(STORAGE_KEYS.ACC_CATEGORIAS, categoriasData);
+         if (catsRes.data) {
+            setCategorias(catsRes.data);
+         }
 
-         setPendingApproval((mergedLnc || []).filter((l: any) => l.status === 'Rascunho' || l.status === 'PendenteAprovacao'));
          setLastSyncAt(new Date());
-         setLoadingStatus('');
       } catch (error) {
-         console.error('Critical Error in fetchAccountingData:', error);
-         setLoadingStatus('Falha na sincronização');
+         console.error('Accounting Sync Error:', error);
       } finally {
          setLoading(false);
+         setLoadingStatus('');
       }
    };
+
 
    const handleCreateCategory = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -1540,8 +1575,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             }]).select().single();
             if (!hErr && head) {
                await supabase.from('acc_lancamento_itens').insert([
-                  { lancamento_id: head.id, conta_codigo: regra.conta_debito_codigo, conta_nome: 'Inventário / Activos Circulantes', tipo: 'D', valor: Number(newCompra.valor_total) },
-                  { lancamento_id: head.id, conta_codigo: regra.conta_credito_codigo, conta_nome: 'Fornecedores / Contas a Pagar', tipo: 'C', valor: Number(newCompra.valor_total) }
+                  { lancamento_id: head.id, conta_codigo: regra.conta_debito_codigo, conta_nome: 'Inventário / Activos Circulantes', tipo: 'D', valor: Number(newCompra.valor_total), tenant_id: selectedEmpresaId },
+                  { lancamento_id: head.id, conta_codigo: regra.conta_credito_codigo, conta_nome: 'Fornecedores / Contas a Pagar', tipo: 'C', valor: Number(newCompra.valor_total), tenant_id: selectedEmpresaId }
                ]);
                // Marcar compra como contabilizada
                await supabase.from('compras').update({ contabilizado: true, lancamento_id: head.id }).eq('id', compra.id);
@@ -1570,7 +1605,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             aprovado_por: 'Utilizador Actual',
             aprovado_em: new Date().toISOString(),
             aprovacao_obs: obs || null
-         }).eq('id', lancamento.id);
+         }).eq('id', lancamento.id).eq('tenant_id', selectedEmpresaId);
          if (error) throw error;
          await fetchAccountingData();
          setShowApprovalModal(false);
@@ -1587,8 +1622,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
    const handleRejeitarLancamento = async (lancamento: any) => {
       if (!confirm('Rejeitar e eliminar este lançamento?')) return;
       try {
-         await supabase.from('acc_lancamento_itens').delete().eq('lancamento_id', lancamento.id);
-         await supabase.from('acc_lancamentos').delete().eq('id', lancamento.id);
+         await supabase.from('acc_lancamento_itens').delete().eq('lancamento_id', lancamento.id).eq('tenant_id', selectedEmpresaId);
+         await supabase.from('acc_lancamentos').delete().eq('id', lancamento.id).eq('tenant_id', selectedEmpresaId);
          await fetchAccountingData();
       } catch (err) {
          alert('Erro ao rejeitar lançamento.');
@@ -1624,7 +1659,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                   conta_codigo: it.conta_codigo,
                   conta_nome: it.conta_nome,
                   tipo: it.tipo === 'D' ? 'C' : 'D',
-                  valor: it.valor
+                  valor: it.valor,
+                  tenant_id: selectedEmpresaId
                }))
             );
          }
@@ -1634,7 +1670,7 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
             estornado: true,
             estorno_ref_id: estornoHead.id,
             estorno_em: new Date().toISOString()
-         }).eq('id', lancamento.id);
+         }).eq('id', lancamento.id).eq('tenant_id', selectedEmpresaId);
 
          await fetchAccountingData();
          alert(`Estorno criado com sucesso! Referência: ${estornoHead.id.slice(0, 8).toUpperCase()}`);
@@ -1679,8 +1715,8 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
 
          // 2. Inserir itens D e C (valores iguais — soma D = soma C garantida)
          await supabase.from('acc_lancamento_itens').insert([
-            { lancamento_id: head.id, conta_codigo: debito!.codigo, conta_nome: debito!.nome, tipo: 'D', valor: Number(newEntry.valor) },
-            { lancamento_id: head.id, conta_codigo: credito!.codigo, conta_nome: credito!.nome, tipo: 'C', valor: Number(newEntry.valor) }
+            { lancamento_id: head.id, conta_codigo: debito!.codigo, conta_nome: debito!.nome, tipo: 'D', valor: Number(newEntry.valor), tenant_id: selectedEmpresaId },
+            { lancamento_id: head.id, conta_codigo: credito!.codigo, conta_nome: credito!.nome, tipo: 'C', valor: Number(newEntry.valor), tenant_id: selectedEmpresaId }
          ]);
 
          fetchAccountingData();
@@ -2807,8 +2843,12 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                           };
                                        });
                                        const { error } = await supabase.from('acc_extratos_bancarios').insert(batch);
-                                       if (error) alert('Erro ao importar extrato. Verifique o formato CSV (Data,Descrição,Valor).');
-                                       else fetchAccountingData();
+                                        if (error) {
+                                           console.error('Import error:', error);
+                                           alert('Erro ao importar extrato. Verifique o formato CSV (Data,Descrição,Valor).');
+                                        } else {
+                                           fetchAccountingData();
+                                        }
                                     }} />
                                  </label>
                               </div>
@@ -2840,9 +2880,9 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                                                    <button
                                                       onClick={async () => {
                                                          const { error } = await supabase.from('acc_extratos_bancarios').update({
-                                                            status: 'Conciliado',
-                                                            lancamento_id: match.id
-                                                         }).eq('id', ex.id);
+                                                             status: 'Conciliado',
+                                                             lancamento_id: match.id
+                                                          }).eq('id', ex.id).eq('tenant_id', selectedEmpresaId);
                                                          if (!error) fetchAccountingData();
                                                       }}
                                                       className="px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -4156,11 +4196,11 @@ const AccountingPage: React.FC<{ user?: User }> = ({ user }) => {
                         setIsSyncingModules(true);
                         const fq = async (q: any) => { try { const { data } = await q; return data || []; } catch { return []; } };
                         const [fat, tes, rh, inv, smov] = await Promise.all([
-                           fq(supabase.from('contabil_faturas').select('*').order('data_emissao', { ascending: false }).limit(100)),
-                           fq(supabase.from('fin_transacoes').select('*').order('data', { ascending: false }).limit(100)),
-                           fq(supabase.from('hr_recibos').select('*').order('created_at', { ascending: false }).limit(100)),
-                           fq(supabase.from('inventario').select('*').order('nome')),
-                           fq(supabase.from('stock_movimentos').select('*').order('created_at', { ascending: false }).limit(100))
+                           fq(supabase.from('contabil_faturas').select('*').eq('tenant_id', selectedEmpresaId).order('data_emissao', { ascending: false }).limit(100)),
+                           fq(supabase.from('fin_transacoes').select('*').eq('tenant_id', selectedEmpresaId).order('data', { ascending: false }).limit(100)),
+                           fq(supabase.from('hr_recibos').select('*').eq('tenant_id', selectedEmpresaId).order('created_at', { ascending: false }).limit(100)),
+                           fq(supabase.from('inventario').select('*').eq('tenant_id', selectedEmpresaId).order('nome')),
+                           fq(supabase.from('stock_movimentos').select('*').eq('tenant_id', selectedEmpresaId).order('created_at', { ascending: false }).limit(100))
                         ]);
                         setExtFaturas(fat); setExtTesouraria(tes); setExtRhRecibos(rh); setExtInventario(inv); setExtStockMov(smov);
                         setLastSyncAt(new Date());

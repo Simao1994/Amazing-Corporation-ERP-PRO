@@ -31,6 +31,7 @@ import BankAccountsTab from '../components/hr/BankAccountsTab';
 import ContasBancariasPage from './ContasBancariasPage';
 import VagasAdminTab from '../components/hr/VagasAdminTab';
 import { formatError, withTimeout } from '../src/lib/utils';
+import { safeQuery } from '../src/lib/supabaseUtils';
 
 // --- CONFIGURA��O DE HORÁRIO E REGRAS ---
 const WORK_RULES = {
@@ -302,11 +303,11 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          console.log("HR: Iniciando sincronização de dados...");
          // 1. Fetch everything in PARALLEL to avoid waterfalls
          const [funcsRes, presRes, recRes, metasRes, corpRes] = await Promise.allSettled([
-            supabase.from('funcionarios').select('*').eq('tenant_id', user.tenant_id).order('nome', { ascending: true }),
-            supabase.from('hr_presencas').select('*').eq('tenant_id', user.tenant_id).order('data', { ascending: false }).limit(200),
-            supabase.from('hr_recibos').select('*').eq('tenant_id', user.tenant_id).order('data_emissao', { ascending: false }).limit(200),
-            supabase.from('hr_metas').select('*').eq('tenant_id', user.tenant_id).order('status', { ascending: true }),
-            supabase.from('config_sistema').select('*').eq('tenant_id', user.tenant_id).eq('categoria', 'empresa')
+            safeQuery(() => supabase.from('funcionarios').select('*').eq('tenant_id', user.tenant_id).order('nome', { ascending: true })),
+            safeQuery(() => supabase.from('hr_presencas').select('*').eq('tenant_id', user.tenant_id).order('data', { ascending: false }).limit(200)),
+            safeQuery(() => supabase.from('hr_recibos').select('*').eq('tenant_id', user.tenant_id).order('data_emissao', { ascending: false }).limit(200)),
+            safeQuery(() => supabase.from('hr_metas').select('*').eq('tenant_id', user.tenant_id).order('status', { ascending: true })),
+            safeQuery(() => supabase.from('config_sistema').select('*').eq('tenant_id', user.tenant_id).eq('categoria', 'empresa'))
          ]) as any[];
 
          // --- PROCESS EMPLOYEES ---
@@ -406,13 +407,13 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          for (const key of keys) {
             const val = formData.get(key) as string;
             newInfo[key] = val;
-            await supabase.from('config_sistema').upsert({
+            await safeQuery(() => supabase.from('config_sistema').upsert({
                tenant_id: user.tenant_id,
                categoria: 'empresa',
                chave: key,
                valor: val,
                updated_at: new Date().toISOString()
-            }, { onConflict: 'tenant_id,categoria,chave' });
+            }, { onConflict: 'tenant_id,categoria,chave' }));
          }
          setCorporateInfo(newInfo);
          AmazingStorage.save(STORAGE_KEYS.CORPORATE_INFO, newInfo);
@@ -467,7 +468,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       };
 
       try {
-         const { error } = await supabase.from('hr_metas').insert([nova]);
+         const { error } = await safeQuery(() => supabase.from('hr_metas').insert([nova]));
          if (error) throw error;
          fetchHRData();
          setShowMetaModal(false);
@@ -480,7 +481,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
    const handleDeleteMeta = async (id: string) => {
       if (!confirm('Deseja realmente eliminar esta meta?')) return;
       try {
-         const { error } = await supabase.from('hr_metas').delete().eq('id', id);
+         const { error } = await safeQuery(() => supabase.from('hr_metas').delete().eq('id', id).eq('tenant_id', user.tenant_id));
          if (error) throw error;
          fetchHRData();
       } catch (err: any) {
@@ -491,10 +492,10 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
    const updateMetaProgresso = async (id: string, novoProgresso: number) => {
       try {
-         const { error } = await supabase.from('hr_metas').update({
+         const { error } = await safeQuery(() => supabase.from('hr_metas').update({
             progresso: novoProgresso,
             status: novoProgresso === 100 ? 'Concluda' : 'Em curso'
-         }).eq('id', id);
+         }).eq('id', id).eq('tenant_id', user.tenant_id));
          if (error) throw error;
          fetchHRData();
       } catch (err) {
@@ -509,12 +510,13 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
 
       try {
          if (tipo === 'entrada') {
-            const { data: existing, error: checkErr } = await supabase
+            const { data: existing, error: checkErr } = await safeQuery(() => supabase
                .from('hr_presencas')
                .select('*')
+               .eq('tenant_id', user.tenant_id)
                .eq('funcionario_id', funcId)
                .eq('data', hoje)
-               .maybeSingle();
+               .maybeSingle());
 
             if (existing) return alert("J registou entrada hoje.");
 
@@ -528,34 +530,35 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                if (diffMins > WORK_RULES.toleranceMinutes) status = 'Atraso';
             }
 
-            const { error } = await supabase.from('hr_presencas').insert([{
+            const { error } = await safeQuery(() => supabase.from('hr_presencas').insert([{
                funcionario_id: funcId,
                data: hoje,
                entrada: agora,
                status: status,
                tenant_id: user.tenant_id
-            }]);
+            }]));
 
             if (error) throw error;
             await fetchHRData();
             AmazingStorage.logAction('Ponto', 'RH', `Check-in: ${func?.nome} (${status})`);
          } else {
-            const { data: ponto, error: fetchErr } = await supabase
+            const { data: ponto, error: fetchErr } = await safeQuery(() => supabase
                .from('hr_presencas')
                .select('*')
+               .eq('tenant_id', user.tenant_id)
                .eq('funcionario_id', funcId)
                .eq('data', hoje)
                .is('saida', null)
-               .maybeSingle();
+               .maybeSingle());
 
             if (fetchErr || !ponto) return alert("Registo de entrada ativo no localizado para hoje.");
 
             const stats = calculateTimeStats(ponto.entrada, agora, hoje);
 
-            const { error: updErr } = await supabase.from('hr_presencas').update({
+            const { error: updErr } = await safeQuery(() => supabase.from('hr_presencas').update({
                saida: agora,
                horas_extras: stats.extra
-            }).eq('id', ponto.id);
+            }).eq('id', ponto.id).eq('tenant_id', user.tenant_id));
 
             if (updErr) throw updErr;
 
@@ -697,14 +700,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       // If still no session, let the insert/select fail and handle via catch, avoiding the early alert.
 
       // Verificar se j existe processamento para este ms
-      const { data: existing } = await supabase.from('hr_recibos').select('id').eq('mes', currentMonthName).eq('ano', currentFiscalYear);
+      const { data: existing } = await safeQuery(() => supabase.from('hr_recibos').select('id').eq('tenant_id', user.tenant_id).eq('mes', currentMonthName).eq('ano', currentFiscalYear));
 
       if (existing && existing.length > 0) {
          const confirmUpdate = confirm(`A folha de ${currentMonthName}/${currentFiscalYear} j foi processada (${existing.length} recibos). Deseja ANULAR os anteriores e processar novamente?`);
          if (!confirmUpdate) return;
 
          // Eliminar anteriores
-         const { error: delError } = await supabase.from('hr_recibos').delete().eq('mes', currentMonthName).eq('ano', currentFiscalYear);
+         const { error: delError } = await safeQuery(() => supabase.from('hr_recibos').delete().eq('tenant_id', user.tenant_id).eq('mes', currentMonthName).eq('ano', currentFiscalYear));
          if (delError) return alert("Erro ao limpar processamento anterior.");
       } else {
          if (!confirm(`Confirma o processamento definitivo da folha de ${currentMonthName}/${currentFiscalYear}?`)) return;
@@ -740,21 +743,12 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                bruto: Number((calc.bruto || 0).toFixed(2)),
                liquido: Number((calc.liquido || 0).toFixed(2)),
                data_emissao: new Date().toISOString(),
-               numero_documento: payrollDocNumber
+               numero_documento: payrollDocNumber,
+               tenant_id: user.tenant_id
             };
          });
 
-         let { error } = await supabase.from('hr_recibos').insert(novosRecibos);
-
-         // Retry once on transient error (401 or specific codes)
-         if (error && (error.code === 'PGRST301' || error.message.includes('401'))) {
-            console.warn("Transient auth error, retrying payroll insert...");
-            const { data: { session: retrySession } } = await supabase.auth.getSession();
-            if (retrySession) {
-               const { error: retryError } = await supabase.from('hr_recibos').insert(novosRecibos);
-               error = retryError;
-            }
-         }
+         const { error } = await safeQuery(() => supabase.from('hr_recibos').insert(novosRecibos));
 
          if (error) {
             console.error("Payroll Insert Error:", error);
@@ -893,15 +887,16 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
          area_formacao: formState.curso,
          tempo_contrato: fd.get('tempo') as string,
          tipo_contrato: fd.get('tipo_contrato') as string,
-         morada: fd.get('morada') as string
+         morada: fd.get('morada') as string,
+         tenant_id: user.tenant_id
       };
 
       try {
          if (editingItem) {
-            const { error } = await supabase.from('funcionarios').update(dbData).eq('id', editingItem.id);
+            const { error } = await safeQuery(() => supabase.from('funcionarios').update(dbData).eq('id', editingItem.id).eq('tenant_id', user.tenant_id));
             if (error) throw error;
          } else {
-            const { error } = await supabase.from('funcionarios').insert([{ ...dbData, created_at: new Date().toISOString() }]);
+            const { error } = await safeQuery(() => supabase.from('funcionarios').insert([{ ...dbData, created_at: new Date().toISOString() }]));
             if (error) throw error;
          }
          fetchHRData();
@@ -917,14 +912,14 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       try {
          // 1. Eliminar dependências (para evitar erro de Foreign Key)
          await Promise.all([
-            supabase.from('hr_presencas').delete().eq('funcionario_id', f.id),
-            supabase.from('hr_recibos').delete().eq('funcionario_id', f.id),
-            supabase.from('hr_metas').delete().eq('funcionario_id', f.id),
-            supabase.from('rh_contas_bancarias').delete().eq('funcionario_id', f.id)
+            safeQuery(() => supabase.from('hr_presencas').delete().eq('funcionario_id', f.id).eq('tenant_id', user.tenant_id)),
+            safeQuery(() => supabase.from('hr_recibos').delete().eq('funcionario_id', f.id).eq('tenant_id', user.tenant_id)),
+            safeQuery(() => supabase.from('hr_metas').delete().eq('funcionario_id', f.id).eq('tenant_id', user.tenant_id)),
+            safeQuery(() => supabase.from('rh_contas_bancarias').delete().eq('funcionario_id', f.id).eq('tenant_id', user.tenant_id))
          ]);
 
          // 2. Eliminar o funcionário
-         const { error } = await supabase.from('funcionarios').delete().eq('id', f.id);
+         const { error } = await safeQuery(() => supabase.from('funcionarios').delete().eq('id', f.id).eq('tenant_id', user.tenant_id));
          if (error) throw error;
 
          // 3. Feedback e Sincronização
@@ -1133,7 +1128,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
                                     <td className="px-8 py-5 text-right flex justify-end gap-2">
                                        <button onClick={() => setHistoryFuncionario(f)} className="p-3 text-zinc-300 hover:text-zinc-900" title="Ver Histrico Completo"><ClipboardList size={18} /></button>
                                        {isHRAdmin && <button onClick={() => handleOpenModal(f)} className="p-3 text-zinc-300 hover:text-yellow-600"><Edit size={18} /></button>}
-                                       {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) supabase.from('funcionarios').delete().eq('id', f.id).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
+                                       {isHRAdmin && <button onClick={() => { if (confirm('Excluir colaborador?')) safeQuery(() => supabase.from('funcionarios').delete().eq('id', f.id).eq('tenant_id', user.tenant_id)).then(() => fetchHRData()); }} className="p-3 text-zinc-300 hover:text-red-500"><Trash2 size={18} /></button>}
                                     </td>
                                  </tr>
                               ))}

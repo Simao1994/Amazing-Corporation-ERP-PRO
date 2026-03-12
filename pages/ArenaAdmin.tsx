@@ -44,7 +44,9 @@ interface ArenaDespesa {
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const ADMIN_KEY = 'amazing-arena-admin-2026';
-import { supabase } from '../src/lib/supabase';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
+import { useAuth } from '../src/contexts/AuthContext';
 import { formatAOA } from '../constants';
 
 const calculateTournamentStatus = (t: ArenaTournament) => {
@@ -59,6 +61,7 @@ const calculateTournamentStatus = (t: ArenaTournament) => {
 };
 
 const ArenaAdmin: React.FC = () => {
+   const { user } = useAuth();
    const [activeTab, setActiveTab] = useState<'analytics' | 'catalog' | 'tournaments' | 'payments' | 'ranking'>('analytics');
    const [financeView, setFinanceView] = useState<'payments' | 'expenses'>('payments');
    const [searchTerm, setSearchTerm] = useState('');
@@ -91,6 +94,7 @@ const ArenaAdmin: React.FC = () => {
    const [showExpenseModal, setShowExpenseModal] = useState(false);
 
    const fetchData = async () => {
+      if (!user?.tenant_id) return;
       setLoading(true);
       try {
          const [
@@ -100,18 +104,33 @@ const ArenaAdmin: React.FC = () => {
             { data: rnks },
             { data: exps }
          ] = await Promise.all([
-            supabase.from('arena_games').select('*').order('titulo'),
-            supabase.from('arena_pagamentos').select('*').order('criado_em', { ascending: false }),
-            supabase.from('arena_tournaments').select('*').order('data_inicio', { ascending: false }),
-            supabase.from('arena_ranking').select('*').order('rank', { ascending: true }),
-            supabase.from('arena_expenses').select('*').order('data', { ascending: false })
+            safeQuery<Game[]>(() =>
+               supabase.from('arena_games').select('*').eq('tenant_id', user.tenant_id).order('titulo'),
+               { cacheKey: `arena-games-${user.tenant_id}`, cacheTTL: 60000 }
+            ),
+            safeQuery<ArenaPagamento[]>(() =>
+               supabase.from('arena_pagamentos').select('*').eq('tenant_id', user.tenant_id).order('criado_em', { ascending: false }).limit(200),
+               { cacheKey: `arena-pays-${user.tenant_id}`, cacheTTL: 30000 }
+            ),
+            safeQuery<ArenaTournament[]>(() =>
+               supabase.from('arena_tournaments').select('*').eq('tenant_id', user.tenant_id).order('data_inicio', { ascending: false }),
+               { cacheKey: `arena-trns-${user.tenant_id}`, cacheTTL: 60000 }
+            ),
+            safeQuery<ArenaRanking[]>(() =>
+               supabase.from('arena_ranking').select('*').eq('tenant_id', user.tenant_id).order('rank', { ascending: true }),
+               { cacheKey: `arena-rnks-${user.tenant_id}`, cacheTTL: 60000 }
+            ),
+            safeQuery<ArenaDespesa[]>(() =>
+               supabase.from('arena_expenses').select('*').eq('tenant_id', user.tenant_id).order('data', { ascending: false }),
+               { cacheKey: `arena-exps-${user.tenant_id}`, cacheTTL: 60000 }
+            )
          ]);
 
-         if (gms) setGames(gms as unknown as Game[]);
-         if (pays) setPayments(pays as unknown as ArenaPagamento[]);
-         if (trns) setTournaments(trns as unknown as ArenaTournament[]);
-         if (rnks) setRankings(rnks as unknown as ArenaRanking[]);
-         if (exps) setExpenses(exps as unknown as ArenaDespesa[]);
+         if (gms) setGames(gms);
+         if (pays) setPayments(pays);
+         if (trns) setTournaments(trns);
+         if (rnks) setRankings(rnks);
+         if (exps) setExpenses(exps);
       } catch (error) {
          console.error('Error fetching admin arena data:', error);
       } finally {
@@ -120,8 +139,10 @@ const ArenaAdmin: React.FC = () => {
    };
 
    useEffect(() => {
-      fetchData();
-   }, []);
+      if (user?.tenant_id) {
+         fetchData();
+      }
+   }, [user?.tenant_id]);
 
    // --- MOTOR DE ANALYTICS (DADOS REAIS) ---
    const bizStats = useMemo(() => {
@@ -220,12 +241,13 @@ const ArenaAdmin: React.FC = () => {
          preco_sessao: Number(fd.get('preco')),
          tempo_minutos: Number(fd.get('tempo')),
          status: (fd.get('status') as GameStatus) || 'Ativo',
-         vagas_disponiveis: Number(fd.get('vagas'))
+         vagas_disponiveis: Number(fd.get('vagas')),
+         tenant_id: user?.tenant_id
       };
 
       try {
          if (isEditing) {
-            const { error } = await supabase.from('arena_games').update(payload).eq('id', editingGame.id);
+            const { error } = await supabase.from('arena_games').update(payload).eq('id', editingGame.id).eq('tenant_id', user?.tenant_id);
             if (error) throw error;
          } else {
             const { error } = await supabase.from('arena_games').insert([payload]);
@@ -244,7 +266,7 @@ const ArenaAdmin: React.FC = () => {
    const handleDeleteGame = async (id: string, titulo: string) => {
       if (confirm(`Remover "${titulo}" do catálogo permanentemente?`)) {
          try {
-            await supabase.from('arena_games').delete().eq('id', id);
+            await supabase.from('arena_games').delete().eq('id', id).eq('tenant_id', user?.tenant_id);
             fetchData();
          } catch (error) {
             alert('Erro ao remover jogo');
@@ -263,12 +285,13 @@ const ArenaAdmin: React.FC = () => {
          player_name: fd.get('player_name') as string,
          score: newScore,
          last_game: fd.get('last_game') as string,
+         tenant_id: user?.tenant_id
       };
 
       try {
          // 1. Guardar ou Atualizar o jogador ativo (posição temporária)
          if (isEditing) {
-            const { error: updErr } = await supabase.from('arena_ranking').update(payload).eq('id', editingRanking.id);
+            const { error: updErr } = await supabase.from('arena_ranking').update(payload).eq('id', editingRanking.id).eq('tenant_id', user?.tenant_id);
             if (updErr) throw updErr;
          } else {
             const { error: insErr } = await supabase.from('arena_ranking').insert([{ ...payload, rank: 9999 }]); // Rank temporário no fundo
@@ -276,12 +299,13 @@ const ArenaAdmin: React.FC = () => {
          }
 
          // 2. Extrair toda a gente para recalcular a matemática do Ranking Global
-         const { data: allPlayers } = await supabase.from('arena_ranking').select('*').order('score', { ascending: false });
+         const { data: allPlayers } = await supabase.from('arena_ranking').select('*').eq('tenant_id', user?.tenant_id).order('score', { ascending: false });
 
          // 3. Auto-Win Threshold Verification
          // Procura torneios em aberto que tenham uma meta e auto-declara este jogador se atingir os pontos
          const { data: activeTournaments } = await supabase.from('arena_tournaments')
             .select('*')
+            .eq('tenant_id', user?.tenant_id)
             .in('status', ['Inscrições', 'A decorrer'])
             .not('meta_pontos', 'is', null);
 
@@ -291,7 +315,7 @@ const ArenaAdmin: React.FC = () => {
                   await supabase.from('arena_tournaments').update({
                      vencedor: payload.player_name,
                      status: 'Finalizado' // Encerra o torneio automaticamente
-                  }).eq('id', t.id);
+                  }).eq('id', t.id).eq('tenant_id', user?.tenant_id);
                   // Notification delay trick is not needed, data is saved. The UI will catch it on next refresh.
                }
             }
@@ -325,11 +349,11 @@ const ArenaAdmin: React.FC = () => {
       if (confirm(`Remover "${name}" do Ranking?`)) {
          try {
             // 1. Apagar o jogador
-            const { error: delErr } = await supabase.from('arena_ranking').delete().eq('id', id);
+            const { error: delErr } = await supabase.from('arena_ranking').delete().eq('id', id).eq('tenant_id', user?.tenant_id);
             if (delErr) throw delErr;
 
             // 2. Extrair os restantes para recalcular a matemática do Ranking Global
-            const { data: allPlayers } = await supabase.from('arena_ranking').select('*').order('score', { ascending: false });
+            const { data: allPlayers } = await supabase.from('arena_ranking').select('*').eq('tenant_id', user?.tenant_id).order('score', { ascending: false });
 
             // 3. Impor Posições (1, 2, 3...) pela ordem dos Pontos
             if (allPlayers && allPlayers.length > 0) {
@@ -338,7 +362,8 @@ const ArenaAdmin: React.FC = () => {
                   player_name: player.player_name,
                   score: player.score,
                   last_game: player.last_game,
-                  rank: index + 1
+                  rank: index + 1,
+                  tenant_id: user?.tenant_id
                }));
 
                const { error: upsertError } = await supabase.from('arena_ranking').upsert(updates);
@@ -396,7 +421,7 @@ const ArenaAdmin: React.FC = () => {
    const handleDeleteTournament = async (id: string, titulo: string) => {
       if (confirm(`Eliminar o torneio "${titulo}" e todos os registos associados?`)) {
          try {
-            const { error } = await supabase.from('arena_tournaments').delete().eq('id', id);
+            const { error } = await supabase.from('arena_tournaments').delete().eq('id', id).eq('tenant_id', user?.tenant_id);
             if (error) throw error;
             fetchData();
          } catch (error) {
@@ -413,7 +438,8 @@ const ArenaAdmin: React.FC = () => {
          descricao: fd.get('descricao') as string,
          valor: Number(fd.get('valor')),
          categoria: fd.get('categoria') as any,
-         data: fd.get('data') as string
+         data: fd.get('data') as string,
+         tenant_id: user?.tenant_id
       };
 
       try {
@@ -428,7 +454,7 @@ const ArenaAdmin: React.FC = () => {
    const handleDeleteExpense = async (id: string) => {
       if (confirm('Remover registo de despesa?')) {
          try {
-            await supabase.from('arena_expenses').delete().eq('id', id);
+            await supabase.from('arena_expenses').delete().eq('id', id).eq('tenant_id', user?.tenant_id);
             fetchData();
          } catch (error) {
             alert('Erro ao remover despesa');

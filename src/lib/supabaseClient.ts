@@ -7,23 +7,31 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
  * Função para obter o URL base (com suporte opcional a bypass de proxy via URL query)
  */
 const getBaseURL = () => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
     if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('direct') === 'true') {
-            console.log('[Supabase] Forçando conexão direta via URL param');
-            return supabaseUrl || '';
-        }
+
+        // Check for manual override
+        const forceDirect = urlParams.get('direct') === 'true';
+        const forceProxy = urlParams.get('proxy') === 'true';
+
+        if (forceDirect) return supabaseUrl || '';
+        if (forceProxy) return '/sbapi';
 
         const hostname = window.location.hostname;
-        // Ativar proxy inteligente para localhost, 127.0.0.1 ou IPs locais (192.168.x.x, 10.x.x.x, 172.x.x.x)
+
+        // Ativar proxy inteligente para localhost, IPs locais, ou se o URL explicitamente indicar porta 3000/5173
         const isLocal = hostname === 'localhost' ||
             hostname === '127.0.0.1' ||
             hostname.startsWith('192.168.') ||
             hostname.startsWith('10.') ||
+            window.location.port === '3000' ||
+            window.location.port === '5173' ||
             /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
 
         if (isLocal) {
-            console.log(`[Supabase] Ambiente local detectado (${hostname}). Usando Proxy /sbapi`);
+            console.log(`[Supabase CLIENT] Ambiente local/dev detectado (${hostname}). Usando Proxy /sbapi`);
             return '/sbapi';
         }
     }
@@ -33,7 +41,9 @@ const getBaseURL = () => {
 const finalUrl = getBaseURL();
 
 if (!finalUrl || !supabaseAnonKey) {
-    console.error('ERRO: Variáveis de ambiente do Supabase não encontradas!');
+    console.error('ERRO CRÍTICO: Variáveis de ambiente do Supabase (URL/KEY) não encontradas!');
+} else {
+    console.log(`[Supabase CONFIG] URL: ${finalUrl}, Proxy: ${finalUrl === '/sbapi'}`);
 }
 
 // Sistema de Lock em memória — substitui o Navigator LockManager do gotrue-js
