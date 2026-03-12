@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 
 /**
  * Hook para sincronizar dados em tempo real com o Supabase.

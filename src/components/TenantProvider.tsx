@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
+import { safeQuery } from '../lib/supabaseUtils';
 import { Tenant } from '../../types';
 
 interface TenantContextType {
@@ -23,13 +24,16 @@ export const TenantProvider: React.FC<{ tenantId?: string; children: React.React
 
         const fetchTenant = async () => {
             try {
-                const { data, error } = await supabase
-                    .from('saas_tenants')
-                    .select('*')
-                    .eq('id', tenantId)
-                    .single();
+                const { data, error: queryError } = await safeQuery<Tenant>(
+                    () => supabase
+                        .from('saas_tenants')
+                        .select('*')
+                        .eq('id', tenantId)
+                        .single(),
+                    { cacheKey: `tenant-${tenantId}`, cacheTTL: 600000 } // Cache por 10 min
+                );
 
-                if (error) throw error;
+                if (queryError) throw queryError;
                 setTenant(data);
             } catch (err: any) {
                 console.error('Error fetching tenant:', err);

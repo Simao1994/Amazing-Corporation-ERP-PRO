@@ -1,15 +1,19 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
+import { safeQuery } from '../lib/supabaseUtils';
 import { SubscriptionStatus } from '../../types';
 
 export const checkSubscription = async (tenantId: string): Promise<SubscriptionStatus> => {
     try {
-        const { data, error } = await supabase
-            .from('saas_subscriptions')
-            .select('*, saas_plans(*)')
-            .eq('tenant_id', tenantId)
-            .order('data_expiracao', { ascending: false })
-            .limit(1)
-            .single();
+        const { data, error } = await safeQuery<any>(
+            () => supabase
+                .from('saas_subscriptions')
+                .select('*, saas_plans(*)')
+                .eq('tenant_id', tenantId)
+                .order('data_expiracao', { ascending: false })
+                .limit(1)
+                .single(),
+            { cacheKey: `sub-${tenantId}`, cacheTTL: 60000 } // Cache por 1 min
+        );
 
         if (error || !data) {
             return {

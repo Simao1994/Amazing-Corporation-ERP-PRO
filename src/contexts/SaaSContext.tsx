@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
+import { safeQuery } from '../lib/supabaseUtils';
 import { checkSubscription } from '../utils/subscription';
 import { SubscriptionStatus, SaasConfig } from '../../types';
 import { useAuth } from './AuthContext';
@@ -79,11 +80,15 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setSubscription(prev => JSON.stringify(prev) === JSON.stringify(status) ? prev : status);
 
                 // Buscar configurações globais
-                const { data: config, error: configError } = await supabase.from('saas_config').select('*').eq('id', 1).single();
+                const { data: config, error: configError } = await safeQuery<SaasConfig>(
+                    () => supabase.from('saas_config').select('*').eq('id', 1).single(),
+                    { cacheKey: 'saas-config', cacheTTL: 300000 } // Cache por 5 min
+                );
+
                 if (configError) {
                     console.error('SaaSContext: Error fetching saas_config:', configError);
                 } else if (config) {
-                    setSaasConfig(config as SaasConfig);
+                    setSaasConfig(config);
                 }
 
             } else {

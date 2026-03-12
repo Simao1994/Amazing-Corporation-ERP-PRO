@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Save, User, Building2, Upload, Sparkles, X, Edit, ShieldCheck, Globe, CheckCircle2, MapPin, RefreshCw, Play } from 'lucide-react';
 import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { supabase, safeQuery } from '../src/lib/supabase';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
 import { CorporateSettings, EmpresaAfiliada } from '../types';
 import { formatError } from '../src/lib/utils';
 

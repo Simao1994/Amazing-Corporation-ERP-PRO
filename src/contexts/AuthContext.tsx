@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { supabase, safeQuery } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
+import { safeQuery } from '../lib/supabaseUtils';
 
 interface AuthContextType {
     user: any | null;
@@ -53,12 +54,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             console.log('AuthContext: Buscando perfil de', userEmail);
 
-            const { data: profile, error } = await safeQuery<Profile>(() =>
-                supabase
+            const { data: profile, error } = await safeQuery<Profile>(
+                () => supabase
                     .from('profiles')
                     .select('*, tenant_id')
                     .eq('id', activeSession.user.id)
-                    .single()
+                    .single(),
+                {
+                    cacheKey: `profile-${activeSession.user.id}`,
+                    fallbackData: defaultProfile
+                }
             );
 
             if (error) {
