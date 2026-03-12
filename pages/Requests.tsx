@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { Inbox, MessageSquare, Trash2, Check, X, ShieldCheck, Star, RefreshCw } from 'lucide-react';
 import { Solicitacao, Testemunho } from '../types';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const RequestsPage: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'solicitacoes' | 'testemunhos'>('solicitacoes');
 
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
@@ -13,9 +15,12 @@ const RequestsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchRequestsData = async () => {
+    if (!user?.tenant_id) return;
     setLoading(true);
     try {
-      const { data: solData, error: solError } = await supabase.from('solicitacoes').select('*').order('created_at', { ascending: false });
+      const { data: solData, error: solError } = await safeQuery(() =>
+        supabase.from('solicitacoes').select('*').eq('tenant_id', user.tenant_id).order('created_at', { ascending: false })
+      );
       if (solError) throw solError;
       if (solData) {
         setSolicitacoes(solData.map((s: any) => ({
@@ -29,7 +34,9 @@ const RequestsPage: React.FC = () => {
         })));
       }
 
-      const { data: testData, error: testError } = await supabase.from('testemunhos').select('*').order('created_at', { ascending: false });
+      const { data: testData, error: testError } = await safeQuery(() =>
+        supabase.from('testemunhos').select('*').eq('tenant_id', user.tenant_id).order('created_at', { ascending: false })
+      );
       if (testError) throw testError;
       setTestemunhos(testData || []);
 
@@ -41,17 +48,22 @@ const RequestsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchRequestsData();
-  }, []);
+    if (user?.tenant_id) {
+      fetchRequestsData();
+    }
+  }, [user?.tenant_id]);
 
   const toggleSolicitacao = async (id: string) => {
+    if (!user?.tenant_id) return;
     const current = solicitacoes.find(s => s.id === id);
     if (!current) return;
 
     const newStatus = current.status === 'pendente' ? 'resolvido' : 'pendente';
 
     try {
-      const { error } = await supabase.from('solicitacoes').update({ status: newStatus }).eq('id', id);
+      const { error } = await safeQuery(() =>
+        supabase.from('solicitacoes').update({ status: newStatus }).eq('id', id).eq('tenant_id', user.tenant_id)
+      );
       if (error) throw error;
       fetchRequestsData();
       AmazingStorage.logAction('Actualização', 'Solicitações', `Estado do ticket ${id} alterado para ${newStatus}`);
@@ -61,11 +73,14 @@ const RequestsPage: React.FC = () => {
   };
 
   const approveTestimonial = async (id: string) => {
+    if (!user?.tenant_id) return;
     const current = testemunhos.find(t => t.id === id);
     if (!current) return;
 
     try {
-      const { error } = await supabase.from('testemunhos').update({ aprovado: !current.aprovado }).eq('id', id);
+      const { error } = await safeQuery(() =>
+        supabase.from('testemunhos').update({ aprovado: !current.aprovado }).eq('id', id).eq('tenant_id', user.tenant_id)
+      );
       if (error) throw error;
       fetchRequestsData();
       AmazingStorage.logAction('Moderação', 'Depoimentos', `Visibilidade do depoimento ${id} alterada`);
@@ -75,11 +90,14 @@ const RequestsPage: React.FC = () => {
   };
 
   const toggleStar = async (id: string) => {
+    if (!user?.tenant_id) return;
     const current = testemunhos.find(t => t.id === id);
     if (!current) return;
 
     try {
-      const { error } = await supabase.from('testemunhos').update({ destaque: !current.destaque }).eq('id', id);
+      const { error } = await safeQuery(() =>
+        supabase.from('testemunhos').update({ destaque: !current.destaque }).eq('id', id).eq('tenant_id', user.tenant_id)
+      );
       if (error) throw error;
       fetchRequestsData();
     } catch (err) {
@@ -89,8 +107,11 @@ const RequestsPage: React.FC = () => {
 
   const deleteSolicitacao = async (id: string) => {
     if (confirm('Eliminar esta solicitação permanentemente?')) {
+      if (!user?.tenant_id) return;
       try {
-        const { error } = await supabase.from('solicitacoes').delete().eq('id', id);
+        const { error } = await safeQuery(() =>
+          supabase.from('solicitacoes').delete().eq('id', id).eq('tenant_id', user.tenant_id)
+        );
         if (error) throw error;
         fetchRequestsData();
         AmazingStorage.logAction('Eliminação', 'Solicitações', `Ticket ${id} removido do sistema`);
@@ -102,8 +123,11 @@ const RequestsPage: React.FC = () => {
 
   const deleteTestimonial = async (id: string) => {
     if (confirm('Eliminar este depoimento permanentemente?')) {
+      if (!user?.tenant_id) return;
       try {
-        const { error } = await supabase.from('testemunhos').delete().eq('id', id);
+        const { error } = await safeQuery(() =>
+          supabase.from('testemunhos').delete().eq('id', id).eq('tenant_id', user.tenant_id)
+        );
         if (error) throw error;
         fetchRequestsData();
       } catch (err) {
