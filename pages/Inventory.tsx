@@ -156,10 +156,12 @@ const InventoryPage: React.FC = () => {
   const handleDeleteItem = async (id: string, nome: string) => {
     if (confirm(`Remover permanentemente o item "${nome}" do inventário?`)) {
       try {
-        const { error } = await supabase.from('inventario')
-          .delete()
-          .eq('id', id)
-          .eq('tenant_id', user?.tenant_id);
+        const { error } = await safeQuery(() =>
+          supabase.from('inventario')
+            .delete()
+            .eq('id', id)
+            .eq('tenant_id', user?.tenant_id)
+        );
         if (error) throw error;
         fetchInventoryData();
         AmazingStorage.logAction('Remoção', 'Inventário', `Item ${nome} excluído`, 'warning');
@@ -229,10 +231,14 @@ const InventoryPage: React.FC = () => {
 
     try {
       if (editingItem) {
-        const { error } = await supabase.from('inventario').update(dbData).eq('id', editingItem.id).eq('tenant_id', user?.tenant_id);
+        const { error } = await safeQuery(() =>
+          supabase.from('inventario').update(dbData).eq('id', editingItem.id).eq('tenant_id', user?.tenant_id)
+        );
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('inventario').insert([dbData]);
+        const { error } = await safeQuery(() =>
+          supabase.from('inventario').insert([dbData])
+        );
         if (error) throw error;
       }
 
@@ -264,14 +270,18 @@ const InventoryPage: React.FC = () => {
 
     try {
       // Create movement
-      const { error: movError } = await supabase.from('stock_movimentos').insert([movementData]);
+      const { error: movError } = await safeQuery(() =>
+        supabase.from('stock_movimentos').insert([movementData])
+      );
       if (movError) throw movError;
 
       // Update item quantity
-      const { error: invError } = await supabase.from('inventario').update({
-        quantidade_atual: novaQtd,
-        updated_at: new Date().toISOString()
-      }).eq('id', selectedItemForMovement.id).eq('tenant_id', user?.tenant_id);
+      const { error: invError } = await safeQuery(() =>
+        supabase.from('inventario').update({
+          quantidade_atual: novaQtd,
+          updated_at: new Date().toISOString()
+        }).eq('id', selectedItemForMovement.id).eq('tenant_id', user?.tenant_id)
+      );
       if (invError) throw invError;
 
       fetchInventoryData();

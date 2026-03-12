@@ -149,17 +149,21 @@ const FinancePage: React.FC = () => {
       let saveError;
       if (isEditing) {
         // Update existing record using short_id
-        const { error } = await supabase
-          .from('fin_notas')
-          .update(dbData)
-          .eq('short_id', editingItem!.id)
-          .eq('tenant_id', user?.tenant_id);
+        const { error } = await safeQuery(() =>
+          supabase
+            .from('fin_notas')
+            .update(dbData)
+            .eq('short_id', editingItem!.id)
+            .eq('tenant_id', user?.tenant_id)
+        );
         saveError = error;
       } else {
         // Insert new record with a generated short_id
-        const { error } = await supabase
-          .from('fin_notas')
-          .insert([{ ...dbData, short_id: Math.random().toString(36).substr(2, 9) }]);
+        const { error } = await safeQuery(() =>
+          supabase
+            .from('fin_notas')
+            .insert([{ ...dbData, short_id: Math.random().toString(36).substr(2, 9) }])
+        );
         saveError = error;
       }
 
@@ -183,7 +187,9 @@ const FinancePage: React.FC = () => {
   const handleDelete = async (id: string, num: string) => {
     if (confirm(`Excluir a nota fiscal ${num} permanentemente?`)) {
       try {
-        const { error } = await supabase.from('fin_notas').delete().eq('short_id', id).eq('tenant_id', user?.tenant_id);
+        const { error } = await safeQuery(() =>
+          supabase.from('fin_notas').delete().eq('short_id', id).eq('tenant_id', user?.tenant_id)
+        );
         if (error) throw error;
         fetchNotas();
         AmazingStorage.logAction('Eliminação Fiscal', 'Contabilidade', `Nota ${num} removida`, 'warning');

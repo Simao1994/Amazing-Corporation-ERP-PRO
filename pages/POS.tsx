@@ -252,121 +252,45 @@ export default function POS() {
 
         setIsProcessing(true);
         try {
-            const ncf = `NCF${Date.now()}`;
-            console.log('Gerando fatura:', ncf);
+            // Preparar items para o RPC
+            const cartItems = cart.map(item => ({
+                produto_id: item.id,
+                quantidade: item.qnt,
+                preco_venda: item.preco_venda,
+                preco_compra: item.preco_compra || 0
+            }));
 
-            // 1. Criar Fatura
-            const { data: fatura, error: faturaError } = await safeQuery(() =>
-                supabase
-                    .from('pos_faturas')
-                    .insert([{
-                        tenant_id: user.tenant_id,
-                        numero_fatura: ncf,
-                        usuario_id: user.id,
-                        cliente_id: selectedClient?.id || null,
-                        caixa_id: caixaAtivo.id,
-                        subtotal: subtotal,
-                        iva_total: iva,
-                        total: total,
-                        valor_recebido: total,
-                        troco: 0,
-                        metodo_pagamento: metodo,
-                        status: 'PAGA'
-                    }])
-                    .select()
-                    .single()
+            const { data, error } = await safeQuery(() =>
+                supabase.rpc('finalize_pos_sale', {
+                    p_tenant_id: user.tenant_id,
+                    p_usuario_id: user.id,
+                    p_cliente_id: selectedClient?.id || null,
+                    p_caixa_id: caixaAtivo.id,
+                    p_metodo_pagamento: metodo,
+                    p_subtotal: subtotal,
+                    p_iva_total: iva,
+                    p_total: total,
+                    p_cart_items: cartItems
+                })
             );
 
-            if (faturaError) {
-                console.error('Erro ao criar fatura:', faturaError);
-                throw new Error(`Erro ao criar fatura: ${faturaError.message}`);
-            }
-
-            console.log('Fatura criada com ID:', fatura.id);
-
-            // 2. Inserir Itens e Atualizar Stock
-            for (const item of cart) {
-                console.log('Processando item:', item.nome_produto);
-
-                // Item da Fatura
-                const ivaItem = item.preco_venda * 0.14;
-                const { error: itemError } = await safeQuery(() =>
-                    supabase.from('pos_fatura_itens').insert([{
-                        tenant_id: user.tenant_id,
-                        fatura_id: fatura.id,
-                        produto_id: item.id,
-                        quantidade: item.qnt,
-                        preco_compra: item.preco_compra || 0,
-                        preco_venda: item.preco_venda,
-                        iva: ivaItem * item.qnt,
-                        lucro: (item.preco_venda - (item.preco_compra || 0)) * item.qnt,
-                        total: (item.preco_venda + ivaItem) * item.qnt
-                    }])
-                );
-
-                if (itemError) {
-                    console.error('Erro ao inserir item:', itemError);
-                    throw new Error(`Erro no item ${item.nome_produto}: ${itemError.message}`);
-                }
-
-                // Movimento de Stock
-                const { error: stockMovError } = await safeQuery(() =>
-                    supabase.from('pos_movimento_stock').insert([{
-                        tenant_id: user.tenant_id,
-                        produto_id: item.id,
-                        tipo_movimento: 'VENDA',
-                        quantidade: item.qnt,
-                        referencia: ncf,
-                        usuario_id: user.id
-                    }])
-                );
-
-                if (stockMovError) console.error('Aviso: Erro ao registrar movimento de stock:', stockMovError);
-
-                // Atualizar Quantidade Atual
-                const currentStock = item.pos_estoque?.[0]?.quantidade_atual || 0;
-                const { error: stockUpdateError } = await safeQuery(() =>
-                    supabase.from('pos_estoque')
-                        .update({ quantidade_atual: currentStock - item.qnt })
-                        .eq('produto_id', item.id)
-                        .eq('tenant_id', user.tenant_id)
-                );
-
-                if (stockUpdateError) console.error('Aviso: Erro ao atualizar stock:', stockUpdateError);
-            }
-
-            // 3. Registrar Movimento de Caixa
-            console.log('Registrando movimento de caixa...');
-            const { error: caixaMovError } = await safeQuery(() =>
-                supabase.from('pos_movimentos_caixa').insert([{
-                    tenant_id: user.tenant_id,
-                    caixa_id: caixaAtivo.id,
-                    tipo: 'VENDA',
-                    valor: total,
-                    descricao: `Venda ${ncf}`,
-                    usuario_id: user.id
-                }])
-            );
-
-            if (caixaMovError) {
-                console.error('Erro ao registrar movimento de caixa:', caixaMovError);
-                (window as any).notify?.('Aviso: Venda salva, mas erro ao registrar no caixa.', 'warning');
-            }
+            if (error) throw error;
+            if (data?.success === false) throw new Error(data.error || 'Erro desconhecido no checkout');
 
             (window as any).notify?.('Venda finalizada com sucesso!', 'success');
             setCart([]);
             fetchProducts();
             fetchCaixaAtivo();
 
-            // Simular Impressão com confirmação para não bloquear
-            const shouldPrint = window.confirm('Venda finalizada com sucesso! Deseja imprimir o recibo agora?');
+            // Sugestão de impressão
+            const shouldPrint = window.confirm(`Venda ${data.ncf} finalizada! Deseja imprimir o recibo?`);
             if (shouldPrint) {
                 window.print();
             }
 
         } catch (error: any) {
             console.error('Checkout error:', error);
-            (window as any).notify?.('Erro ao processar venda: ' + error.message, 'error');
+            (window as any).notify?.('Erro ao processar venda: ' + (error.message || 'Erro de rede'), 'error');
         } finally {
             setIsProcessing(false);
         }
