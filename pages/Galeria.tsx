@@ -4,9 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Save, User, Building2, Upload, Sparkles, X, Edit, ShieldCheck, Globe, CheckCircle2, MapPin, RefreshCw, Play } from 'lucide-react';
 import Input from '../components/ui/Input';
 import { AmazingStorage, STORAGE_KEYS } from '../utils/storage';
-import { supabase } from '../src/lib/supabase';
+import { supabase, safeQuery } from '../src/lib/supabase';
 import { CorporateSettings, EmpresaAfiliada } from '../types';
-import { formatError, withTimeout } from '../src/lib/utils';
+import { formatError } from '../src/lib/utils';
 
 const GaleriaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ceo' | 'empresas' | 'multimedia'>('ceo');
@@ -34,42 +34,41 @@ const GaleriaPage: React.FC = () => {
   const fetchGaleriaData = async () => {
     setLoading(true);
     try {
-      const fetchOperation = async () => {
-        // Fetch Corporate Info from config_sistema (key-value store)
-        const { data: corpData, error: corpError } = await supabase.from('config_sistema').select('*');
-        if (corpError) throw corpError;
+      // Fetch Corporate Info from config_sistema (key-value store)
+      const { data: corpData, error: corpError } = await safeQuery(() =>
+        supabase.from('config_sistema').select('*')
+      );
 
-        if (corpData && corpData.length > 0) {
-          const info: any = { ...corpInfo };
-          const relevantKeys = ['ceo_nome', 'ceo_mensagem', 'ceo_foto_url', 'fundacao_ano', 'sede_principal'];
-          corpData.forEach((item: any) => {
-            if (relevantKeys.includes(item.chave)) {
-              info[item.chave] = item.valor;
-            }
-          });
-          setCorpInfo(info);
+      if (!corpError && corpData && corpData.length > 0) {
+        const info: any = {};
+        const relevantKeys = ['ceo_nome', 'ceo_mensagem', 'ceo_foto_url', 'fundacao_ano', 'sede_principal'];
+        corpData.forEach((item: any) => {
+          if (relevantKeys.includes(item.chave)) {
+            info[item.chave] = item.valor;
+          }
+        });
+        // Only update if we received at least one relevant key
+        if (Object.keys(info).length > 0) {
+          setCorpInfo(prev => ({ ...prev, ...info }));
         }
+      } else if (corpError) {
+        console.error('[Galeria] Erro ao carregar config_sistema:', corpError);
+      }
 
-        // Fetch Empresas
-        const { data: empData, error: empError } = await supabase.from('empresas').select('*').order('nome');
-        if (empError) throw empError;
-        setEmpresas(empData || []);
+      // Fetch Empresas
+      const { data: empData } = await safeQuery(() =>
+        supabase.from('empresas').select('*').order('nome')
+      );
+      setEmpresas(empData || []);
 
-        // Fetch Galeria Multimédia
-        const { data: galData, error: galError } = await supabase
-          .from('galeria')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (galError) throw galError;
-        setGaleriaItems(galData || []);
-      };
+      // Fetch Galeria Multimédia
+      const { data: galData } = await safeQuery(() =>
+        supabase.from('galeria').select('*').order('created_at', { ascending: false })
+      );
+      setGaleriaItems(galData || []);
 
-      await withTimeout(fetchOperation(), 15000, 'A carregar dados da galeria... A conexão parece lenta.');
     } catch (error) {
       console.error('Error fetching gallery data:', error);
-      if ((window as any).notify) {
-        (window as any).notify(error, 'error');
-      }
     } finally {
       setLoading(false);
     }
@@ -219,7 +218,9 @@ const GaleriaPage: React.FC = () => {
     ];
 
     try {
-      const { error } = await supabase.from('config_sistema').upsert(updates, { onConflict: 'chave' });
+      const { error } = await safeQuery(() =>
+        supabase.from('config_sistema').upsert(updates, { onConflict: 'chave' })
+      );
       if (error) throw error;
 
       setCorpInfo(prev => ({
@@ -314,7 +315,7 @@ const GaleriaPage: React.FC = () => {
           </div>
 
           <div className="lg:col-span-2">
-            <form onSubmit={handleSaveCeo} className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm space-y-8 h-full">
+            <form key={corpInfo.ceo_nome + corpInfo.fundacao_ano} onSubmit={handleSaveCeo} className="bg-white p-10 rounded-[3rem] border border-sky-100 shadow-sm space-y-8 h-full">
               <div className="flex items-center justify-between border-b border-zinc-50 pb-6">
                 <div className="space-y-1">
                   <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight flex items-center gap-2">
