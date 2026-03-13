@@ -97,7 +97,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleLogin = async (userData: any) => {
+  const handleLogin = React.useCallback(async (userData: any) => {
     showToast("A verificar credenciais...", "info");
 
     const profileResult = await refreshProfile(userData.session, true);
@@ -118,9 +118,9 @@ const App: React.FC = () => {
     });
 
     AmazingStorage.logAction('Login', 'Sessão', `Utilizador acedeu ao sistema`);
-  };
+  }, [refreshProfile]);
 
-  const handleLogout = async () => {
+  const handleLogout = React.useCallback(async () => {
     try {
       // 1. Limpeza IMEDIATA de resíduos locais para resposta rápida do UI
       localStorage.clear();
@@ -139,7 +139,7 @@ const App: React.FC = () => {
       localStorage.clear();
       window.location.reload();
     }
-  };
+  }, []);
 
   // RULE 1, 2, 3: While loading, show spinner, DO NOT render dashboard, DO NOT redirect
   // Se ainda estiver a ver a autenticação (authLoading) OU a subscrição (saasLoading com utilizador ativo), 

@@ -59,7 +59,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -79,11 +78,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   // --- NOTIFICATION STATE ---
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // --- LOAD DATA (Chat & Notifications) ---
   useEffect(() => {
@@ -134,7 +128,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           return;
         }
 
-        console.log('Layout: A carregar cargos dinâmicos...');
+        // console.log('Layout: A carregar cargos dinâmicos...');
 
         // Uso de safeQuery para garantir cache e evitar loops (erro 429)
         const { data, error } = await supabase.rpc('get_dynamic_roles', { p_tenant_id: tenantId });
@@ -175,7 +169,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, activeChat, isChatOpen]);
+  }, [messages.length, activeChat?.id, isChatOpen]);
 
   // --- NOTIFICATION LOGIC ---
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -267,41 +261,43 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   };
 
 
-  const allowedMenuItems = MENU_ITEMS.filter(item => {
-    // SaaS Admin and Master Admin see everything related to their role
-    if (user.role === 'saas_admin') return true;
+  const allowedMenuItems = React.useMemo(() => {
+    return MENU_ITEMS.filter(item => {
+      // SaaS Admin and Master Admin see everything related to their role
+      if (user.role === 'saas_admin') return true;
 
-    // Check role permissions first
-    const userPermissions = getMergedPermissions(user.role);
-    const hasRoleAccess = user.role === 'admin' || userPermissions.includes(item.id) || userPermissions.includes('all');
+      // Check role permissions first
+      const userPermissions = getMergedPermissions(user.role);
+      const hasRoleAccess = user.role === 'admin' || userPermissions.includes(item.id) || userPermissions.includes('all');
 
-    if (!hasRoleAccess) return false;
+      if (!hasRoleAccess) return false;
 
-    // Check plan module access for standard users
-    if (subStatus) {
-      // Exceptions for pages that should always be visible (home, dashboard, profile, subscription)
-      const publicDocs = ['home', 'dashboard', 'configuracoes', 'assinatura', 'solicitacoes'];
-      if (publicDocs.includes(item.id)) return true;
+      // Check plan module access for standard users
+      if (subStatus) {
+        // Exceptions for pages that should always be visible (home, dashboard, profile, subscription)
+        const publicDocs = ['home', 'dashboard', 'configuracoes', 'assinatura', 'solicitacoes'];
+        if (publicDocs.includes(item.id)) return true;
 
-      // Map menu item IDs to module names in the SaaS plan
-      const moduleMap: Record<string, string> = {
-        'rh': 'RH',
-        'financeiro': 'FINANCEIRO',
-        'contabilidade': 'CONTABILIDADE',
-        'inventario': 'INVENTARIO',
-        'manutencao': 'MANUTENCAO',
-        'transportes': 'TRANSPORTES',
-        'imobiliario': 'IMOBILIARIO',
-        'agro': 'AGRO',
-        'arena_admin': 'ARENA'
-      };
+        // Map menu item IDs to module names in the SaaS plan
+        const moduleMap: Record<string, string> = {
+          'rh': 'RH',
+          'financeiro': 'FINANCEIRO',
+          'contabilidade': 'CONTABILIDADE',
+          'inventario': 'INVENTARIO',
+          'manutencao': 'MANUTENCAO',
+          'transportes': 'TRANSPORTES',
+          'imobiliario': 'IMOBILIARIO',
+          'agro': 'AGRO',
+          'arena_admin': 'ARENA'
+        };
 
-      const moduleName = moduleMap[item.id] || item.id.toUpperCase();
-      return isModuleActive(subStatus, moduleName);
-    }
+        const moduleName = moduleMap[item.id] || item.id.toUpperCase();
+        return isModuleActive(subStatus, moduleName);
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [user.role, subStatus]);
 
   // Strict License Block Logic
   // 1. saas_admin is never blocked
