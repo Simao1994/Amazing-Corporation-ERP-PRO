@@ -125,11 +125,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await refreshProfile(initialSession);
                 } else if (!error) {
                     // APENAS limpa o cache se houver a certeza de que a sessão não existe (sem erro de lock/timeout)
-                    console.log('[Auth] Nenhuma sessão activa encontrada sem erros aparentes. Limpando cache optimista.');
+                    console.warn('[Auth TRACE] Nenhuma sessão activa encontrada sem erros aparentes (initAuth). Limpando cache optimista.');
+                    console.trace('Tracing initAuth no-session');
                     setUser(null);
                     localStorage.removeItem('auth_user_cache');
                 } else {
-                    console.warn('[Auth] Erro ao obter sessão. Mantendo cache optimista para evitar loop de logout.');
+                    console.warn('[Auth TRACE] Erro ao obter sessão. Mantendo cache optimista para evitar loop de logout.', error);
                 }
             } catch (err) {
                 console.error('AuthContext: Erro crítico na inicialização:', err);
@@ -154,11 +155,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await refreshProfile(newSession);
                 }
             } else if (event === 'SIGNED_OUT') {
-                // Verificar se foi um logout forçado ou erro de sessão transiente
-                console.warn('[Auth] Sessão encerrada ou lock perdido.');
-                setUser(null);
-                setSession(null);
-                localStorage.removeItem('auth_user_cache');
+                // Prevenção contra falsos SIGNED_OUT causados por concorrência de tokens (bug do Supabase sem navigator.locks):
+                console.warn('[Auth TRACE] Recebido SIGNED_OUT. A verificar se é falso positivo...');
+                setTimeout(async () => {
+                    // Double check if session actually exists in local storage (written by another tab)
+                    const { data: { session: checkSession } } = await supabase.auth.getSession();
+                    if (checkSession) {
+                        console.warn('[Auth TRACE] Falso SIGNED_OUT evitado! Recuperando sessão renovada por outra aba.');
+                        setSession(checkSession);
+                        await refreshProfile(checkSession);
+                    } else {
+                        console.error('[Auth TRACE] Sessão genuinamente morta. A fazer logout.');
+                        setUser(null);
+                        setSession(null);
+                        localStorage.removeItem('auth_user_cache');
+                        // Se estivermos dentro da app e for um logout "silencioso", forçar redirect para raiz
+                        if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+                            window.location.href = '/';
+                        }
+                    }
+                }, 1000);
             }
 
             if (!isInitialLoad.current) setLoading(false);
