@@ -69,6 +69,35 @@ const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () =>
     }
 };
 
+// Storage Handler Robusto para evitar falhas silenciosas do localStorage que limpam a sessão
+const robustStorage = {
+    getItem: (key: string): string | null => {
+        try {
+            const val = window.localStorage.getItem(key);
+            if (!val) console.warn(`[Supabase Storage] Chave ${key} não encontrada no localStorage.`);
+            return val;
+        } catch (e) {
+            console.error('[Supabase Storage] Erro ao Ler localStorage:', e);
+            return null;
+        }
+    },
+    setItem: (key: string, value: string): void => {
+        try {
+            window.localStorage.setItem(key, value);
+        } catch (e) {
+            console.error('[Supabase Storage] Erro ao Escrever no localStorage:', e);
+        }
+    },
+    removeItem: (key: string): void => {
+        try {
+            console.trace(`[Supabase Storage] ATENÇÃO: Remoção solicitada da chave ${key}`);
+            window.localStorage.removeItem(key);
+        } catch (e) {
+            console.error('[Supabase Storage] Erro ao Apagar no localStorage:', e);
+        }
+    }
+};
+
 /**
  * Singleton: Cliente Supabase
  * Criado fora de componentes para evitar múltiplas instâncias.
@@ -78,7 +107,7 @@ export const supabase = createClient(finalUrl, supabaseAnonKey, {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storage: typeof window !== 'undefined' ? robustStorage : undefined,
         storageKey: 'sb-amazing-erp-pro-auth-token',
         lock: memoryLockFunc
     },

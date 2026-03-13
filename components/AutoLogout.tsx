@@ -60,10 +60,11 @@ const AutoLogout: React.FC<AutoLogoutProps> = ({ user, onLogout }) => {
     // Loop de verificação de inatividade
     timerRef.current = setInterval(() => {
       const now = Date.now();
-      const globalLastActivity = parseInt(localStorage.getItem('last_activity_timestamp') || '0');
-      
+      const storedVal = localStorage.getItem('last_activity_timestamp');
+      const globalLastActivity = storedVal ? parseInt(storedVal) : now;
+
       // Sincronizar com outras abas
-      if (globalLastActivity > lastActivityRef.current) {
+      if (!isNaN(globalLastActivity) && globalLastActivity > lastActivityRef.current) {
         lastActivityRef.current = globalLastActivity;
         if (showWarning) setShowWarning(false);
       }
@@ -76,6 +77,7 @@ const AutoLogout: React.FC<AutoLogoutProps> = ({ user, onLogout }) => {
       }
 
       if (diff >= INACTIVITY_LIMIT) {
+        console.warn(`[AutoLogout] Inatividade limite atingido. Diff: ${diff}ms. Forçando logout.`);
         handleLogout();
       }
     }, 1000);

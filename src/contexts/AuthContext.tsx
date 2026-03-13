@@ -180,9 +180,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!isInitialLoad.current) setLoading(false);
         });
 
+        // Background monitor para o localStorage (Ajuda a detectar dumps de memória anormais)
+        const storageMonitor = setInterval(() => {
+            if (user) {
+                const token = localStorage.getItem('sb-amazing-erp-pro-auth-token');
+                if (!token) {
+                    console.error('[AUTH CRITICAL] O token da sessão desapareceu do localStorage misteriosamente!');
+                }
+            }
+        }, 5000);
+
         return () => {
             subscription.unsubscribe();
             clearTimeout(failSafeTimer);
+            clearInterval(storageMonitor);
         };
     }, []);
 
