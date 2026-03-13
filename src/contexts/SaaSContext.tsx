@@ -40,12 +40,14 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
             const effectiveRole = currentUser.role;
-            const effectiveTenantId = currentUser.tenant_id;
+            const jwtTenantId = currentUser.app_metadata?.tenant_id || currentUser.user_metadata?.tenant_id;
+            const effectiveTenantId = currentUser.tenant_id || jwtTenantId;
 
             console.log('SaaSContext: Checking subscription for:', { role: effectiveRole, tenant_id: effectiveTenantId });
 
-            // saas_admin has special properties
+            // JWT-First: saas_admin has special properties and bypasses DB checks
             if (effectiveRole === 'saas_admin') {
+                console.log('[SaaS] Admin detectado pelo JWT. Concedendo acesso total instantâneo.');
                 const adminSub: SubscriptionStatus = {
                     id: 'master-admin',
                     tenant_id: 'master-tenant',
@@ -109,12 +111,16 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const failSafe = setTimeout(() => {
             setLoading(current => {
                 if (current) {
-                    console.error('SaaSContext: FAIL-SAFE disparado!');
+                    console.error('SaaSContext: FAIL-SAFE disparado após 5s!');
+                    // Tentativa de recuperação para admins
+                    if (userRef.current?.role === 'saas_admin') {
+                        setSubscription({ active: true, modules: ['ALL'] } as any);
+                    }
                     return false;
                 }
                 return current;
             });
-        }, 10000);
+        }, 5000); // Reduzido de 10s para 5s
 
         if (!authLoading) {
             console.log('[SaaS] Auth pronto, carregando subscrição...');

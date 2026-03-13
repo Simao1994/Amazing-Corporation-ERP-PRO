@@ -84,19 +84,32 @@ export default function POSCaixa() {
         try {
             setIsSubmitting(true);
 
-            // 1. Verificação Preemptiva do Perfil
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('tenant_id')
-                .eq('id', user.id)
-                .single();
+            // JWT-First: Usar tenant_id do contexto se disponível (carregado via JWT)
+            // Isso evita a consulta redundante à tabela 'profiles' que trava por RLS
+            const tenantId = user.tenant_id;
 
-            if (profileError || !profile?.tenant_id) {
-                throw new Error('A tua conta não está associada a nenhuma empresa. Contacta o administrador.');
+            if (!tenantId) {
+                // Se não houver no contexto, tenta uma busca rápida mas com timeout curto
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('tenant_id')
+                    .eq('id', user.id)
+                    .abortSignal(controller.signal) // Tenta usar o método direto se existir (Postgrest)
+                    .single();
+
+                clearTimeout(timeoutId);
+
+                if (profileError || !profile?.tenant_id) {
+                    throw new Error('A tua conta não está associada a nenhuma empresa ou a conexão falhou.');
+                }
+                user.tenant_id = profile.tenant_id; // Atualização local optimista
             }
 
             const payload = {
-                tenant_id: user.tenant_id || profile.tenant_id,
+                tenant_id: user.tenant_id,
                 usuario_id: user.id,
                 valor_inicial: valorAbertura,
                 status: 'ABERTO'
@@ -148,7 +161,7 @@ export default function POSCaixa() {
                 .update({ status: 'FECHADO', data_fechamento: new Date().toISOString() })
                 .eq('id', caixaAtivo.id)
                 .eq('tenant_id', user?.tenant_id);
-            
+
             if (updateError) throw updateError;
 
             (window as any).notify?.('Caixa fechado com sucesso', 'success');

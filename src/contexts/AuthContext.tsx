@@ -60,6 +60,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         try {
+            // JWT-First: Usar metadados do token imediatamente se disponíveis
+            const jwtTenantId = activeSession.user.app_metadata?.tenant_id || activeSession.user.user_metadata?.tenant_id;
+            const jwtRole = activeSession.user.app_metadata?.role || activeSession.user.user_metadata?.role;
+
+            // Perfil inicial baseado APENAS no JWT para não travar a UI
+            const fastUser = {
+                ...activeSession.user,
+                ...defaultProfile,
+                tenant_id: jwtTenantId || defaultProfile.tenant_id,
+                role: jwtRole || defaultProfile.role
+            };
+
+            // Actualizar UI imediatamente com dados do JWT (Optimistic update)
+            setUser(fastUser);
+
+            // Tentar enriquecer com dados da tabela 'profiles' em segundo plano (Background refresh)
             const { data: profile, error } = await safeQuery<Profile>(
                 () => supabase
                     .from('profiles')
@@ -68,21 +84,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     .single(),
                 {
                     cacheKey: `profile-${activeSession.user.id}`,
-                    fallbackData: defaultProfile
+                    fallbackData: defaultProfile,
+                    retries: 2, // Reduzido para falhar mais rápido se a DB estiver travada
                 }
             );
 
             let consolidatedUser: any;
 
             if (error || !profile) {
-                const tenantId = activeSession.user.user_metadata?.tenant_id || defaultProfile.tenant_id;
-                consolidatedUser = {
-                    ...activeSession.user,
-                    ...defaultProfile,
-                    tenant_id: tenantId
-                };
+                consolidatedUser = fastUser;
             } else {
-                const tenantId = profile.tenant_id || activeSession.user.user_metadata?.tenant_id;
+                const tenantId = profile.tenant_id || jwtTenantId;
                 consolidatedUser = {
                     ...activeSession.user,
                     ...profile,
@@ -129,11 +141,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         const failSafeTimer = setTimeout(() => {
             if (loading) {
-                console.error('AuthContext: FAIL-SAFE disparado após 20s!');
+                console.error('AuthContext: FAIL-SAFE disparado após 8s!');
                 setLoading(false);
                 isInitialLoad.current = false;
             }
-        }, 20000);
+        }, 8000); // Reduzido de 20s para 8s
 
         const initAuth = async () => {
             console.log('[Auth] initAuth iniciada');
