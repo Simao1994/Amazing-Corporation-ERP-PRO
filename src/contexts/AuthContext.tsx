@@ -123,10 +123,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setSession(initialSession);
                 if (initialSession) {
                     await refreshProfile(initialSession);
-                } else {
-                    console.log('[Auth] Nenhuma sessão activa encontrada. Limpando cache optimista.');
+                } else if (!error) {
+                    // APENAS limpa o cache se houver a certeza de que a sessão não existe (sem erro de lock/timeout)
+                    console.log('[Auth] Nenhuma sessão activa encontrada sem erros aparentes. Limpando cache optimista.');
                     setUser(null);
                     localStorage.removeItem('auth_user_cache');
+                } else {
+                    console.warn('[Auth] Erro ao obter sessão. Mantendo cache optimista para evitar loop de logout.');
                 }
             } catch (err) {
                 console.error('AuthContext: Erro crítico na inicialização:', err);
@@ -151,7 +154,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await refreshProfile(newSession);
                 }
             } else if (event === 'SIGNED_OUT') {
-                console.warn('[Auth] Sessão encerrada pelo servidor ou utilizador.');
+                // Verificar se foi um logout forçado ou erro de sessão transiente
+                console.warn('[Auth] Sessão encerrada ou lock perdido.');
                 setUser(null);
                 setSession(null);
                 localStorage.removeItem('auth_user_cache');
