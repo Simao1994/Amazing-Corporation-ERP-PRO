@@ -18,15 +18,14 @@ BEGIN
 END $$;
 
 -- 2. Limpar políticas antigas/conflitantes
-DROP POLICY IF EXISTS "RLS_POS_PRODUTOS_TENANT" ON public.pos_produtos;
-DROP POLICY IF EXISTS "RLS_POS_CATEGORIAS_TENANT" ON public.pos_categorias;
-DROP POLICY IF EXISTS "RLS_POS_CAIXA_TENANT" ON public.pos_caixa;
-DROP POLICY IF EXISTS "RLS_POS_FATURAS_TENANT" ON public.pos_faturas;
-DROP POLICY IF EXISTS "Tenant isolation" ON public.pos_produtos;
-DROP POLICY IF EXISTS "Tenant isolation" ON public.pos_categorias;
-DROP POLICY IF EXISTS "Tenant isolation" ON public.pos_estoque;
-DROP POLICY IF EXISTS "Tenant isolation" ON public.pos_caixa;
-DROP POLICY IF EXISTS "Tenant isolation" ON public.pos_faturas;
+DROP POLICY IF EXISTS "Tenant isolation for pos_produtos" ON public.pos_produtos;
+DROP POLICY IF EXISTS "Tenant isolation for pos_categorias" ON public.pos_categorias;
+DROP POLICY IF EXISTS "Tenant isolation for pos_estoque" ON public.pos_estoque;
+DROP POLICY IF EXISTS "Tenant isolation for pos_caixa" ON public.pos_caixa;
+DROP POLICY IF EXISTS "Tenant isolation for pos_faturas" ON public.pos_faturas;
+DROP POLICY IF EXISTS "Tenant isolation for pos_clientes" ON public.pos_clientes;
+DROP POLICY IF EXISTS "Tenant isolation for pos_movimento_stock" ON public.pos_movimento_stock;
+DROP POLICY IF EXISTS "Tenant isolation for pos_movimentos_caixa" ON public.pos_movimentos_caixa;
 
 -- 3. Criar Novas Políticas Robustas
 CREATE POLICY "Tenant isolation for pos_produtos" ON public.pos_produtos FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant());

@@ -83,7 +83,7 @@ export default function POSStock() {
                     .eq('produto_id', formData.produto_id)
                     .eq('tenant_id', user.tenant_id)
                     .maybeSingle()
-            );
+            ) as any;
 
             if (fetchError) throw fetchError;
 
