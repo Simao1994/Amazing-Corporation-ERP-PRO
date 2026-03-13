@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Search, ArrowUpCircle, ArrowDownCircle, Info, RefreshCw } from 'lucide-react';
-import { supabase } from '../../src/lib/supabase';
+import { supabase, safeQuery } from '../../src/lib/supabase';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { formatAOA } from '../../constants';
 
@@ -22,36 +22,47 @@ export default function POSStock() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        fetchData();
-    }, [user]);
+        if (user?.tenant_id) {
+            fetchData();
+        }
+    }, [user?.tenant_id]);
 
     const fetchData = async () => {
+        if (!user?.tenant_id) return;
+        setLoading(true);
         try {
-            if (!user?.tenant_id) return;
+            console.log('[POSStock] Buscando dados para tenant:', user.tenant_id);
 
             const [stockRes, prodRes] = await Promise.all([
-                supabase
-                    .from('pos_estoque')
-                    .select(`
-            id, quantidade_atual, data_ultima_entrada, 
-            pos_produtos (id, nome_produto, codigo_produto, stock_minimo)
-          `)
-                    .eq('tenant_id', user.tenant_id),
-                supabase
-                    .from('pos_produtos')
-                    .select('id, nome_produto')
-                    .eq('tenant_id', user.tenant_id)
-                    .eq('ativo', true)
-                    .order('nome_produto')
+                safeQuery(() =>
+                    supabase
+                        .from('pos_estoque')
+                        .select(`
+                            id, quantidade_atual, data_ultima_entrada, 
+                            pos_produtos (id, nome_produto, codigo_produto, stock_minimo)
+                        `)
+                        .eq('tenant_id', user.tenant_id)
+                ),
+                safeQuery(() =>
+                    supabase
+                        .from('pos_produtos')
+                        .select('id, nome_produto')
+                        .eq('tenant_id', user.tenant_id)
+                        .eq('ativo', true)
+                        .order('nome_produto')
+                )
             ]);
 
             if (stockRes.error) throw stockRes.error;
             if (prodRes.error) throw prodRes.error;
 
+            console.log(`[POSStock] Sucesso: ${stockRes.data?.length || 0} registros de estoque, ${prodRes.data?.length || 0} produtos ativos.`);
+
             setEstoque(stockRes.data || []);
             setProdutos(prodRes.data || []);
-        } catch (error) {
-            console.error('Error fetching stock data:', error);
+        } catch (error: any) {
+            console.error('[POSStock] Erro ao carregar dados:', error);
+            (window as any).notify?.('Erro ao carregar dados: ' + (error.message || 'Erro de conexão'), 'error');
         } finally {
             setLoading(false);
         }
@@ -63,69 +74,72 @@ export default function POSStock() {
 
         try {
             setIsSubmitting(true);
-            
-            // 1. Verificar se o registo de stock existe
-            const { data: existingStock, error: fetchError } = await supabase
-                .from('pos_estoque')
-                .select('*')
-                .eq('produto_id', formData.produto_id)
-                .eq('tenant_id', user.tenant_id)
-                .single();
 
-            if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+            // 1. Verificar se o registo de stock existe
+            const { data: existingStock, error: fetchError } = await safeQuery(() =>
+                supabase
+                    .from('pos_estoque')
+                    .select('*')
+                    .eq('produto_id', formData.produto_id)
+                    .eq('tenant_id', user.tenant_id)
+                    .maybeSingle()
+            );
+
+            if (fetchError) throw fetchError;
 
             let newAmount = formData.quantidade;
 
             if (existingStock) {
-                if (formData.tipo === 'saida') {
-                    newAmount = existingStock.quantidade_atual - formData.quantidade;
-                    if (newAmount < 0) {
-                        (window as any).notify?.('Estoque insuficiente para esta saída', 'error');
-                        setIsSubmitting(false);
-                        return;
-                    }
+                if (formData.tipo === 'saida' || formData.tipo === 'ajuste') {
+                    newAmount = (existingStock.quantidade_atual || 0) - formData.quantidade;
                 } else {
-                    newAmount = existingStock.quantidade_atual + formData.quantidade;
+                    newAmount = (existingStock.quantidade_atual || 0) + formData.quantidade;
                 }
 
-                const { error: updateError } = await supabase
-                    .from('pos_estoque')
-                    .update({
-                        quantidade_atual: newAmount,
-                        data_ultima_entrada: formData.tipo === 'entrada' ? new Date().toISOString() : existingStock.data_ultima_entrada
-                    })
-                    .eq('id', existingStock.id)
-                    .eq('tenant_id', user.tenant_id);
-                
+                const { error: updateError } = await safeQuery(() =>
+                    supabase
+                        .from('pos_estoque')
+                        .update({
+                            quantidade_atual: newAmount,
+                            data_ultima_entrada: formData.tipo === 'entrada' ? new Date().toISOString() : existingStock.data_ultima_entrada
+                        })
+                        .eq('id', existingStock.id)
+                        .eq('tenant_id', user.tenant_id)
+                );
+
                 if (updateError) throw updateError;
             } else {
-                if (formData.tipo === 'saida') {
-                    (window as any).notify?.('Produto sem estoque inicial.', 'error');
+                if (formData.tipo === 'saida' || formData.tipo === 'ajuste') {
+                    (window as any).notify?.('Produto sem estoque inicial para deduzir.', 'error');
                     setIsSubmitting(false);
                     return;
                 }
-                const { error: insertError } = await supabase
-                    .from('pos_estoque')
-                    .insert([{
-                        tenant_id: user.tenant_id,
-                        produto_id: formData.produto_id,
-                        quantidade_atual: formData.quantidade
-                    }]);
-                
+                const { error: insertError } = await safeQuery(() =>
+                    supabase
+                        .from('pos_estoque')
+                        .insert([{
+                            tenant_id: user.tenant_id,
+                            produto_id: formData.produto_id,
+                            quantidade_atual: formData.quantidade
+                        }])
+                );
+
                 if (insertError) throw insertError;
             }
 
             // 2. Registar o movimento (Log)
-            const { error: movError } = await supabase
-                .from('pos_movimento_stock')
-                .insert([{
-                    tenant_id: user.tenant_id,
-                    produto_id: formData.produto_id,
-                    usuario_id: user.id || null,
-                    tipo_movimento: formData.tipo === 'entrada' ? 'ENTRADA' : 'AJUSTE',
-                    quantidade: formData.quantidade,
-                    referencia: formData.motivo || 'Ajuste manual'
-                }]);
+            const { error: movError } = await safeQuery(() =>
+                supabase
+                    .from('pos_movimento_stock')
+                    .insert([{
+                        tenant_id: user.tenant_id,
+                        produto_id: formData.produto_id,
+                        usuario_id: user.id || null,
+                        tipo_movimento: formData.tipo === 'entrada' ? 'ENTRADA' : (formData.tipo === 'saida' ? 'VENDA' : 'AJUSTE'),
+                        quantidade: formData.quantidade,
+                        referencia: formData.motivo || 'Ajuste manual'
+                    }])
+            );
 
             if (movError) console.error('Aviso: Movimento não logado corretamente:', movError);
 

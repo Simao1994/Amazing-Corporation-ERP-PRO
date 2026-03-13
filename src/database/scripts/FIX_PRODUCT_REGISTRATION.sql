@@ -8,7 +8,7 @@ DO $$
 DECLARE
     tbl_name text;
 BEGIN
-    FOR tbl_name IN SELECT unnest(ARRAY['pos_produtos', 'pos_categorias', 'pos_estoque', 'pos_caixa', 'pos_faturas', 'pos_fatura_itens', 'pos_clientes']) 
+    FOR tbl_name IN SELECT unnest(ARRAY['pos_produtos', 'pos_categorias', 'pos_estoque', 'pos_caixa', 'pos_faturas', 'pos_fatura_itens', 'pos_clientes', 'pos_movimento_stock', 'pos_movimentos_caixa']) 
     LOOP
         -- Renomear empresa_id para tenant_id se existir
         IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = tbl_name AND column_name = 'empresa_id') THEN
@@ -35,6 +35,8 @@ CREATE POLICY "Tenant isolation for pos_estoque" ON public.pos_estoque FOR ALL T
 CREATE POLICY "Tenant isolation for pos_caixa" ON public.pos_caixa FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant());
 CREATE POLICY "Tenant isolation for pos_faturas" ON public.pos_faturas FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant());
 CREATE POLICY "Tenant isolation for pos_clientes" ON public.pos_clientes FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant());
+CREATE POLICY "Tenant isolation for pos_movimento_stock" ON public.pos_movimento_stock FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant());
+CREATE POLICY "Tenant isolation for pos_movimentos_caixa" ON public.pos_movimentos_caixa FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant());
 
 -- 4. Garantir RLS habilitado em tudo
 ALTER TABLE public.pos_produtos ENABLE ROW LEVEL SECURITY;
@@ -43,6 +45,8 @@ ALTER TABLE public.pos_estoque ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pos_caixa ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pos_faturas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pos_clientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pos_movimento_stock ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pos_movimentos_caixa ENABLE ROW LEVEL SECURITY;
 
 -- 5. Recarregar esquema no PostgREST
 NOTIFY pgrst, 'reload schema';
