@@ -37,20 +37,23 @@ CREATE POLICY "Tenant isolation for pos_clientes" ON public.pos_clientes FOR ALL
 CREATE POLICY "Tenant isolation for pos_movimento_stock" ON public.pos_movimento_stock FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant());
 CREATE POLICY "Tenant isolation for pos_movimentos_caixa" ON public.pos_movimentos_caixa FOR ALL TO authenticated USING (tenant_id = public.get_auth_tenant());
 
--- 4. Garantir RLS habilitado em tudo
-ALTER TABLE public.pos_produtos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pos_categorias ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pos_estoque ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pos_caixa ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pos_faturas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pos_clientes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pos_movimento_stock ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pos_movimentos_caixa ENABLE ROW LEVEL SECURITY;
+-- 4. Garantir RLS habilitado em tudo (Com verificação de existência)
+DO $$
+DECLARE
+    tbl_name text;
+BEGIN
+    FOR tbl_name IN SELECT unnest(ARRAY['pos_produtos', 'pos_categorias', 'pos_estoque', 'pos_caixa', 'pos_faturas', 'pos_clientes', 'pos_movimento_stock', 'pos_movimentos_caixa']) 
+    LOOP
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = tbl_name) THEN
+            EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', tbl_name);
+        END IF;
+    END LOOP;
+END $$;
 
 -- 5. Recarregar esquema no PostgREST
 NOTIFY pgrst, 'reload schema';
 
 DO $$
 BEGIN
-    RAISE NOTICE '✅ RLS POS harmonizado com tenant_id!';
+    RAISE NOTICE '✅ RLS POS processado (apenas tabelas existentes foram alteradas)!';
 END $$;
