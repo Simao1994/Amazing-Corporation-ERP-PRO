@@ -86,22 +86,14 @@ const App: React.FC = () => {
   useEffect(() => {
     (window as any).notify = showToast;
 
-    // Após 20s mostrar os botões de emergência (Aumentado para evitar popups intrusivos)
+    // Após 60s mostrar os botões de emergência caso haja Deadlock da API.
     const timer = setTimeout(() => {
       setShowForceLoad(true);
-    }, 20000);
-
-    // BYPASS AUTOMÁTICO: após 12s forçar saída do loading (Reduzido de 25s)
-    const autoBypass = setTimeout(() => {
-      if (!forceLoadManual) {
-        console.warn('App: Auto-bypass activado após 12s. Rede instável detectada.');
-        setForceLoadManual(true);
-      }
-    }, 12000);
+      console.warn('App: O carregamento está a demorar mais de 60s. Verifique a rede ou a consola por erros.');
+    }, 60000);
 
     return () => {
       clearTimeout(timer);
-      clearTimeout(autoBypass);
     };
   }, []);
 
