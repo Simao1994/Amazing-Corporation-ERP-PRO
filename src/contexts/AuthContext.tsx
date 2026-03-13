@@ -32,13 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isRefreshing = useRef(false);
     const isInitialLoad = useRef(true);
     const sessionRef = useRef<any>(null);
+    const userRef = useRef<any>(null);
 
-    // Sincronizar ref com estado para closures estáveis
-    useEffect(() => {
-        sessionRef.current = session;
-    }, [session]);
+    // Actualização SÍNCRONA das refs para garantir que callbacks vêem sempre o último estado
+    sessionRef.current = session;
+    userRef.current = user;
 
     const refreshProfile = useCallback(async (currentSession?: any, force = false) => {
+        console.log('[Auth] refreshProfile executando...', { hasSession: !!(currentSession || sessionRef.current), force });
+
         if (isRefreshing.current && !force) return { success: false, message: 'Already refreshing' };
         isRefreshing.current = true;
 
@@ -107,15 +109,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const failSafeTimer = setTimeout(() => {
-            console.error('AuthContext: FAIL-SAFE disparado! Abortando espera da sessão pendente.');
-            setLoading(false);
+            if (loading) {
+                console.error('AuthContext: FAIL-SAFE disparado após 20s!');
+                setLoading(false);
+            }
         }, 20000);
 
         const initAuth = async () => {
+            console.log('[Auth] initAuth iniciada');
             try {
-                // Obter sessão — sem timeout agressivo para não cortar o lock de auth
-                console.log('[Auth] Obtendo sessão inicial...');
-                const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+                // Obter sessão inicial com timeout de 10s para não travar o boot
+                console.log('[Auth] A tentar obter sessão inicial (timeout 10s)...');
+
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise<{ data: { session: any }, error: any }>((_, reject) =>
+                    setTimeout(() => reject(new Error('GET_SESSION_TIMEOUT')), 10000)
+                );
+
+                const result = await Promise.race([sessionPromise, timeoutPromise]) as any;
+                const initialSession = result?.data?.session || null;
+                const error = result?.error || null;
+
+                console.log('[Auth] getSession concluída', { hasSession: !!initialSession, error: error?.message });
 
                 if (error) {
                     console.error('AuthContext: Erro ao buscar sessão:', error.message);
@@ -127,21 +142,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 } else if (!error) {
                     // APENAS limpa o cache se houver a certeza de que a sessão não existe (sem erro de lock/timeout)
                     console.warn('[Auth TRACE] Nenhuma sessão activa encontrada sem erros aparentes (initAuth). Limpando cache optimista.');
-                    console.trace('Tracing initAuth no-session');
                     setUser(null);
                     localStorage.removeItem('auth_user_cache');
                 } else {
-                    console.warn('[Auth TRACE] Erro ao obter sessão. Mantendo cache optimista para evitar loop de logout.', error);
+                    console.warn('[Auth] Nenhuma sessão e nenhum erro. Cache limpo.');
                 }
-            } catch (err) {
-                console.error('AuthContext: Erro crítico na inicialização:', err);
+            } catch (err: any) {
+                console.error('[Auth] Erro crítico na inicialização:', err);
             } finally {
-                // EXTREME FAIL-SAFE: Garantir que o loading morre sempre aqui se não houver retry pendente
+                console.log('[Auth] initAuth: Finalizando carregamento...');
                 setLoading(false);
                 isInitialLoad.current = false;
                 clearTimeout(failSafeTimer);
-                // Fallback de segurança absoluto
-                setTimeout(() => setLoading(false), 2000);
             }
         };
 

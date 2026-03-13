@@ -23,6 +23,7 @@ export const TenantProvider: React.FC<{ tenantId?: string; children: React.React
         }
 
         const fetchTenant = async () => {
+            console.log(`[Tenant] Iniciando busca para ID: ${tenantId}...`);
             try {
                 const { data, error: queryError } = await safeQuery<Tenant>(
                     () => supabase
@@ -30,13 +31,18 @@ export const TenantProvider: React.FC<{ tenantId?: string; children: React.React
                         .select('*')
                         .eq('id', tenantId)
                         .single(),
-                    { cacheKey: `tenant-${tenantId}`, cacheTTL: 600000 } // Cache por 10 min
+                    { cacheKey: `tenant-${tenantId}`, cacheTTL: 600000 }
                 );
 
-                if (queryError) throw queryError;
+                if (queryError) {
+                    console.error('[Tenant] Erro na consulta:', queryError);
+                    throw queryError;
+                }
+
+                console.log('[Tenant] Sucesso ao carregar:', data?.nome || 'Sem Nome');
                 setTenant(data);
             } catch (err: any) {
-                console.error('Error fetching tenant:', err);
+                console.error('[Tenant] Falha total ao buscar:', err);
                 setError(err.message);
             } finally {
                 setLoading(false);

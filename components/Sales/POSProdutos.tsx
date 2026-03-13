@@ -94,6 +94,7 @@ export default function POSProdutos() {
             const qr_code = await generateQRCode(formData.codigo_produto);
             const payload = {
                 ...formData,
+                categoria_id: formData.categoria_id || null,
                 tenant_id: user.tenant_id,
                 qr_code
             };

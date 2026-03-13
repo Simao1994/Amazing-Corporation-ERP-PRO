@@ -20,11 +20,11 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [saasConfig, setSaasConfig] = useState<any>(null);
     const userRef = useRef<any>(null);
 
-    useEffect(() => {
-        userRef.current = user;
-    }, [user]);
+    // Actualização síncrona
+    userRef.current = user;
 
     const refreshSubscription = useCallback(async () => {
+        console.log('[SaaS] refreshSubscription iniciado', { hasUser: !!userRef.current });
         const currentUser = userRef.current;
         if (!currentUser) {
             setSubscription(null);
@@ -110,9 +110,12 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }, 10000);
 
         if (!authLoading) {
+            console.log('[SaaS] Auth pronto, carregando subscrição...');
             refreshSubscription().finally(() => {
                 clearTimeout(failSafe);
             });
+        } else {
+            console.log('[SaaS] Aguardando Auth finalizar...');
         }
 
         return () => clearTimeout(failSafe);

@@ -176,24 +176,50 @@ const App: React.FC = () => {
           </p>
           <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 text-left space-y-2 max-w-sm mx-auto">
             <p className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Debug em Tempo Real:</p>
-            <div className="grid grid-cols-2 gap-2 text-[8px] font-mono text-slate-400">
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-500">
               <span>Auth Context:</span>
-              <span className={authLoading ? "text-yellow-500 animate-pulse" : "text-green-500"}>
-                {authLoading ? "A verificar..." : "Pronto"}
+              <span className={authLoading ? "text-yellow-500" : "text-green-500"}>
+                {authLoading ? "Pendente" : "Pronto"}
               </span>
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-500">
               <span>SaaS Context:</span>
-              <span className={saasLoading ? "text-yellow-500 animate-pulse" : "text-green-500"}>
-                {saasLoading ? "A sincronizar..." : "Pronto"}
+              <span className={saasLoading ? "text-yellow-500" : "text-green-500"}>
+                {saasLoading ? "Pendente" : "Pronto"}
               </span>
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-500">
               <span>Sessão Supabase:</span>
-              <span className={user ? "text-green-500" : "text-yellow-500"}>
-                {user ? "Activa" : "Pendente"}
+              <span className={user ? "text-green-500" : "text-red-500"}>
+                {user ? "Activa" : "Inativa"}
               </span>
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-500">
               <span>ID da Empresa:</span>
               <span className={user?.tenant_id ? "text-green-500" : "text-red-500"}>
                 {user?.tenant_id ? "Sincronizado" : "Não Encontrado"}
               </span>
             </div>
+          </div>
+
+          <div className="pt-4 space-y-2">
+            <p className="text-[9px] text-zinc-400 font-bold uppercase text-center mb-2">Resolução de Problemas:</p>
+            <button
+              onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+              }}
+              className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-zinc-200"
+            >
+              Limpar Cache & Recarregar
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full py-3 bg-white hover:bg-zinc-50 text-zinc-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              Tentar Novamente
+            </button>
           </div>
         </div>
 
