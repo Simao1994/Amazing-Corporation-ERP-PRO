@@ -166,17 +166,15 @@ export default function POS() {
         setCart(prev => {
             const exists = prev.find(item => item.id === product.id);
             if (exists) {
-                if (exists.qnt >= stock) {
-                    (window as any).notify?.('Stock insuficiente', 'error');
-                    return prev;
+                if (exists.qnt >= stock && stock > 0) {
+                    (window as any).notify?.('Stock limite atingido. Venda continuará em regime de stock negativo.', 'warning');
                 }
                 return prev.map(item =>
                     item.id === product.id ? { ...item, qnt: item.qnt + 1 } : item
                 );
             }
             if (stock <= 0) {
-                (window as any).notify?.('Produto sem stock', 'error');
-                return prev;
+                (window as any).notify?.('Produto sem stock. A venda será registada com stock negativo.', 'warning');
             }
             return [...prev, { ...product, qnt: 1 }];
         });

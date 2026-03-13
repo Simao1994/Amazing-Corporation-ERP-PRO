@@ -27,6 +27,7 @@ export default function POSProdutos() {
         preco_venda: 0,
         unidade: 'UN',
         stock_minimo: 0,
+        estoque_inicial: 0,
         ativo: true
     });
 
@@ -99,13 +100,25 @@ export default function POSProdutos() {
                 qr_code
             };
 
-            const { error } = await safeQuery(() =>
+            const { data: savedProduct, error } = await safeQuery(() =>
                 editingId
-                    ? supabase.from('pos_produtos').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id)
-                    : supabase.from('pos_produtos').insert([payload])
+                    ? supabase.from('pos_produtos').update(payload).eq('id', editingId).eq('tenant_id', user.tenant_id).select().single()
+                    : supabase.from('pos_produtos').insert([payload]).select().single()
             );
 
             if (error) throw error;
+
+            // 2. Se for novo produto e tiver estoque inicial, atualizar pos_estoque
+            // O trigger ensure_estoque_produto já criou o registro com 0.
+            if (!editingId && formData.estoque_inicial > 0 && savedProduct) {
+                const { error: stockError } = await supabase
+                    .from('pos_estoque')
+                    .update({ quantidade_atual: formData.estoque_inicial })
+                    .eq('produto_id', savedProduct.id)
+                    .eq('tenant_id', user.tenant_id);
+
+                if (stockError) console.error('Erro ao definir estoque inicial:', stockError);
+            }
 
             (window as any).notify?.(editingId ? 'Produto atualizado' : 'Produto criado', 'success');
             setShowModal(false);
@@ -148,6 +161,7 @@ export default function POSProdutos() {
             preco_venda: prod.preco_venda,
             unidade: prod.unidade || 'UN',
             stock_minimo: prod.stock_minimo || 0,
+            estoque_inicial: 0, // Não editável diretamente aqui por segurança
             ativo: prod.ativo
         });
         setQrCodeDataUrl(prod.qr_code);
@@ -164,6 +178,7 @@ export default function POSProdutos() {
             preco_venda: 0,
             unidade: 'UN',
             stock_minimo: 0,
+            estoque_inicial: 0,
             ativo: true
         });
         setQrCodeDataUrl(null);
@@ -371,6 +386,20 @@ export default function POSProdutos() {
                                         className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
                                     />
                                 </div>
+
+                                {!editingId && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-2">Stock Inicial</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            placeholder="Quantidade inicial"
+                                            value={formData.estoque_inicial}
+                                            onChange={e => setFormData({ ...formData, estoque_inicial: parseInt(e.target.value) || 0 })}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-bold text-emerald-500"
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="md:col-span-2 mt-2">
                                     <label className="flex items-center gap-3 cursor-pointer group">
