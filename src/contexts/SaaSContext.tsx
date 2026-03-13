@@ -19,11 +19,14 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
     const [saasConfig, setSaasConfig] = useState<any>(null);
     const userRef = useRef<any>(null);
+    const isFetching = useRef(false);
 
     // Actualização síncrona
     userRef.current = user;
 
     const refreshSubscription = useCallback(async () => {
+        if (isFetching.current) return;
+
         console.log('[SaaS] refreshSubscription iniciado', { hasUser: !!userRef.current });
         const currentUser = userRef.current;
         if (!currentUser) {
@@ -31,6 +34,9 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
             return;
         }
+
+        isFetching.current = true;
+        setLoading(true);
 
         try {
             const effectiveRole = currentUser.role;
@@ -94,6 +100,7 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setSubscription(null);
             }
         } finally {
+            isFetching.current = false;
             setLoading(false);
         }
     }, []); // Estável

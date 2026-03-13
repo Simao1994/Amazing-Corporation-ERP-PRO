@@ -1,35 +1,13 @@
--- ================================================================
--- 🛡️ SOLUÇÃO DEFINITIVA: PERMISSÕES MASTER & RLS PROFILES
--- Resolve o erro "permission denied for table users" e Loops RLS.
--- ================================================================
+-- ========================================================
+-- 🚀 SUPER FIX: DATABASE ACCESSIBILITY & STABILITY (FINAL)
+-- Resolves: 
+-- 1. Permission denied for table users
+-- 2. 404 get_dynamic_roles missing
+-- 3. 403 saas_tenants access forbidden
+-- 4. Infinite RLS Recursion Loops
+-- ========================================================
 
--- 1. Optimizar is_saas_admin para EVITAR busca na tabela auth.users (causa erro de permissão)
--- Usamos o email do JWT que é instantâneo e seguro.
-CREATE OR REPLACE FUNCTION public.is_saas_admin()
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER 
-SET search_path = public
-AS $$
-DECLARE
-    v_role text;
-    v_email text;
-BEGIN
-    -- Obter email do JWT (sem query à tabela auth.users)
-    v_email := auth.jwt() ->> 'email';
-    
-    -- Se for o email mestre, acesso total garantido
-    IF v_email = 'simaopambo94@gmail.com' THEN
-        RETURN true;
-    END IF;
-
-    -- Caso contrário, verificar role no perfil (usando SECURITY DEFINER para evitar recursion)
-    SELECT role INTO v_role FROM public.profiles WHERE id = auth.uid();
-    RETURN (v_role = 'saas_admin' OR v_role = 'admin');
-END;
-$$;
-
--- 2. Garantir que get_auth_tenant() é eficiente e SECURITY DEFINER
+-- 1. UTILITY: get_auth_tenant (Bypasses RLS to find user's tenant)
 CREATE OR REPLACE FUNCTION public.get_auth_tenant()
 RETURNS uuid
 LANGUAGE plpgsql
@@ -37,59 +15,85 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  RETURN (SELECT tenant_id FROM public.profiles WHERE id = auth.uid());
+  RETURN (SELECT tenant_id FROM public.profiles WHERE id = auth.uid() LIMIT 1);
 END;
 $$;
 
--- 3. RESET DE RLS NA TABELA PROFILES (Limpeza de resíduos)
+-- 2. UTILITY: is_saas_admin (Fast check using JWT or profile)
+CREATE OR REPLACE FUNCTION public.is_saas_admin()
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Priority 1: Check JWT claim (fastest)
+  IF (auth.jwt() ->> 'role' = 'saas_admin') THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Priority 2: Check database profile
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role = 'saas_admin'
+  );
+END;
+$$;
+
+-- 3. CORE: profiles RLS (Ensures users can see themselves and admins can see everyone)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Remover TODAS as políticas que possam referenciar 'users' ou causar loops
-DROP POLICY IF EXISTS "saas_admin_full_access" ON public.profiles;
-DROP POLICY IF EXISTS "profiles_view_self" ON public.profiles;
-DROP POLICY IF EXISTS "profiles_view_tenant" ON public.profiles;
-DROP POLICY IF EXISTS "profiles_update_self" ON public.profiles;
-DROP POLICY IF EXISTS "Users can only see profiles from their tenant" ON public.profiles;
-DROP POLICY IF EXISTS "Admins podem ver todos os perfis" ON public.profiles;
-
--- 4. CRIAR POLÍTICAS NOVAS (ORDEM DE PRECEDÊNCIA)
-
--- A. MASTER ADMIN (Acesso total)
-CREATE POLICY "profiles_master_all" 
-ON public.profiles FOR ALL 
-TO authenticated 
-USING (public.is_saas_admin());
-
--- B. SELECT: O próprio ou colegas do mesmo tenant
-CREATE POLICY "profiles_select_logic" 
-ON public.profiles FOR SELECT 
-TO authenticated 
-USING (
-    id = auth.uid() 
-    OR 
-    tenant_id = public.get_auth_tenant()
+DROP POLICY IF EXISTS "Profiles accessibility" ON public.profiles;
+CREATE POLICY "Profiles accessibility" ON public.profiles
+FOR ALL USING (
+  id = auth.uid() 
+  OR 
+  tenant_id = public.get_auth_tenant()
+  OR
+  public.is_saas_admin()
 );
 
--- C. UPDATE: Apenas o próprio
-CREATE POLICY "profiles_update_logic" 
-ON public.profiles FOR UPDATE 
-TO authenticated 
-USING (id = auth.uid())
-WITH CHECK (id = auth.uid());
+-- 4. CORE: saas_tenants RLS (Ensures users can see their own company)
+ALTER TABLE public.saas_tenants ENABLE ROW LEVEL SECURITY;
 
--- 5. TRATAR TABELA 'users' NO PUBLIC (Se existir por erro)
-DO $$ 
-BEGIN 
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users') THEN
-        EXECUTE 'ALTER TABLE public.users DISABLE ROW LEVEL SECURITY';
-        EXECUTE 'GRANT SELECT ON public.users TO authenticated';
-    END IF;
-END $$;
+DROP POLICY IF EXISTS "Tenants accessibility" ON public.saas_tenants;
+CREATE POLICY "Tenants accessibility" ON public.saas_tenants
+FOR SELECT USING (
+  id = public.get_auth_tenant()
+  OR
+  public.is_saas_admin()
+);
 
--- 6. PERMISSÕES FINAIS
-GRANT SELECT ON public.profiles TO authenticated;
+-- 5. FUNCTION: get_dynamic_roles (Fixes 404)
+CREATE TABLE IF NOT EXISTS public.papeis_dinamicos (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    tenant_id uuid REFERENCES public.saas_tenants(id) ON DELETE CASCADE,
+    role_key text NOT NULL,
+    allowed_modules text[] DEFAULT '{}'::text[],
+    created_at timestamptz DEFAULT now(),
+    UNIQUE(tenant_id, role_key)
+);
 
--- Refresh do cache do PostgREST
+CREATE OR REPLACE FUNCTION public.get_dynamic_roles(p_tenant_id uuid)
+RETURNS jsonb 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    roles_map jsonb;
+BEGIN
+    SELECT jsonb_object_agg(role_key, allowed_modules) INTO roles_map
+    FROM public.papeis_dinamicos
+    WHERE tenant_id = p_tenant_id;
+    
+    RETURN COALESCE(roles_map, '{}'::jsonb);
+END;
+$$;
+
+-- 6. PERMISSIONS: Ensure anon/authenticated have access to call functions
+GRANT EXECUTE ON FUNCTION public.get_auth_tenant() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_saas_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_dynamic_roles(uuid) TO authenticated;
+
+-- Force schema reload
 NOTIFY pgrst, 'reload schema';
-
-SELECT '✅ Sistema de Segurança Master reparado com sucesso!' as status;

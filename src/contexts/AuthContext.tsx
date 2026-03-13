@@ -91,9 +91,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             // Estabilização: Só alterar o estado se o conteúdo mudou de facto
+            // Ignoramos campos transitórios do Supabase para a comparação
             setUser((prev: any) => {
-                if (JSON.stringify(prev) === JSON.stringify(consolidatedUser)) return prev;
-                console.log('[Auth] Perfil consolidado actualizado.');
+                if (!prev && consolidatedUser) {
+                    console.log('[Auth] Primeiro perfil consolidado definido.');
+                    localStorage.setItem('auth_user_cache', JSON.stringify(consolidatedUser));
+                    return consolidatedUser;
+                }
+
+                if (prev && consolidatedUser) {
+                    // Comparar apenas campos fundamentais para evitar loops por metadados de sessão Supabase
+                    const isSame = prev.id === consolidatedUser.id &&
+                        prev.role === consolidatedUser.role &&
+                        prev.tenant_id === consolidatedUser.tenant_id &&
+                        prev.email === consolidatedUser.email;
+
+                    if (isSame) {
+                        // Se os dados base são iguais, mantemos o anterior para não quebrar referências
+                        return prev;
+                    }
+                }
+
+                console.log('[Auth] Perfil consolidado actualizado (Mudança detectada).');
                 localStorage.setItem('auth_user_cache', JSON.stringify(consolidatedUser));
                 return consolidatedUser;
             });
@@ -105,13 +124,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } finally {
             isRefreshing.current = false;
         }
-    }, []); // Agora é estável para sempre
+    }, []);
 
     useEffect(() => {
         const failSafeTimer = setTimeout(() => {
             if (loading) {
                 console.error('AuthContext: FAIL-SAFE disparado após 20s!');
                 setLoading(false);
+                isInitialLoad.current = false;
             }
         }, 20000);
 

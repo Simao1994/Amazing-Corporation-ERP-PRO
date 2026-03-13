@@ -21,17 +21,12 @@ const getBaseURL = () => {
 
         const hostname = window.location.hostname;
 
-        // Ativar proxy inteligente para localhost, IPs locais, ou se o URL explicitamente indicar porta 3000/5173
-        const isLocal = hostname === 'localhost' ||
-            hostname === '127.0.0.1' ||
-            hostname.startsWith('192.168.') ||
-            hostname.startsWith('10.') ||
-            window.location.port === '3000' ||
-            window.location.port === '5173' ||
-            /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+        // Ativar proxy apenas em DEV ou se explicitamente solicitado via query
+        const isDev = import.meta.env.DEV;
+        const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
 
-        if (isLocal) {
-            console.log(`[Supabase CLIENT] Ambiente local/dev detectado (${hostname}). Usando Proxy /sbapi`);
+        if (forceProxy || (isDev && isLocalHost)) {
+            console.log(`[Supabase CLIENT] Usando Proxy /sbapi (Modo: ${forceProxy ? 'Manual' : 'Dev'})`);
             return '/sbapi';
         }
     }
