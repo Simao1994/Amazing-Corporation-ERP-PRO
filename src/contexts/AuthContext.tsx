@@ -181,14 +181,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         // Background monitor para o localStorage (Ajuda a detectar dumps de memória anormais)
+        // Reduzido para 30s para evitar excesso de logs, mas mantendo a vigilância
         const storageMonitor = setInterval(() => {
-            if (user) {
+            if (user && !isInitialLoad.current) {
                 const token = localStorage.getItem('sb-amazing-erp-pro-auth-token');
                 if (!token) {
                     console.error('[AUTH CRITICAL] O token da sessão desapareceu do localStorage misteriosamente!');
+                    // Tentativa de recuperação silenciosa
+                    supabase.auth.getSession().then(({ data }) => {
+                        if (!data.session) {
+                            console.warn('[AUTH] Sessão perdida definitivamente.');
+                        }
+                    });
                 }
             }
-        }, 5000);
+        }, 30000);
 
         return () => {
             subscription.unsubscribe();

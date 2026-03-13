@@ -125,36 +125,52 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   useEffect(() => {
     const fetchDynamicRoles = async () => {
       // Só carregar se a autenticação estiver pronta e houver um utilizador
-      if (authLoading || !authUser) return;
+      if (authLoading || !authUser || rolesLoaded) return;
 
       try {
-        if (!user?.tenant_id) {
+        const tenantId = authUser.tenant_id || user?.tenant_id;
+        if (!tenantId) {
           console.warn('Layout: Tenant ID não encontrado, ignorando busca de cargos.');
           return;
         }
-        console.log('Layout: Auth pronto, a carregar cargos dinâmicos...');
-        const { data, error } = await supabase
-          .from('papeis_dinamicos')
-          .select('*')
-          .eq('tenant_id', user.tenant_id);
 
-        if (error) throw error;
+        console.log('Layout: A carregar cargos dinâmicos...');
 
-        if (data) {
-          const rolesMap: Record<string, string[]> = {};
-          data.forEach(r => {
-            rolesMap[r.role_key] = r.allowed_modules;
-          });
-          setDynamicRoles(rolesMap);
+        // Uso de safeQuery para garantir cache e evitar loops (erro 429)
+        const { data, error } = await supabase.rpc('get_dynamic_roles', { p_tenant_id: tenantId });
+
+        // Fallback para select se a RPC falhar ou não existir
+        if (error) {
+          console.warn('Layout: Erro na RPC get_dynamic_roles, tentando select direto...', error.message);
+          const { data: selectData, error: selectError } = await supabase
+            .from('papeis_dinamicos')
+            .select('*')
+            .eq('tenant_id', tenantId);
+
+          if (selectError) throw selectError;
+
+          if (selectData) {
+            const rolesMap: Record<string, string[]> = {};
+            selectData.forEach(r => {
+              rolesMap[r.role_key] = r.allowed_modules;
+            });
+            setDynamicRoles(rolesMap);
+            setRolesLoaded(true);
+          }
+        } else if (data) {
+          setDynamicRoles(data as any);
           setRolesLoaded(true);
         }
       } catch (err) {
         console.error('Error fetching dynamic roles:', err);
+        // Não marcar como carregado para tentar novamente com cautela, 
+        // mas aqui evitamos o loop pela flag rolesLoaded no topo.
+        setRolesLoaded(true);
       }
     };
 
     fetchDynamicRoles();
-  }, [authLoading, authUser]);
+  }, [authLoading, authUser?.id, rolesLoaded]);
 
 
   useEffect(() => {
