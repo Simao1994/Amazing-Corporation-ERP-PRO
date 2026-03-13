@@ -48,29 +48,20 @@ if (!finalUrl || !supabaseAnonKey) {
 
 // Sistema de Lock Robusto — Coordenado por LockManager (se disponível) ou Memória (Fallback)
 let activeLock: Promise<any> | null = null;
- 
+
 const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
-    // 1. Tentar LockManager nativo para consistência multi-aba (Supabase default)
-    if (typeof navigator !== 'undefined' && navigator.locks) {
-        try {
-            return await navigator.locks.request(name, { steal: false, ifAvailable: false }, async () => {
-                return await fn();
-            });
-        } catch (err) {
-            console.warn('[Auth Lock] LockManager falhou, usando fallback em memória:', err);
-        }
-    }
- 
-    // 2. Fallback: Lock Sequencial em Memória
+    // Override: navigator.locks has proven to be unstable with Supabase's session auto-refresh in this Vite setup,
+    // leading to "Navigator LockManager lock timed out" errors and false SIGNED_OUT events.
+    // Forçando apenas o fallback sequencial em memória:
     if (activeLock) {
         try {
             await activeLock;
         } catch (e) { }
     }
- 
+
     const operation = fn();
     activeLock = operation;
- 
+
     try {
         return await operation;
     } finally {
