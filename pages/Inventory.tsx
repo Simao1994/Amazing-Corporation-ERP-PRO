@@ -43,12 +43,12 @@ const InventoryPage: React.FC = () => {
     const failSafe = setTimeout(() => {
       setLoading(prev => {
         if (prev) {
-          console.warn('Inventory: Timeout de 15s atingido. Forçando interrupção do loading.');
+          console.warn('Inventory: Timeout de 8s atingido. Forçando interrupção do loading.');
           return false;
         }
         return prev;
       });
-    }, 15000);
+    }, 8000);
 
     try {
       const { data: invData, error: invError } = await safeQuery(() =>

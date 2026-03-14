@@ -7,8 +7,11 @@ import { useAuth } from './AuthContext';
 
 interface SaaSContextType {
     subscription: SubscriptionStatus | null;
+    tenant: any | null;
+    saasConfig: SaasConfig | null;
     loading: boolean;
     refreshSubscription: () => Promise<void>;
+    isModuleActive: (moduleName: string) => boolean;
 }
 
 const SaaSContext = createContext<SaaSContextType | undefined>(undefined);
@@ -16,8 +19,9 @@ const SaaSContext = createContext<SaaSContextType | undefined>(undefined);
 export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading: authLoading } = useAuth();
     const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
+    const [tenant, setTenant] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
-    const [saasConfig, setSaasConfig] = useState<any>(null);
+    const [saasConfig, setSaasConfig] = useState<SaasConfig | null>(null);
     const userRef = useRef<any>(null);
     const isFetching = useRef(false);
 
@@ -43,9 +47,27 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const jwtTenantId = currentUser.app_metadata?.tenant_id || currentUser.user_metadata?.tenant_id;
             const effectiveTenantId = currentUser.tenant_id || jwtTenantId;
 
-            console.log('SaaSContext: Checking subscription for:', { role: effectiveRole, tenant_id: effectiveTenantId });
+            console.log('SaaSContext: Checking data for:', { role: effectiveRole, tenant_id: effectiveTenantId });
 
-            // JWT-First: saas_admin has special properties and bypasses DB checks
+            // 1. Fetch Tenant Details & Config in parallel
+            const fetchOperations: Promise<any>[] = [];
+
+            if (effectiveTenantId) {
+                fetchOperations.push(
+                    safeQuery(() => supabase.from('saas_tenants').select('*').eq('id', effectiveTenantId).single(),
+                        { cacheKey: `tenant-${effectiveTenantId}`, cacheTTL: 600000 })
+                );
+                fetchOperations.push(checkSubscription(effectiveTenantId));
+            }
+
+            fetchOperations.push(
+                safeQuery<SaasConfig>(
+                    () => supabase.from('saas_config').select('*').eq('id', 1).single(),
+                    { cacheKey: 'saas-config', cacheTTL: 300000 }
+                )
+            );
+
+            // JWT-First: saas_admin has special properties and bypasses DB checks for speed
             if (effectiveRole === 'saas_admin') {
                 console.log('[SaaS] Admin detectado pelo JWT. Concedendo acesso total instantâneo.');
                 const adminSub: SubscriptionStatus = {
@@ -73,33 +95,40 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 };
 
-                setSubscription(prev => JSON.stringify(prev) === JSON.stringify(adminSub) ? prev : adminSub);
+                setSubscription(adminSub);
+                setTenant({ id: 'master-tenant', nome: 'Amazing HQ', slug: 'master' });
                 setLoading(false);
-                return;
-            }
 
-            if (effectiveTenantId) {
-                const status = await checkSubscription(effectiveTenantId);
-                setSubscription(prev => JSON.stringify(prev) === JSON.stringify(status) ? prev : status);
-
-                const { data: config, error: configError } = await safeQuery<SaasConfig>(
+                // Still load config in background
+                const configRes = await safeQuery<SaasConfig>(
                     () => supabase.from('saas_config').select('*').eq('id', 1).single(),
                     { cacheKey: 'saas-config', cacheTTL: 300000 }
                 );
+                if (configRes.data) setSaasConfig(configRes.data);
 
-                if (config && !configError) {
-                    setSaasConfig(config);
-                }
+                return;
+            }
+
+            const results = await Promise.all(fetchOperations);
+
+            if (effectiveTenantId) {
+                const [tenantRes, subStatus, configRes] = results;
+                if (tenantRes.data) setTenant(tenantRes.data);
+                if (subStatus) setSubscription(subStatus);
+                if (configRes.data) setSaasConfig(configRes.data);
             } else {
+                const [configRes] = results;
+                if (configRes.data) setSaasConfig(configRes.data);
                 setSubscription(null);
+                setTenant(null);
             }
         } catch (error: any) {
-            console.error('Erro ao verificar subscrição:', error);
+            console.error('Erro ao verificar subscrição/tenant:', error);
             if (userRef.current?.role === 'saas_admin') {
-                // Fallback de emergência para admin
-                setSubscription(prev => prev || { active: true, modules: ['ALL'] } as any);
+                setSubscription({ active: true, modules: ['ALL'] } as any);
             } else {
                 setSubscription(null);
+                setTenant(null);
             }
         } finally {
             isFetching.current = false;
@@ -134,11 +163,20 @@ export const SaaSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => clearTimeout(failSafe);
     }, [user, authLoading]);
 
+    const isModuleActive = useCallback((moduleName: string): boolean => {
+        if (!subscription?.active) return false;
+        return subscription.modules.some(m => m.toUpperCase() === moduleName.toUpperCase())
+            || subscription.modules.some(m => m.toUpperCase() === 'ALL');
+    }, [subscription]);
+
     const saasValue = React.useMemo(() => ({
         subscription,
+        tenant,
+        saasConfig,
         loading,
-        refreshSubscription
-    }), [subscription, loading]);
+        refreshSubscription,
+        isModuleActive
+    }), [subscription, tenant, saasConfig, loading, refreshSubscription, isModuleActive]);
 
     return (
         <SaaSContext.Provider value={saasValue}>

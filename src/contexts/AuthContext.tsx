@@ -204,20 +204,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await refreshProfile(newSession);
                 }
             } else if (event === 'SIGNED_OUT') {
+                // Estabilização: Aguardar um pouco para confirmar que não é apenas um refresh ou mudança de estado temporária
+                console.log('[Auth] Detectado SIGNED_OUT. Verificando persistência antes de limpar...');
                 setTimeout(async () => {
                     const { data: { session: checkSession } } = await supabase.auth.getSession();
                     if (checkSession) {
+                        console.log('[Auth] Sessão recuperada após SIGNED_OUT (Provável refresh/concorrência).');
                         setSession(checkSession);
                         await refreshProfile(checkSession);
                     } else {
+                        console.warn('[Auth] Logout confirmado pelo servidor.');
                         setUser(null);
                         setSession(null);
                         localStorage.removeItem('auth_user_cache');
-                        if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+                        
+                        // HashRouter fix: verificar tanto pathname quanto o hash
+                        const isAtPublicRoute = window.location.pathname === '/' || 
+                                               window.location.pathname === '/login' ||
+                                               window.location.hash === '#/' ||
+                                               window.location.hash.startsWith('#/login');
+                                               
+                        if (!isAtPublicRoute) {
+                            console.log('[Auth] Redireccionando para Home devido a Logout.');
                             window.location.href = '/';
                         }
                     }
-                }, 1000);
+                }, 1500); // Aumentado ligeiramente para 1.5s
             }
 
             if (!isInitialLoad.current) setLoading(false);

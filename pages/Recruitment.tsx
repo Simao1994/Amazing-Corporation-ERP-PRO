@@ -21,8 +21,10 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { Candidatura, CandidaturaStatus, EscolaridadeTipo } from '../types';
 import { AmazingStorage } from '../utils/storage';
-import { supabase, safeQuery } from '../src/lib/supabase';
 import { useAuth } from '../src/contexts/AuthContext';
+import { useSaaS } from '../src/contexts/SaaSContext';
+import { supabase } from '../src/lib/supabaseClient';
+import { safeQuery } from '../src/lib/supabaseUtils';
 import Logo from '../components/Logo';
 
 const PROVINCIAS_ANGOLA = [
@@ -46,6 +48,7 @@ interface RecruitmentPageProps {
 
 const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) => {
    const { user } = useAuth();
+   const { tenant } = useSaaS();
    const [activeTab, setActiveTab] = useState<'admin' | 'candidatura' | 'publico' | 'analytics' | 'consulta'>(isPublic ? 'candidatura' : 'admin');
    const [showModal, setShowModal] = useState(false);
    const [searchTerm, setSearchTerm] = useState('');
@@ -73,14 +76,16 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
    const [fileObjects, setFileObjects] = useState<{ [key: string]: File | null }>({});
 
    const fetchCandidaturas = async () => {
-      if (!isPublic && !user?.tenant_id) return;
+      const tenantId = isPublic ? null : (user?.tenant_id || tenant?.id);
+      if (!isPublic && !tenantId && user?.role !== 'saas_admin') return;
+
       setLoading(true);
       try {
          const fetchOp = async () => {
             let query = supabase.from('recr_candidaturas').select('*');
 
-            if (!isPublic && user?.tenant_id) {
-               query = query.eq('tenant_id', user.tenant_id);
+            if (!isPublic && tenantId) {
+               query = query.eq('tenant_id', tenantId);
             }
 
             const { data, error } = await safeQuery(() =>
@@ -96,7 +101,7 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
                setCandidaturas(mapped as unknown as Candidatura[]);
             }
          };
-         await withTimeout(fetchOp(), 15000, 'Sincronizando candidaturas... A conexão está lenta.');
+         await withTimeout(fetchOp(), 8000, 'Sincronizando candidaturas...');
       } catch (error) {
          console.error('Erro ao procurar candidaturas:', error);
          if ((window as any).notify) (window as any).notify(error, 'error');
@@ -106,10 +111,11 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
    };
 
    useEffect(() => {
-      if (isPublic || user?.tenant_id) {
+      const tenantId = user?.tenant_id || tenant?.id;
+      if (isPublic || tenantId || user?.role === 'saas_admin') {
          fetchCandidaturas();
       }
-   }, [user?.tenant_id, isPublic]);
+   }, [user?.tenant_id, tenant?.id, isPublic]);
 
    // Form State para Cálculos Automáticos e Uploads
    const [formData, setFormData] = useState({
@@ -311,6 +317,26 @@ const RecruitmentPage: React.FC<RecruitmentPageProps> = ({ isPublic = false }) =
          setIsSaving(false);
       }
    };
+
+   // Realtime Subscriptions (Optimized)
+   useEffect(() => {
+      if (isPublic) return;
+      const tenantId = user?.tenant_id || tenant?.id;
+      if (!tenantId) return;
+
+      const channel = supabase.channel(`recruitment_changes_${tenantId}`)
+         .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'recr_candidaturas',
+            filter: `tenant_id=eq.${tenantId}`
+         }, () => fetchCandidaturas())
+         .subscribe();
+
+      return () => {
+         supabase.removeChannel(channel);
+      };
+   }, [user?.tenant_id, tenant?.id, isPublic]);
 
    const handleConsulta = async (e: React.FormEvent) => {
       e.preventDefault();

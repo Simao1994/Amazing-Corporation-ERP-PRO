@@ -58,9 +58,14 @@ const memoryLockFunc = async <R>(name: string, acquireTimeout: number, fn: () =>
     activeLock = operation;
 
     try {
-        return await operation;
+        await operation;
+    } catch (e) {
+        console.warn('[Supabase Lock] Erro na operação bloqueada:', e);
     } finally {
-        if (activeLock === operation) activeLock = null;
+        if (activeLock === operation) {
+            activeLock = null;
+            // console.log(`[Supabase Lock] Lock '${name}' libertado.`);
+        }
     }
 };
 
@@ -85,7 +90,10 @@ const robustStorage = {
     },
     removeItem: (key: string): void => {
         try {
-            console.trace(`[Supabase Storage] ATENÇÃO: Remoção solicitada da chave ${key}`);
+            // Regra crucial: Só logar remoção de chaves de auth para não poluir
+            if (key.includes('auth-token')) {
+                console.trace(`[Supabase Storage] ATENÇÃO: Remoção solicitada da chave CRÍTICA ${key}`);
+            }
             window.localStorage.removeItem(key);
         } catch (e) {
             console.error('[Supabase Storage] Erro ao Apagar no localStorage:', e);

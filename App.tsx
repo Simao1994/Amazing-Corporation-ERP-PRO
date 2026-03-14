@@ -144,6 +144,8 @@ const App: React.FC = () => {
   // RULE 1, 2, 3: While loading, show spinner, DO NOT render dashboard, DO NOT redirect
   // Se ainda estiver a ver a autenticação (authLoading) OU a subscrição (saasLoading com utilizador ativo), 
   // mostramos o Loader independente do cache. Isto corta os piscas-piscas!
+  // RULE: Only show global loading if we are definitively authenticating or fetching sub data.
+  // Add a small delay check or rely on authLoading to be precise.
   const isGlobalLoading = (authLoading || (saasLoading && !!user)) && !forceLoadManual;
 
   if (isGlobalLoading) {

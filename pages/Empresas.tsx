@@ -30,10 +30,10 @@ const EmpresasPage: React.FC = () => {
     setLoading(true);
     const timeout = setTimeout(() => {
       if (loading) {
-        console.warn('fetchEmpresas: Timeout de 10s atingido. Forçando interrupção do loading.');
+        console.warn('fetchEmpresas: Timeout de 8s atingido. Forçando interrupção do loading.');
         setLoading(false);
       }
-    }, 10000);
+    }, 8000);
 
     try {
       const { data, error } = await supabase
@@ -167,7 +167,7 @@ const EmpresasPage: React.FC = () => {
         setFileObject(null);
       };
 
-      await withTimeout(operation(), 30000, 'A guardar dados da empresa... O upload do logótipo pode demorar.');
+      await withTimeout(operation(), 15000, 'A guardar dados da empresa...');
     } catch (err) {
       console.error('Erro ao salvar empresa:', err);
       alert(formatError(err));

@@ -32,6 +32,7 @@ import ContasBancariasPage from './ContasBancariasPage';
 import VagasAdminTab from '../components/hr/VagasAdminTab';
 import { formatError, withTimeout } from '../src/lib/utils';
 import { safeQuery } from '../src/lib/supabaseUtils';
+import { useSaaS } from '../src/contexts/SaaSContext';
 
 // --- CONFIGURA��O DE HORÁRIO E REGRAS ---
 const WORK_RULES = {
@@ -209,6 +210,7 @@ interface HRPageProps {
 }
 
 const HRPage: React.FC<HRPageProps> = ({ user }) => {
+   const { tenant, subscription, isModuleActive } = useSaaS();
    const isHRAdmin = true;
    const realRole = user.role;
    const [activeTab, setActiveTab] = useState<'dashboard' | 'gente' | 'payroll' | 'presenca' | 'performance' | 'passes' | 'contas' | 'vagas' | 'settings'>('dashboard');
@@ -288,7 +290,7 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       lastFetchRef.current = now;
       setLoading(true);
 
-      // Fail-safe: Forçar desativação do loading após 15s se a rede estiver lenta
+      // Fail-safe: Forçar desativação do loading após 8s se a rede estiver lenta
       const failSafe = setTimeout(() => {
          setLoading(prev => {
             if (prev) {
@@ -297,17 +299,25 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
             }
             return prev;
          });
-      }, 15000);
+      }, 8000);
 
       try {
+         const tenantId = user.tenant_id || tenant?.id;
+
+         if (!tenantId && user.role !== 'saas_admin') {
+            console.warn("HR: Tenant ID não encontrado, abortando fetch.");
+            setLoading(false);
+            return;
+         }
+
          console.log("HR: Iniciando sincronização de dados...");
          // 1. Fetch everything in PARALLEL to avoid waterfalls
          const [funcsRes, presRes, recRes, metasRes, corpRes] = await Promise.allSettled([
-            safeQuery(() => supabase.from('funcionarios').select('*').eq('tenant_id', user.tenant_id).order('nome', { ascending: true })),
-            safeQuery(() => supabase.from('hr_presencas').select('*').eq('tenant_id', user.tenant_id).order('data', { ascending: false }).limit(200)),
-            safeQuery(() => supabase.from('hr_recibos').select('*').eq('tenant_id', user.tenant_id).order('data_emissao', { ascending: false }).limit(200)),
-            safeQuery(() => supabase.from('hr_metas').select('*').eq('tenant_id', user.tenant_id).order('status', { ascending: true })),
-            safeQuery(() => supabase.from('config_sistema').select('*').eq('tenant_id', user.tenant_id).eq('categoria', 'empresa'))
+            safeQuery(() => supabase.from('funcionarios').select('*').eq('tenant_id', tenantId).order('nome', { ascending: true })),
+            safeQuery(() => supabase.from('hr_presencas').select('*').eq('tenant_id', tenantId).order('data', { ascending: false }).limit(200)),
+            safeQuery(() => supabase.from('hr_recibos').select('*').eq('tenant_id', tenantId).order('data_emissao', { ascending: false }).limit(200)),
+            safeQuery(() => supabase.from('hr_metas').select('*').eq('tenant_id', tenantId).order('status', { ascending: true })),
+            safeQuery(() => supabase.from('config_sistema').select('*').eq('tenant_id', tenantId).eq('categoria', 'empresa'))
          ]) as any[];
 
          // --- PROCESS EMPLOYEES ---
@@ -370,18 +380,29 @@ const HRPage: React.FC<HRPageProps> = ({ user }) => {
       // 2. Initial background sync
       fetchHRData();
 
-      // 3. Real-time Subscriptions (Ensures automatic updates)
-      const channel = supabase.channel('hr_changes')
-         .on('postgres_changes', { event: '*', schema: 'public', table: 'funcionarios' }, () => fetchHRData())
-         .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_presencas' }, () => fetchHRData())
-         .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_recibos' }, () => fetchHRData())
-         .on('postgres_changes', { event: '*', schema: 'public', table: 'hr_metas' }, () => fetchHRData())
+      // 3. Real-time Subscriptions (Optimized: Single channel for all HR changes)
+      const tenantId = user.tenant_id || tenant?.id;
+      if (!tenantId) return;
+
+      const channel = supabase.channel(`hr_changes_${tenantId}`)
+         .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'funcionarios',
+            filter: `tenant_id=eq.${tenantId}`
+         }, () => fetchHRData())
+         .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'hr_presencas',
+            filter: `tenant_id=eq.${tenantId}`
+         }, () => fetchHRData())
          .subscribe();
 
-      // Fallback polling (cada 60 seg para garantir se Realtime falhar)
+      // Fallback polling (cada 120 seg - aumentado de 60s)
       const interval = setInterval(() => {
          fetchHRData();
-      }, 60000);
+      }, 120000);
 
       return () => {
          supabase.removeChannel(channel);
